@@ -28,8 +28,9 @@ function Invoke-Step([string]$name, [scriptblock]$block) {
 }
 
 Invoke-Step "Rojo build" { rojo build -o build\AutomotiveWorld.rbxlx }
-Invoke-Step "Selene (lint Roblox)" { selene src }
-Invoke-Step "StyLua (format)" { stylua --check src tests\lune }
+Invoke-Step "Selene (lint Roblox)" { selene src tests\studio\ServerSuite.server.luau tests\studio\ClientSuite.client.luau tests\studio\Driver.template.luau }
+Invoke-Step "Pilote Studio (génération + compilation)" { lune run tests/studio/build-driver.luau build\driver-check.luau }
+Invoke-Step "StyLua (format)" { stylua --check src tests\lune tests\studio }
 Invoke-Step "Lune (tests hors Studio)" { lune run tests\lune\run.luau build\AutomotiveWorld.rbxlx }
 Invoke-Step "Pytest (contrôles statiques)" { python -m pytest -q tests }
 

@@ -60,6 +60,9 @@ local input = DriverInput.new()
 local camera = VehicleCamera.new()
 local measures = Telemetry.new()
 local lastActionTime = 0
+-- Fournisseur de commandes réservé aux tests automatisés dans Studio (voir
+-- `setTestInputProvider`) ; toujours nil en jeu publié.
+local testInputProvider: (() -> Types.DriverInput)? = nil
 
 -- Les contrôles par défaut (déplacement, saut) sont désactivés pendant la
 -- conduite pour éviter toute action involontaire (ex. sortir en sautant).
@@ -267,7 +270,8 @@ local function onPreSimulation(dt: number)
     if current == nil then
         return
     end
-    local driverInput = input:poll(dt)
+    local provider = testInputProvider
+    local driverInput = if provider then provider() else input:poll(dt)
     current.LastInput = driverInput
     current.Simulator:step(driverInput, dt)
     sendInput(current, driverInput, dt)
@@ -345,6 +349,66 @@ function VehicleController.start()
 
     RunService.PreSimulation:Connect(onPreSimulation)
     RunService.PreRender:Connect(onPreRender)
+end
+
+--[[
+    Points d'accès RÉSERVÉS aux tests automatisés exécutés dans Roblox Studio
+    (tests/studio). Ils refusent de fonctionner hors de Studio.
+    - `setTestInputProvider` remplace UNIQUEMENT la lecture clavier/manette :
+      simulation, forces, réseau, caméra et HUD restent le vrai chemin du jeu.
+    - `getTestSnapshot` expose une copie en lecture seule de l'état de conduite.
+]]
+function VehicleController.setTestInputProvider(provider: (() -> Types.DriverInput)?)
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    testInputProvider = provider
+end
+
+export type TestSnapshot = {
+    Driving: boolean,
+    VehicleName: string?,
+    SpeedKmh: number,
+    ForwardSpeedMs: number,
+    Gear: number,
+    EngineRpm: number,
+    GroundedWheels: number,
+    LastLaunchSeconds: number?,
+    LastBrakeDistanceM: number?,
+}
+
+function VehicleController.getTestSnapshot(): TestSnapshot
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    local current = session
+    if current == nil then
+        return {
+            Driving = false,
+            VehicleName = nil,
+            SpeedKmh = 0,
+            ForwardSpeedMs = 0,
+            Gear = 0,
+            EngineRpm = 0,
+            GroundedWheels = 0,
+            LastLaunchSeconds = measures.LastLaunchSeconds,
+            LastBrakeDistanceM = measures.LastBrakeDistanceM,
+        }
+    end
+    local telemetry = current.Simulator:getTelemetry()
+    return {
+        Driving = true,
+        VehicleName = current.Model.Name,
+        SpeedKmh = telemetry.SpeedKmh,
+        ForwardSpeedMs = telemetry.ForwardSpeedMs,
+        Gear = telemetry.Gear,
+        EngineRpm = telemetry.EngineRpm,
+        GroundedWheels = telemetry.GroundedWheels,
+        LastLaunchSeconds = measures.LastLaunchSeconds,
+        LastBrakeDistanceM = measures.LastBrakeDistanceM,
+    }
+end
+
+-- Bascule de caméra par le même code que la touche V (tests Studio uniquement).
+function VehicleController.toggleCameraForTest(): string
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    return camera:togglePreset()
 end
 
 return VehicleController

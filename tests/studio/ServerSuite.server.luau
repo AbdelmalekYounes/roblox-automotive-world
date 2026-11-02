@@ -1,0 +1,181 @@
+-- Suite de tests SERVEUR exécutée dans une session de test Roblox Studio.
+-- Injectée par le pilote (Driver.luau) uniquement dans le Studio de test : la
+-- place n'est jamais enregistrée avec ce script. Elle ne simule aucune entrée.
+--
+-- Rôle : vérifier l'état autoritaire (zone, véhicules posés, propriété réseau,
+-- absence d'erreurs d'exécution), collecter les rapports des clients puis
+-- terminer la session avec StudioTestService:EndTest(rapport).
+
+local LogService = game:GetService("LogService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StudioTestService = game:GetService("StudioTestService")
+local Workspace = game:GetService("Workspace")
+
+local args = StudioTestService:GetTestArgs()
+local sessionName = if type(args) == "table" and type(args.Session) == "string" then args.Session else "inconnue"
+local expectedPlayers = if type(args) == "table" and type(args.Players) == "number" then args.Players else 1
+local CLIENT_TIMEOUT_S = 240
+
+local steps = {}
+local function record(name: string, ok: boolean, detail: any)
+    table.insert(steps, { name = name, ok = ok, detail = if detail ~= nil then tostring(detail) else nil })
+end
+
+-- Journal des erreurs et avertissements serveur pendant la session.
+local errors, validationWarnings = {}, {}
+LogService.MessageOut:Connect(function(message, messageType)
+    if messageType == Enum.MessageType.MessageError then
+        table.insert(errors, message)
+    elseif messageType == Enum.MessageType.MessageWarning and string.find(message, "[Validation]", 1, true) then
+        table.insert(validationWarnings, message)
+    end
+end)
+
+-- Canal de rapport des clients de test (n'existe que dans cette session).
+local reportEvent = Instance.new("RemoteEvent")
+reportEvent.Name = "AWTestReport"
+reportEvent.Parent = ReplicatedStorage
+ReplicatedStorage:SetAttribute("AWTestSession", sessionName)
+
+local clientReports = {}
+reportEvent.OnServerEvent:Connect(function(player, payload)
+    clientReports[tostring(player.UserId)] = payload
+end)
+
+-- Secours de diagnostic : si l'embarquement par l'invite échoue, le client peut
+-- demander au serveur de l'asseoir pour que la suite continue (l'échec reste consigné).
+local seatEvent = Instance.new("RemoteEvent")
+seatEvent.Name = "AWTestSeatFallback"
+seatEvent.Parent = ReplicatedStorage
+seatEvent.OnServerEvent:Connect(function(player, model)
+    if typeof(model) ~= "Instance" or not model:IsA("Model") then
+        return
+    end
+    local seat = model:FindFirstChild("DriverSeat")
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if seat and seat:IsA("Seat") and humanoid and seat.Occupant == nil then
+        seat:Sit(humanoid)
+    end
+end)
+
+local function waitFor(predicate: () -> boolean, timeout: number): boolean
+    local start = os.clock()
+    while os.clock() - start < timeout do
+        if predicate() then
+            return true
+        end
+        task.wait(0.1)
+    end
+    return predicate()
+end
+
+-- S1 : zone, véhicules et canaux réseau présents.
+local zone = Workspace:WaitForChild("AutomotiveTestZone", 10)
+local vehiclesFolder = Workspace:WaitForChild("VehiculesEssai", 10)
+local remotes = ReplicatedStorage:WaitForChild("AutomotiveWorldRemotes", 10)
+local vehicles = if vehiclesFolder then vehiclesFolder:GetChildren() else {}
+record("serveur.zone_creee", zone ~= nil, zone and #zone:GetDescendants() .. " instances")
+record("serveur.quatre_vehicules", #vehicles == 4, #vehicles .. " véhicules")
+record("serveur.canaux_reseau", remotes ~= nil and #remotes:GetChildren() == 3, remotes and #remotes:GetChildren())
+
+-- S2 : véhicules stationnés posés, immobiles et droits (suspension réelle).
+task.wait(4)
+local startPositions = {}
+local details, settledOk = {}, true
+for _, model in vehicles do
+    local root = model.PrimaryPart
+    if root then
+        startPositions[model] = root.Position
+        local speed = root.AssemblyLinearVelocity.Magnitude
+        local upright = root.CFrame.UpVector.Y
+        local height = root.Position.Y
+        local ok = speed < 0.5 and upright > 0.98 and height > 1.0 and height < 2.8
+        settledOk = settledOk and ok
+        table.insert(
+            details,
+            string.format("%s: Y=%.2f vitesse=%.2f st/s droit=%.3f", model.Name, height, speed, upright)
+        )
+    else
+        settledOk = false
+    end
+end
+record("serveur.vehicules_poses_et_immobiles", settledOk and #vehicles > 0, table.concat(details, " | "))
+
+-- S3 : propriété réseau = conducteur pendant la conduite (échantillons toutes les 0,5 s).
+local ownerMatches, ownerMismatches, ownerSamples = 0, 0, {}
+local monitoring = true
+task.spawn(function()
+    while monitoring do
+        for _, model in vehicles do
+            local driverId = model:GetAttribute("DriverUserId")
+            local root = model.PrimaryPart
+            if root and type(driverId) == "number" and driverId ~= 0 then
+                local owner = root:GetNetworkOwner()
+                if owner and owner.UserId == driverId then
+                    ownerMatches += 1
+                else
+                    ownerMismatches += 1
+                    if #ownerSamples < 5 then
+                        table.insert(
+                            ownerSamples,
+                            model.Name .. " propriétaire=" .. (if owner then tostring(owner.UserId) else "serveur")
+                        )
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- Attente des rapports clients.
+local gotAll = waitFor(function()
+    local count = 0
+    for _ in clientReports do
+        count += 1
+    end
+    return count >= expectedPlayers
+end, CLIENT_TIMEOUT_S)
+monitoring = false
+record("serveur.rapports_clients_recus", gotAll, string.format("%d attendu(s)", expectedPlayers))
+
+-- Les corrections de la suite client (téléportation volontaire) passent
+-- brièvement la propriété au serveur : quelques échantillons discordants sont normaux.
+record(
+    "serveur.propriete_reseau_conducteur",
+    ownerMatches > 0 and ownerMismatches <= 6 * expectedPlayers,
+    string.format("%d concordants, %d discordants %s", ownerMatches, ownerMismatches, table.concat(ownerSamples, ", "))
+)
+
+-- S4 : les véhicules non utilisés n'ont pas bougé.
+local driftDetails, driftOk = {}, true
+local driven = {}
+for _, report in clientReports do
+    if type(report) == "table" and type(report.vehicle) == "string" then
+        driven[report.vehicle] = true
+    end
+end
+for model, start in startPositions do
+    if not driven[model.Name] and model.PrimaryPart then
+        local drift = (model.PrimaryPart.Position - start).Magnitude
+        driftOk = driftOk and drift < 1.5
+        table.insert(driftDetails, string.format("%s: %.2f st", model.Name, drift))
+    end
+end
+record("serveur.vehicules_libres_immobiles", driftOk, table.concat(driftDetails, " | "))
+
+record("serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+record(
+    "serveur.journal_validation",
+    true,
+    #validationWarnings .. " message(s) : " .. table.concat(validationWarnings, " || ")
+)
+
+StudioTestService:EndTest({
+    session = sessionName,
+    players = #Players:GetPlayers(),
+    server = steps,
+    clients = clientReports,
+})

@@ -61,6 +61,15 @@ Ces vérifications n'ouvrent aucune fenêtre et ne lancent pas Studio. **Elles n
 en Studio** : la physique Roblox, le réseau, la caméra et l'interface n'y sont pas exécutés.
 Détail des moyens et limites : [docs/lot-0.1/RAPPORT_TESTS.md](docs/lot-0.1/RAPPORT_TESTS.md).
 
+## Tests dans Roblox Studio, via la VM (sans prendre ton PC)
+
+```powershell
+test-vm.cmd
+```
+
+Les essais Studio (solo, deux joueurs, latence) s'exécutent dans la VM VMware de test ; ton bureau, ta souris et
+ton clavier ne sont pas utilisés. Préparation unique et fonctionnement : [docs/VM_TESTS.md](docs/VM_TESTS.md).
+
 ## Organisation du code
 
 | Dossier | Contenu |
