@@ -8,6 +8,7 @@
 	- Copie l'agent dans C:\AWTests\agent et l'enregistre au démarrage de session
 	  (tâche planifiée « AutomotiveWorldAgent », pour l'utilisateur courant).
 	- Désactive la mise en veille et l'extinction d'écran DE LA VM (captures non noires).
+	- Arrête et désactive (sans la supprimer) la tâche « MimicHuntersAgent » de l'ancien projet.
 	- Démarre l'agent immédiatement.
 	Rien n'est installé : la place et le pilote sont construits sur l'hôte.
 	Aucun mot de passe n'est lu ni stocké.
@@ -59,9 +60,22 @@ $studio = Get-ChildItem (Join-Path $env:LOCALAPPDATA "Roblox\Versions") -Filter 
 if ($studio) { Write-Host "Roblox Studio trouvé : $($studio.FullName)" }
 else { Write-Warning "Roblox Studio introuvable pour ce compte : installe-le et connecte-toi avant les tests." }
 
-if (Get-ScheduledTask -TaskName "MimicHuntersAgent" -ErrorAction SilentlyContinue) {
-	Write-Host "Note : la tâche « MimicHuntersAgent » d'un autre projet existe ; elle n'est pas modifiée."
+# Agent de l'ancien projet Mimic Hunters : arrêté et DÉSACTIVÉ (pas supprimé),
+# pour qu'un seul agent travaille dans la VM. Réversible :
+#   Enable-ScheduledTask -TaskName MimicHuntersAgent ; Start-ScheduledTask -TaskName MimicHuntersAgent
+$oldTask = "MimicHuntersAgent"
+if (Get-ScheduledTask -TaskName $oldTask -ErrorAction SilentlyContinue) {
+	Stop-ScheduledTask -TaskName $oldTask -ErrorAction SilentlyContinue
+	Disable-ScheduledTask -TaskName $oldTask | Out-Null
+	Write-Host "Tâche « $oldTask » arrêtée et désactivée (non supprimée)."
 }
+$oldProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
+		Where-Object { $_.CommandLine -like "*MimicTests*vm-agent*" -and $_.ProcessId -ne $PID })
+foreach ($process in $oldProcesses) {
+	Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+	Write-Host "Processus de l'agent Mimic Hunters arrêté (PID $($process.ProcessId))."
+}
+if ($oldProcesses.Count -eq 0) { Write-Host "Aucun processus d'agent Mimic Hunters en cours." }
 
 Start-ScheduledTask -TaskName $taskName
 Write-Host "Agent démarré. Vérification côté hôte : test-vm.cmd -NoVmControl"

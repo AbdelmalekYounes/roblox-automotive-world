@@ -56,7 +56,7 @@ Roblox Studio installé et connecté avec un compte de test. Le dossier partagé
    ```
    Le script refuse de s'exécuter hors d'une VM VMware. Il copie l'agent dans `C:\AWTests\agent`, crée la tâche
    planifiée `AutomotiveWorldAgent`, désactive la veille de la VM et démarre l'agent. Il n'installe rien.
-   La tâche `MimicHuntersAgent` de l'autre projet n'est pas touchée.
+   Il arrête aussi l'agent `MimicHuntersAgent` de l'autre projet et désactive sa tâche (sans la supprimer ; réactivable avec `Enable-ScheduledTask -TaskName MimicHuntersAgent`).
 3. Ouvre Roblox Studio une fois dans la VM pour accepter une éventuelle mise à jour ou reconnexion, puis ferme-le.
 4. Ferme la fenêtre de VMware Workstation en choisissant **Run in Background** : la VM continue sans rien afficher.
 
