@@ -22,11 +22,22 @@ local function record(name: string, ok: boolean, detail: any)
     table.insert(steps, { name = name, ok = ok, detail = if detail ~= nil then tostring(detail) else nil })
 end
 
--- Journal des erreurs et avertissements serveur pendant la session.
-local errors, validationWarnings = {}, {}
+-- Journal des erreurs et avertissements serveur pendant la session. Les erreurs
+-- de NOTRE code (scripts du jeu ou de test) sont séparées des erreurs internes
+-- de Roblox (scripts du moteur), consignées à titre d'information.
+local OUR_CODE_MARKERS = { "AutomotiveWorld", "ReplicatedStorage.Shared", "AW_Test" }
+local function isOurError(message: string): boolean
+    for _, marker in OUR_CODE_MARKERS do
+        if string.find(message, marker, 1, true) then
+            return true
+        end
+    end
+    return false
+end
+local errors, robloxErrors, validationWarnings = {}, {}, {}
 LogService.MessageOut:Connect(function(message, messageType)
     if messageType == Enum.MessageType.MessageError then
-        table.insert(errors, message)
+        table.insert(if isOurError(message) then errors else robloxErrors, message)
     elseif messageType == Enum.MessageType.MessageWarning and string.find(message, "[Validation]", 1, true) then
         table.insert(validationWarnings, message)
     end
@@ -37,10 +48,47 @@ local reportEvent = Instance.new("RemoteEvent")
 reportEvent.Name = "AWTestReport"
 reportEvent.Parent = ReplicatedStorage
 ReplicatedStorage:SetAttribute("AWTestSession", sessionName)
+ReplicatedStorage:SetAttribute("AWTestPlayers", expectedPlayers)
 
 local clientReports = {}
 reportEvent.OnServerEvent:Connect(function(player, payload)
     clientReports[tostring(player.UserId)] = payload
+end)
+
+-- Signaux de synchronisation entre clients de test (relayés par le serveur).
+local signalEvent = Instance.new("RemoteEvent")
+signalEvent.Name = "AWTestSignal"
+signalEvent.Parent = ReplicatedStorage
+signalEvent.OnServerEvent:Connect(function(_, name)
+    if name == "M2Done" then
+        ReplicatedStorage:SetAttribute("AWTestM2Done", true)
+    end
+end)
+
+-- Attribution des véhicules par le SERVEUR, dans l'ordre d'arrivée (au démarrage,
+-- un client ne voit pas encore les autres joueurs). Plots éloignés : 1 puis 4.
+local PAD_ORDER = { 1, 4, 2, 3 }
+local joinCount = 0
+local function assignVehicle(player: Player)
+    joinCount += 1
+    player:SetAttribute("AWTestIndex", joinCount)
+    player:SetAttribute("AWTestPad", PAD_ORDER[joinCount] or joinCount)
+end
+Players.PlayerAdded:Connect(assignVehicle)
+for _, player in Players:GetPlayers() do
+    if player:GetAttribute("AWTestIndex") == nil then
+        assignVehicle(player)
+    end
+end
+
+-- Diagnostic d'embarquement : invites réellement reçues par le serveur.
+local promptLog = {}
+game:GetService("ProximityPromptService").PromptTriggered:Connect(function(prompt, player)
+    local model = prompt:FindFirstAncestorOfClass("Model")
+    table.insert(
+        promptLog,
+        string.format("%s→%s", tostring(player.UserId), if model then model.Name else prompt:GetFullName())
+    )
 end)
 
 -- Secours de diagnostic : si l'embarquement par l'invite échoue, le client peut
@@ -167,6 +215,12 @@ end
 record("serveur.vehicules_libres_immobiles", driftOk, table.concat(driftDetails, " | "))
 
 record("serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+record(
+    "serveur.info_erreurs_internes_roblox",
+    true,
+    #robloxErrors .. " erreur(s) hors de notre code : " .. table.concat(robloxErrors, " || ")
+)
+record("serveur.info_invites_recues", true, #promptLog .. " : " .. table.concat(promptLog, ", "))
 record(
     "serveur.journal_validation",
     true,

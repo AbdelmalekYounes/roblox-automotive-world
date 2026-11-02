@@ -2,11 +2,15 @@
 
 **Date** : 2 novembre 2026 · **Branche** : `feat/vehicle-vertical-slice-0.1` · **Version** : `0.1.0-dev`
 
-> **Synthèse honnête.** Tout ce qui peut être vérifié sans lancer Roblox Studio a été exécuté et passe.
-> **Aucun essai n'a été réalisé dans Roblox Studio** : ni spawn, ni embarquement, ni conduite, ni caméra,
-> ni sortie, ni session à deux clients, ni latence simulée. Aucune capture ni vidéo n'a été produite.
-> Le critère de clôture du lot (« voiture pilotable qui réagit progressivement ») **n'est donc pas encore démontré en jeu** :
-> il l'est seulement pour le modèle physique pur, sur un banc hors Roblox.
+> **Synthèse.** Les essais Roblox Studio ont été **réalisés automatiquement dans la VM VMware de test**
+> (Studio 0.745.0.7451137), sans utiliser le bureau, la souris ni le clavier de l'utilisateur :
+> **149 contrôles réussis sur 149** lors des deux dernières exécutions complètes (sessions solo, deux joueurs,
+> deux joueurs avec ~205 ms de latence mesurée). Le prototype est pilotable et réagit progressivement dans le
+> moteur Roblox réel (0–100 km/h ≈ 8,5 s, 100–0 km/h ≈ 47,5 m).
+> **Restent non vérifiés** : la lecture réelle du clavier et de la manette (les commandes sont injectées par un point
+> d'accès réservé à Studio), le rendu visuel (captures bloquées par l'antivirus de la VM, aucune image produite),
+> les collisions entre véhicules, la bosse, le slalom, la remise sur roues d'un véhicule réellement renversé,
+> le retour automatique au plot, le ressenti et le son.
 
 ## 1. Environnement
 
@@ -20,7 +24,7 @@
 | Lune | 0.11.1 |
 | Python / pytest | 3.12.7 / 7.4.3 |
 | Git | 2.47.1 |
-| Roblox Studio | installé (`version-7062aec9dbe74b14`) — **non lancé** |
+| Roblox Studio | 0.745.0.7451137, **dans la VM VMware « ROBLOX DEV »** (Windows 11, compte de test), jamais sur le bureau de l'hôte |
 
 Le dossier reçu n'était pas un dépôt Git : il a été initialisé, le socle 0.0.1 reçu a été validé tel quel sur `main`,
 puis tout le travail a été fait sur `feat/vehicle-vertical-slice-0.1`. Aucun dépôt distant, aucun push.
@@ -81,8 +85,9 @@ raideur du pneu sous le seuil de stabilité de l'intégration du châssis. Un te
 | Vitesse cinématique au rupteur en 6ᵉ | 293 km/h (borne, pas une performance) |
 
 Le banc planaire remplace le moteur physique Roblox par un modèle 2D (transferts de charge quasi statiques,
-inertie de lacet d'une boîte uniforme). Les valeurs en jeu **différeront** ; elles devront être relevées en Studio
-avec les mesures du HUD.
+inertie de lacet d'une boîte uniforme). Comparaison avec les mesures faites ensuite dans Studio (§4.2) :
+0–100 km/h ≈ 8,5 s en jeu contre 8,37 s pour le modèle ; 100–0 km/h ≈ 47,5 m en jeu contre 40,2 m :
+le freinage réel est plus long que dans le banc planaire (transferts de charge et roues 3D non représentés).
 
 ## 3. Moyens et limites des tests disponibles
 
@@ -94,58 +99,75 @@ avec les mesures du HUD.
 | Lune sur la place construite | Logique pure : dynamique, validation, codec, mesures, structure, motifs interdits | Tout ce qui dépend du moteur : rayons, `VectorForce`, propriété réseau, sièges, caméra, interface |
 | Banc planaire | Signes, bornes physiques, stabilité numérique de la dynamique pure | Le comportement 3D réel (roulis, tangage, collisions, intégration Roblox à 240 Hz) |
 | pytest | Règles d'architecture (séparation, autorité serveur, typage strict, aucun actif externe) | Le fonctionnement |
+| Tests Studio dans la VM (`test-vm.cmd`) | Le jeu réel dans Studio : physique, propriété réseau, sièges, caméra, HUD, serveur, deux clients, latence | La lecture réelle des touches et de la manette, le rendu visuel, le ressenti |
 
-Points qui **exigent** Roblox Studio : création de la zone et des véhicules au démarrage, appui des suspensions,
+Points qui **exigent** Roblox Studio (couverts depuis par les tests dans la VM, §4) : création de la zone et des véhicules au démarrage, appui des suspensions,
 `Seat:Sit` avec `CanTouch = false`, transfert de propriété réseau, simulation côté client, animation des roues
 par `Motor6D.Transform`, caméra scriptée, HUD, sortie et dépôt du personnage, correction serveur, réplication
 entre deux clients, comportement sous latence.
 
-## 4. Essais Roblox Studio — NON RÉALISÉS, procédure à exécuter
+## 4. Essais Roblox Studio — réalisés dans la VM (automatisés)
 
-Aucune interaction graphique n'a été effectuée pendant ce lot. Procédure proposée (≈ 30 min) :
+Méthode et outillage : [docs/VM_TESTS.md](../VM_TESTS.md). `test-vm.cmd` construit la place et le pilote, la VM
+exécute `RobloxStudioBeta.exe --task RunScript`, le pilote lance les sessions par `StudioTestService`
+(`ExecutePlayModeAsync`, `ExecuteMultiplayerTestAsync(2)`), et chaque session renvoie ses contrôles.
+Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUDIO_VM.md) (tâche `20261102-140007`).
 
-**Préparation**
-1. `rojo build -o build\AutomotiveWorld.rbxlx`, ouvrir le fichier dans Studio, **ne pas publier**.
-2. Vérifier que « Enable Studio Access to API Services » est **désactivé** (Game Settings > Security).
-3. Ouvrir la fenêtre Output pour relever les messages `[AutomotiveWorld]` et toute erreur.
+### 4.1 Historique des exécutions (2 novembre 2026)
 
-**Essai solo (Play)**
+| Tâche | Résultat | Cause / correction |
+|---|---|---|
+| 133427 | Pilote arrêté avant la 1ʳᵉ session | `RunService:GetRobloxVersion()` interdit en RunScript (« lacking capability RobloxScript ») → `pcall(version)` |
+| 133558 | 114 ✅ / 4 ❌ | Suite de test : les deux clients se choisissaient le même véhicule ; erreur interne de Roblox (`ChatScript … CoreGuiChatConnections`) comptée à tort → attribution par le serveur, erreurs Roblox séparées |
+| 134054 | 144 ✅ / 3 ❌ | Suite de test : le joueur 2 se téléportait contre le véhicule du joueur 1 pendant son départ → synchronisation |
+| 134557 | 147 ✅ / 2 ❌ | **Défaut réel du jeu** : en multijoueur, la sortie laissait parfois le personnage dans l'habitacle (déplacement serveur écrasé par la position envoyée par le client) → `VehicleService` attend la libération du siège, place, vérifie et recommence au besoin |
+| 135040 | 146 ✅ / 3 ❌ | Sortie corrigée partout ; mesures post-correction et au repos faussées par le calendrier du test → mesure de l'état final, joueur 2 éloigné avant les mesures |
+| 135529 | **149 ✅ / 0 ❌** | — |
+| 140007 | **149 ✅ / 0 ❌** | Mesure 100–0 du HUD relevée (lecture décalée d'une image) |
 
-| # | Étape | Résultat attendu | Constaté |
-|---|---|---|---|
-| S1 | Lancer Play | Output : « 4 véhicules d'essai … prêts » puis « Serveur … initialisé » ; aucune erreur rouge | ☐ |
-| S2 | Spawn | Personnage sur la plateforme bleue ; bannière « Zone d'essai véhicule » ; 4 prototypes immobiles sur leurs plots, roues au sol, sans rebond persistant | ☐ |
-| S3 | Embarquement | Invite « Conduire » à la portière gauche ; maintien E → personnage assis ; HUD visible ; caméra derrière le véhicule | ☐ |
-| S4 | Accélération | Z/W : départ progressif (pas de vitesse instantanée), rapports qui montent, régime cohérent ; relever le 0–100 du HUD | ☐ |
-| S5 | Freinage | S à fond depuis > 100 km/h : décélération franche, possible blocage des roues (pas d'ABS) ; relever le 100–0 du HUD | ☐ |
-| S6 | Marche arrière | À l'arrêt, maintenir S : « R » au HUD après ~0,3 s, le véhicule recule ; Z freine puis repasse en 1ʳᵉ | ☐ |
-| S7 | Virages | Q/A et D : braquage progressif, moins d'angle à haute vitesse ; slalom de cônes ; cercle de 30 m | ☐ |
-| S8 | Frein à main | Espace en virage : arrière qui décroche ; à l'arrêt : véhicule maintenu | ☐ |
-| S9 | Caméra | V : bascule proche/lointaine (message) ; pas de traversée des murets | ☐ |
-| S10 | Bosse à 10 % | Montée/descente sans décollage anormal ni oscillation persistante | ☐ |
-| S11 | Sortie | F au-dessus de 20 km/h → message de refus ; à l'arrêt → personnage déposé à gauche, caméra et déplacements normaux rétablis | ☐ |
-| S12 | Remise sur roues | Véhicule renversé et immobile : R → remis à l'endroit ; second appui → délai affiché | ☐ |
-| S13 | Manette | Refaire S3–S11 à la manette ; l'aide du HUD bascule sur les boutons manette | ☐ |
-| S14 | Retour au plot | Abandonner un véhicule loin de son plot : retour automatique après ~90 s si personne n'est proche | ☐ |
+### 4.2 Résultats de la dernière exécution (tâche 140007)
 
-**Essai multijoueur (onglet Test > Clients and Servers, 2 joueurs)**
+| # | Essai | Résultat observé dans Studio |
+|---|---|---|
+| S1 | Démarrage | zone (116 instances), 4 véhicules, 3 canaux réseau ; **aucune erreur de notre code** (serveur et clients) |
+| S2 | Véhicules posés | 4 véhicules à Y ≈ 1,77–1,78 st, vitesse ≤ 0,09 st/s, droits (UpVector.Y = 1,000) ; véhicules non utilisés immobiles (≤ 0,03 st) |
+| S3 | Embarquement | par l'invite de proximité (même chemin que la touche E) ; caméra scriptée et HUD affichés ; propriété réseau attribuée au conducteur |
+| S4 | Accélération | ≈ 3,4 km/h à 0,25 s, ≈ 14,5 km/h à 1 s ; 0–100 km/h **8,55–8,65 s** (horloge client), **8,45–8,60 s** (HUD) ; rapports jusqu'au 3ᵉ |
+| S5 | Freinage | depuis ≈ 100 km/h : **47,5–48,8 m** en ≈ 3,4 s (HUD : 45,1–46,2 m, mesuré dès le passage sous 100 km/h) |
+| S6 | Marche arrière | rapport R enclenché à l'arrêt, ≈ −7,4 m/s après 2,5 s |
+| S7 | Virages | à ≈ 40 km/h, braquage 60 % : +77° à droite, −65° à gauche en 2 s (l'écart vient du contre-braquage depuis le virage précédent) |
+| S8 | Frein à main | véhicule maintenu à l'arrêt (déplacement 0,00 st en 2 s) |
+| S9 | Caméra | proche 14,5 st, lointaine 24,0 st (bascule par le même code que la touche V) |
+| S11 | Sortie | refusée au-dessus de 20 km/h (notification) ; à l'arrêt : personnage déposé à 6–7 st, caméra rétablie, véhicule libéré |
+| S12 | Remise sur roues | **seul le refus** sur un véhicule droit est vérifié |
+| — | Mouvement impossible | téléportation de 400 st par le client propriétaire : **corrigée par le serveur** (1 correction par essai, aucune sanction) ; écart final ≤ 2,0 st après retour au conducteur |
+| M1 | Deux joueurs | chacun conduit son véhicule ; mêmes résultats que S3–S11 pour les deux |
+| M2 | Véhicule occupé | le 2ᵉ joueur ne peut pas le prendre (invite désactivée, conducteur inchangé) |
+| M3 | Observation croisée | chaque client voit le conducteur de l'autre véhicule (attribut répliqué) — **le rendu des roues n'est pas vérifié** |
+| M5 | Propriété réseau | conducteur propriétaire sur 68–140 échantillons ; seuls discordants : pendant les corrections volontaires |
+| Lat. | Latence | réglage Studio de 100 ms par sens : ping **mesuré 203–216 ms** ; tous les contrôles réussis |
 
-| # | Étape | Résultat attendu | Constaté |
-|---|---|---|---|
-| M1 | Deux joueurs montent dans deux véhicules différents | Chacun conduit le sien ; aucun échange de commandes ni d'état | ☐ |
-| M2 | Le joueur 2 tente l'invite d'un véhicule occupé | Invite masquée ou message « déjà occupé » | ☐ |
-| M3 | Observation croisée | Chaque client voit l'autre véhicule bouger, roues qui tournent et braquent | ☐ |
-| M4 | Collision entre les deux véhicules | Contact physique crédible, pas d'éjection ni de correction serveur intempestive | ☐ |
-| M5 | Propriété réseau (Studio Settings > Physics > « Are Owners Shown ») | Véhicule conduit : propriétaire = son conducteur ; véhicule libre : serveur | ☐ |
+Observations : à la première tentative, l'invite d'embarquement déclenchée par script juste après la téléportation
+du personnage n'atteint pas toujours le serveur (2ᵉ tentative réussie) ; sous latence, la vue du client reste
+décalée de 17 à 70 st pendant ~0,5 s après une correction serveur, puis se recale.
 
-**Latence** : dans File > Studio Settings > Network, régler « Incoming Replication Lag » (par ex. 0,15 puis 0,3 s ;
-nom du réglage à confirmer dans la version de Studio installée) puis refaire M1, M3, M4 et S11. Attendu : conduite
-toujours réactive pour le conducteur, aucune correction « mouvement impossible » en conduite normale.
-Relever dans Output tout message `[Validation]`.
+### 4.3 Encore à vérifier par un humain (ou par une version future des tests)
+
+| # | Point | Pourquoi |
+|---|---|---|
+| S2/S9/M3 | Rendu visuel : carrosserie, roues animées, caméra sans traversée des murets, HUD lisible | Captures bloquées par l'antivirus de la VM ; aucune image produite |
+| S4–S8 | Clavier (Z/W, S, Q/A/D, Espace) et sensation de conduite | Commandes injectées par le point d'accès de test |
+| S13 | Manette | Aucune manette (réelle ou virtuelle) dans la VM |
+| S7/S10 | Slalom, cercle de 30 m, bosse à 10 % | Non scénarisés |
+| S12 | Remise sur roues d'un véhicule renversé | Non scénarisé |
+| S14 | Retour automatique au plot (90 s) | Non scénarisé |
+| M4 | Collision entre deux véhicules | Non scénarisé |
+| — | Taille de l'avatar dans l'habitacle | Visuel |
 
 ## 5. Captures et vidéos
 
-Aucune capture ni vidéo n'a été produite : Studio n'a pas été lancé.
+Aucune capture ni vidéo n'a été produite. Les captures automatiques de la VM ont été **bloquées par Windows Defender**
+(capture d'écran depuis PowerShell, constaté aussi sur l'hôte) ; l'antivirus n'a pas été contourné.
 
 ## 6. Fichiers créés ou modifiés
 
@@ -164,4 +186,8 @@ Aucune capture ni vidéo n'a été produite : Studio n'a pas été lancé.
   `src/client/UI/{DevHud, Messages}.luau`.
 - Tests : `tests/lune/{run, Harness, TestKit, PlanarSim}.luau`,
   `tests/lune/specs/{PlaceStructure, Definitions, PhysicsUnit, NetworkSecurity, TelemetrySpec, DrivingScenarios}.luau`.
-- Documentation : `docs/lot-0.1/{RAPPORT_TESTS, ECARTS, PROPOSITION_LOT_0.2}.md`.
+- Documentation : `docs/lot-0.1/{RAPPORT_TESTS, ECARTS, PROPOSITION_LOT_0.2, RAPPORT_STUDIO_VM}.md`, `docs/VM_TESTS.md`.
+- Tests Studio et VM : `tests/studio/{Driver.template, ServerSuite.server, ClientSuite.client, build-driver}.luau`,
+  `tools/vm/{host-run, guest-agent, guest-setup, job-runner, capture-screens, make-report}.ps1`, `test-vm.cmd`.
+- Modifiés pour les essais Studio : `src/client/Vehicles/VehicleController.luau` (points d'accès réservés à Studio),
+  `src/server/Vehicles/VehicleService.luau` (correction de la sortie en multijoueur).

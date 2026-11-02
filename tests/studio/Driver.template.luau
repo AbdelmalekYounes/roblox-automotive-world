@@ -8,7 +8,6 @@
 -- Chaque résultat est imprimé sur une ligne « @@AW@@ {json} » lue par l'hôte.
 
 local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local StudioTestService = game:GetService("StudioTestService")
@@ -21,7 +20,11 @@ local function emit(kind: string, data: any)
     print("@@AW@@ " .. HttpService:JSONEncode({ kind = kind, data = data }))
 end
 
-emit("start", { studio = RunService:GetRobloxVersion(), sessions = SESSIONS })
+-- RunService:GetRobloxVersion() est interdit en RunScript (capacité RobloxScript) :
+-- on lit la fonction globale version(), protégée au cas où elle le serait aussi.
+-- selene: allow(undefined_variable)
+local okVersion, studioVersion = pcall(version)
+emit("start", { studio = if okVersion then studioVersion else "inconnue", sessions = SESSIONS })
 
 local serverScript = Instance.new("Script")
 serverScript.Name = "AW_TestServer"

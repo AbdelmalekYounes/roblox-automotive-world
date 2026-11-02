@@ -5,12 +5,15 @@ Rien de ce document n'est commencé ; il sert à décider du contenu du lot suiv
 
 ## 0. Préalable : clore réellement le lot 0.1
 
-1. Exécuter la procédure Studio de `RAPPORT_TESTS.md` (S1–S14, M1–M5, latence) et consigner les résultats observés.
-2. Corriger les défauts constatés et calibrer le prototype à partir des mesures du HUD, sans retoucher les règles du cahier des charges.
-3. Arbitrer les choix A1 à A6 de `ECARTS.md`.
-4. Option d'automatisation : l'installation de Studio contient le serveur MCP officiel de Roblox Studio (`StudioMCP.exe`).
-   Une fois configuré par le propriétaire du projet, il permettrait d'exécuter des scénarios scriptés dans Studio
-   (démarrage, vérification d'instances, relevé de la sortie) sans piloter souris et clavier. À valider avant usage.
+1. ~~Exécuter les essais Studio~~ : fait automatiquement dans la VM (149/149, `RAPPORT_TESTS.md` §4).
+   Restent à vérifier par un humain : clavier et manette réels, rendu visuel, ressenti, taille de l'avatar.
+2. Étendre les scénarios automatisés : bosse à 10 %, slalom, véhicule réellement renversé puis remis sur roues,
+   retour automatique au plot, collision entre deux véhicules.
+3. Calibrer le prototype à partir des mesures faites en jeu (freinage plus long qu'attendu par le modèle),
+   sans retoucher les règles du cahier des charges.
+4. Arbitrer les choix A1 à A6 de `ECARTS.md`.
+5. Captures : décider d'une exclusion Windows Defender limitée à `C:\AWTests` **dans la VM** (décision du
+   propriétaire), sans quoi les essais restent sans image.
 
 ## 1. Contenu proposé
 

@@ -52,6 +52,20 @@ if (Test-Path $resultFile) {
 
 $events = @()
 if (Test-Path $outputLog) {
+	# Erreurs Luau du pilote ou des sessions : ligne de message suivie de « Stack Begin ».
+	$all = @(Get-Content -Encoding UTF8 $outputLog)
+	$scriptErrors = @()
+	for ($i = 1; $i -lt $all.Count; $i++) {
+		if ($all[$i] -eq "Stack Begin") { $scriptErrors += ($all[$i - 1] + " " + ($all[$i + 1] -replace "^Script ", "")) }
+	}
+	if ($scriptErrors.Count -gt 0) {
+		$failed += $scriptErrors.Count
+		Add-Line "### ❌ Erreurs de script dans la sortie Studio"
+		foreach ($e in $scriptErrors) { Add-Line ("- ``{0}``" -f $e) }
+		Add-Line ""
+	}
+}
+if (Test-Path $outputLog) {
 	foreach ($raw in Get-Content -Encoding UTF8 $outputLog) {
 		$index = $raw.IndexOf("@@AW@@ ")
 		if ($index -lt 0) { continue }

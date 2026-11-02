@@ -38,6 +38,8 @@ local RETURN_DISTANCE_STUDS = 40
 local NEARBY_PLAYER_STUDS = 25
 local KILL_HEIGHT = -60
 local BOARDING_DISTANCE_STUDS = 16
+local EXIT_PLACEMENT_ATTEMPTS = 3
+local EXIT_PLACEMENT_CHECK_S = 0.3
 local SUSPICION_REVIEW_THRESHOLD = 10
 
 type VehicleRecord = {
@@ -300,9 +302,25 @@ local function handleExit(record: VehicleRecord, player: Player)
     local exitPivot = if character and character:IsA("Model") then findExitPivot(record, character) else nil
     unseat(humanoid, seat)
     if exitPivot and character and character:IsA("Model") then
-        task.defer(function()
-            if character.Parent then
+        -- Le personnage appartient (réseau) à son joueur : un déplacement imposé
+        -- par le serveur pendant que le client reprend la main peut être écrasé
+        -- par la position envoyée par ce client (constaté en essai à deux joueurs).
+        -- On attend donc la libération effective du siège, on place le personnage,
+        -- puis on vérifie et on recommence une fois si nécessaire.
+        task.spawn(function()
+            local deadline = os.clock() + 1
+            while humanoid.SeatPart ~= nil and os.clock() < deadline do
+                task.wait()
+            end
+            for _ = 1, EXIT_PLACEMENT_ATTEMPTS do
+                if character.Parent == nil then
+                    return
+                end
                 character:PivotTo(exitPivot)
+                task.wait(EXIT_PLACEMENT_CHECK_S)
+                if (character:GetPivot().Position - exitPivot.Position).Magnitude < 3 then
+                    return
+                end
             end
         end)
     end

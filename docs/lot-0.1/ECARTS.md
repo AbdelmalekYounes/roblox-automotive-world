@@ -2,7 +2,8 @@
 
 Légende : **Conforme** (dans le périmètre du lot) · **Partiel** · **Non commencé** (prévu dans un lot ultérieur,
 le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non tranché par le cahier des charges).
-« Non vérifié en jeu » signifie : implémenté et vérifié hors Studio uniquement (voir `RAPPORT_TESTS.md`).
+« Vérifié en Studio » signifie : contrôlé automatiquement dans Roblox Studio, dans la VM de test (149/149, voir
+`RAPPORT_TESTS.md` §4) ; les commandes y sont injectées, la lecture réelle du clavier et de la manette ne l'est pas.
 
 ## 1. Exigences du lot 0.1 (prompt de lot)
 
@@ -10,13 +11,13 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 |---|---|---|
 | Une seule voiture fictive, originale, géométrie temporaire | Conforme | Prototype P-01 généré par code (blocs/cylindres), aucun actif Marketplace ni externe |
 | Zone d'essai simple et isolée | Conforme | Sol fermé par murets, ligne droite graduée, slalom, cercle de 30 m, bosse à 10 % |
-| Clavier et manette | Conforme, non vérifié en jeu | Mapping documenté ; volant non traité |
-| Direction, accélération, freinage, marche arrière, caméra proche/lointaine | Conforme, non vérifié en jeu | Marche arrière par maintien de « freiner » à l'arrêt |
-| Masse, inertie, freinage, adhérence ; pas de vitesse instantanée | Conforme, non vérifié en jeu | Forces aux pneus uniquement ; progressivité démontrée sur banc planaire |
+| Clavier et manette | Conforme, **non vérifié en jeu** | Mapping documenté ; tests Studio par commandes injectées ; volant non traité |
+| Direction, accélération, freinage, marche arrière, caméra proche/lointaine | Conforme, vérifié en Studio | Marche arrière par maintien de « freiner » à l'arrêt |
+| Masse, inertie, freinage, adhérence ; pas de vitesse instantanée | Conforme, vérifié en Studio | ≈ 14,5 km/h après 1 s, 0–100 km/h ≈ 8,5 s, 100–0 ≈ 47,5 m mesurés dans le moteur |
 | Paramètres isolés par modèle | Conforme | `Definitions/PrototypeP01.luau`, validés et gelés |
 | Architecture compatible FWD/RWD/AWD, thermique/électrique, transmissions, aides | Partiel | Points d'extension typés ; seuls RWD + thermique + automatique sont implémentés ; le reste est **refusé** par la validation |
-| Conduite réactive client, validation serveur, tolérance réseau | Conforme, non vérifié en jeu | Propriété réseau au conducteur, `MovementRules` à seuils souple/dur, corrections sans sanction |
-| Plusieurs joueurs sans écrasement d'état | Conforme, non vérifié en jeu | État par véhicule, un conducteur par véhicule, un véhicule par joueur |
+| Conduite réactive client, validation serveur, tolérance réseau | Conforme, vérifié en Studio | Propriété réseau au conducteur, téléportation corrigée sans sanction, aucune fausse correction sous ~205 ms de latence |
+| Plusieurs joueurs sans écrasement d'état | Conforme, vérifié en Studio | Deux clients, deux véhicules, véhicule occupé refusé ; défaut de sortie en multijoueur trouvé et corrigé |
 | Aucun crédit, possession, achat, DataStore, récompense | Conforme | Vérifié par motifs interdits (Lune + pytest) ; identifiant de session `essai-…` non persistant |
 | Séparation client / serveur / partagé | Conforme | Vérifiée par tests (structure de place, règles pytest) |
 | Luau typé, commentaires en français | Conforme | `--!strict` sur tous les modules ; 0 erreur luau-lsp |
@@ -35,16 +36,16 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 | §3.2 | Boîtes automatique, manuelle, double embrayage, séquentielle, CVT | Partiel — automatique simplifiée seulement |
 | §3.2 | Thermique et électrique | Partiel — thermique seulement, sans consommation |
 | §3.2 | Grip sec/pluie, transfert de charge | Partiel — transfert de charge émergent de la physique 3D (non mesuré) ; pluie non commencée |
-| §3.2 / AUD-PHYS-01 | Commandes réactives, contrôles serveur des états critiques, sans punir la latence | Conforme, non vérifié en jeu — contrôle grossier (vitesse, déplacement, valeurs non finies) ; collisions et trajectoires murales non contrôlées |
+| §3.2 / AUD-PHYS-01 | Commandes réactives, contrôles serveur des états critiques, sans punir la latence | Conforme, vérifié en Studio — contrôle grossier (vitesse, déplacement, valeurs non finies) ; collisions et trajectoires murales non contrôlées |
 | §3.3 | Dégâts 3 niveaux, effets mécaniques, persistance | Non commencé (lot 0.2 proposé) |
 | §3.3 | Carburant / énergie consommés et sauvegardés | Non commencé |
-| §3.4 | Caméras proche/lointaine | Conforme, non vérifié en jeu |
+| §3.4 | Caméras proche/lointaine | Conforme, vérifié en Studio (distances), rendu non vérifié |
 | §3.4 | Cockpit, capot, pare-chocs, mode photo | Non commencé |
 | §3.4 / AUD-INPUT-01 | Indications selon le périphérique actif, pas d'action involontaire | Partiel — aide du HUD selon le dernier périphérique ; contrôles par défaut désactivés en conduite ; sortie bloquée au-dessus de 20 km/h |
 | §3.5 | Désenlisement gratuit et limité, sans effet sur dégâts/carburant | Partiel — remise sur roues (immobile, renversé, délai 8 s) ; pas encore de désenlisement hors retournement |
 | §7.1 | HUD vitesse, boîte, régime, alertes | Partiel — HUD **de développement** seulement ; pas d'alertes hiérarchisées ni de GPS |
 | §7.4 / AUD-L10N-01 | Textes essentiels FR/EN | Partiel — messages serveur envoyés par clé ; textes en français uniquement |
-| §8.1 | Simulation hybride, faux positifs sans sanction automatique | Conforme, non vérifié en jeu — journalisation + repositionnement, aucune sanction |
+| §8.1 | Simulation hybride, faux positifs sans sanction automatique | Conforme, vérifié en Studio — journalisation + repositionnement, aucune sanction |
 | §8.5 / AUD-ENV-01 | Environnements isolés, données synthétiques, pas d'accès production | Conforme — aucune donnée, place non publiée, accès API à laisser désactivé |
 | §10.2 | Premier spawn avec protections temporaires anti-collision | Non commencé (point d'apparition sans champ de force) |
 | AUD-PERF-01/02 | 24 joueurs, ~60 FPS, percentiles de temps d'image | Non mesuré — aucune donnée de performance |
@@ -63,12 +64,14 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 
 ## 4. Limites techniques connues
 
-- **Aucun essai en Studio** : comportement réel, réglages de suspension, sensation de conduite et caméra non vérifiés.
+- Essais Studio automatisés uniquement : clavier, manette, rendu, ressenti, collisions entre véhicules, bosse, slalom,
+  remise sur roues d'un véhicule renversé et retour au plot restent à vérifier.
+- Sous latence, la vue du client reste décalée ~0,5 s après une correction serveur avant de se recaler.
 - Pas de frottement statique : un véhicule freiné sur une pente glisse très lentement (de l'ordre du cm/s selon le modèle).
 - Un seul rayon par roue : une roue peut « tomber » dans un interstice ou accrocher une arête vive ; un balayage de
   forme (shapecast) est proposé pour le lot 0.2.
 - Inertie du châssis approximée par un bloc homogène (inertie de roulis inférieure à celle d'une voiture réelle).
-- Taille de l'avatar par rapport à l'habitacle non vérifiée (la tête peut dépasser du toit vitré).
-- Les valeurs du modèle (0–100 km/h, 100–0 km/h, vitesse de pointe) proviennent du banc planaire et différeront en jeu.
+- Taille de l'avatar par rapport à l'habitacle non vérifiée visuellement (la tête peut dépasser du toit vitré).
+- Vitesse de pointe non mesurée en jeu ; le freinage en jeu (≈ 47,5 m) est plus long que dans le modèle planaire (40,2 m).
 - La validation serveur ne détecte ni le vol, ni le passage à travers les murs, ni les trajectoires impossibles à vitesse plausible.
 - Coût réseau des véhicules stationnés simulés par le serveur : limité par seuils et mise en sommeil, **non mesuré**.

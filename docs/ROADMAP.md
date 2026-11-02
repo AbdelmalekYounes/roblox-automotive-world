@@ -20,8 +20,9 @@ L'ordre décrit des lots de travail, pas une réduction du périmètre final.
 
 - Code livré : zone d'essai isolée, prototype P-01, conduite clavier/manette, dynamique paramétrable, validation serveur.
 - Vérifié hors Studio : build Rojo, lint Selene, format StyLua, typage strict luau-lsp, 66 tests Lune, 8 contrôles pytest.
-- **Non encore vérifié** : comportement dans Roblox Studio (spawn, embarquement, conduite, caméra, sortie),
-  essais à deux clients et avec latence. Le lot n'est pas clos tant que ces essais ne sont pas réalisés.
+- Vérifié dans Roblox Studio (VM VMware, `test-vm.cmd`) : 149/149 contrôles sur les sessions solo, deux joueurs et
+  latence (~205 ms) ; un défaut réel (sortie en multijoueur) trouvé et corrigé.
+- **Non encore vérifié** : clavier et manette réels, rendu visuel, collisions entre véhicules, ressenti.
 - Rapport : `docs/lot-0.1/RAPPORT_TESTS.md` ; écarts : `docs/lot-0.1/ECARTS.md` ; suite : `docs/lot-0.1/PROPOSITION_LOT_0.2.md`.
 
 ## Critères de passage du socle 0.0.1
