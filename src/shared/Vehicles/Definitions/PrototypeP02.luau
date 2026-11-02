@@ -29,7 +29,9 @@ local definition: Types.VehicleDefinition = {
 
     -- Suspension plus souple que celle du P-01 (≈ 1,4 Hz avant, 1,5 Hz arrière).
     Suspension = {
-        ContactProbe = "Ray",
+        -- Sonde de contact : balayage de sphère, retenu d'après les mesures en Studio
+        -- (bordures de 12 cm : pic vertical −37 à −41 %, ≈ +7 µs par pas ; RAPPORT_LOT_0.2).
+        ContactProbe = "Sphere",
         Front = {
             RestLengthM = 0.2,
             TravelM = 0.2,

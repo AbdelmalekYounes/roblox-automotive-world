@@ -188,6 +188,36 @@ return function(T: any, H: any)
         T.equal(state.Wheels[4].EscBrakeTorque, 0, "arrière qui dérive : pas de freinage arrière intérieur")
     end)
 
+    T.test("ESP : changement de file à 80 km/h sur mouillé, dérive nettement réduite", function()
+        local function laneChange(esc: boolean): number
+            local peak = 0
+            PlanarSim.run(Dynamics, P03, {
+                Dt = DT,
+                Duration = 4,
+                InitialForward = 80 / 3.6,
+                Wet = true,
+                Prepare = function(state)
+                    state.Aids.StabilityControl = esc
+                end,
+                Input = function(t, s)
+                    peak = math.max(peak, math.abs(math.atan2(s.Lateral, math.max(s.Forward, 1))))
+                    local steer = if t < 0.5 then 0.8 elseif t < 1 then -0.8 else 0
+                    return input(0.3, 0, steer)
+                end,
+            })
+            return peak
+        end
+        local off, on = laneChange(false), laneChange(true)
+        T.truthy(on < off * 0.5, string.format("%.1f° < 0,5 × %.1f°", math.deg(on), math.deg(off)))
+        T.note(
+            string.format(
+                "P-03, changement de file à 80 km/h sur mouillé : dérive max %.1f° sans ESP, %.1f° avec",
+                math.deg(off),
+                math.deg(on)
+            )
+        )
+    end)
+
     T.test("le filtre de braquage A1 reste indépendant des aides", function()
         local state = Dynamics.createState(P03)
         state.Aids.StabilityControl = true

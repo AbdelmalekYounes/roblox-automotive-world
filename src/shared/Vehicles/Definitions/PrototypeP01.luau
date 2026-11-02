@@ -33,8 +33,9 @@ local definition: Types.VehicleDefinition = {
 
     -- Fréquences propres visées ≈ 1,6 Hz (avant) et 1,7 Hz (arrière).
     Suspension = {
-        -- Sonde de contact : choix fondé sur les mesures du lot 0.2 (docs/lot-0.2).
-        ContactProbe = "Ray",
+        -- Sonde de contact : balayage de sphère, retenu d'après les mesures en Studio
+        -- (bordures de 12 cm : pic vertical −37 à −41 %, ≈ +7 µs par pas ; RAPPORT_LOT_0.2).
+        ContactProbe = "Sphere",
         Front = {
             RestLengthM = 0.2,
             TravelM = 0.2,

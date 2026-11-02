@@ -574,20 +574,18 @@ local function escStage(stage: string, enabled: boolean)
     setAid("StabilityControl", enabled)
     local start = root.Position
     waitFor(function()
-        drive(Vector3.new(start.X, 0, root.Position.Z - 80), 62)
-        return snapshot().SpeedKmh >= 60
+        drive(Vector3.new(start.X, 0, root.Position.Z - 80), 82)
+        return snapshot().SpeedKmh >= 80
     end, 15)
-    -- Coup de volant avec frein à main bref sur mouillé.
+    -- Changement de file brusque sur mouillé, sans frein à main (manœuvre
+    -- retenue après essais sur le banc : survirage net sans aide).
     local peakBeta, peakYaw = 0, 0
     local escActive = false
     local started = os.clock()
     waitFor(function()
         local t = os.clock() - started
-        if t < 0.6 then
-            setCommand(0.3, 0, 0.8, t > 0.15 and t < 0.45)
-        else
-            setCommand(0.2, 0, 0.25)
-        end
+        local steer = if t < 0.5 then 0.8 elseif t < 1 then -0.8 else 0
+        setCommand(0.3, 0, steer)
         local velocity = root.AssemblyLinearVelocity
         local forward = velocity:Dot(root.CFrame.LookVector)
         local lateral = velocity:Dot(root.CFrame.RightVector)

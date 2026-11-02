@@ -38,8 +38,22 @@ local TIRE_LIMIT_MS2 = 1.3 * 1.25 * 9.81
 local TOLERANCE_MS = 0.8
 local CONTACT_MARGIN_STUDS = 1.2
 local VEHICLE_COOLDOWN_S = 0.4
+-- Durée de suivi d'un choc : la variation de vitesse TOTALE est mesurée sur cette
+-- durée, puis appliquée une seule fois (mesuré dans Studio : sans suivi, un choc à
+-- 35 km/h était découpé en petits chocs de ~2 m/s par l'arrivée des données répliquées).
+local EVENT_S = 0.4
 local PAIR_COOLDOWN_S = 1.2
 local RESTITUTION = 0.3
+
+type ImpactEvent = {
+    Start: number,
+    Before: Vector3,
+    Push: Vector3,
+    PeakExcess: number,
+    Obstacle: string,
+    Other: any?,
+    OtherBefore: Vector3,
+}
 
 export type Entry = {
     Model: Model,
@@ -49,6 +63,7 @@ export type Entry = {
     History: { { Time: number, Velocity: Vector3 } },
     CooldownUntil: number,
     SuspendedUntil: number,
+    Event: ImpactEvent?,
     Visual: { [string]: number }, -- niveau visuel appliqué par zone
     Smoke: boolean,
 }
@@ -112,6 +127,7 @@ function DamageService.register(self: Service, model: Model, definition: Types.V
         History = {},
         CooldownUntil = 0,
         SuspendedUntil = 0,
+        Event = nil,
         Visual = { Front = 0, Rear = 0, Left = 0, Right = 0 },
         Smoke = false,
     }
@@ -422,16 +438,57 @@ end
     Un battement : échantillonne chaque véhicule et confirme les chocs.
     `skip(model)` : vrai si le serveur corrige ce véhicule (pas de détection).
 ]]
+-- Fin de suivi d'un choc : application unique, bornée physiquement pour une paire.
+local function finalize(self: Service, entry: Entry, event: ImpactEvent, now: number)
+    local other = event.Other :: Entry?
+    if other then
+        local massA = entry.Definition.Chassis.MassKg
+        local massB = other.Definition.Chassis.MassKg
+        local closing = math.max(0, horizontal(event.Before - event.OtherBefore):Dot(-event.Push))
+        local own = math.min(event.PeakExcess, (1 + RESTITUTION) * massB / (massA + massB) * closing + TOLERANCE_MS)
+        local theirs = math.min(event.PeakExcess * massA / massB, (1 + RESTITUTION) * massA / (massA + massB) * closing)
+        inflict(self, entry, -event.Push, own, other.Model.Name)
+        inflict(self, other, event.Push, theirs, entry.Model.Name)
+        other.CooldownUntil = now + VEHICLE_COOLDOWN_S
+    else
+        inflict(self, entry, -event.Push, event.PeakExcess, event.Obstacle)
+    end
+end
+
+--[[
+    Un battement : échantillonne chaque véhicule, ouvre un suivi de choc quand
+    une variation de vitesse impossible pour les pneus coïncide avec un obstacle
+    au contact, et applique le choc à la fin du suivi.
+    `skip(model)` : vrai si le serveur corrige ce véhicule (pas de détection).
+]]
 function DamageService.step(self: Service, now: number, skip: (Model) -> boolean)
     local started = os.clock()
     for _, entry in self.Entries do
         local root = entry.Root
         if root.Parent == nil or root.Anchored or skip(entry.Model) or now < entry.SuspendedUntil then
             table.clear(entry.History)
+            entry.Event = nil
             continue
         end
         local velocity = root.AssemblyLinearVelocity * METERS_PER_STUD
         local history = entry.History
+        local event = entry.Event
+        if event then
+            -- Variation totale depuis la vitesse d'avant le choc.
+            local delta = horizontal(velocity - event.Before)
+            local excess = delta.Magnitude - (TIRE_LIMIT_MS2 * (now - event.Start) + TOLERANCE_MS)
+            if excess > event.PeakExcess and delta.Magnitude > 1e-3 then
+                event.PeakExcess = excess
+                event.Push = delta.Unit
+            end
+            if now - event.Start >= EVENT_S then
+                entry.Event = nil
+                entry.CooldownUntil = now + VEHICLE_COOLDOWN_S
+                table.clear(history)
+                finalize(self, entry, event, now)
+            end
+            continue
+        end
         local worstExcess, worstDelta, worstTime = 0, Vector3.zero, now
         for _, sample in history do
             local delta = horizontal(velocity - sample.Velocity)
@@ -456,33 +513,27 @@ function DamageService.step(self: Service, now: number, skip: (Model) -> boolean
             self.Unconfirmed += 1
             continue
         end
-        entry.CooldownUntil = now + VEHICLE_COOLDOWN_S
-        -- Vitesse d'avant le choc relevée AVANT d'effacer l'historique (mesuré dans
-        -- Studio : l'effacer d'abord faisait prendre la vitesse d'après le choc et
-        -- sous-estimait le rapprochement, le percuteur n'avait aucun dégât).
-        local before = velocityAt(entry, worstTime)
-        table.clear(history)
         local otherModel = vehicleOf(obstacle)
         local other = if otherModel then self.ByModel[otherModel] else nil
+        local otherBefore = Vector3.zero
         if other then
+            -- Un seul suivi par paire : celui du premier véhicule qui détecte le choc.
             local key = pairKey(entry.Model, other.Model)
-            if now < (self.PairCooldowns[key] or 0) then
+            if now < (self.PairCooldowns[key] or 0) or other.Event ~= nil then
                 continue
             end
             self.PairCooldowns[key] = now + PAIR_COOLDOWN_S
-            other.CooldownUntil = now + VEHICLE_COOLDOWN_S
-            -- Bornes physiques à partir des vitesses observées avant le choc.
-            local massA = entry.Definition.Chassis.MassKg
-            local massB = other.Definition.Chassis.MassKg
-            local otherBefore = velocityAt(other, worstTime)
-            local closing = math.max(0, horizontal(before - otherBefore):Dot(-push))
-            local own = math.min(worstExcess, (1 + RESTITUTION) * massB / (massA + massB) * closing + TOLERANCE_MS)
-            local theirs = math.min(worstExcess * massA / massB, (1 + RESTITUTION) * massA / (massA + massB) * closing)
-            inflict(self, entry, -push, own, other.Model.Name)
-            inflict(self, other, push, theirs, entry.Model.Name)
-        else
-            inflict(self, entry, -push, worstExcess, obstacle.Name)
+            otherBefore = velocityAt(other, worstTime)
         end
+        entry.Event = {
+            Start = worstTime,
+            Before = velocityAt(entry, worstTime),
+            Push = push,
+            PeakExcess = worstExcess,
+            Obstacle = obstacle.Name,
+            Other = other,
+            OtherBefore = otherBefore,
+        }
     end
     PerfStats.add(self.StepTimes, os.clock() - started)
 end

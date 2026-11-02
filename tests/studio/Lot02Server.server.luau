@@ -193,8 +193,8 @@ runStage("abs_off", p03, ground(p03, -470, 280), 90)
 runStage("abs_on", p03, ground(p03, -470, 280), 90)
 runStage("tc_off", p02, ground(p02, -470, 80), 90)
 runStage("tc_on", p02, ground(p02, -470, 80), 90)
-runStage("esc_off", p03, ground(p03, -500, 95), 90)
-runStage("esc_on", p03, ground(p03, -500, 95), 90)
+runStage("esc_off", p03, ground(p03, -490, 95), 90)
+runStage("esc_on", p03, ground(p03, -490, 95), 90)
 runStage("freinage_sec", p03, ground(p03, 0, 0), 90)
 
 -- P3 : maintien en pente (rampe à 10 %, milieu de la montée, cap nord).
