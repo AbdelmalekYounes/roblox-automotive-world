@@ -90,12 +90,36 @@ return function(T: any, H: any)
         T.equal(Exchange.assess(pushed, MASS, realStriker, MASS, -1, 0, NOW), nil)
     end)
 
-    T.test("éjection numérique d'un véhicule garé : vitesse plausible bornée", function()
-        -- Choc à 5,4 m/s : jamais plus de 2 × 5,4 + 1 m/s pour le véhicule percuté.
-        T.near(Exchange.maxPlausibleSpeed(0, 5.4, 1 / 60), 13.8, 1e-9) -- 2 × 5,4 + 3 m/s (éjection mesurée : 59 m/s)
-        -- Hors choc : accélération bornée d'un pas au suivant (chute libre comprise).
-        T.near(Exchange.maxPlausibleSpeed(30, 0, 1 / 60), 30 + 50 / 60, 1e-9)
-        T.truthy(Exchange.maxPlausibleSpeed(0, 0, 1 / 60) >= 9.81 / 60, "la gravité reste possible")
+    T.test("éjection numérique d'un véhicule garé : vitesse horizontale bornée par le choc", function()
+        -- Choc à 5,4 m/s : jamais plus de 2 × 5,4 + 3 = 13,8 m/s (éjections mesurées : 47 et 59 m/s).
+        local vx, _, _, limited = Exchange.limitServerVelocity(59, 0, 0, 0, 5.4)
+        T.near(vx, 13.8, 1e-9)
+        T.truthy(limited)
+    end)
+
+    T.test("poussée numérique soutenue : la vitesse ne croît plus au-delà de la borne", function()
+        -- Mesuré : une borne autorisant +50 m/s² laissait monter de 5 à 24 m/s en ~0,4 s.
+        local previous = 0
+        for _ = 1, 120 do
+            local vx = Exchange.limitServerVelocity(previous + 0.9, 0, 0, previous, 1)
+            previous = vx
+        end
+        T.near(previous, 5, 1e-9, "plafonnée à 2 × 1 + 3 m/s")
+    end)
+
+    T.test("chute libre et mouvements lents non affectés", function()
+        local _, vy, _, limited = Exchange.limitServerVelocity(0, -40, 0, 0, 0)
+        T.near(vy, -40, 1e-9, "la chute reste libre")
+        T.equal(limited, false)
+        local vx, _, _, slow = Exchange.limitServerVelocity(2, 0, 0, 2, 0)
+        T.near(vx, 2, 1e-9)
+        T.equal(slow, false)
+        -- Véhicule quitté en roulant à 20 km/h (5,6 m/s) : pas freiné par la borne.
+        local rolling, _, _, braked = Exchange.limitServerVelocity(5.5, 0, 0, 5.6, 0)
+        T.near(rolling, 5.5, 1e-9)
+        T.equal(braked, false)
+        local _, up = Exchange.limitServerVelocity(0, 20, 0, 0, 0)
+        T.near(up, 3, 1e-9, "pas d'envol")
     end)
 
     T.test("complément : seule la part non reçue est appliquée, jamais retirée", function()

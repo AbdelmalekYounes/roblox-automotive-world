@@ -159,14 +159,40 @@ function CollisionExchange.alreadyReceived(normalSpeedsHistory: { number }, curr
     return math.max(rise, current - lowest)
 end
 
--- Vitesse maximale physiquement plausible (m/s) pour un véhicule simulé par le
--- serveur, d'un pas au suivant. Un choc ne peut pas donner au véhicule percuté
--- plus de 2 fois la vitesse du percuteur (choc élastique, quelles que soient les
--- masses) ; hors choc, l'accélération reste bornée (gravité, suspension).
--- Sert à neutraliser les éjections numériques observées quand la copie
--- répliquée d'un véhicule piloté pénètre un véhicule garé.
-function CollisionExchange.maxPlausibleSpeed(previousSpeedMs: number, nearbyMaxSpeedMs: number, dt: number): number
-    return math.max(previousSpeedMs + 50 * dt, 2 * nearbyMaxSpeedMs + 3)
+-- Borne physique de la vitesse (m/s) d'un véhicule simulé par le serveur : un
+-- choc ne peut pas donner au véhicule percuté plus de 2 fois la vitesse du
+-- percuteur (choc élastique, quelles que soient les masses). Sert à neutraliser
+-- les éjections numériques mesurées dans Studio (véhicule garé projeté à 47 et
+-- 59 m/s après un choc à 5,4 m/s) quand la copie répliquée d'un véhicule piloté
+-- pénètre un véhicule garé. Mesuré aussi : une borne qui laissait croître la
+-- vitesse d'un pas à l'autre (50 m/s²) était contournée par une poussée
+-- numérique soutenue ; au-delà de la borne, la vitesse ne peut donc plus croître.
+-- - horizontal et montée : jamais au-delà de max(borne de choc, valeur précédente
+--   déjà admise) ;
+-- - chute : libre (gravité).
+-- Entrées et sorties en m/s ; renvoie la vitesse bornée et vrai si elle a été réduite.
+function CollisionExchange.limitServerVelocity(
+    vx: number,
+    vy: number,
+    vz: number,
+    previousHorizontalMs: number,
+    nearbyMaxSpeedMs: number
+): (number, number, number, boolean)
+    local bound = 2 * nearbyMaxSpeedMs + 3
+    local horizontalLimit = math.max(bound, previousHorizontalMs)
+    local horizontal = math.sqrt(vx * vx + vz * vz)
+    local limited = false
+    if horizontal > horizontalLimit then
+        local scale = horizontalLimit / horizontal
+        vx *= scale
+        vz *= scale
+        limited = true
+    end
+    if vy > bound then
+        vy = bound
+        limited = true
+    end
+    return vx, vy, vz, limited
 end
 
 -- Complément à appliquer : jamais négatif, jamais plus que la cible.

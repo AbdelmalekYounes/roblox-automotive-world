@@ -70,6 +70,7 @@ type VehicleRecord = {
     LastSteer: number,
     OwnershipFailures: number,
     LastServerSpeed: number,
+    LastEjectionLog: number,
 }
 
 type Limiters = {
@@ -163,7 +164,14 @@ end
 -- Jamais les deux : le serveur ne simule que si ServerOwned, et le client ne
 -- simule que si l'attribut SimulationOwnerUserId porte son UserId.
 local function applySimulationOwner(record: VehicleRecord, owner: Player?)
+    local becomesServerOwned = owner == nil and not record.ServerOwned
     record.ServerOwned = owner == nil
+    if becomesServerOwned then
+        -- Vitesse horizontale au moment de la reprise (sortie en roulant, ≤ 20 km/h) :
+        -- référence de la borne d'éjection, pour ne pas freiner un véhicule qui roule.
+        local velocity = record.Root.AssemblyLinearVelocity * METERS_PER_STUD
+        record.LastServerSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
+    end
     if record.ServerOwned then
         -- Le serveur reprend la simulation avec un état neuf (frein à main serré).
         record.Simulator = VehicleSimulator.new(record.Model, record.Definition, { ReplicationFriendly = true })
@@ -512,31 +520,36 @@ end
 -- éjections numériques (mesurées : 79 et 250 st) quand la copie répliquée d'un
 -- véhicule piloté pénètre un véhicule garé. Aucune téléportation : seule la
 -- vitesse est ramenée à la borne, et l'événement est journalisé.
-local function limitImplausibleSpeed(record: VehicleRecord, dt: number)
+local function limitImplausibleSpeed(record: VehicleRecord)
     local root = record.Root
-    local speed = root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD
+    local velocity = root.AssemblyLinearVelocity * METERS_PER_STUD
     local nearbyMax = 0
     for _, other in records do
         if other ~= record and (other.Root.Position - root.Position).Magnitude < NEARBY_VEHICLE_STUDS then
             nearbyMax = math.max(nearbyMax, other.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD)
         end
     end
-    local limit = CollisionExchange.maxPlausibleSpeed(record.LastServerSpeed, nearbyMax, dt)
-    if speed > limit then
-        local scale = limit / speed
-        root.AssemblyLinearVelocity *= scale
+    local vx, vy, vz, limited =
+        CollisionExchange.limitServerVelocity(velocity.X, velocity.Y, velocity.Z, record.LastServerSpeed, nearbyMax)
+    if limited then
+        local bounded = Vector3.new(vx, vy, vz)
+        local scale = bounded.Magnitude / math.max(velocity.Magnitude, 1e-6)
+        root.AssemblyLinearVelocity = bounded / METERS_PER_STUD
         root.AssemblyAngularVelocity *= scale
-        warn(
-            string.format(
-                "[AutomotiveWorld][Validation] Éjection physiquement impossible limitée sur %s (%.1f → %.1f m/s), sans téléportation.",
-                tostring(record.Model:GetAttribute(Constants.Attributes.VehicleId)),
-                speed,
-                limit
+        local now = os.clock()
+        if now - record.LastEjectionLog > 1 then
+            record.LastEjectionLog = now
+            warn(
+                string.format(
+                    "[AutomotiveWorld][Validation] Éjection physiquement impossible limitée sur %s (%.1f → %.1f m/s), sans téléportation.",
+                    tostring(record.Model:GetAttribute(Constants.Attributes.VehicleId)),
+                    velocity.Magnitude,
+                    bounded.Magnitude
+                )
             )
-        )
-        speed = limit
+        end
     end
-    record.LastServerSpeed = speed
+    record.LastServerSpeed = math.sqrt(vx * vx + vz * vz)
 end
 
 -- Simulation serveur d'un véhicule stationné. Une fois immobile, le véhicule
@@ -733,6 +746,7 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
             LastSteer = 0,
             OwnershipFailures = 0,
             LastServerSpeed = 0,
+            LastEjectionLog = 0,
         }
         table.insert(records, record)
         setOwner(record, nil)
@@ -761,7 +775,7 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
     RunService.PreSimulation:Connect(function(dt)
         for _, record in records do
             if record.ServerOwned then
-                limitImplausibleSpeed(record, dt)
+                limitImplausibleSpeed(record)
                 stepServerVehicle(record, dt)
             else
                 record.LastServerSpeed = 0
