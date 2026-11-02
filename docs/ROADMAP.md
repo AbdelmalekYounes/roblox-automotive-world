@@ -22,8 +22,8 @@ L'ordre décrit des lots de travail, pas une réduction du périmètre final.
 - Vérifié hors Studio : build Rojo, lint Selene, format StyLua, typage strict luau-lsp, 100 tests Lune, 8 contrôles pytest.
 - Vérifié dans Roblox Studio (VM VMware, `test-vm.cmd`, 6 sessions) : collisions entre joueurs corrigées (poussée du
   même ordre qu'un véhicule garé), propriété réseau vérifiée (refus, correction, déconnexion), arbitrages A1–A6 appliqués.
-- **Ouvert avant clôture** : anomalie intermittente (client attribué qui ne simule pas son véhicule), essais humains
-  clavier/manette/chat et ressenti, migration du partage de la VM.
+- **Ouvert avant clôture** : anomalie intermittente (mouvement d'un véhicule piloté qui n'atteint pas le serveur
+  pendant quelques secondes), essais humains clavier/manette/chat et ressenti. VM de test restreinte au dossier d'échange.
 - Rapports : `docs/lot-0.1/RAPPORT_VALIDATION.md` (final), `RAPPORT_TESTS.md` (historique) ; écarts et arbitrages :
   `docs/lot-0.1/ECARTS.md` ; suite : `docs/lot-0.1/PROPOSITION_LOT_0.2.md` (non commencée).
 

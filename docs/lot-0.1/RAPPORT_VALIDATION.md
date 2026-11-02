@@ -1,7 +1,8 @@
 # Rapport de validation final — lot 0.1
 
 **Date** : 2 novembre 2026 · **Branche** : `feat/vehicle-vertical-slice-0.1` · **PR** : #1 · **Version** : `0.1.0-dev`
-**Commits de la finalisation** : `2573c77` (corrections), `7ae0c60` (borne d'éjection), puis documentation et
+**Commits de la finalisation** : `2573c77` (corrections), `7ae0c60` (borne d'éjection), `b60ab52` (rapports), puis
+vérification après migration de la VM (vérification d'impulsion, diagnostics) et
 diagnostic de test (voir l'historique Git).
 
 Ce rapport couvre la **finalisation** du lot 0.1 demandée après la première revue : collisions multijoueurs,
@@ -23,14 +24,14 @@ Ce qui est fait et vérifié :
 - Contrôles hors Studio : tous verts (§2).
 
 Ce qui empêche de recommander la fusion :
-1. **Anomalie intermittente non expliquée** (§5.1) : le serveur attribue et confirme la propriété réseau d'un
-   véhicule à un client, mais ce client ne le simule pas effectivement. Observée sur le code final dans 1 campagne
-   complète sur 2 (13 contrôles en échec pour un client de la session « latence »), et pendant la mise au point dans
-   des essais de collision ; non reproduite lors de la dernière exécution. Elle existait déjà avant les modifications
-   (tâche `164243`). Un diagnostic est maintenant enregistré automatiquement pour la capturer.
+1. **Anomalie intermittente non expliquée** (§5.1) : le mouvement d'un véhicule piloté n'atteint pas le serveur
+   pendant plusieurs secondes, puis arrive d'un coup (correction « Teleport », sans sanction). Elle existait déjà
+   avant les modifications (tâche `164243`). Observée dans 2 des 3 campagnes complètes sur le code final (dont une
+   fois avec 13 contrôles en échec pour un client de la session « latence »). Une hypothèse (propriété non effective
+   chez le client) a été testée et **réfutée**. Des diagnostics côté client et côté serveur sont en place.
 2. **Essais humains** encore à faire : clavier et manette réels, saisie dans le chat, ressenti (§4).
-3. **Migration de la VM** à terminer par le propriétaire : changement de dossier partagé dans VMware Workstation
-   (la VM chiffrée exige un mot de passe que les scripts ne gèrent pas), puis `guest-setup.ps1` dans la VM (§6).
+
+La migration de la VM est **terminée et vérifiée** (§6).
 
 ## 2. Commandes exécutées hors Studio
 
@@ -70,10 +71,13 @@ Exécutés par `test-vm.cmd` dans la VM VMware (Studio 0.745.0.7451137), sans to
 | `181719` | `7ae0c60` | solo, scenarios | **81 / 0 / 1 ⚠️** | Départ immobile non reproduit |
 | `182028` | `7ae0c60` | 6 sessions | 314 / **14** / 2 ⚠️ | **Anomalie §5.1** : un client de la session « latence » ne simule pas |
 | `183321` | `7ae0c60` + diagnostic de test | latence, multijoueur, collision | **188 / 0 / 0** | Anomalie non reproduite ; diagnostic opérationnel |
+| `190622` | `b60ab52`, **agent v2** | 6 sessions | 326 / 2 / 2 ⚠️ | 1ʳᵉ campagne après migration ; **294 captures** ; anomalie reproduite (`collision_latence`) ; impulsion « non constatée » = artefact de vérification (corrigé ensuite) |
+| `192012` | + vérification d'impulsion corrigée, récupération de propriété expérimentale | 6 sessions | 330 / 1 / 2 ⚠️ | Anomalie reproduite, `ReceiveAge` client = 0 : hypothèse réfutée, récupération retirée |
+| `193233` | + diagnostic serveur | collision_latence ×2 | 119 / 1 / 0 | Anomalie non reproduite (données reçues ≤ 0,13 s) ; 1 percuté conduit poussé 9,06 st (§5.2) |
 
 Mesures de conduite (tâche `182028`, sessions saines) : 0–100 km/h ≈ 8,57 s ; 100–0 km/h ≈ 47,5 m (48,9 m sous
-latence, ping mesuré 223–230 ms) ; bosse 6,5° ; slalom 0 cône déplacé ; retour au plot après 90 s. Aucune capture
-d'écran : l'agent actuel de la VM (v1) ne transmet pas le source de l'outil de capture (§6).
+latence, ping mesuré 223–230 ms) ; bosse 6,5° ; slalom 0 cône déplacé ; retour au plot après 90 s. Captures
+d'écran : aucune avec l'agent v1 ; 294 dans `190622` avec l'agent v2 (§6).
 
 ### 3.1 Collisions entre véhicules de deux joueurs
 
@@ -131,12 +135,20 @@ gestionnaires, en plus de celui du moteur) : vérifié par lecture du code, pas 
   (⚠️), et session « latence », client 1 : roues
   jamais au sol, vitesse nulle, téléportation de test non vue par le serveur (13 contrôles en échec), alors que le
   serveur relevait le joueur 1 comme propriétaire réseau et l'attribut comme conforme.
-- **Non reproduite** dans `172425`, `175728`, `180955`, `181719`, `183321`.
-- **Ce qui a été tenté** : recalage de la copie locale sur la position serveur à l'attribution (jamais déclenché),
-  vérification permanente du propriétaire réseau (aucun écart relevé pendant l'anomalie).
-- **Suite proposée** : le diagnostic ajouté (`diag_embarquement_*`, `diag_repos_*` : simulation active, attribut,
-  ancrage local, `ReceiveAge`, écart à la position serveur, roues au sol) sera enregistré à la prochaine occurrence ;
-  relancer plusieurs campagnes après la migration de la VM pour la capturer. Le cas ne peut pas être exclu en jeu réel.
+- Reproduite aussi dans `190622` et `192012` (essai 5 de `collision_latence`, après une sortie puis un
+  réembarquement suivant un repositionnement par le serveur de test) ; **non reproduite** dans `172425`, `175728`,
+  `180955`, `181719`, `183321`, `193233` (12 essais).
+- **Ce qui a été tenté** : recalage de la copie locale sur la position serveur à l'attribution (jamais déclenché) ;
+  vérification permanente du propriétaire réseau (aucun écart relevé) ; hypothèse « propriété annoncée mais non
+  effective chez le client » : `ReceiveAge` côté client mesuré à 0 au départ de l'essai fautif (le client possédait
+  bien le véhicule) — **réfutée**, et le mécanisme de récupération correspondant a été retiré.
+- **Ce qu'on sait** : client propriétaire et simulant (`ReceiveAge` = 0), serveur le relevant comme propriétaire, mais
+  le serveur ne voit pas le véhicule avancer, puis voit un saut. La remontée client → serveur est donc en cause.
+- **Diagnostics en place** : côté client `diag_*` (ClientSuite) et `ReceiveAge`/recalages au départ de chaque essai ;
+  côté serveur, déplacement du percuteur et âge maximal des données reçues de son client (`ReceiveAge` serveur) dans
+  chaque essai de collision. À la prochaine occurrence, ils diront si les données du client cessent d'arriver.
+- Le cas ne peut pas être exclu en jeu réel ; il n'a jamais été vu en dehors d'un réembarquement rapide suivant un
+  repositionnement par le serveur de test.
 
 ### 5.2 Autres limites
 
@@ -145,17 +157,20 @@ gestionnaires, en plus de celui du moteur) : vérifié par lecture du code, pas 
   pouvoir conduire (⚠️ limite connue, jamais comptée comme réussie).
 - Une fois (`180955`), les 4 véhicules n'étaient pas encore immobiles 4 s après le démarrage (1,04 st/s) ;
   non reproduit ensuite ; un lien avec la borne d'éjection n'est pas exclu.
+- Variabilité résiduelle du percuté conduit : dans `193233`, un véhicule a glissé 9,06 st (critère : ≤ 2,5 × la
+  médiane « garé », ici 2,85 st). Le complément appliqué valait 0 : c'est sa propre simulation qui l'a poussé fort,
+  la copie du percuteur arrivant encore vite (14,6 st/s). Le complément ne retire jamais d'impulsion (§4.2 de `ECARTS.md`).
 - Limites antérieures inchangées : `ECARTS.md` §5.
 
 ## 6. Sécurité de la VM de test
 
 | Exigence | État |
 |---|---|
-| Écritures de la VM limitées au dossier d'échange | **Scripts prêts, migration à terminer** : dossier `E:\ROBLOX DEV\aw-vm-exchange` créé hors du dépôt, `setup\` publié ; le changement de partage via `vmrun` a été **refusé** (VM chiffrée : mot de passe requis, non demandé ni stocké). À faire dans VMware Workstation, puis `guest-setup.ps1` dans la VM (`docs/VM_TESTS.md`). D'ici là, la VM garde l'accès au dépôt et les tests passent par `-Exchange <dépôt>\build\vm-exchange` |
-| Pas de modification automatique du dépôt depuis la VM | L'hôte n'exécute rien qui vienne du dossier d'échange (rapports lus comme données) ; effectif une fois le partage du dépôt retiré |
+| Écritures de la VM limitées au dossier d'échange | **Fait et vérifié** : `vmrun` ayant été refusé (VM chiffrée), le propriétaire a changé le partage dans VMware Workstation et relancé `guest-setup.ps1`. Le `.vmx` ne déclare plus qu'un partage : `aw-vm-exchange` → `E:\ROBLOX DEV\aw-vm-exchange` (hors du dépôt). Agent v2 actif (battement de cœur relevé), travail sous `%LOCALAPPDATA%\AutomotiveWorldTests` |
+| Pas de modification automatique du dépôt depuis la VM | **Fait** : la VM ne voit plus le dépôt ; l'hôte n'exécute rien qui vienne du dossier d'échange (rapports lus comme données) |
 | Agents d'autres projets | `guest-setup.ps1` ne touche plus aucun autre agent sans `-StopTasks Nom`. `MimicHuntersAgent` reste désactivé (fait plus tôt, à la demande explicite du propriétaire) ; réactivable : `Enable-ScheduledTask -TaskName MimicHuntersAgent` |
 | Permissions et opérations documentées | `docs/VM_TESTS.md`, tableau « Permissions et opérations des scripts » |
-| Exclusion Defender `C:\AWTests` | **Plus nécessaire avec le nouvel agent** : capture par un outil compilé dans la VM depuis `ScreenCapture.cs`, exécuté hors du dossier exclu. **Non encore vérifié dans la VM** (l'agent v1 ne transmet pas ce source : 0 capture lors de ces campagnes). Retrait de l'exclusion : décision du propriétaire, après une campagne avec captures sous l'agent v2 |
+| Exclusion Defender `C:\AWTests` | **Plus utilisée, vérifié** : avec l'agent v2, agent, travail et outil de capture s'exécutent sous `%LOCALAPPDATA%`, hors du dossier exclu ; 294 captures produites (`190622`, « ok (outil compilé dans la VM, hors dossier exclu de l'antivirus) »). L'exclusion reste présente : la retirer est la décision du propriétaire (`Remove-MpPreference -ExclusionPath "C:\AWTests"`, PowerShell administrateur dans la VM) |
 | Aucun autre réglage de sécurité modifié | Aucun |
 | Aucune publication Roblox | Aucune (Studio ouvre un fichier local en mode script) |
 

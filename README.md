@@ -6,7 +6,7 @@
 > pilotable au clavier et à la manette. Ni catalogue, ni carte, ni économie, ni sauvegarde.
 > **Statut** : finalisation du lot en cours de revue (PR #1, **non fusionnée**). Hors Studio : tous les contrôles
 > verts (100 tests Lune). Dans Roblox Studio via la VM de test : collisions entre joueurs corrigées, propriété réseau
-> vérifiée ; une anomalie intermittente de simulation client reste ouverte, et clavier/manette réels et ressenti
+> vérifiée ; une anomalie intermittente de réplication reste ouverte, et clavier/manette réels et ressenti
 > restent à vérifier par un humain. Détail : [docs/lot-0.1/RAPPORT_VALIDATION.md](docs/lot-0.1/RAPPORT_VALIDATION.md).
 
 ## Prérequis (Windows)

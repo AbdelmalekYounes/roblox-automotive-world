@@ -527,6 +527,9 @@ export type TestSnapshot = {
     LastImpulse: number?,
     -- Recalages de la copie locale sur la position serveur (session en cours).
     Resyncs: number,
+    -- Âge des dernières données physiques reçues pour le véhicule (0 quand ce
+    -- client le simule réellement) : diagnostic de la propriété réseau.
+    ReceiveAge: number,
     VehicleName: string?,
     SpeedKmh: number,
     ForwardSpeedMs: number,
@@ -548,6 +551,7 @@ function VehicleController.getTestSnapshot(): TestSnapshot
             Typing = DriverInput.isTyping(),
             LastImpulse = nil,
             Resyncs = 0,
+            ReceiveAge = 0,
             VehicleName = nil,
             SpeedKmh = 0,
             ForwardSpeedMs = 0,
@@ -566,6 +570,7 @@ function VehicleController.getTestSnapshot(): TestSnapshot
         Typing = DriverInput.isTyping(),
         LastImpulse = current.LastImpulse,
         Resyncs = current.Resyncs,
+        ReceiveAge = if current.Model.PrimaryPart then current.Model.PrimaryPart.ReceiveAge else 0,
         VehicleName = current.Model.Name,
         SpeedKmh = telemetry.SpeedKmh,
         ForwardSpeedMs = telemetry.ForwardSpeedMs,

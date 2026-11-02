@@ -26,12 +26,12 @@ local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 
 local METERS_PER_STUD = Constants.MetersPerStud
-local HISTORY_S = 2.0
+local HISTORY_S = 3.0
 local EVENT_DURATION_S = 0.7 -- suivi d'un choc après sa confirmation
 local PAIR_COOLDOWN_S = 0.5 -- après la fin d'un choc
 local UPDATE_STEP_MS = 0.3 -- hausse minimale de la cible avant un nouvel envoi
 local CONTACT_MARGIN_STUDS = 1
-local VERIFY_AFTER_S = 1.5
+local VERIFY_AFTER_S = 1.0
 local VERIFY_MIN_FRACTION = 0.3
 
 export type Participant = {
@@ -150,7 +150,9 @@ local function verifyPending(self: Mediator, now: number)
         table.remove(self.Pending, index)
         local samples = self.Samples[pending.Model] or {}
         local params = table.clone(CollisionExchange.DefaultParams)
-        params.WindowS = VERIFY_AFTER_S + EVENT_DURATION_S
+        -- Fenêtre couvrant l'approche, le choc et la réaction (mesuré : une fenêtre
+        -- trop courte perdait la vitesse d'avant le choc et signalait à tort).
+        params.WindowS = VERIFY_AFTER_S + EVENT_DURATION_S + CollisionExchange.DefaultParams.WindowS
         local speeds = CollisionExchange.normalSpeeds(samples, pending.Normal.X, pending.Normal.Z, now, params)
         local history = {}
         for _, s in speeds do

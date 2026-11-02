@@ -106,14 +106,14 @@ dans la VM elle-même.
 
 ## Sécurité : état et historique
 
-- **Partage restreint** : le partage `roblox-automotive-world-starter` donne à la VM un accès en écriture à tout le
-  dépôt. Les scripts sont prêts pour le seul dossier d'échange, hors du dépôt ; **au 2 novembre 2026, le changement
-  de partage reste à faire à la main** dans VMware Workstation (VM chiffrée), puis `guest-setup.ps1` à relancer dans
-  la VM (étapes 1 et 2 ci-dessus). Tant que ce n'est pas fait : `test-vm.cmd -Exchange "<dépôt>uildm-exchange"`.
+- **Partage restreint** (fait le 2 novembre 2026) : la VM ne voit plus que `aw-vm-exchange` →
+  `E:\ROBLOX DEV\aw-vm-exchange`, hors du dépôt (changement fait par le propriétaire dans VMware Workstation, la VM
+  chiffrée refusant `vmrun` sans mot de passe), agent v2 installé par `guest-setup.ps1`.
 - **Captures sans exclusion antivirus** : l'ancien script PowerShell de capture était bloqué par Windows Defender (AMSI) ;
   le propriétaire avait ajouté dans la VM une exclusion `C:\AWTests`. La capture est désormais faite par un petit
   outil compilé **dans la VM** à partir d'un source lisible (`tools\vm\ScreenCapture.cs`), exécuté depuis
-  `%LOCALAPPDATA%\AutomotiveWorldTests\bin`, dossier non exclu. L'exclusion `C:\AWTests` n'est donc plus nécessaire ;
+  `%LOCALAPPDATA%\AutomotiveWorldTests\bin`, dossier non exclu (vérifié : 294 captures le 2 novembre 2026). L'exclusion
+  `C:\AWTests` n'est donc plus nécessaire ;
   la retirer est une décision du propriétaire de la VM : `Remove-MpPreference -ExclusionPath "C:\AWTests"`
   (PowerShell administrateur, dans la VM). Si l'antivirus bloquait l'outil, les tests se dérouleraient quand même
   et le rapport l'indiquerait.

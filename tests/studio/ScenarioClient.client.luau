@@ -472,6 +472,7 @@ else
                 end, 60)
                 -- Recalages de la copie locale sur la position publiée par le serveur.
                 measures[prefix .. "_recalages_copie_locale"] = snapshot().Resyncs
+                measures[prefix .. "_age_reception_au_depart_s"] = snapshot().ReceiveAge
                 measures[prefix .. "_simulation_client_active_au_depart"] = if snapshot().SimulationActive then 1 else 0
                 local target =
                     folder:FindFirstChild(if kind == "pilote" then "VehiculeEssai_4" else "VehiculeEssai_2") :: Model

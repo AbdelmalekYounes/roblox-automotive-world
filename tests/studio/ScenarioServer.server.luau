@@ -318,12 +318,18 @@ elseif isCollisionSession then
         local strikerRoot = striker.PrimaryPart :: BasePart
         local start = target:GetPivot().Position
         local maxDisplacement, peakSpeed = 0, 0
+        -- Diagnostic : données physiques reçues du client du percuteur (ReceiveAge côté
+        -- serveur) et déplacement du percuteur vu par le serveur.
+        local strikerStart = strikerRoot.Position
+        local strikerMaxAge, strikerMaxMove = 0, 0
         local owners = "pas de rapprochement"
         local startOwner = ownerName(strikerRoot)
         ReplicatedStorage:SetAttribute("AWTrialGo", i)
         waitFor(function()
             maxDisplacement = math.max(maxDisplacement, (target:GetPivot().Position - start).Magnitude)
             peakSpeed = math.max(peakSpeed, targetRoot.AssemblyLinearVelocity.Magnitude)
+            strikerMaxAge = math.max(strikerMaxAge, strikerRoot.ReceiveAge)
+            strikerMaxMove = math.max(strikerMaxMove, (strikerRoot.Position - strikerStart).Magnitude)
             if owners == "pas de rapprochement" and math.abs(strikerRoot.Position.Z - targetRoot.Position.Z) < 14 then
                 owners = ownerName(strikerRoot) .. " percute " .. ownerName(targetRoot)
             end
@@ -347,8 +353,10 @@ elseif isCollisionSession then
             string.format("scenario.essai_%d_%s", i, kind),
             true,
             string.format(
-                "percuteur simulé par %s au départ ; %s ; véhicule percuté (vue serveur) : déplacement max %.2f st, final %.2f st, vitesse max %.1f st/s ; échanges d'impulsion confirmés : %d",
+                "percuteur simulé par %s au départ ; vu par le serveur : déplacement max %.1f st, données reçues au plus tard après %.2f s ; %s ; véhicule percuté (vue serveur) : déplacement max %.2f st, final %.2f st, vitesse max %.1f st/s ; échanges d'impulsion confirmés : %d",
                 startOwner,
+                strikerMaxMove,
+                strikerMaxAge,
                 owners,
                 maxDisplacement,
                 final,
