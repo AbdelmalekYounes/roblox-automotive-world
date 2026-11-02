@@ -50,6 +50,16 @@ local function waitFor(predicate: () -> boolean, timeout: number): boolean
     return predicate()
 end
 
+-- Les sessions « scenarios » et « collision » sont jouées par ScenarioClient.
+local sessionStart = os.clock()
+while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - sessionStart < 15 do
+    task.wait()
+end
+local currentSession = ReplicatedStorage:GetAttribute("AWTestSession")
+if currentSession == "scenarios" or currentSession == "collision" then
+    return
+end
+
 local reportEvent = ReplicatedStorage:WaitForChild("AWTestReport", 30)
 local seatFallback = ReplicatedStorage:WaitForChild("AWTestSeatFallback", 30)
 local signalEvent = ReplicatedStorage:WaitForChild("AWTestSignal", 30)

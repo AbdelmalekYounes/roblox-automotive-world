@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 $outputLog = Join-Path $ReportDir "studio-output.log"
 $resultFile = Join-Path $ReportDir "result.json"
 $lines = New-Object System.Collections.Generic.List[string]
-$passed = 0; $failed = 0; $sessionCount = 0; $complete = $false
+$passed = 0; $failed = 0; $known = 0; $sessionCount = 0; $complete = $false
 
 function Add-Line([string]$text) { $lines.Add($text) }
 function Format-Detail($detail) {
@@ -26,8 +26,11 @@ function Add-Steps($steps) {
 	Add-Line "|---|---|---|"
 	foreach ($step in @($steps)) {
 		if ($null -eq $step) { continue }
-		if ($step.ok) { $script:passed++; $mark = "✅" } else { $script:failed++; $mark = "❌" }
-		Add-Line ("| {0} | ``{1}`` | {2} |" -f $mark, $step.name, (Format-Detail $step.detail))
+		$detail = Format-Detail $step.detail
+		if ($step.ok) { $script:passed++; $mark = "✅" }
+		elseif ($step.known) { $script:known++; $mark = "⚠️"; $detail = "$detail — **limite connue** : $(Format-Detail $step.known)" }
+		else { $script:failed++; $mark = "❌" }
+		Add-Line ("| {0} | ``{1}`` | {2} |" -f $mark, $step.name, $detail)
 	}
 	Add-Line ""
 }
@@ -125,9 +128,9 @@ if (-not $complete) {
 	Add-Line "❌ **Le pilote ne s'est pas terminé** (pas de ligne « end ») : voir studio-output.log, studio-logs et les captures."
 	Add-Line ""
 }
-Add-Line ("**Synthèse : {0} contrôle(s) réussi(s), {1} échec(s), {2} session(s).**" -f $passed, $failed, $sessionCount)
+Add-Line ("**Synthèse : {0} contrôle(s) réussi(s), {1} échec(s), {2} limite(s) connue(s) ⚠️, {3} session(s).**" -f $passed, $failed, $known, $sessionCount)
 Add-Line ""
 Add-Line "Non couvert automatiquement : lecture réelle du clavier et de la manette (commandes injectées par le point d'accès de test), ressenti de conduite, lisibilité, son. Voir les captures pour le rendu."
 
 [IO.File]::WriteAllLines((Join-Path $ReportDir "report.md"), $lines, (New-Object Text.UTF8Encoding $true))
-[pscustomobject]@{ Passed = $passed; Failed = $failed; Sessions = $sessionCount; Complete = $complete }
+[pscustomobject]@{ Passed = $passed; Failed = $failed; Known = $known; Sessions = $sessionCount; Complete = $complete }

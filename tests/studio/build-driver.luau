@@ -13,16 +13,20 @@ local KNOWN_SESSIONS = {
     solo = { Name = "solo", Players = 1 },
     multijoueur = { Name = "multijoueur", Players = 2 },
     latence = { Name = "latence", Players = 2, DelayMs = 100 },
+    scenarios = { Name = "scenarios", Players = 1 },
+    collision = { Name = "collision", Players = 2 },
 }
 
 local output = process.args[1]
 if output == nil then
-    print("Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence]")
+    print(
+        "Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence,scenarios,collision]"
+    )
     process.exit(2)
 end
 
 local sessions = {}
-for name in string.gmatch(process.args[2] or "solo,multijoueur,latence", "[^,]+") do
+for name in string.gmatch(process.args[2] or "solo,multijoueur,latence,scenarios,collision", "[^,]+") do
     local session = KNOWN_SESSIONS[name]
     if session == nil then
         print("Session inconnue : " .. name)
@@ -35,8 +39,12 @@ local base = "tests/studio/"
 local template = fs.readFile(base .. "Driver.template.luau")
 local server = fs.readFile(base .. "ServerSuite.server.luau")
 local client = fs.readFile(base .. "ClientSuite.client.luau")
+local scenarioServer = fs.readFile(base .. "ScenarioServer.server.luau")
+local scenarioClient = fs.readFile(base .. "ScenarioClient.client.luau")
 
-for label, source in { serveur = server, client = client } do
+for label, source in
+    { serveur = server, client = client, scenarioServeur = scenarioServer, scenarioClient = scenarioClient }
+do
     assert(not string.find(source, "]==]", 1, true), "La suite " .. label .. " ne doit pas contenir « ]==] »")
     -- Chaque suite doit compiler séparément.
     luau.compile(source)
@@ -52,6 +60,8 @@ end
 local driver = template
 driver = replace(driver, "@@SERVER_SUITE@@", server)
 driver = replace(driver, "@@CLIENT_SUITE@@", client)
+driver = replace(driver, "@@SCENARIO_SERVER@@", scenarioServer)
+driver = replace(driver, "@@SCENARIO_CLIENT@@", scenarioClient)
 driver = replace(driver, "@@SESSIONS@@", serde.encode("json", sessions))
 luau.compile(driver)
 

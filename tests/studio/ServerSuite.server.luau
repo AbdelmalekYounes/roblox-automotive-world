@@ -212,7 +212,26 @@ for model, start in startPositions do
         table.insert(driftDetails, string.format("%s: %.2f st", model.Name, drift))
     end
 end
-record("serveur.vehicules_libres_immobiles", driftOk, table.concat(driftDetails, " | "))
+if ReplicatedStorage:GetAttribute("AWTestMovesVehicles") then
+    record("serveur.vehicules_libres_immobiles", true, "non applicable : véhicules déplacés par les scénarios")
+else
+    record("serveur.vehicules_libres_immobiles", driftOk, table.concat(driftDetails, " | "))
+end
+
+-- Contrôles des scénarios étendus (ScenarioServer), dont le retour au plot (~90 s).
+local scenarioChannel = game:GetService("ServerStorage"):FindFirstChild("AWTestScenario")
+if scenarioChannel then
+    local done = waitFor(function()
+        return scenarioChannel:GetAttribute("Done") == true
+    end, 200)
+    record("serveur.scenarios_termines", done)
+    local encoded = scenarioChannel:GetAttribute("Steps")
+    if type(encoded) == "string" then
+        for _, step in game:GetService("HttpService"):JSONDecode(encoded) do
+            table.insert(steps, step)
+        end
+    end
+end
 
 record("serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
 record(

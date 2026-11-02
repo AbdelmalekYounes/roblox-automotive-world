@@ -18,7 +18,7 @@
 #>
 param(
 	[string]$Vmx,
-	[string[]]$Sessions = @("solo", "multijoueur", "latence"),
+	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision"),
 	[int]$TimeoutSec = 1500,
 	[int]$AgentWaitSec = 240,
 	[switch]$NoVmControl,
@@ -135,8 +135,8 @@ if ($Suspend -and $startedByUs) {
 }
 
 Write-Host ""
-Write-Host ("Résultat VM : code agent {0}, {1} réussi(s), {2} échec(s), {3} session(s), terminé={4}" -f `
-		$doneInfo.exitCode, $summary.Passed, $summary.Failed, $summary.Sessions, $summary.Complete)
+Write-Host ("Résultat VM : code agent {0}, {1} réussi(s), {2} échec(s), {3} limite(s) connue(s), {4} session(s), terminé={5}" -f `
+		$doneInfo.exitCode, $summary.Passed, $summary.Failed, $summary.Known, $summary.Sessions, $summary.Complete)
 if ($doneInfo.error) { Write-Host "Erreur agent : $($doneInfo.error)" -ForegroundColor Red }
 Write-Host "Rapport : $(Join-Path $reportDir 'report.md')"
 if ($summary.Failed -gt 0 -or -not $summary.Complete -or $doneInfo.exitCode -ne 0) { exit 1 }

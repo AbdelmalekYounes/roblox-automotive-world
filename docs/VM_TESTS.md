@@ -41,7 +41,11 @@ remplacée** par un point d'accès réservé à Studio (`VehicleController.setTe
 | `multijoueur` | la même chose avec 2 clients sur 2 véhicules ; le 2ᵉ joueur ne peut pas prendre le véhicule occupé ; chacun voit l'autre conducteur ; les véhicules libres ne bougent pas |
 | `latence` | `multijoueur` avec 100 ms de délai réseau demandé à Studio (`NetworkSettings.Inbound/OutboundNetworkMinDelayMs`) ; le ping réellement mesuré par chaque client figure dans le rapport |
 
-Non couvert : lecture réelle des touches et de la manette, collisions entre véhicules, ressenti, son.
+| `scenarios` | bosse à 10 %, slalom à 25 km/h (cônes renversés comptés par le serveur), véhicule sur le toit remis sur roues, véhicule abandonné qui revient sur son plot (délai réel de 90 s), impact contre un véhicule garé |
+| `collision` | 2 clients : impact latéral à ~20 km/h contre le véhicule de l'autre joueur ; véhicules droits, conducteurs à bord, aucune correction serveur |
+
+Non couvert : lecture réelle des touches et de la manette, ressenti, son.
+Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.
 
 ## Préparation (une seule fois)
 
@@ -63,7 +67,7 @@ Roblox Studio installé et connecté avec un compte de test. Le dossier partagé
 ## Lancer les tests (depuis l'hôte)
 
 ```bat
-test-vm.cmd                         :: les 3 sessions
+test-vm.cmd                         :: les 5 sessions (≈ 7 min)
 test-vm.cmd -Sessions solo          :: une session
 test-vm.cmd -NoVmControl -DryRun    :: test du protocole seul (sortie factice, sans Studio)
 ```

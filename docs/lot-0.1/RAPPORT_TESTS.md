@@ -4,12 +4,13 @@
 
 > **Synthèse.** Les essais Roblox Studio ont été **réalisés automatiquement dans la VM VMware de test**
 > (Studio 0.745.0.7451137), sans utiliser le bureau, la souris ni le clavier de l'utilisateur :
-> **154 contrôles réussis sur 154** lors de la dernière exécution complète (sessions solo, deux joueurs,
-> deux joueurs avec ~205 ms de latence mesurée), avec **81 captures d'écran réelles** de la VM. Le prototype est pilotable et réagit progressivement dans le
-> moteur Roblox réel (0–100 km/h ≈ 8,5 s, 100–0 km/h ≈ 47,5 m).
+> **214 contrôles réussis sur 214** lors de la dernière exécution complète (5 sessions : solo, deux joueurs,
+> latence ~205 ms, scénarios — bosse, slalom, véhicule renversé, retour au plot, collision contre un véhicule garé —
+> et collision entre deux joueurs), avec **129 captures d'écran réelles** de la VM. Le prototype est pilotable et
+> réagit progressivement dans le moteur Roblox réel (0–100 km/h ≈ 8,5 s, 100–0 km/h ≈ 47,5 m).
 > **Restent non vérifiés** : la lecture réelle du clavier et de la manette (les commandes sont injectées par un point
-> d'accès réservé à Studio), la manette, les collisions entre véhicules, la bosse, le slalom, la remise sur roues d'un véhicule réellement renversé,
-> le retour automatique au plot, le ressenti et le son.
+> d'accès réservé à Studio), le ressenti et le son. **Point d'attention** : la poussée transmise à un véhicule conduit
+> par un autre joueur lors d'une collision est faible et très variable (§4.3).
 
 ## 1. Environnement
 
@@ -110,7 +111,7 @@ entre deux clients, comportement sous latence.
 Méthode et outillage : [docs/VM_TESTS.md](../VM_TESTS.md). `test-vm.cmd` construit la place et le pilote, la VM
 exécute `RobloxStudioBeta.exe --task RunScript`, le pilote lance les sessions par `StudioTestService`
 (`ExecutePlayModeAsync`, `ExecuteMultiplayerTestAsync(2)`), et chaque session renvoie ses contrôles.
-Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUDIO_VM.md) (tâche `20261102-141650`).
+Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUDIO_VM.md) (tâche `20261102-143507`).
 
 ### 4.1 Historique des exécutions (2 novembre 2026)
 
@@ -126,6 +127,10 @@ Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUD
 | 141222 | 33 ✅ / 0 ❌ (solo) | Exclusion Defender `C:\AWTests` ajoutée dans la VM par l'utilisateur : **32 captures**. Elles révèlent un **défaut visuel** : la tête du conducteur traverse le toit |
 | 141509 | 33 ✅ / 1 ❌ (solo) | Nouveau contrôle mesuré : tête **0,38 st au-dessus** du dessous du toit (0,72 st avec accessoires) |
 | 141650 | **154 ✅ / 0 ❌** | Habitacle porté à 1,62 m et assise abaissée de 0,45 st : marge **+0,68 st** (+0,34 st avec accessoires) ; 81 captures |
+| 142750 | 53 ✅ / 1 ❌ (scénarios + collision) | Nouveaux scénarios réussis du premier coup ; véhicule percuté conduit par un joueur déplacé de 0,21 st seulement |
+| 143158 | 36 ✅ / 0 ❌ (scénarios) | Comparaison ajoutée : même impact contre un véhicule **garé** → 3,07 st |
+| 143507 | **214 ✅ / 0 ❌** (5 sessions) | 129 captures ; véhicule percuté conduit : 2,23 st cette fois |
+| 144158 → 144434 | 3 × collision | 1,88 st, 1,09 st, 0,24 st (cette dernière signalée ⚠️ « limite connue », non comptée comme réussie) |
 
 ### 4.2 Résultats des dernières exécutions (tâches 140007 et 141650)
 
@@ -153,17 +158,33 @@ Observations : à la première tentative, l'invite d'embarquement déclenchée p
 du personnage n'atteint pas toujours le serveur (2ᵉ tentative réussie) ; sous latence, la vue du client reste
 décalée de 17 à 70 st pendant ~0,5 s après une correction serveur, puis se recale.
 
-### 4.3 Encore à vérifier par un humain (ou par une version future des tests)
+### 4.3 Scénarios étendus (sessions « scenarios » et « collision »)
+
+| # | Scénario | Résultat observé dans Studio |
+|---|---|---|
+| S10 | Bosse à 10 % à 30 km/h | franchie ; vitesse ≥ 27,5 km/h dans la montée ; assiette max 6,6° (pente 5,7°) ; jamais les quatre roues en l'air ; UpVector.Y ≥ 0,993 |
+| S7 | Slalom à 25 km/h, 8 cônes légers, portes à ±9 st | 8 portes sur 8, **0 cône déplacé**, écart latéral ≤ 0,2 st (régulateur de test, pas un humain) |
+| S12 | Véhicule sur le toit, immobile | embarquement, remise sur roues (droit, 4 roues au sol), délai sur un second appui, le véhicule roule ensuite |
+| S14 | Véhicule abandonné loin de tout joueur | revenu sur son plot après **90–91 s** (délai du jeu : 90 s) |
+| M4a | Impact à 19,5 km/h contre le flanc d'un véhicule **garé** (propriété serveur) | déplacé de **3,07 et 4,30 st** (2 essais) ; les deux restent droits |
+| M4b | Même impact contre un véhicule **conduit par l'autre joueur** (frein à main serré) | déplacé de **0,21 / 2,23 / 1,88 / 1,09 / 0,24 st** (5 essais) ; véhicules toujours droits, conducteurs toujours à bord |
+| — | Corrections serveur pendant ces scénarios | **aucune** (aucun faux positif, y compris pendant les collisions) |
+
+**Constat M4b.** La poussée transmise à un véhicule conduit par un autre joueur est plus faible et très variable que
+contre un véhicule garé (2 essais sur 5 quasi nuls). Hypothèse : chaque véhicule est simulé par le client de son
+conducteur (propriétés réseau distinctes), si bien que chacun voit l'autre comme un obstacle qu'il ne pousse pas
+directement. **Cause non démontrée.** Le contrôle correspondant est affiché ⚠️ « limite connue » quand il échoue :
+il n'est jamais compté comme réussi. Traitement proposé au lot 0.2 (collisions et dégâts, AUD-COLL-01).
+
+### 4.4 Encore à vérifier par un humain (ou par une version future des tests)
 
 | # | Point | Pourquoi |
 |---|---|---|
 | S9/M3 | Caméra contre les murets, roues des autres véhicules vues depuis l'autre client | Non scénarisés (les captures ne montrent que la vue du client principal) |
 | S4–S8 | Clavier (Z/W, S, Q/A/D, Espace) et sensation de conduite | Commandes injectées par le point d'accès de test |
 | S13 | Manette | Aucune manette (réelle ou virtuelle) dans la VM |
-| S7/S10 | Slalom, cercle de 30 m, bosse à 10 % | Non scénarisés |
-| S12 | Remise sur roues d'un véhicule renversé | Non scénarisé |
-| S14 | Retour automatique au plot (90 s) | Non scénarisé |
-| M4 | Collision entre deux véhicules | Non scénarisé |
+| S7 | Cercle de 30 m (stabilisation) | Non scénarisé |
+| M4 | Ressenti des collisions ; collisions frontales et à plus haute vitesse | Seul l'impact latéral à 20 km/h est scénarisé |
 
 ## 5. Captures et vidéos
 
@@ -178,6 +199,11 @@ PowerShell ; il n'a pas été contourné). Aucune vidéo. Sélection archivée d
 | `03-sortie-a-pied-invite-conduire.jpg` | Sortie à l'arrêt : personnage à côté de la portière, invite « Conduire » |
 | `04-teleportation-volontaire-avant-correction.jpg` | Véhicule téléporté à 400 st par le test, juste avant la correction serveur |
 | `05-hud-et-repere-150m.jpg` | HUD (vitesse, rapport, barres) et panneau « 150 m » de la ligne droite |
+| `06-bosse-rampe-10pc.jpg` | Montée de la rampe en béton de la bosse à 10 % |
+| `07-slalom-cones.jpg` | Slalom entre les cônes orange à ~24 km/h |
+| `08-vehicule-renverse-avant-remise.jpg` | Véhicule sur le toit, personnage à côté avant l'embarquement |
+| `09-apres-remise-sur-roues.jpg` | Le même véhicule remis sur ses roues, qui repart |
+| `10-collision-vehicule-gare.jpg` | Instant de l'impact contre le flanc d'un véhicule garé |
 
 Toutes les captures de chaque exécution restent dans `build\vm-exchange\jobs\<id>\report\screenshots` (non versionnées).
 
@@ -199,7 +225,7 @@ Toutes les captures de chaque exécution restent dans `build\vm-exchange\jobs\<i
 - Tests : `tests/lune/{run, Harness, TestKit, PlanarSim}.luau`,
   `tests/lune/specs/{PlaceStructure, Definitions, PhysicsUnit, NetworkSecurity, TelemetrySpec, DrivingScenarios}.luau`.
 - Documentation : `docs/lot-0.1/{RAPPORT_TESTS, ECARTS, PROPOSITION_LOT_0.2, RAPPORT_STUDIO_VM}.md`, `docs/VM_TESTS.md`.
-- Tests Studio et VM : `tests/studio/{Driver.template, ServerSuite.server, ClientSuite.client, build-driver}.luau`,
+- Tests Studio et VM : `tests/studio/{Driver.template, ServerSuite.server, ClientSuite.client, ScenarioServer.server, ScenarioClient.client, build-driver}.luau`,
   `tools/vm/{host-run, guest-agent, guest-setup, job-runner, capture-screens, make-report}.ps1`, `test-vm.cmd`.
 - Modifiés pour les essais Studio : `src/client/Vehicles/VehicleController.luau` (points d'accès réservés à Studio),
   `src/server/Vehicles/VehicleService.luau` (correction de la sortie en multijoueur),

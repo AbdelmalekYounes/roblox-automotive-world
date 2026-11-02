@@ -64,8 +64,10 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 
 ## 4. Limites techniques connues
 
-- Essais Studio automatisés (avec captures) : clavier, manette, ressenti, collisions entre véhicules, bosse, slalom,
-  remise sur roues d'un véhicule renversé et retour au plot restent à vérifier.
+- Essais Studio automatisés (avec captures) : clavier, manette et ressenti restent à vérifier par un humain.
+- **Collisions entre deux véhicules conduits** : à 19,5 km/h, le véhicule percuté n'est déplacé que de 0,2 à 2,2 st
+  selon les essais (5 essais), contre 3,1 à 4,3 st pour un véhicule garé. Cause supposée (propriétés réseau
+  distinctes) non démontrée ; à traiter avec les collisions et dégâts (AUD-COLL-01).
 - Sous latence, la vue du client reste décalée ~0,5 s après une correction serveur avant de se recaler.
 - Pas de frottement statique : un véhicule freiné sur une pente glisse très lentement (de l'ordre du cm/s selon le modèle).
 - Un seul rayon par roue : une roue peut « tomber » dans un interstice ou accrocher une arête vive ; un balayage de

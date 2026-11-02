@@ -14,6 +14,8 @@ local StudioTestService = game:GetService("StudioTestService")
 
 local SERVER_SOURCE = [==[@@SERVER_SUITE@@]==]
 local CLIENT_SOURCE = [==[@@CLIENT_SUITE@@]==]
+local SCENARIO_SERVER_SOURCE = [==[@@SCENARIO_SERVER@@]==]
+local SCENARIO_CLIENT_SOURCE = [==[@@SCENARIO_CLIENT@@]==]
 local SESSIONS = HttpService:JSONDecode([==[@@SESSIONS@@]==])
 
 local function emit(kind: string, data: any)
@@ -35,6 +37,17 @@ local clientScript = Instance.new("LocalScript")
 clientScript.Name = "AW_TestClient"
 clientScript.Source = CLIENT_SOURCE
 clientScript.Parent = StarterPlayer:WaitForChild("StarterPlayerScripts")
+
+-- Scénarios étendus : inactifs hors des sessions « scenarios » et « collision ».
+local scenarioServerScript = Instance.new("Script")
+scenarioServerScript.Name = "AW_TestScenarioServer"
+scenarioServerScript.Source = SCENARIO_SERVER_SOURCE
+scenarioServerScript.Parent = ServerScriptService
+
+local scenarioClientScript = Instance.new("LocalScript")
+scenarioClientScript.Name = "AW_TestScenarioClient"
+scenarioClientScript.Source = SCENARIO_CLIENT_SOURCE
+scenarioClientScript.Parent = StarterPlayer:WaitForChild("StarterPlayerScripts")
 
 -- Émulation de latence de Studio (réglages réseau) ; l'application effective
 -- aux processus clients est mesurée par la suite client (ping), pas supposée.
@@ -87,4 +100,6 @@ end
 
 serverScript:Destroy()
 clientScript:Destroy()
+scenarioServerScript:Destroy()
+scenarioClientScript:Destroy()
 emit("end", {})
