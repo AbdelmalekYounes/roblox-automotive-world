@@ -46,6 +46,7 @@ clavier/manette est remplacée** par un point d'accès réservé à Studio (`Veh
 | `scenarios` | bosse à 10 %, slalom, véhicule sur le toit remis sur roues, retour au plot (délai réel de 90 s), impact contre un véhicule garé, **propriété réseau refusée par le moteur** (véhicule ancré : embarquement refusé proprement) puis rétablie |
 | `collision` | expérience de collision : 6 impacts latéraux à ~20 km/h, alternant véhicule **conduit** par l'autre joueur et véhicule **garé** ; mesures serveur et clients, échanges d'impulsion confirmés par le serveur |
 | `collision_latence` | la même expérience avec 100 ms de délai réseau dans chaque sens |
+| `lot02` | lot 0.2, 1 joueur, 22 étapes : six boîtes, aides avec/sans, mouillé, pente, bordures (rayon/sphère), dégâts, énergie et panne, caméras, banc de 16 véhicules serveur (≈ 7 min 30) |
 
 Non couvert : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir `docs/lot-0.1/RAPPORT_TESTS.md`).
 Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.
@@ -81,7 +82,8 @@ stocké par ces scripts. La démarrer dans Workstation puis *Run in Background*.
 ## Lancer les tests (depuis l'hôte)
 
 ```bat
-test-vm.cmd                                   :: les 6 sessions
+test-vm.cmd                                   :: les 7 sessions (≈ 20 min)
+test-vm.cmd -Sessions lot02 -TimeoutSec 1800  :: essais du lot 0.2 seuls
 test-vm.cmd -Sessions collision,collision_latence
 test-vm.cmd -NoVmControl -DryRun              :: test du protocole seul (sortie factice, sans Studio)
 ```

@@ -88,7 +88,11 @@ La première voiture sera un **prototype technique original**, distinct de tout 
   (arbitrage A1 : paramètres par modèle, identique pour tous les périphériques, affiché dans le HUD, aucune mesure de
   glissement ni de lacet), géométrie d'Ackermann.
 
-### Points d'extension (déclarés, NON implémentés)
+> **Lot 0.2** : les points d'extension ci-dessous sont implémentés (moteurs essence/diesel/électrique, six boîtes,
+> FWD/RWD/AWD et autobloquants, aides par modèle, mouillé, énergie et dégâts de session, caméras embarquées).
+> Changements d'architecture : `docs/lot-0.2/ARCHITECTURE_LOT_0.2.md`. Le tableau suivant décrit l'état du lot 0.1.
+
+### Points d'extension (déclarés, NON implémentés au lot 0.1)
 
 | Futur besoin | Point d'extension | État lot 0.1 |
 |---|---|---|

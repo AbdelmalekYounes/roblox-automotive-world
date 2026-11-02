@@ -25,7 +25,21 @@ L'ordre décrit des lots de travail, pas une réduction du périmètre final.
 - **Ouvert avant clôture** : anomalie intermittente (mouvement d'un véhicule piloté qui n'atteint pas le serveur
   pendant quelques secondes), essais humains clavier/manette/chat et ressenti. VM de test restreinte au dossier d'échange.
 - Rapports : `docs/lot-0.1/RAPPORT_VALIDATION.md` (final), `RAPPORT_TESTS.md` (historique) ; écarts et arbitrages :
-  `docs/lot-0.1/ECARTS.md` ; suite : `docs/lot-0.1/PROPOSITION_LOT_0.2.md` (non commencée).
+  `docs/lot-0.1/ECARTS.md` ; proposition qui a servi de base au lot 0.2 : `docs/lot-0.1/PROPOSITION_LOT_0.2.md`.
+
+## État du lot 0.2 (branche `feat/advanced-vehicle-physics-0.2`, PR brouillon #2, base : lot 0.1)
+
+Commencé à la demande du propriétaire alors que la PR #1 n'est pas fusionnée (exception explicite à la règle
+« un lot clôturé avant le suivant » de `CLAUDE.md`) ; le lot 0.1 reste intact sur sa branche.
+
+- Livré : moteurs essence / diesel / électrique, six boîtes (automatique à convertisseur, manuelle, double embrayage,
+  séquentielle, CVT, rapport unique), FWD/RWD/AWD et autobloquants, pneus (frottement statique, glissement combiné,
+  relaxation, mouillé), ABS / antipatinage / ESP par modèle, énergie et dégâts de session confirmés serveur,
+  caméras cockpit / capot / pare-chocs, prototypes P-02 et P-03, configurations de validation DCT / SEQ / CVT.
+- Rapport : `docs/lot-0.2/RAPPORT_LOT_0.2.md` ; écarts : `docs/lot-0.2/ECARTS.md` ; architecture :
+  `docs/lot-0.2/ARCHITECTURE_LOT_0.2.md`.
+- Hors périmètre, prévus aux lots suivants : monde ouvert, stations et recharge payantes, crédits, profils et
+  persistance (dont dégâts et énergie, lot 0.4), garages, compétitions, smartphone/GPS, catalogue des 18 modèles.
 
 ## Critères de passage du socle 0.0.1
 

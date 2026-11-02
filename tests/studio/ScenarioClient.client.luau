@@ -180,13 +180,37 @@ local function board(label: string, target: Model?): boolean
     return ok
 end
 
+-- Diagnostic (lot 0.2) : une sortie qui échoue est consignée avec l'état du
+-- véhicule (mesuré : client resté assis dans 2 campagnes sur 3, étape suivante faussée).
+local exitCount = 0
 local function leave()
     stop(10)
     task.wait(0.5)
+    local before = snapshot()
+    local since = os.clock()
     actionRemote:FireServer("Exit")
-    waitFor(function()
+    local exited = waitFor(function()
         return not snapshot().Driving and humanoid.SeatPart == nil
     end, 5)
+    exitCount += 1
+    if not exited then
+        local after = snapshot()
+        local tooFast = waitNotice("ExitTooFast", since, 0)
+        record(
+            "client.diag_sortie_" .. exitCount,
+            false,
+            string.format(
+                "sortie non effective : avant %.1f km/h rapport %d ; après %.1f km/h rapport %d conduite=%s assis=%s ExitTooFast=%s",
+                before.SpeedKmh,
+                before.Gear,
+                after.SpeedKmh,
+                after.Gear,
+                tostring(after.Driving),
+                tostring(humanoid.SeatPart ~= nil),
+                tostring(tooFast)
+            )
+        )
+    end
     VehicleController.setTestInputProvider(nil)
     task.wait(1.5)
 end
