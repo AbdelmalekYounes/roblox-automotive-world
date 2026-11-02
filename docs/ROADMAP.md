@@ -19,12 +19,13 @@ L'ordre décrit des lots de travail, pas une réduction du périmètre final.
 ## État du lot 0.1 (branche `feat/vehicle-vertical-slice-0.1`)
 
 - Code livré : zone d'essai isolée, prototype P-01, conduite clavier/manette, dynamique paramétrable, validation serveur.
-- Vérifié hors Studio : build Rojo, lint Selene, format StyLua, typage strict luau-lsp, 66 tests Lune, 8 contrôles pytest.
-- Vérifié dans Roblox Studio (VM VMware, `test-vm.cmd`) : 214/214 contrôles sur 5 sessions (solo, deux joueurs,
-  latence ~205 ms, scénarios, collision), avec captures ; deux défauts réels trouvés et corrigés (sortie en multijoueur,
-  tête traversant le toit) ; poussée faible et variable entre deux véhicules conduits, à traiter au lot 0.2.
-- **Non encore vérifié** : clavier et manette réels, ressenti.
-- Rapport : `docs/lot-0.1/RAPPORT_TESTS.md` ; écarts : `docs/lot-0.1/ECARTS.md` ; suite : `docs/lot-0.1/PROPOSITION_LOT_0.2.md`.
+- Vérifié hors Studio : build Rojo, lint Selene, format StyLua, typage strict luau-lsp, 100 tests Lune, 8 contrôles pytest.
+- Vérifié dans Roblox Studio (VM VMware, `test-vm.cmd`, 6 sessions) : collisions entre joueurs corrigées (poussée du
+  même ordre qu'un véhicule garé), propriété réseau vérifiée (refus, correction, déconnexion), arbitrages A1–A6 appliqués.
+- **Ouvert avant clôture** : anomalie intermittente (client attribué qui ne simule pas son véhicule), essais humains
+  clavier/manette/chat et ressenti, migration du partage de la VM.
+- Rapports : `docs/lot-0.1/RAPPORT_VALIDATION.md` (final), `RAPPORT_TESTS.md` (historique) ; écarts et arbitrages :
+  `docs/lot-0.1/ECARTS.md` ; suite : `docs/lot-0.1/PROPOSITION_LOT_0.2.md` (non commencée).
 
 ## Critères de passage du socle 0.0.1
 

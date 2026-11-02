@@ -385,7 +385,7 @@ if session == "scenarios" then
             released,
             "assis=" .. tostring(humanoid.SeatPart ~= nil),
             "véhicule ANCRÉ (cas provoqué par le test) : le serveur libère le siège mais le personnage reste "
-                .. "assis côté client, sans pouvoir conduire ; cause non établie ; voir RAPPORT_VALIDATION.md §6"
+                .. "assis côté client, sans pouvoir conduire ; cause non établie ; voir RAPPORT_VALIDATION.md §5"
         )
     end
     signalEvent:FireServer("propriete_refusee")

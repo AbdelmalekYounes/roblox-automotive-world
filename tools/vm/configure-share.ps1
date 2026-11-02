@@ -13,7 +13,9 @@
 	Ensuite, dans la VM, relancer une fois (PowerShell administrateur) :
 	  powershell -ExecutionPolicy Bypass -File "\\vmware-host\Shared Folders\aw-vm-exchange\setup\guest-setup.ps1"
 	(host-run.ps1 publie ce script dans le dossier d'échange à chaque exécution).
-	Ce script ne modifie que la configuration des dossiers partagés de cette VM.
+	Ce script ne modifie que la configuration des dossiers partagés de cette VM. Si la VM est
+	chiffrée, vmrun exige son mot de passe : le script affiche alors les étapes à faire dans
+	VMware Workstation (aucun mot de passe n'est demandé ni stocké).
 
 .EXAMPLE
 	powershell -ExecutionPolicy Bypass -File tools\vm\configure-share.ps1
@@ -59,9 +61,24 @@ New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
 foreach ($name in @("guest-setup.ps1", "guest-agent.ps1")) {
 	Copy-Item (Join-Path $PSScriptRoot $name) (Join-Path $setupDir $name) -Force
 }
+$manual = @"
+Modification manuelle dans VMware Workstation (VM chiffrée : vmrun exige son mot de passe,
+que ces scripts ne demandent ni ne stockent) :
+  VM > Settings > Options > Shared Folders
+  - Remove : « $RepoShareName »
+  - Add    : nom « $ShareName », chemin hôte « $Exchange », lecture/écriture activées
+Puis, dans la VM (PowerShell administrateur) :
+  powershell -ExecutionPolicy Bypass -File "\\vmware-host\Shared Folders\$ShareName\setup\guest-setup.ps1"
+"@
 & $vmrun -T ws enableSharedFolders $Vmx | Out-Null
-& $vmrun -T ws addSharedFolder $Vmx $ShareName $Exchange
-if ($LASTEXITCODE -ne 0) { throw "vmrun addSharedFolder a échoué (code $LASTEXITCODE). La VM est-elle démarrée ?" }
+$addOutput = (& $vmrun -T ws addSharedFolder $Vmx $ShareName $Exchange) -join " "
+if ($LASTEXITCODE -ne 0) {
+	if ($addOutput -match "password") {
+		Write-Host $manual
+		exit 2
+	}
+	throw "vmrun addSharedFolder a échoué (code $LASTEXITCODE) : $addOutput"
+}
 & $vmrun -T ws setSharedFolderState $Vmx $ShareName $Exchange writable
 if ($RemoveRepoShare) {
 	& $vmrun -T ws removeSharedFolder $Vmx $RepoShareName

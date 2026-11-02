@@ -65,7 +65,104 @@ le lot 0.1 tels que décrits ci-dessous ; les modifier relève d'un nouvel arbit
 | A5 | Conversion physique propre aux véhicules, gravité globale inchangée | 1 stud = 0,28 m ; forces calculées en SI puis converties ; compensation de gravité par véhicule (9,81 m/s² ressentis) ; `Workspace.Gravity` inchangée pour les personnages | Les objets qui ne sont pas des véhicules (cônes, personnages, décors mobiles) restent à la gravité Roblox : leurs interactions avec un véhicule ne sont pas « à l'échelle » ; la conversion suppose 0,28 m/stud pour tous les décors | Tout nouvel objet physique lié aux véhicules (remorques, débris, dégâts) doit utiliser la même conversion ; les calculs de collisions et de dégâts se font en SI |
 | A6 | Simulation hybride : propriété réseau au conducteur, validation contextuelle serveur | Propriété **vérifiée** (`NetworkOwnership`, attribut `SimulationOwnerUserId`) ; véhicules stationnés simulés par le serveur ; plausibilité des mouvements (`MovementRules`) ; contacts entre véhicules de deux joueurs **confirmés par le serveur** avec complément d'impulsion (`CollisionMediator`) ; aucune sanction automatique | Le serveur ne re-simule pas le véhicule piloté : il borne et corrige, il ne garantit pas une trajectoire exacte ; un client modifié peut ignorer un complément d'impulsion (constaté et journalisé, sans sanction) ; le percuteur est arrêté net dans sa propre simulation (§4) | Les dégâts (lot 0.2) seront appliqués **après** confirmation serveur du contact, par le même médiateur ; la charge serveur et réseau à 24 joueurs reste à mesurer (AUD-PERF-01) |
 
-@@COLLISIONS@@
+## 4. Collisions entre véhicules (AUD-PHYS-01, AUD-COLL-01)
+
+### 4.1 Cause mesurée de la poussée faible et variable
+
+Expérience reproductible (`test-vm.cmd -Sessions collision,collision_latence`) : 6 impacts latéraux à 19,5 km/h,
+alternant véhicule percuté **conduit** par le joueur 2 (frein à main) et véhicule **garé** (simulé par le serveur),
+même mise en place, sans latence puis avec 100 ms de délai dans chaque sens. Mesures du serveur et des deux clients.
+
+Avant correction (tâche `20261102-164243`) :
+
+| Mesure | Percuté conduit | Percuté garé |
+|---|---|---|
+| Propriétaires au contact (relevés par le serveur) | joueur 1 percute joueur 2 | joueur 1 percute serveur |
+| Déplacement final du percuté (vue serveur), 0 ms | 0,45 / 0,65 / 0,22 st | 3,19 / 3,46 / 7,10 st |
+| Idem, 100 ms | 1,09 / 0,08 st (+ 1 essai sans contact, voir §4.5) | 3,58 / 3,11 / 4,62 st |
+| Vitesse du percuteur 0,5 s après le contact | **0,05 à 0,09 km/h** (arrêté net) | 8 à 9,5 km/h (pousse le véhicule) |
+| Vitesse de la copie du percuteur vue par le client percuté, au plus près | 0,7 à 7,4 st/s (−1,9 sous latence) | — |
+| (vitesse réelle du percuteur à l'impact) | 19,4 st/s | 19,4 st/s |
+
+**Cause.** Avec la propriété réseau au conducteur (A6), le contact entre deux véhicules de joueurs différents est
+résolu **deux fois, séparément** : chez le percuteur, contre une copie répliquée du véhicule percuté, que sa
+simulation traite comme un obstacle piloté par le flux réseau (le véhicule « ne bouge pas » chez lui : le percuteur
+s'arrête net) ; chez le client percuté, contre une copie du percuteur qui arrive avec deux trajets réseau de retard
+(percuteur → serveur → percuté), donc **déjà arrêtée** à son contact : elle ne transmet presque rien. La quantité
+de mouvement perdue par le percuteur n'est transmise à personne. La variabilité vient de l'instant où les paquets
+répliqués encadrent le contact. Contre un véhicule garé, la boucle est plus courte (percuteur ↔ serveur) : le
+serveur pousse le véhicule garé, le percuteur le voit s'écarter et continue.
+
+### 4.2 Correction (sans téléportation ni sanction)
+
+- `server/Vehicles/CollisionMediator` confirme le choc **à partir des seules observations du serveur** (positions
+  répliquées, jamais une valeur envoyée par un client) : contact des boîtes englobantes, percuteur en approche,
+  rapprochement réel et décélération du percuteur.
+- Il calcule la variation de vitesse due au véhicule percuté (`shared/Vehicles/Physics/CollisionExchange`) :
+  jamais plus que la quantité de mouvement réellement perdue par le percuteur, et jamais plus que le **choc de
+  carrosseries** attendu à la vitesse de rapprochement observée ((1 + e)·mS/(mS + mT)·v, restitution e = 0,3).
+  Un client ne peut donc pas déclencher une poussée plus forte qu'un vrai choc à vitesse plausible.
+- Le propriétaire du véhicule percuté applique seulement le **complément** non reçu dans sa propre simulation
+  (`ApplyImpulseAtPosition` au point de contact) : pas de double comptage, rien n'est jamais retiré (choc frontal).
+- Le serveur vérifie ensuite que le véhicule a réagi ; sinon il journalise, sans sanction (prudence sans immunité).
+- Le serveur suit le choc pendant 0,7 s et renvoie la variation de vitesse **totale** attendue quand elle augmente ;
+  le client n'applique que ce qui lui manque, donc les envois successifs ne se cumulent pas.
+- Véhicules simulés par le serveur : vitesse horizontale et montée plafonnées à la borne physique d'un choc
+  (2 × vitesse du véhicule le plus rapide à proximité + 3 m/s, sans croissance au-delà), chute libre, pour neutraliser
+  les **éjections numériques** mesurées (véhicule garé projeté à 79, 250 puis 440 st après un choc à 20 km/h) ;
+  seule la vitesse est corrigée, jamais la position.
+- À chaque attribution de la propriété, le serveur publie la position qui fait foi (`SimulationPivot`) ; le client
+  recale sa copie locale si elle s'en écarte de plus de 3 st (aucun recalage n'a été nécessaire dans les mesures).
+
+### 4.3 Résultats mesurés après correction
+
+Commit `7ae0c60`, tâche `20261102-180955` (mêmes 6 essais par session ; déplacement final du véhicule percuté, vue serveur) :
+
+| Session | Percuté conduit | Percuté garé | Δv demandé par le serveur | Corrections serveur |
+|---|---|---|---|---|
+| `collision` (0 ms) | 3,89 / 4,44 / 3,54 st | 5,64 / 3,09 / 7,34 st | 3,56 à 3,87 m/s | 0 |
+| `collision_latence` (100 ms par sens) | 3,45 / 3,13 / 3,59 st | 3,34 / 4,69 / 5,62 st | 3,47 à 3,72 m/s | 0 |
+
+Avant correction, le véhicule conduit était déplacé de 0,08 à 1,09 st ; il l'est maintenant de 3,1 à 4,4 st, dans
+la plage du véhicule garé (critère automatisé : entre 0,5 et 2,5 fois la médiane « garé », vérifié à chaque essai).
+Chaque essai « conduit » a donné exactement un échange confirmé, aucun essai « garé » n'en a déclenché ; aucune
+impulsion « non constatée », aucune correction de mouvement.
+
+Itérations mesurées pendant la mise au point (toutes conservées dans `RAPPORT_VALIDATION.md`) : première version
+(Δv calculé trop tôt, 1 à 1,8 m/s, et échange parasite en sens inverse) ; conservation pure (le percuté glissait
+8 à 14,7 st, 2 à 3 fois plus qu'un véhicule garé : choc « élastique ») ; borne de restitution e = 0,3 retenue.
+Éjections de véhicules garés par la physique serveur : 79 st, 250 st puis 440 st mesurés ; une première borne
+(croissance de 50 m/s² admise) a été contournée par une poussée soutenue ; la borne finale n'admet plus de
+croissance au-delà du choc (plus grand déplacement transitoire mesuré ensuite : 16,5 st, final 4,7 st).
+
+### 4.4 Différences physiques légitimes entre véhicule garé et véhicule conduit
+
+| Aspect | Véhicule garé | Véhicule conduit | Légitime ? |
+|---|---|---|---|
+| Qui simule | le serveur | le client du conducteur (A6) | Oui : choix d'architecture |
+| Freins | frein à main serré, moteur coupé | ce que fait le conducteur (dans l'expérience : frein à main) | Oui |
+| Masse | véhicule seul | véhicule + personnage assis (soudé au véhicule) | Oui, faible écart |
+| Résolution du contact | une seule simulation (serveur) avec la copie du percuteur | deux simulations + complément confirmé serveur | Écart résiduel : voir ci-dessous |
+| Percuteur après le choc | continue en poussant (~8 à 12 km/h après 0,5 s) | **s'arrête net** dans sa propre simulation | **Non** : limite connue (le véhicule percuté reçoit la quantité de mouvement, mais le percuteur ne la conserve pas) |
+| Délai de la poussée chez le percuté | un trajet réseau | deux trajets réseau + confirmation serveur (~0,1 à 0,4 s) | Oui, inhérent à la latence |
+
+### 4.5 Limites restantes
+
+- Le percuteur s'arrête net contre le véhicule d'un autre joueur (au lieu de continuer à ~moitié de sa vitesse) :
+  corriger cela demanderait de déplacer la simulation pendant le choc (propriété réseau temporaire), proposé au lot 0.2.
+- La normale de contact est approchée par la direction entre les centres : un choc décentré ou en angle produit une
+  poussée moins exacte (rotation comprise, via le point d'application).
+- Un client modifié peut ignorer le complément : l'écart est constaté et journalisé, sans sanction automatique.
+- Seuls des chocs latéraux à 20 km/h sont automatisés ; chocs frontaux, à haute vitesse, à plus de deux véhicules : non testés.
+- **Anomalie intermittente non expliquée** : dans 6 des 17 sessions de collision exécutées (tâches `164243`,
+  `170653` ×2, `171642` ×2, `182028`), un essai sur six n'a pas eu lieu : le véhicule du joueur 1, réembarqué juste
+  après un repositionnement par le serveur de test, ne bougeait pas (ou percutait autre chose) chez son client, puis
+  était corrigé (« Teleport », sans sanction). Même famille qu'un client qui ne simule pas son véhicule pourtant
+  attribué (`RAPPORT_VALIDATION.md` §5.1). Le recalage sur la position serveur a été ajouté sans s'être déclenché ;
+  cause non établie.
+- Un véhicule garé percuté peut encore se déplacer vite pendant un instant (16,5 st au plus, mesuré) avant de
+  retomber dans la borne.
+
 ## 5. Limites techniques connues
 
 - Essais Studio automatisés (avec captures) : clavier, manette et ressenti restent à vérifier par un humain.

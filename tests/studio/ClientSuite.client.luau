@@ -238,6 +238,23 @@ record(
     "DriverUserId=" .. tostring(model:GetAttribute("DriverUserId"))
 )
 
+-- Diagnostic de la simulation locale (anomalie intermittente : véhicule attribué à ce
+-- client par le serveur mais immobile chez lui). Informations seulement.
+local function diagnose(label: string)
+    local s = snapshot()
+    local pivot = model:GetAttribute("SimulationPivot")
+    measures[label .. "_simulation_active"] = if s.SimulationActive then 1 else 0
+    measures[label .. "_attribut_simulation"] = model:GetAttribute("SimulationOwnerUserId")
+    measures[label .. "_recalages"] = s.Resyncs
+    measures[label .. "_ancre_localement"] = if root.Anchored then 1 else 0
+    measures[label .. "_age_reception_s"] = root.ReceiveAge
+    measures[label .. "_ecart_position_serveur_st"] = if typeof(pivot) == "CFrame"
+        then (root.Position - pivot.Position).Magnitude
+        else -1
+    measures[label .. "_roues_au_sol"] = s.GroundedWheels
+end
+diagnose("diag_embarquement")
+
 -- Habitacle : le haut de la tête du conducteur assis doit rester sous le toit
 -- (défaut constaté sur les captures). Mesure dans le repère du châssis, en studs.
 task.wait(0.5)
@@ -289,6 +306,7 @@ task.wait(2.5)
 local rest = snapshot()
 measures.repos_vitesse_1_5s_kmh = restEarly.SpeedKmh
 measures.repos_vitesse_4s_kmh = rest.SpeedKmh
+diagnose("diag_repos")
 record(
     "client.repos_quatre_roues",
     rest.GroundedWheels == 4 and rest.SpeedKmh < 0.5,

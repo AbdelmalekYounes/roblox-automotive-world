@@ -420,7 +420,7 @@ elseif isCollisionSession then
         noContactTrials == 0,
         string.format("%d essai(s) sans contact sur %d", noContactTrials, #TRIALS),
         "véhicule du joueur 1 immobile chez lui après un réembarquement suivant un repositionnement par le "
-            .. "serveur de test, puis corrigé (Teleport) ; cause non établie ; voir RAPPORT_VALIDATION.md §6"
+            .. "serveur de test, puis corrigé (Teleport) ; cause non établie ; voir RAPPORT_VALIDATION.md §5"
     )
     record(
         "scenario.collision_impulsions_constatees",

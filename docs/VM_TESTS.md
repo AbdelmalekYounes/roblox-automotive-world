@@ -55,12 +55,15 @@ Statut ⚠️ « limite connue » : contrôle en échec dont la cause est docume
 Déjà fait : VMware Workstation, VM Windows 11 avec 3D, session ouverte automatiquement, Roblox Studio installé et
 connecté avec un compte de test.
 
-1. **Sur l'hôte**, partager uniquement le dossier d'échange avec la VM (VM démarrée) :
+1. **Sur l'hôte**, partager uniquement le dossier d'échange avec la VM :
    ```powershell
-   powershell -ExecutionPolicy Bypass -File tools\vm\configure-share.ps1                    # aperçu, ne change rien
    powershell -ExecutionPolicy Bypass -File tools\vm\configure-share.ps1 -Apply -RemoveRepoShare
    ```
-   Le dossier d'échange est créé et reçoit `setup\` (scripts à lancer dans la VM).
+   Le script crée `E:\ROBLOX DEV\aw-vm-exchange` et y publie `setup\`. La VM « ROBLOX DEV » étant **chiffrée**,
+   `vmrun` exige son mot de passe pour modifier les partages (constaté le 2 novembre 2026) : le script affiche alors
+   les étapes à faire **à la main dans VMware Workstation** (*VM > Settings > Options > Shared Folders* : retirer
+   `roblox-automotive-world-starter`, ajouter `aw-vm-exchange` → `E:\ROBLOX DEV\aw-vm-exchange`, lecture/écriture).
+   Aucun mot de passe n'est demandé ni stocké par les scripts.
 2. **Dans la VM** (action manuelle du propriétaire), PowerShell **administrateur** depuis le compte qui s'ouvre
    automatiquement :
    ```powershell
@@ -103,9 +106,10 @@ dans la VM elle-même.
 
 ## Sécurité : état et historique
 
-- **Partage restreint** : jusqu'au 2 novembre 2026, le partage `roblox-automotive-world-starter` donnait à la VM un
-  accès en écriture à tout le dépôt. Il est remplacé par le seul dossier d'échange, hors du dépôt (voir
-  `RAPPORT_VALIDATION.md` du lot 0.1 pour l'état réellement appliqué).
+- **Partage restreint** : le partage `roblox-automotive-world-starter` donne à la VM un accès en écriture à tout le
+  dépôt. Les scripts sont prêts pour le seul dossier d'échange, hors du dépôt ; **au 2 novembre 2026, le changement
+  de partage reste à faire à la main** dans VMware Workstation (VM chiffrée), puis `guest-setup.ps1` à relancer dans
+  la VM (étapes 1 et 2 ci-dessus). Tant que ce n'est pas fait : `test-vm.cmd -Exchange "<dépôt>uildm-exchange"`.
 - **Captures sans exclusion antivirus** : l'ancien script PowerShell de capture était bloqué par Windows Defender (AMSI) ;
   le propriétaire avait ajouté dans la VM une exclusion `C:\AWTests`. La capture est désormais faite par un petit
   outil compilé **dans la VM** à partir d'un source lisible (`tools\vm\ScreenCapture.cs`), exécuté depuis

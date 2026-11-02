@@ -4,8 +4,10 @@
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre du livrable** : une zone d'essai isolée et **un seul véhicule fictif de test** (« Prototype d'essai P-01 »),
 > pilotable au clavier et à la manette. Ni catalogue, ni carte, ni économie, ni sauvegarde.
-> **Statut** : vérifié hors Studio et **dans Roblox Studio** via la VM de test (214/214 contrôles automatisés sur
-> 5 sessions, captures d'écran réelles) ; clavier/manette réels et ressenti restent à vérifier (voir [docs/lot-0.1/RAPPORT_TESTS.md](docs/lot-0.1/RAPPORT_TESTS.md)).
+> **Statut** : finalisation du lot en cours de revue (PR #1, **non fusionnée**). Hors Studio : tous les contrôles
+> verts (100 tests Lune). Dans Roblox Studio via la VM de test : collisions entre joueurs corrigées, propriété réseau
+> vérifiée ; une anomalie intermittente de simulation client reste ouverte, et clavier/manette réels et ressenti
+> restent à vérifier par un humain. Détail : [docs/lot-0.1/RAPPORT_VALIDATION.md](docs/lot-0.1/RAPPORT_VALIDATION.md).
 
 ## Prérequis (Windows)
 
