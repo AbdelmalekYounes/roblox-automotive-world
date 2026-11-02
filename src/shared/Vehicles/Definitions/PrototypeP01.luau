@@ -18,7 +18,9 @@ local definition: Types.VehicleDefinition = {
         MassKg = 1250,
         LengthM = 4.3,
         WidthM = 1.8,
-        HeightM = 1.45,
+        -- Hauteur visuelle seulement : relevée après mesure en Studio (tête de
+        -- l'avatar assis qui dépassait du toit de 0,38 stud à 1,45 m).
+        HeightM = 1.62,
         WheelbaseM = 2.55,
         TrackFrontM = 1.52,
         TrackRearM = 1.54,

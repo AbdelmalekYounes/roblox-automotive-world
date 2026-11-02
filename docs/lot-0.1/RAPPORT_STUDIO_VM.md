@@ -1,4 +1,4 @@
-﻿# Rapport de tests Roblox Studio (VM) 20261102-140007
+﻿# Rapport de tests Roblox Studio (VM) 20261102-141650
 
 _Généré automatiquement à partir de la sortie réelle de Studio. Chaque ligne correspond à une observation faite dans le moteur Roblox pendant la session indiquée._
 
@@ -6,15 +6,15 @@ _Généré automatiquement à partir de la sortie réelle de Studio. Chaque lign
 |---|---|
 | Studio | C:\Users\mimictest\AppData\Local\Roblox\Versions\version-7062aec9dbe74b14\RobloxStudioBeta.exe |
 | Machine invitée / écran | DEV /  |
-| Durée | 216.5 s |
+| Durée | 219.6 s |
 | Délai dépassé | False |
-| Captures d'écran | 0 (dossier screenshots) — état : bloquées par l'antivirus de la VM |
+| Captures d'écran | 81 (dossier screenshots) — état : ok |
 
 Version Roblox : `0.745.0.7451137`
 
 ## Session « solo »
 
-Durée 46,2 s, tentatives 1
+Durée 46,9 s, tentatives 1
 
 ### Serveur
 | Résultat | Contrôle | Détail |
@@ -22,63 +22,66 @@ Durée 46,2 s, tentatives 1
 | ✅ | `serveur.zone_creee` | 116 instances |
 | ✅ | `serveur.quatre_vehicules` | 4 véhicules |
 | ✅ | `serveur.canaux_reseau` | 3 |
-| ✅ | `serveur.vehicules_poses_et_immobiles` | VehiculeEssai_1: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_2: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_3: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_4: Y=1.78 vitesse=0.00 st/s droit=1.000 |
+| ✅ | `serveur.vehicules_poses_et_immobiles` | VehiculeEssai_1: Y=1.78 vitesse=0.01 st/s droit=1.000 \| VehiculeEssai_2: Y=1.77 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_3: Y=1.77 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_4: Y=1.77 vitesse=0.00 st/s droit=1.000 |
 | ✅ | `serveur.rapports_clients_recus` | 1 attendu(s) |
-| ✅ | `serveur.propriete_reseau_conducteur` | 74 concordants, 2 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur |
+| ✅ | `serveur.propriete_reseau_conducteur` | 76 concordants, 2 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur |
 | ✅ | `serveur.vehicules_libres_immobiles` | VehiculeEssai_2: 0.00 st \| VehiculeEssai_4: 0.00 st \| VehiculeEssai_3: 0.00 st |
 | ✅ | `serveur.aucune_erreur_execution` |  |
 | ✅ | `serveur.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 | ✅ | `serveur.info_invites_recues` | 1 : 941826283→VehiculeEssai_1 |
-| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement inhabituel (FastDisplacement), toléré. Occurrences : 1 \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-88e8135e-da5a-462e-bf5d-efbe6d30dac9, conducteur 941826283 : position corrigée, aucune sanction. |
+| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement inhabituel (FastDisplacement), toléré. Occurrences : 1 \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-e3e7591a-9bbe-4c79-81c4-a764fb0d6f4a, conducteur 941826283 : position corrigée, aucune sanction. |
 
 ### Client 941826283 — VehiculeEssai_1
 | Résultat | Contrôle | Détail |
 |---|---|---|
 | ✅ | `client.demarrage` | bannière affichée |
-| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.7 st, invite active=false, ping 1 ms |
+| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.5 st, invite active=false, ping 2 ms |
 | ✅ | `client.session_conduite` | caméra=Scriptable HUD=true |
 | ✅ | `client.propriete_attribuee` | DriverUserId=941826283 |
+| ✅ | `client.tete_sous_le_toit` | marge tête 0.68 st, marge avec accessoires 0.34 st |
 | ✅ | `client.repos_quatre_roues` | roues=4 ; vitesse 0.00 km/h à 1,5 s, 0.00 km/h à 4 s |
 | ✅ | `client.acceleration_progressive` | 3.6 km/h à 0,25 s ; 14.6 km/h à 1 s |
 | ✅ | `client.atteint_100_kmh` | 8.57 s (horloge client) |
 | ✅ | `client.rapports_montent` | rapport max 3 |
-| ✅ | `client.acceleration_bornee` | 7.45 m/s² max (moyenne glissante 50 ms) |
+| ✅ | `client.acceleration_bornee` | 7.41 m/s² max (moyenne glissante 50 ms) |
 | ✅ | `client.sortie_refusee_en_roulant` | notification ExitTooFast=true |
-| ✅ | `client.freinage_arret` | depuis 100 km/h : 47.6 m en 3.40 s |
-| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.02 m/s |
-| ✅ | `client.virage_droite` | 77.1° en 2 s |
-| ✅ | `client.virage_gauche` | -65.5° en 2 s |
+| ✅ | `client.freinage_arret` | depuis 100 km/h : 47.5 m en 3.40 s |
+| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.07 m/s |
+| ✅ | `client.virage_droite` | 77.3° en 2 s |
+| ✅ | `client.virage_gauche` | -64.7° en 2 s |
 | ✅ | `client.camera_proche_lointaine` | proche 14.5 st, Lointaine 24.0 st |
 | ✅ | `client.frein_a_main_maintien` | déplacement 0.00 st |
 | ✅ | `client.remise_sur_roues_inutile_refusee` |  |
 | ✅ | `client.correction_mouvement_impossible` | notification=true, écart 0.0 st à 0,5 s, 0.0 st après retour au conducteur |
-| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.5 st |
+| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.8 st |
 | ✅ | `client.vehicule_libere` | DriverUserId=0 |
 | ✅ | `client.aucune_erreur_execution` |  |
 | ✅ | `client.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 
 | Mesure (moteur Roblox) | Valeur |
 |---|---|
-| repos_vitesse_4s_kmh | 0.00022328211343847215 |
-| hud_0_100_s | 8.464619102189318 |
-| correction_ecart_0_5s_st | 0.004373535513877869 |
-| virage_droite_deg | 77.0684760182107 |
-| acceleration_max_ms2 | 7.454407337897138 |
-| virage_gauche_deg | -65.45973705243091 |
-| freinage_depuis_kmh | 100.48780975341798 |
-| hud_100_0_m | 46.16799518787183 |
-| correction_ecart_final_st | 0.0051038386300206188 |
-| freinage_distance_m | 47.55770263671875 |
-| zero_a_cent_s | 8.565093999999818 |
-| ping_fin_ms | 2 |
-| repos_vitesse_1_5s_kmh | 0.00023046642600093039 |
+| correction_ecart_0_5s_st | 0.00362192839384079 |
+| virage_droite_deg | 77.3152744209278 |
+| correction_ecart_final_st | 0.0018241815268993378 |
+| freinage_depuis_kmh | 100.3775001525879 |
+| freinage_duree_s | 3.4013033000001089 |
+| hud_0_100_s | 8.466742306249217 |
+| acceleration_max_ms2 | 7.409566368197729 |
+| virage_gauche_deg | -64.6631497781065 |
+| repos_vitesse_4s_kmh | 0.00022327071928884834 |
+| freinage_distance_m | 47.47707702636719 |
+| marge_tete_toit_st | 0.6762505993247032 |
+| ping_fin_ms | 4 |
+| repos_vitesse_1_5s_kmh | 0.00024161181645467877 |
+| marge_personnage_toit_st | 0.3383304700255394 |
+| zero_a_cent_s | 8.56569189999982 |
 | joueur | 1 |
-| freinage_duree_s | 3.4011502999999267 |
-| ping_ms | 2 |
+| hud_100_0_m | 46.08886173353671 |
+| ping_ms | 0 |
 
 ## Session « multijoueur »
 
-Durée 71,1 s, tentatives 1
+Durée 74,7 s, tentatives 1
 
 ### Serveur
 | Résultat | Contrôle | Détail |
@@ -88,58 +91,61 @@ Durée 71,1 s, tentatives 1
 | ✅ | `serveur.canaux_reseau` | 3 |
 | ✅ | `serveur.vehicules_poses_et_immobiles` | VehiculeEssai_1: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_2: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_3: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_4: Y=1.78 vitesse=0.00 st/s droit=1.000 |
 | ✅ | `serveur.rapports_clients_recus` | 2 attendu(s) |
-| ✅ | `serveur.propriete_reseau_conducteur` | 160 concordants, 4 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur |
-| ✅ | `serveur.vehicules_libres_immobiles` | VehiculeEssai_2: 1.30 st \| VehiculeEssai_3: 0.30 st |
+| ✅ | `serveur.propriete_reseau_conducteur` | 163 concordants, 4 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur |
+| ✅ | `serveur.vehicules_libres_immobiles` | VehiculeEssai_3: 0.11 st \| VehiculeEssai_2: 0.05 st |
 | ✅ | `serveur.aucune_erreur_execution` |  |
 | ✅ | `serveur.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 | ✅ | `serveur.info_invites_recues` | 2 : -1→VehiculeEssai_1, -2→VehiculeEssai_4 |
-| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-2b65ec01-4ffd-4ded-a11e-63a5661797f0, conducteur -1 : position corrigée, aucune sanction. \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-00723092-864c-4027-8e18-576fcfc44cfd, conducteur -2 : position corrigée, aucune sanction. |
+| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-64f7ea0c-9bdd-4c3e-8ae6-aa2847c75c15, conducteur -1 : position corrigée, aucune sanction. \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-5f3bba35-356b-4488-8f21-42406fae226c, conducteur -2 : position corrigée, aucune sanction. |
 
 ### Client -1 — VehiculeEssai_1
 | Résultat | Contrôle | Détail |
 |---|---|---|
 | ✅ | `client.demarrage` | bannière affichée |
-| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.7 st, invite active=false, ping 5 ms |
+| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.5 st, invite active=false, ping 15 ms |
 | ✅ | `client.session_conduite` | caméra=Scriptable HUD=true |
 | ✅ | `client.propriete_attribuee` | DriverUserId=-1 |
+| ✅ | `client.tete_sous_le_toit` | marge tête 0.68 st, marge avec accessoires 0.34 st |
 | ✅ | `client.info_attente_joueur_2` | signal reçu=true |
 | ✅ | `client.repos_quatre_roues` | roues=4 ; vitesse 0.00 km/h à 1,5 s, 0.00 km/h à 4 s |
-| ✅ | `client.acceleration_progressive` | 3.6 km/h à 0,25 s ; 13.6 km/h à 1 s |
-| ✅ | `client.atteint_100_kmh` | 8.60 s (horloge client) |
+| ✅ | `client.acceleration_progressive` | 3.6 km/h à 0,25 s ; 14.4 km/h à 1 s |
+| ✅ | `client.atteint_100_kmh` | 8.55 s (horloge client) |
 | ✅ | `client.rapports_montent` | rapport max 3 |
-| ✅ | `client.acceleration_bornee` | 6.49 m/s² max (moyenne glissante 50 ms) |
+| ✅ | `client.acceleration_bornee` | 5.02 m/s² max (moyenne glissante 50 ms) |
 | ✅ | `client.sortie_refusee_en_roulant` | notification ExitTooFast=true |
 | ✅ | `client.freinage_arret` | depuis 100 km/h : 47.5 m en 3.40 s |
-| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.12 m/s |
-| ✅ | `client.virage_droite` | 77.8° en 2 s |
+| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.07 m/s |
+| ✅ | `client.virage_droite` | 77.1° en 2 s |
 | ✅ | `client.virage_gauche` | -65.5° en 2 s |
 | ✅ | `client.camera_proche_lointaine` | proche 14.5 st, Lointaine 24.0 st |
 | ✅ | `client.frein_a_main_maintien` | déplacement 0.00 st |
 | ✅ | `client.remise_sur_roues_inutile_refusee` |  |
-| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 57.4 st à 0,5 s, 1.1 st après retour au conducteur |
-| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.6 st |
+| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 73.0 st à 0,5 s, 2.5 st après retour au conducteur |
+| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.1 st |
 | ✅ | `client.vehicule_libere` | DriverUserId=0 |
 | ✅ | `client.aucune_erreur_execution` |  |
 | ✅ | `client.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 
 | Mesure (moteur Roblox) | Valeur |
 |---|---|
+| correction_ecart_0_5s_st | 73.00157165527344 |
+| virage_droite_deg | 77.11123787173234 |
+| correction_ecart_final_st | 2.4920337200164797 |
+| freinage_depuis_kmh | 100.26410064697267 |
+| freinage_duree_s | 3.4046714000000977 |
+| hud_0_100_s | 8.45034940354526 |
+| acceleration_max_ms2 | 5.024300692643951 |
+| virage_gauche_deg | -65.49200121856986 |
+| zero_a_cent_s | 8.55034250000017 |
+| repos_vitesse_4s_kmh | 0.00021917488920735197 |
+| marge_tete_toit_st | 0.676250122487545 |
+| ping_fin_ms | 4 |
+| freinage_distance_m | 47.505625610351568 |
+| marge_personnage_toit_st | 0.3383299931883812 |
+| repos_vitesse_1_5s_kmh | 0.00022065889206714928 |
 | joueur | 1 |
-| correction_ecart_0_5s_st | 57.435699462890628 |
-| repos_vitesse_4s_kmh | 0.00022368014906533064 |
-| virage_droite_deg | 77.8024862130561 |
-| acceleration_max_ms2 | 6.492469926531604 |
-| virage_gauche_deg | -65.48661025416378 |
-| repos_vitesse_1_5s_kmh | 0.0003112978854915127 |
-| hud_100_0_m | 46.0644482557817 |
-| correction_ecart_final_st | 1.0796804428100587 |
-| hud_0_100_s | 8.499308100668714 |
-| zero_a_cent_s | 8.599805099999913 |
-| ping_fin_ms | 6 |
-| freinage_distance_m | 47.45149353027344 |
-| freinage_depuis_kmh | 100.29154586791992 |
-| freinage_duree_s | 3.4005670999999895 |
-| ping_ms | 12 |
+| hud_100_0_m | 46.11890405355119 |
+| ping_ms | 20 |
 
 ### Client -2 — VehiculeEssai_4
 | Résultat | Contrôle | Détail |
@@ -147,50 +153,53 @@ Durée 71,1 s, tentatives 1
 | ✅ | `client.demarrage` | bannière affichée |
 | ✅ | `client.vehicule_occupe_refuse` | invite active=false |
 | ✅ | `client.voit_autre_conducteur` | DriverUserId=-1 |
-| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.7 st, invite active=false, ping 3 ms |
+| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.5 st, invite active=false, ping 5 ms |
 | ✅ | `client.session_conduite` | caméra=Scriptable HUD=true |
 | ✅ | `client.propriete_attribuee` | DriverUserId=-2 |
+| ✅ | `client.tete_sous_le_toit` | marge tête 0.68 st, marge avec accessoires 0.34 st |
 | ✅ | `client.repos_quatre_roues` | roues=4 ; vitesse 0.00 km/h à 1,5 s, 0.00 km/h à 4 s |
-| ✅ | `client.acceleration_progressive` | 3.3 km/h à 0,25 s ; 14.3 km/h à 1 s |
-| ✅ | `client.atteint_100_kmh` | 8.57 s (horloge client) |
+| ✅ | `client.acceleration_progressive` | 3.4 km/h à 0,25 s ; 13.4 km/h à 1 s |
+| ✅ | `client.atteint_100_kmh` | 8.63 s (horloge client) |
 | ✅ | `client.rapports_montent` | rapport max 3 |
-| ✅ | `client.acceleration_bornee` | 5.06 m/s² max (moyenne glissante 50 ms) |
+| ✅ | `client.acceleration_bornee` | 6.10 m/s² max (moyenne glissante 50 ms) |
 | ✅ | `client.sortie_refusee_en_roulant` | notification ExitTooFast=true |
-| ✅ | `client.freinage_arret` | depuis 100 km/h : 47.6 m en 3.40 s |
-| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.09 m/s |
-| ✅ | `client.virage_droite` | 77.6° en 2 s |
-| ✅ | `client.virage_gauche` | -65.6° en 2 s |
+| ✅ | `client.freinage_arret` | depuis 100 km/h : 47.5 m en 3.40 s |
+| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.00 m/s |
+| ✅ | `client.virage_droite` | 77.7° en 2 s |
+| ✅ | `client.virage_gauche` | -65.5° en 2 s |
 | ✅ | `client.camera_proche_lointaine` | proche 14.5 st, Lointaine 24.0 st |
 | ✅ | `client.frein_a_main_maintien` | déplacement 0.00 st |
 | ✅ | `client.remise_sur_roues_inutile_refusee` |  |
-| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 70.2 st à 0,5 s, 2.0 st après retour au conducteur |
-| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.5 st |
+| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 0.0 st à 0,5 s, 0.0 st après retour au conducteur |
+| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.7 st |
 | ✅ | `client.vehicule_libere` | DriverUserId=0 |
 | ✅ | `client.aucune_erreur_execution` |  |
-| ✅ | `client.info_erreurs_internes_roblox` | 1 erreur(s) hors de notre code : Players.Player2.PlayerScripts.ChatScript:116: Error calling SetCore CoreGuiChatConnections: SetCore: CoreGuiChatConnections has not been registered by the CoreScripts |
+| ✅ | `client.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 
 | Mesure (moteur Roblox) | Valeur |
 |---|---|
-| joueur | 2 |
-| correction_ecart_0_5s_st | 70.20557403564453 |
-| repos_vitesse_4s_kmh | 0.00022326362086459996 |
-| virage_droite_deg | 77.61861010796365 |
-| acceleration_max_ms2 | 5.061710762919345 |
-| virage_gauche_deg | -65.64472790822618 |
-| repos_vitesse_1_5s_kmh | 0.00022376006527338176 |
-| hud_100_0_m | 45.72950988585969 |
-| correction_ecart_final_st | 1.9801967144012452 |
-| hud_0_100_s | 8.465242106467486 |
-| zero_a_cent_s | 8.566727499999843 |
+| correction_ecart_0_5s_st | 0.001712847501039505 |
+| virage_droite_deg | 77.66062431500272 |
+| correction_ecart_final_st | 0.004267917480319738 |
+| freinage_depuis_kmh | 100.33549118041992 |
+| freinage_duree_s | 3.3983432999998515 |
+| hud_0_100_s | 8.484439365565777 |
+| acceleration_max_ms2 | 6.1012169660611959 |
+| virage_gauche_deg | -65.51139247799438 |
+| zero_a_cent_s | 8.634574499999872 |
+| repos_vitesse_4s_kmh | 0.00021454583911690862 |
+| marge_tete_toit_st | 0.6762508377432823 |
 | ping_fin_ms | 4 |
-| freinage_distance_m | 47.5759375 |
-| freinage_depuis_kmh | 100.32914657592774 |
-| freinage_duree_s | 3.3991353999999776 |
-| ping_ms | 17 |
+| freinage_distance_m | 47.45923095703125 |
+| marge_personnage_toit_st | 0.3383307084441185 |
+| repos_vitesse_1_5s_kmh | 0.00022948752448428422 |
+| joueur | 2 |
+| hud_100_0_m | 44.70261184735985 |
+| ping_ms | 5 |
 
 ## Session « latence »
 
-Durée 77,8 s, tentatives 1 ; latence demandée 100 ms (réglage appliqué : True)
+Durée 77,1 s, tentatives 1 ; latence demandée 100 ms (réglage appliqué : True)
 
 ### Serveur
 | Résultat | Contrôle | Détail |
@@ -200,57 +209,60 @@ Durée 77,8 s, tentatives 1 ; latence demandée 100 ms (réglage appliqué : Tru
 | ✅ | `serveur.canaux_reseau` | 3 |
 | ✅ | `serveur.vehicules_poses_et_immobiles` | VehiculeEssai_1: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_2: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_3: Y=1.78 vitesse=0.00 st/s droit=1.000 \| VehiculeEssai_4: Y=1.78 vitesse=0.00 st/s droit=1.000 |
 | ✅ | `serveur.rapports_clients_recus` | 2 attendu(s) |
-| ✅ | `serveur.propriete_reseau_conducteur` | 164 concordants, 4 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur |
-| ✅ | `serveur.vehicules_libres_immobiles` | VehiculeEssai_3: 0.21 st \| VehiculeEssai_2: 0.06 st |
+| ✅ | `serveur.propriete_reseau_conducteur` | 171 concordants, 4 discordants VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_1 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur, VehiculeEssai_4 propriétaire=serveur |
+| ✅ | `serveur.vehicules_libres_immobiles` | VehiculeEssai_3: 0.13 st \| VehiculeEssai_2: 0.16 st |
 | ✅ | `serveur.aucune_erreur_execution` |  |
 | ✅ | `serveur.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 | ✅ | `serveur.info_invites_recues` | 2 : -1→VehiculeEssai_1, -2→VehiculeEssai_4 |
-| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-3e6b00d2-bb8a-4951-878d-1d715daa752a, conducteur -1 : position corrigée, aucune sanction. \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-c01441b7-9678-4449-bdb7-987709010a4f, conducteur -2 : position corrigée, aucune sanction. |
+| ✅ | `serveur.journal_validation` | 2 message(s) : [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-ae3a410e-7cf3-4f2f-8e7e-8cf162a601c2, conducteur -1 : position corrigée, aucune sanction. \|\| [AutomotiveWorld][Validation] Mouvement impossible (Teleport) sur essai-c6da1b85-8213-4d8c-9e2f-8ba55a643320, conducteur -2 : position corrigée, aucune sanction. |
 
 ### Client -1 — VehiculeEssai_1
 | Résultat | Contrôle | Détail |
 |---|---|---|
 | ✅ | `client.demarrage` | bannière affichée |
-| ✅ | `client.embarquement_invite` | essai 1 : non assis, distance porte 1.6 st, invite active=true, ping 204 ms ; essai 2 : assis, distance porte 2.7 st, invite active=false, ping 205 ms |
+| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.5 st, invite active=false, ping 213 ms |
 | ✅ | `client.session_conduite` | caméra=Scriptable HUD=true |
 | ✅ | `client.propriete_attribuee` | DriverUserId=-1 |
+| ✅ | `client.tete_sous_le_toit` | marge tête 0.69 st, marge avec accessoires 0.35 st |
 | ✅ | `client.info_attente_joueur_2` | signal reçu=true |
 | ✅ | `client.repos_quatre_roues` | roues=4 ; vitesse 0.00 km/h à 1,5 s, 0.00 km/h à 4 s |
 | ✅ | `client.acceleration_progressive` | 3.6 km/h à 0,25 s ; 14.6 km/h à 1 s |
 | ✅ | `client.atteint_100_kmh` | 8.55 s (horloge client) |
 | ✅ | `client.rapports_montent` | rapport max 3 |
-| ✅ | `client.acceleration_bornee` | 4.95 m/s² max (moyenne glissante 50 ms) |
+| ✅ | `client.acceleration_bornee` | 4.82 m/s² max (moyenne glissante 50 ms) |
 | ✅ | `client.sortie_refusee_en_roulant` | notification ExitTooFast=true |
-| ✅ | `client.freinage_arret` | depuis 102 km/h : 48.7 m en 3.45 s |
-| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.07 m/s |
-| ✅ | `client.virage_droite` | 77.8° en 2 s |
-| ✅ | `client.virage_gauche` | -64.8° en 2 s |
+| ✅ | `client.freinage_arret` | depuis 102 km/h : 48.6 m en 3.43 s |
+| ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.08 m/s |
+| ✅ | `client.virage_droite` | 77.7° en 2 s |
+| ✅ | `client.virage_gauche` | -65.7° en 2 s |
 | ✅ | `client.camera_proche_lointaine` | proche 14.5 st, Lointaine 24.0 st |
 | ✅ | `client.frein_a_main_maintien` | déplacement 0.00 st |
 | ✅ | `client.remise_sur_roues_inutile_refusee` |  |
-| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 17.1 st à 0,5 s, 0.2 st après retour au conducteur |
-| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.5 st |
+| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 62.3 st à 0,5 s, 0.5 st après retour au conducteur |
+| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.9 st |
 | ✅ | `client.vehicule_libere` | DriverUserId=0 |
 | ✅ | `client.aucune_erreur_execution` |  |
 | ✅ | `client.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 
 | Mesure (moteur Roblox) | Valeur |
 |---|---|
+| correction_ecart_0_5s_st | 62.29597091674805 |
+| virage_droite_deg | 77.67176334993961 |
+| correction_ecart_final_st | 0.5251240730285645 |
+| freinage_depuis_kmh | 101.77011337280274 |
+| freinage_duree_s | 3.43225990000019 |
+| hud_0_100_s | 8.448393801227212 |
+| acceleration_max_ms2 | 4.822568732663559 |
+| virage_gauche_deg | -65.71056164297119 |
+| zero_a_cent_s | 8.549099100000149 |
+| repos_vitesse_4s_kmh | 0.00022314988891594111 |
+| marge_tete_toit_st | 0.688323400914669 |
+| ping_fin_ms | 205 |
+| freinage_distance_m | 48.62935974121094 |
+| marge_personnage_toit_st | 0.35188981145620348 |
+| repos_vitesse_1_5s_kmh | 0.0001943071183632128 |
 | joueur | 1 |
-| correction_ecart_0_5s_st | 17.09086036682129 |
-| repos_vitesse_4s_kmh | 0.00022417544096242636 |
-| virage_droite_deg | 77.79304626458809 |
-| acceleration_max_ms2 | 4.947399401697713 |
-| virage_gauche_deg | -64.75192200361319 |
-| repos_vitesse_1_5s_kmh | 0.00022319706331472844 |
-| hud_100_0_m | 46.04791638776616 |
-| correction_ecart_final_st | 0.15368475019931794 |
-| hud_0_100_s | 8.452180014923215 |
-| zero_a_cent_s | 8.549614799999972 |
-| ping_fin_ms | 204 |
-| freinage_distance_m | 48.728241577148448 |
-| freinage_depuis_kmh | 101.80696563720703 |
-| freinage_duree_s | 3.4485471000000418 |
+| hud_100_0_m | 45.836148950678239 |
 | ping_ms | 206 |
 
 ### Client -2 — VehiculeEssai_4
@@ -259,47 +271,50 @@ Durée 77,8 s, tentatives 1 ; latence demandée 100 ms (réglage appliqué : Tru
 | ✅ | `client.demarrage` | bannière affichée |
 | ✅ | `client.vehicule_occupe_refuse` | invite active=false |
 | ✅ | `client.voit_autre_conducteur` | DriverUserId=-1 |
-| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.7 st, invite active=false, ping 206 ms |
+| ✅ | `client.embarquement_invite` | essai 1 : assis, distance porte 2.5 st, invite active=false, ping 205 ms |
 | ✅ | `client.session_conduite` | caméra=Scriptable HUD=true |
 | ✅ | `client.propriete_attribuee` | DriverUserId=-2 |
+| ✅ | `client.tete_sous_le_toit` | marge tête 0.68 st, marge avec accessoires 0.34 st |
 | ✅ | `client.repos_quatre_roues` | roues=4 ; vitesse 0.00 km/h à 1,5 s, 0.00 km/h à 4 s |
-| ✅ | `client.acceleration_progressive` | 3.4 km/h à 0,25 s ; 14.4 km/h à 1 s |
-| ✅ | `client.atteint_100_kmh` | 8.65 s (horloge client) |
+| ✅ | `client.acceleration_progressive` | 3.6 km/h à 0,25 s ; 14.4 km/h à 1 s |
+| ✅ | `client.atteint_100_kmh` | 8.62 s (horloge client) |
 | ✅ | `client.rapports_montent` | rapport max 3 |
-| ✅ | `client.acceleration_bornee` | 8.86 m/s² max (moyenne glissante 50 ms) |
+| ✅ | `client.acceleration_bornee` | 8.61 m/s² max (moyenne glissante 50 ms) |
 | ✅ | `client.sortie_refusee_en_roulant` | notification ExitTooFast=true |
 | ✅ | `client.freinage_arret` | depuis 102 km/h : 48.8 m en 3.45 s |
 | ✅ | `client.marche_arriere` | rapport=-1 vitesse=-8.07 m/s |
-| ✅ | `client.virage_droite` | 77.3° en 2 s |
+| ✅ | `client.virage_droite` | 77.2° en 2 s |
 | ✅ | `client.virage_gauche` | -65.5° en 2 s |
 | ✅ | `client.camera_proche_lointaine` | proche 14.5 st, Lointaine 24.0 st |
 | ✅ | `client.frein_a_main_maintien` | déplacement 0.00 st |
 | ✅ | `client.remise_sur_roues_inutile_refusee` |  |
-| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 54.7 st à 0,5 s, 1.3 st après retour au conducteur |
-| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.3 st |
+| ✅ | `client.correction_mouvement_impossible` | notification=true, écart 0.0 st à 0,5 s, 0.0 st après retour au conducteur |
+| ✅ | `client.sortie_a_l_arret` | caméra=Custom distance au véhicule 6.7 st |
 | ✅ | `client.vehicule_libere` | DriverUserId=0 |
 | ✅ | `client.aucune_erreur_execution` |  |
-| ✅ | `client.info_erreurs_internes_roblox` | 1 erreur(s) hors de notre code : Players.Player2.PlayerScripts.ChatScript:116: Error calling SetCore CoreGuiChatConnections: SetCore: CoreGuiChatConnections has not been registered by the CoreScripts |
+| ✅ | `client.info_erreurs_internes_roblox` | 0 erreur(s) hors de notre code :  |
 
 | Mesure (moteur Roblox) | Valeur |
 |---|---|
+| correction_ecart_0_5s_st | 0.0029548369348049165 |
+| virage_droite_deg | 77.15821489100695 |
+| correction_ecart_final_st | 0.002941154409199953 |
+| freinage_depuis_kmh | 101.92561111450196 |
+| freinage_duree_s | 3.449641800000336 |
+| hud_0_100_s | 8.550606019794941 |
+| acceleration_max_ms2 | 8.612439842728206 |
+| virage_gauche_deg | -65.48625641666013 |
+| zero_a_cent_s | 8.615857900000265 |
+| repos_vitesse_4s_kmh | 0.00022383178293239325 |
+| marge_tete_toit_st | 0.676250122487545 |
+| ping_fin_ms | 205 |
+| freinage_distance_m | 48.846323852539068 |
+| marge_personnage_toit_st | 0.3383299931883812 |
+| repos_vitesse_1_5s_kmh | 0.00022433123958762736 |
 | joueur | 2 |
-| correction_ecart_0_5s_st | 54.69131088256836 |
-| repos_vitesse_4s_kmh | 0.00024257874756585806 |
-| virage_droite_deg | 77.25836725511062 |
-| acceleration_max_ms2 | 8.864046068378125 |
-| virage_gauche_deg | -65.4957711572704 |
-| repos_vitesse_1_5s_kmh | 0.00023216957633849234 |
-| hud_100_0_m | 45.112335158912959 |
-| correction_ecart_final_st | 1.2825573682785035 |
-| hud_0_100_s | 8.599924717098475 |
-| zero_a_cent_s | 8.650412799999913 |
-| ping_fin_ms | 203 |
-| freinage_distance_m | 48.82442749023438 |
-| freinage_depuis_kmh | 101.88689804077149 |
-| freinage_duree_s | 3.448020799999995 |
-| ping_ms | 216 |
+| hud_100_0_m | 45.59013884182683 |
+| ping_ms | 206 |
 
-**Synthèse : 149 contrôle(s) réussi(s), 0 échec(s), 3 session(s).**
+**Synthèse : 154 contrôle(s) réussi(s), 0 échec(s), 3 session(s).**
 
 Non couvert automatiquement : lecture réelle du clavier et de la manette (commandes injectées par le point d'accès de test), ressenti de conduite, lisibilité, son. Voir les captures pour le rendu.

@@ -6,14 +6,13 @@ Rien de ce document n'est commencé ; il sert à décider du contenu du lot suiv
 ## 0. Préalable : clore réellement le lot 0.1
 
 1. ~~Exécuter les essais Studio~~ : fait automatiquement dans la VM (149/149, `RAPPORT_TESTS.md` §4).
-   Restent à vérifier par un humain : clavier et manette réels, rendu visuel, ressenti, taille de l'avatar.
+   Restent à vérifier par un humain : clavier et manette réels, ressenti.
 2. Étendre les scénarios automatisés : bosse à 10 %, slalom, véhicule réellement renversé puis remis sur roues,
    retour automatique au plot, collision entre deux véhicules.
 3. Calibrer le prototype à partir des mesures faites en jeu (freinage plus long qu'attendu par le modèle),
    sans retoucher les règles du cahier des charges.
 4. Arbitrer les choix A1 à A6 de `ECARTS.md`.
-5. Captures : décider d'une exclusion Windows Defender limitée à `C:\AWTests` **dans la VM** (décision du
-   propriétaire), sans quoi les essais restent sans image.
+5. ~~Captures~~ : fonctionnelles depuis l'exclusion Defender `C:\AWTests` ajoutée dans la VM par le propriétaire.
 
 ## 1. Contenu proposé
 

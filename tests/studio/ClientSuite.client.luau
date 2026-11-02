@@ -228,6 +228,37 @@ record(
     "DriverUserId=" .. tostring(model:GetAttribute("DriverUserId"))
 )
 
+-- Habitacle : le haut de la tête du conducteur assis doit rester sous le toit
+-- (défaut constaté sur les captures). Mesure dans le repère du châssis, en studs.
+task.wait(0.5)
+local roof = model:FindFirstChild("Carrosserie") and model.Carrosserie:FindFirstChild("Toit")
+local head = character:FindFirstChild("Head")
+if roof and head and head:IsA("BasePart") then
+    local function topOf(part: BasePart): number
+        return root.CFrame:PointToObjectSpace(part.Position).Y + part.Size.Y / 2
+    end
+    local roofUnderside = root.CFrame:PointToObjectSpace(roof.Position).Y - roof.Size.Y / 2
+    local characterTop = -math.huge
+    for _, descendant in character:GetDescendants() do
+        if descendant:IsA("BasePart") and descendant.Name ~= "HumanoidRootPart" then
+            characterTop = math.max(characterTop, topOf(descendant))
+        end
+    end
+    measures.marge_tete_toit_st = roofUnderside - topOf(head)
+    measures.marge_personnage_toit_st = roofUnderside - characterTop
+    record(
+        "client.tete_sous_le_toit",
+        topOf(head) < roofUnderside,
+        string.format(
+            "marge tête %.2f st, marge avec accessoires %.2f st",
+            measures.marge_tete_toit_st,
+            measures.marge_personnage_toit_st
+        )
+    )
+else
+    record("client.tete_sous_le_toit", false, "toit ou tête introuvable")
+end
+
 -- En multijoueur, le joueur 1 attend que le joueur 2 ait fini son essai sur ce
 -- véhicule et s'en soit éloigné (sinon le contact du personnage fausse les mesures).
 if playerCount > 1 and myIndex == 1 then

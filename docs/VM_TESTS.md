@@ -73,10 +73,10 @@ Rapport : `build\vm-exchange\jobs\<id>\report\report.md` (captures dans `report\
 
 ## Limites et sécurité
 
-- **Captures d'écran** : Windows Defender bloque la capture d'écran faite depuis PowerShell (constaté sur l'hôte le
-  2 novembre 2026). Les captures sont donc **facultatives** : si elles sont bloquées dans la VM, les tests se déroulent
-  quand même et le rapport indique « bloquées par l'antivirus de la VM ». Ajouter une exclusion Defender dans la VM
-  (`C:\AWTests`) est possible, mais c'est ta décision.
+- **Captures d'écran** : Windows Defender bloque la capture d'écran faite depuis PowerShell. Le 2 novembre 2026, le
+  propriétaire a ajouté **dans la VM** une exclusion limitée à `C:\AWTests` (`Add-MpPreference -ExclusionPath "C:\AWTests"`,
+  annulable par `Remove-MpPreference`) : les captures fonctionnent depuis. Sans cette exclusion, les tests se déroulent
+  quand même et le rapport indique « bloquées par l'antivirus de la VM ».
 - **Le dossier partagé donne à la VM un accès en écriture à tout le dépôt.** Pour le réduire, partage seulement
   `build\vm-exchange` (puis adapter le chemin `-Exchange` de `guest-setup.ps1`).
 - Les mesures de la VM (GPU virtuel) ne valent pas mesure de performance.

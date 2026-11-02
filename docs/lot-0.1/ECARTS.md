@@ -39,7 +39,7 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 | §3.2 / AUD-PHYS-01 | Commandes réactives, contrôles serveur des états critiques, sans punir la latence | Conforme, vérifié en Studio — contrôle grossier (vitesse, déplacement, valeurs non finies) ; collisions et trajectoires murales non contrôlées |
 | §3.3 | Dégâts 3 niveaux, effets mécaniques, persistance | Non commencé (lot 0.2 proposé) |
 | §3.3 | Carburant / énergie consommés et sauvegardés | Non commencé |
-| §3.4 | Caméras proche/lointaine | Conforme, vérifié en Studio (distances), rendu non vérifié |
+| §3.4 | Caméras proche/lointaine | Conforme, vérifié en Studio (distances et captures) |
 | §3.4 | Cockpit, capot, pare-chocs, mode photo | Non commencé |
 | §3.4 / AUD-INPUT-01 | Indications selon le périphérique actif, pas d'action involontaire | Partiel — aide du HUD selon le dernier périphérique ; contrôles par défaut désactivés en conduite ; sortie bloquée au-dessus de 20 km/h |
 | §3.5 | Désenlisement gratuit et limité, sans effet sur dégâts/carburant | Partiel — remise sur roues (immobile, renversé, délai 8 s) ; pas encore de désenlisement hors retournement |
@@ -64,14 +64,13 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 
 ## 4. Limites techniques connues
 
-- Essais Studio automatisés uniquement : clavier, manette, rendu, ressenti, collisions entre véhicules, bosse, slalom,
+- Essais Studio automatisés (avec captures) : clavier, manette, ressenti, collisions entre véhicules, bosse, slalom,
   remise sur roues d'un véhicule renversé et retour au plot restent à vérifier.
 - Sous latence, la vue du client reste décalée ~0,5 s après une correction serveur avant de se recaler.
 - Pas de frottement statique : un véhicule freiné sur une pente glisse très lentement (de l'ordre du cm/s selon le modèle).
 - Un seul rayon par roue : une roue peut « tomber » dans un interstice ou accrocher une arête vive ; un balayage de
   forme (shapecast) est proposé pour le lot 0.2.
 - Inertie du châssis approximée par un bloc homogène (inertie de roulis inférieure à celle d'une voiture réelle).
-- Taille de l'avatar par rapport à l'habitacle non vérifiée visuellement (la tête peut dépasser du toit vitré).
 - Vitesse de pointe non mesurée en jeu ; le freinage en jeu (≈ 47,5 m) est plus long que dans le modèle planaire (40,2 m).
 - La validation serveur ne détecte ni le vol, ni le passage à travers les murs, ni les trajectoires impossibles à vitesse plausible.
 - Coût réseau des véhicules stationnés simulés par le serveur : limité par seuils et mise en sommeil, **non mesuré**.

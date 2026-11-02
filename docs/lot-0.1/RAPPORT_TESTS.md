@@ -4,12 +4,11 @@
 
 > **Synthèse.** Les essais Roblox Studio ont été **réalisés automatiquement dans la VM VMware de test**
 > (Studio 0.745.0.7451137), sans utiliser le bureau, la souris ni le clavier de l'utilisateur :
-> **149 contrôles réussis sur 149** lors des deux dernières exécutions complètes (sessions solo, deux joueurs,
-> deux joueurs avec ~205 ms de latence mesurée). Le prototype est pilotable et réagit progressivement dans le
+> **154 contrôles réussis sur 154** lors de la dernière exécution complète (sessions solo, deux joueurs,
+> deux joueurs avec ~205 ms de latence mesurée), avec **81 captures d'écran réelles** de la VM. Le prototype est pilotable et réagit progressivement dans le
 > moteur Roblox réel (0–100 km/h ≈ 8,5 s, 100–0 km/h ≈ 47,5 m).
 > **Restent non vérifiés** : la lecture réelle du clavier et de la manette (les commandes sont injectées par un point
-> d'accès réservé à Studio), le rendu visuel (captures bloquées par l'antivirus de la VM, aucune image produite),
-> les collisions entre véhicules, la bosse, le slalom, la remise sur roues d'un véhicule réellement renversé,
+> d'accès réservé à Studio), la manette, les collisions entre véhicules, la bosse, le slalom, la remise sur roues d'un véhicule réellement renversé,
 > le retour automatique au plot, le ressenti et le son.
 
 ## 1. Environnement
@@ -111,7 +110,7 @@ entre deux clients, comportement sous latence.
 Méthode et outillage : [docs/VM_TESTS.md](../VM_TESTS.md). `test-vm.cmd` construit la place et le pilote, la VM
 exécute `RobloxStudioBeta.exe --task RunScript`, le pilote lance les sessions par `StudioTestService`
 (`ExecutePlayModeAsync`, `ExecuteMultiplayerTestAsync(2)`), et chaque session renvoie ses contrôles.
-Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUDIO_VM.md) (tâche `20261102-140007`).
+Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUDIO_VM.md) (tâche `20261102-141650`).
 
 ### 4.1 Historique des exécutions (2 novembre 2026)
 
@@ -124,14 +123,17 @@ Rapport complet de la dernière exécution : [RAPPORT_STUDIO_VM.md](RAPPORT_STUD
 | 135040 | 146 ✅ / 3 ❌ | Sortie corrigée partout ; mesures post-correction et au repos faussées par le calendrier du test → mesure de l'état final, joueur 2 éloigné avant les mesures |
 | 135529 | **149 ✅ / 0 ❌** | — |
 | 140007 | **149 ✅ / 0 ❌** | Mesure 100–0 du HUD relevée (lecture décalée d'une image) |
+| 141222 | 33 ✅ / 0 ❌ (solo) | Exclusion Defender `C:\AWTests` ajoutée dans la VM par l'utilisateur : **32 captures**. Elles révèlent un **défaut visuel** : la tête du conducteur traverse le toit |
+| 141509 | 33 ✅ / 1 ❌ (solo) | Nouveau contrôle mesuré : tête **0,38 st au-dessus** du dessous du toit (0,72 st avec accessoires) |
+| 141650 | **154 ✅ / 0 ❌** | Habitacle porté à 1,62 m et assise abaissée de 0,45 st : marge **+0,68 st** (+0,34 st avec accessoires) ; 81 captures |
 
-### 4.2 Résultats de la dernière exécution (tâche 140007)
+### 4.2 Résultats des dernières exécutions (tâches 140007 et 141650)
 
 | # | Essai | Résultat observé dans Studio |
 |---|---|---|
 | S1 | Démarrage | zone (116 instances), 4 véhicules, 3 canaux réseau ; **aucune erreur de notre code** (serveur et clients) |
 | S2 | Véhicules posés | 4 véhicules à Y ≈ 1,77–1,78 st, vitesse ≤ 0,09 st/s, droits (UpVector.Y = 1,000) ; véhicules non utilisés immobiles (≤ 0,03 st) |
-| S3 | Embarquement | par l'invite de proximité (même chemin que la touche E) ; caméra scriptée et HUD affichés ; propriété réseau attribuée au conducteur |
+| S3 | Embarquement | par l'invite de proximité (même chemin que la touche E) ; caméra scriptée et HUD affichés ; propriété réseau attribuée au conducteur ; tête du conducteur 0,68 st sous le toit |
 | S4 | Accélération | ≈ 3,4 km/h à 0,25 s, ≈ 14,5 km/h à 1 s ; 0–100 km/h **8,55–8,65 s** (horloge client), **8,45–8,60 s** (HUD) ; rapports jusqu'au 3ᵉ |
 | S5 | Freinage | depuis ≈ 100 km/h : **47,5–48,8 m** en ≈ 3,4 s (HUD : 45,1–46,2 m, mesuré dès le passage sous 100 km/h) |
 | S6 | Marche arrière | rapport R enclenché à l'arrêt, ≈ −7,4 m/s après 2,5 s |
@@ -155,19 +157,29 @@ décalée de 17 à 70 st pendant ~0,5 s après une correction serveur, puis se r
 
 | # | Point | Pourquoi |
 |---|---|---|
-| S2/S9/M3 | Rendu visuel : carrosserie, roues animées, caméra sans traversée des murets, HUD lisible | Captures bloquées par l'antivirus de la VM ; aucune image produite |
+| S9/M3 | Caméra contre les murets, roues des autres véhicules vues depuis l'autre client | Non scénarisés (les captures ne montrent que la vue du client principal) |
 | S4–S8 | Clavier (Z/W, S, Q/A/D, Espace) et sensation de conduite | Commandes injectées par le point d'accès de test |
 | S13 | Manette | Aucune manette (réelle ou virtuelle) dans la VM |
 | S7/S10 | Slalom, cercle de 30 m, bosse à 10 % | Non scénarisés |
 | S12 | Remise sur roues d'un véhicule renversé | Non scénarisé |
 | S14 | Retour automatique au plot (90 s) | Non scénarisé |
 | M4 | Collision entre deux véhicules | Non scénarisé |
-| — | Taille de l'avatar dans l'habitacle | Visuel |
 
 ## 5. Captures et vidéos
 
-Aucune capture ni vidéo n'a été produite. Les captures automatiques de la VM ont été **bloquées par Windows Defender**
-(capture d'écran depuis PowerShell, constaté aussi sur l'hôte) ; l'antivirus n'a pas été contourné.
+Captures **réellement produites** par la VM (une toutes les 2 s pendant les sessions), après l'ajout par l'utilisateur
+d'une exclusion Windows Defender limitée à `C:\AWTests` **dans la VM** (Defender bloquait la capture d'écran depuis
+PowerShell ; il n'a pas été contourné). Aucune vidéo. Sélection archivée dans [captures/](captures/) :
+
+| Fichier | Contenu |
+|---|---|
+| `01-avant-tete-traverse-le-toit.jpg` | Avant correction : cheveux du conducteur au-dessus du toit orange |
+| `02-apres-tete-sous-le-toit.jpg` | Après correction, à 69 km/h en 2ᵉ : tête sous le toit, derrière le vitrage |
+| `03-sortie-a-pied-invite-conduire.jpg` | Sortie à l'arrêt : personnage à côté de la portière, invite « Conduire » |
+| `04-teleportation-volontaire-avant-correction.jpg` | Véhicule téléporté à 400 st par le test, juste avant la correction serveur |
+| `05-hud-et-repere-150m.jpg` | HUD (vitesse, rapport, barres) et panneau « 150 m » de la ligne droite |
+
+Toutes les captures de chaque exécution restent dans `build\vm-exchange\jobs\<id>\report\screenshots` (non versionnées).
 
 ## 6. Fichiers créés ou modifiés
 
@@ -190,4 +202,6 @@ Aucune capture ni vidéo n'a été produite. Les captures automatiques de la VM 
 - Tests Studio et VM : `tests/studio/{Driver.template, ServerSuite.server, ClientSuite.client, build-driver}.luau`,
   `tools/vm/{host-run, guest-agent, guest-setup, job-runner, capture-screens, make-report}.ps1`, `test-vm.cmd`.
 - Modifiés pour les essais Studio : `src/client/Vehicles/VehicleController.luau` (points d'accès réservés à Studio),
-  `src/server/Vehicles/VehicleService.luau` (correction de la sortie en multijoueur).
+  `src/server/Vehicles/VehicleService.luau` (correction de la sortie en multijoueur),
+  `src/server/Vehicles/VehicleFactory.luau` et `Definitions/PrototypeP01.luau` (habitacle et assise).
+- Captures : `docs/lot-0.1/captures/*.jpg`.

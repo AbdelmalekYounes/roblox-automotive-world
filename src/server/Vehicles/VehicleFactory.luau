@@ -265,7 +265,8 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     local seat = Instance.new("Seat")
     seat.Name = "DriverSeat"
     seat.Size = Vector3.new(1.8, 0.4, 1.8)
-    seat.CFrame = root.CFrame * CFrame.new(-tubWidth / 4, tubBottom + 0.6, cabinZ + 0.6)
+    -- Hauteur d'assise réglée d'après la mesure en Studio (avatar assis sous le toit).
+    seat.CFrame = root.CFrame * CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
     seat.Color = trim
     seat.Massless = true
     seat.CanCollide = false
