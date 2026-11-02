@@ -22,6 +22,69 @@
 
 La première voiture sera un **prototype technique original**, distinct de tout actif commercial du lancement. Il devra servir à valider la conduite réaliste de base et l'architecture hybride. Il ne devra pas être confondu avec le véhicule gratuit définitif. L'implémentation physique détaillée sera produite et testée dans le lot suivant avant toute extension aux 18 modèles.
 
+## Architecture véhicule — lot 0.1
+
+### Principe : simulation hybride (AUD-PHYS-01)
+
+```
+ Client conducteur (propriétaire réseau)          Serveur (autorité)
+ ┌─────────────────────────────────┐              ┌────────────────────────────────────┐
+ │ DriverInput (clavier/manette)   │  commandes   │ VehicleService                     │
+ │   → VehicleSimulator.step       │ ───────────► │  - assied / débarque (Seat:Sit)    │
+ │     rayons → VehicleDynamics    │  (15 Hz,     │  - SetNetworkOwner(conducteur|nil) │
+ │     → VectorForce par roue      │  bornées)    │  - MovementRules toutes les 0,2 s  │
+ │ VehicleCamera, DevHud           │              │  - simule les véhicules stationnés │
+ │ WheelVisuals (tous véhicules)   │ ◄─────────── │  - messages par clé                │
+ └─────────────────────────────────┘  attributs,  └────────────────────────────────────┘
+                                      notices
+```
+
+- **Réactivité** : le conducteur simule son propre véhicule localement (propriété réseau Roblox), sans attendre le serveur.
+- **Autorité** : le serveur seul assied un joueur, attribue la propriété réseau, autorise la sortie et la remise sur roues,
+  et contrôle la plausibilité des mouvements. Les commandes reçues sont décodées défensivement (`InputCodec.decode`)
+  et limitées en débit (`RateLimiter`) ; elles ne servent qu'à l'affichage du braquage chez les autres joueurs.
+- **Tolérance réseau** : seuil souple (×1,25 de la vitesse plausible) → journalisation seule ; seuil dur (×2, ou
+  déplacement impossible, ou valeur non finie) → repositionnement sur la dernière position valide, **sans sanction**.
+- **Multijoueur** : chaque véhicule possède son propre état (`VehicleSimulator` par modèle) ; un joueur ne peut conduire
+  qu'un véhicule, un véhicule n'a qu'un conducteur ; aucun état global partagé entre véhicules.
+
+### Séparation du code
+
+| Couche | Modules | Dépend de Roblox ? |
+|---|---|---|
+| Dynamique pure (`shared/Vehicles/Physics`) | `TireModel`, `Suspension`, `Powertrain`, `VehicleDynamics`, `SurfaceFriction` | Non — testée par Lune |
+| Contrats (`shared/Vehicles`) | `VehicleTypes`, `VehicleDefinitions`, `Definitions/PrototypeP01`, `InputCodec`, `Telemetry`, `VehicleConstants` | Non |
+| Adaptateur (`shared/Vehicles/VehicleSimulator`) | rayons de suspension, conversion d'unités, `VectorForce` | Oui — exécuté par le propriétaire réseau |
+| Serveur (`server/`) | `VehicleService`, `VehicleFactory`, `TestZoneBuilder`, `Security/MovementRules`, `Security/RateLimiter` | Oui (sauf règles pures) |
+| Client (`client/`) | `VehicleController`, `DriverInput`, `VehicleCamera`, `WheelVisuals`, `UI/DevHud`, `UI/Messages` | Oui |
+
+### Modèle physique
+
+- **Châssis** : un bloc unique porte la masse ; son centre est le centre de gravité. Roblox intègre masse et inertie ;
+  aucune vitesse n'est imposée. Les forces calculées en newtons sont converties par `masse Roblox / (masse kg × 0,28)`
+  (1 stud = 0,28 m), et une force de compensation donne au véhicule une gravité réelle de 9,81 m/s² sans modifier
+  `Workspace.Gravity` des personnages.
+- **Suspension** : rayon par roue, ressort + amortisseur compression/détente, butée progressive, barre antiroulis.
+- **Pneus** : glissement longitudinal et dérive, courbe à pic puis glissement franc, sensibilité à la charge,
+  ellipse de friction, adhérence par revêtement. Rotation de chaque roue intégrée en sous-pas semi-implicites.
+- **Groupe motopropulseur** : courbe de couple, ralenti, rupteur, frein moteur, embrayage/convertisseur simplifié,
+  boîte automatique à 6 rapports, marche arrière, inertie moteur ramenée aux roues, répartition avant/arrière fixe et
+  différentiels ouverts.
+- **Freins** : couple avant/arrière, frein à main arrière ; **aucune aide** (ABS, antipatinage, ESP) n'existe.
+- **Direction** : vitesse de crémaillère limitée, angle maximal décroissant avec la vitesse (filtre de commande déclaré
+  dans la définition, identique pour tous les périphériques), géométrie d'Ackermann.
+
+### Points d'extension (déclarés, NON implémentés)
+
+| Futur besoin | Point d'extension | État lot 0.1 |
+|---|---|---|
+| Traction / intégrale | `Drivetrain.Layout` + `FrontTorqueShare` | Calcul générique présent et testé unitairement ; seul le RWD est exercé ; non validé en jeu |
+| Électrique | `PowertrainKind = "Electric"` | Refusé par `VehicleDefinitions.validate` |
+| Boîtes manuelle, double embrayage, séquentielle, CVT | `TransmissionKind` | Refusées par la validation |
+| ABS / antipatinage / ESP | `DriverAids` | Toute valeur `true` est refusée |
+| Météo / revêtement mouillé | `WheelContact.SurfaceFriction` | Multiplicateur par matériau seulement |
+| Dégâts, carburant/énergie | — | Non commencés (lot 0.2) |
+
 ## Exclusions du socle 0.0.1
 
 Aucun DataStore, achat, économie, dégâts persistants, course, radio, carte de sept zones ni modèle automobile de production n'est encore implémenté. Ces sujets sont prévus dans les lots de développement, non abandonnés.

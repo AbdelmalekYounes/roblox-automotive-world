@@ -10,3 +10,6 @@ sourcemap.json
 .vscode/*.log
 __pycache__/
 .pytest_cache/
+
+# Outils et définitions téléchargés localement pour la validation.
+.tooling/

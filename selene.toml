@@ -1,0 +1,2 @@
+# Analyse statique des scripts Roblox (bibliothèque standard « roblox »).
+std = "roblox"

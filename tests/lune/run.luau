@@ -1,0 +1,31 @@
+--!strict
+-- Point d'entrée des tests Lune (hors Roblox Studio).
+-- Usage : lune run tests/lune/run.luau <chemin vers la place .rbxlx construite par Rojo>
+
+local process = require("@lune/process")
+
+local Harness = require("./Harness")
+local TestKit = require("./TestKit")
+
+local placePath = process.args[1]
+if placePath == nil then
+    print("Usage : lune run tests/lune/run.luau <place.rbxlx>")
+    process.exit(2)
+end
+
+Harness.loadPlace(placePath :: string)
+
+for _, spec in
+    {
+        require("./specs/PlaceStructure"),
+        require("./specs/Definitions"),
+        require("./specs/PhysicsUnit"),
+        require("./specs/NetworkSecurity"),
+        require("./specs/TelemetrySpec"),
+        require("./specs/DrivingScenarios"),
+    }
+do
+    spec(TestKit, Harness)
+end
+
+process.exit(if TestKit.run() then 0 else 1)
