@@ -1,0 +1,12 @@
+# Fichiers de compilation Roblox et métadonnées locales.
+build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+sourcemap.json
+.DS_Store
+.idea/
+.vscode/*.log
+__pycache__/
+.pytest_cache/

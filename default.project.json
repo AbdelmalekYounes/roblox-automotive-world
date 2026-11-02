@@ -1,0 +1,27 @@
+{
+  "name": "AutomotiveWorld_Development",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "AutomotiveWorldServer": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "AutomotiveWorldClient": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}
