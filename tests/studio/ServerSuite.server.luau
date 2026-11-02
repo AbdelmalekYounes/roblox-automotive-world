@@ -126,7 +126,7 @@ local remotes = ReplicatedStorage:WaitForChild("AutomotiveWorldRemotes", 10)
 local vehicles = if vehiclesFolder then vehiclesFolder:GetChildren() else {}
 record("serveur.zone_creee", zone ~= nil, zone and #zone:GetDescendants() .. " instances")
 record("serveur.quatre_vehicules", #vehicles == 4, #vehicles .. " véhicules")
-record("serveur.canaux_reseau", remotes ~= nil and #remotes:GetChildren() == 3, remotes and #remotes:GetChildren())
+record("serveur.canaux_reseau", remotes ~= nil and #remotes:GetChildren() == 4, remotes and #remotes:GetChildren())
 
 -- S2 : véhicules stationnés posés, immobiles et droits (suspension réelle).
 task.wait(4)
@@ -153,12 +153,38 @@ record("serveur.vehicules_poses_et_immobiles", settledOk and #vehicles > 0, tabl
 
 -- S3 : propriété réseau = conducteur pendant la conduite (échantillons toutes les 0,5 s).
 local ownerMatches, ownerMismatches, ownerSamples = 0, 0, {}
+-- L'attribut SimulationOwnerUserId (lu par les clients) doit toujours refléter
+-- le propriétaire réseau effectif, pour TOUS les véhicules.
+local attributeChecks, attributeMismatches, attributeSamples = 0, 0, {}
 local monitoring = true
 task.spawn(function()
     while monitoring do
         for _, model in vehicles do
             local driverId = model:GetAttribute("DriverUserId")
             local root = model.PrimaryPart
+            if root then
+                local okOwner, effective = pcall(function()
+                    return root:GetNetworkOwner()
+                end)
+                if okOwner then
+                    attributeChecks += 1
+                    local expected = if effective then effective.UserId else 0
+                    if model:GetAttribute("SimulationOwnerUserId") ~= expected then
+                        attributeMismatches += 1
+                        if #attributeSamples < 5 then
+                            table.insert(
+                                attributeSamples,
+                                string.format(
+                                    "%s attribut=%s effectif=%s",
+                                    model.Name,
+                                    tostring(model:GetAttribute("SimulationOwnerUserId")),
+                                    tostring(expected)
+                                )
+                            )
+                        end
+                    end
+                end
+            end
             if root and type(driverId) == "number" and driverId ~= 0 then
                 local owner = root:GetNetworkOwner()
                 if owner and owner.UserId == driverId then
@@ -196,6 +222,64 @@ record(
     ownerMatches > 0 and ownerMismatches <= 6 * expectedPlayers,
     string.format("%d concordants, %d discordants %s", ownerMatches, ownerMismatches, table.concat(ownerSamples, ", "))
 )
+
+record(
+    "serveur.attribut_simulation_conforme_au_proprietaire",
+    attributeChecks > 0 and attributeMismatches == 0,
+    string.format(
+        "%d contrôle(s), %d écart(s) %s",
+        attributeChecks,
+        attributeMismatches,
+        table.concat(attributeSamples, ", ")
+    )
+)
+
+-- Déconnexion d'un conducteur (session multijoueur, après les rapports) : le
+-- joueur 2 est assis par le serveur dans un véhicule libre puis expulsé ; le
+-- véhicule doit revenir au serveur, libre et réembarquable.
+if sessionName == "multijoueur" then
+    local leaving: Player? = nil
+    for _, candidate in Players:GetPlayers() do
+        if candidate:GetAttribute("AWTestIndex") == 2 then
+            leaving = candidate
+        end
+    end
+    local spare = vehiclesFolder and vehiclesFolder:FindFirstChild("VehiculeEssai_3")
+    local leavingHumanoid = if leaving and leaving.Character
+        then leaving.Character:FindFirstChildOfClass("Humanoid")
+        else nil
+    local seat = if spare then spare:FindFirstChild("DriverSeat") else nil
+    if leaving and spare and leavingHumanoid and seat and seat:IsA("Seat") then
+        seat:Sit(leavingHumanoid)
+        local spareRoot = spare.PrimaryPart :: BasePart
+        local boarded = waitFor(function()
+            return spare:GetAttribute("DriverUserId") == leaving.UserId
+                and spare:GetAttribute("SimulationOwnerUserId") == leaving.UserId
+        end, 5)
+        record("serveur.deconnexion_conducteur_embarque", boarded, "joueur 2 assis par le serveur dans VehiculeEssai_3")
+        leaving:Kick("Test automatisé de déconnexion (Studio)")
+        local released = waitFor(function()
+            return spare:GetAttribute("DriverUserId") == 0
+        end, 8)
+        local owner = spareRoot:GetNetworkOwner()
+        local prompt = (spareRoot:FindFirstChild("DriverDoor") :: Attachment):FindFirstChild(
+                "EnterPrompt"
+            ) :: ProximityPrompt
+        record(
+            "serveur.deconnexion_vehicule_libere",
+            released and owner == nil and spare:GetAttribute("SimulationOwnerUserId") == 0 and prompt.Enabled,
+            string.format(
+                "libéré=%s propriétaire=%s attribut=%s invite=%s",
+                tostring(released),
+                if owner then tostring(owner.UserId) else "serveur",
+                tostring(spare:GetAttribute("SimulationOwnerUserId")),
+                tostring(prompt.Enabled)
+            )
+        )
+    else
+        record("serveur.deconnexion_vehicule_libere", false, "préparation impossible (joueur 2 ou véhicule absent)")
+    end
+end
 
 -- S4 : les véhicules non utilisés n'ont pas bougé.
 local driftDetails, driftOk = {}, true

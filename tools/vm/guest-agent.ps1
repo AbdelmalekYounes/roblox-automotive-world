@@ -4,23 +4,30 @@
 
 .DESCRIPTION
 	Démarré à l'ouverture de session par la tâche planifiée « AutomotiveWorldAgent »
-	(voir guest-setup.ps1). Boucle :
+	(voir guest-setup.ps1), avec les droits LIMITÉS de l'utilisateur de la VM. Boucle :
 	- écrit agent-heartbeat.json toutes les 5 s (l'hôte sait que la VM est prête) ;
 	- prend une tâche jobs\<id>\job.ready en la renommant job.claimed (prise atomique) ;
 	- copie la tâche en local, lance son job-runner.ps1, renvoie le rapport ;
 	- écrit done.json en dernier.
+
+	Écritures de l'agent, et seulement elles :
+	- dossier d'échange (seul dossier partagé avec l'hôte, hors du dépôt) :
+	  agent-heartbeat.json, jobs\<id>\job.claimed, jobs\<id>\report\, jobs\<id>\done.json ;
+	- dans la VM : %LOCALAPPDATA%\AutomotiveWorldTests\ (copies de travail, journal, outil de capture).
+	Il ne lit aucun mot de passe, ne contacte aucun service et ne modifie aucun réglage.
 	La logique de test voyage avec chaque tâche (job-runner.ps1) : l'agent change rarement.
-	Il ne lit aucun mot de passe et ne contacte aucun service.
 #>
 param(
-	[string]$Exchange = "\\vmware-host\Shared Folders\roblox-automotive-world-starter\build\vm-exchange",
-	[string]$WorkRoot = "C:\AWTests\work",
+	[string]$Exchange = "\\vmware-host\Shared Folders\aw-vm-exchange",
+	[string]$WorkRoot = (Join-Path $env:LOCALAPPDATA "AutomotiveWorldTests\work"),
 	[int]$PollSec = 3,
 	[switch]$Once
 )
 
 $ErrorActionPreference = "Continue"
-$agentVersion = "1"
+$agentVersion = "2"
+# Fichiers d'une tâche copiés en local (liste fermée).
+$jobFiles = @("place.rbxl", "driver.luau", "job-runner.ps1", "job.json", "ScreenCapture.cs")
 New-Item -ItemType Directory -Force -Path $WorkRoot | Out-Null
 $logFile = Join-Path (Split-Path -Parent $WorkRoot) "agent.log"
 
@@ -48,14 +55,14 @@ function Invoke-Job([string]$jobDir) {
 	try {
 		Remove-Item -Recurse -Force $local -ErrorAction SilentlyContinue
 		New-Item -ItemType Directory -Force -Path $local | Out-Null
-		foreach ($name in @("place.rbxl", "driver.luau", "job-runner.ps1", "job.json", "capture-screens.ps1")) {
+		foreach ($name in $jobFiles) {
 			$source = Join-Path $jobDir $name
 			if (Test-Path $source) { Copy-Item $source (Join-Path $local $name) -Force }
 		}
 		$job = Get-Content -Raw (Join-Path $local "job.json") | ConvertFrom-Json
 		$runnerArgs = @(
-			"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $local "job-runner.ps1"),
-			"-JobDir", $local, "-ReportDir", $reportLocal, "-TimeoutSec", [string]$job.timeoutSec
+			"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$(Join-Path $local 'job-runner.ps1')`"",
+			"-JobDir", "`"$local`"", "-ReportDir", "`"$reportLocal`"", "-TimeoutSec", [string]$job.timeoutSec
 		)
 		if ($job.dryRun) { $runnerArgs += "-DryRun" }
 		$p = Start-Process -FilePath "powershell.exe" -ArgumentList $runnerArgs -PassThru -Wait -WindowStyle Minimized
@@ -78,7 +85,7 @@ function Invoke-Job([string]$jobDir) {
 	Write-Log "Tâche $id terminée (code $code)"
 }
 
-Write-Log "Agent démarré (version $agentVersion), échange : $Exchange"
+Write-Log "Agent démarré (version $agentVersion), échange : $Exchange, travail : $WorkRoot"
 $lastBeat = [datetime]::MinValue
 while ($true) {
 	if (Test-Path $Exchange) {
@@ -86,7 +93,7 @@ while ($true) {
 			try {
 				Write-JsonAtomic (Join-Path $Exchange "agent-heartbeat.json") ([pscustomobject]@{
 					guest = $env:COMPUTERNAME; user = $env:USERNAME; at = (Get-Date).ToString("o")
-					pid = $PID; agentVersion = $agentVersion
+					pid = $PID; agentVersion = $agentVersion; workRoot = $WorkRoot
 				})
 				$lastBeat = Get-Date
 			} catch { Write-Log "Battement de cœur impossible : $($_.Exception.Message)" }

@@ -90,4 +90,42 @@ return function(T: any, H: any)
             string.format("P-01 : vitesse cinématique au rupteur en 6e = %.0f km/h (borne, pas une performance)", top)
         )
     end)
+
+    T.test("A1 : braquage max fonction de la seule vitesse, décroissant, bornes du modèle", function()
+        local VehicleDynamics = H.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
+        local steering = P01.Steering
+        T.near(math.deg(VehicleDynamics.maxSteerAngle(P01, 0)), steering.MaxAngleDeg, 1e-9, "à l'arrêt")
+        local reference = steering.HighSpeedReferenceKmh / 3.6
+        T.near(math.deg(VehicleDynamics.maxSteerAngle(P01, reference)), steering.HighSpeedAngleDeg, 1e-9)
+        T.near(
+            math.deg(VehicleDynamics.maxSteerAngle(P01, reference * 2)),
+            steering.HighSpeedAngleDeg,
+            1e-9,
+            "plafond au-delà de la vitesse de référence"
+        )
+        T.near(
+            VehicleDynamics.maxSteerAngle(P01, -10),
+            VehicleDynamics.maxSteerAngle(P01, 10),
+            1e-12,
+            "symétrique en marche arrière"
+        )
+        local previous = math.huge
+        for kmh = 0, 160, 10 do
+            local angle = VehicleDynamics.maxSteerAngle(P01, kmh / 3.6)
+            T.truthy(angle <= previous, "décroissant à " .. kmh .. " km/h")
+            previous = angle
+        end
+    end)
+
+    T.test("A3 : marche arrière par maintien du frein réservée aux boîtes sans sélecteur", function()
+        T.equal(VehicleDefinitions.reverseEngagement("Automatic"), "HoldBrakeAtStop")
+        T.equal(VehicleDefinitions.reverseEngagement("Manual"), "Selector")
+        T.equal(VehicleDefinitions.reverseEngagement("DualClutch"), "Selector")
+        T.equal(VehicleDefinitions.reverseEngagement("Sequential"), "Selector")
+        T.equal(VehicleDefinitions.reverseEngagement(P01.Powertrain.Transmission.Kind), "HoldBrakeAtStop")
+    end)
+
+    T.test("A4 : seuil de sortie provisoire du P-01 = 20 km/h", function()
+        T.equal(P01.Limits.ExitMaxSpeedKmh, 20)
+    end)
 end

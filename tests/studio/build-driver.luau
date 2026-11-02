@@ -15,18 +15,19 @@ local KNOWN_SESSIONS = {
     latence = { Name = "latence", Players = 2, DelayMs = 100 },
     scenarios = { Name = "scenarios", Players = 1 },
     collision = { Name = "collision", Players = 2 },
+    collision_latence = { Name = "collision_latence", Players = 2, DelayMs = 100 },
 }
 
 local output = process.args[1]
 if output == nil then
     print(
-        "Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence,scenarios,collision]"
+        "Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence,scenarios,collision,collision_latence]"
     )
     process.exit(2)
 end
 
 local sessions = {}
-for name in string.gmatch(process.args[2] or "solo,multijoueur,latence,scenarios,collision", "[^,]+") do
+for name in string.gmatch(process.args[2] or "solo,multijoueur,latence,scenarios,collision,collision_latence", "[^,]+") do
     local session = KNOWN_SESSIONS[name]
     if session == nil then
         print("Session inconnue : " .. name)

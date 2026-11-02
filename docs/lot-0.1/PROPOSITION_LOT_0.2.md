@@ -5,13 +5,13 @@ Rien de ce document n'est commencé ; il sert à décider du contenu du lot suiv
 
 ## 0. Préalable : clore réellement le lot 0.1
 
-1. ~~Exécuter les essais Studio~~ : fait automatiquement dans la VM (149/149, `RAPPORT_TESTS.md` §4).
-   Restent à vérifier par un humain : clavier et manette réels, ressenti.
+1. ~~Exécuter les essais Studio~~ : fait automatiquement dans la VM (`RAPPORT_VALIDATION.md`).
+   Restent à vérifier par un humain : clavier et manette réels, ressenti (liste dans `RAPPORT_VALIDATION.md` §5).
 2. ~~Étendre les scénarios automatisés~~ : fait (bosse, slalom, véhicule renversé, retour au plot, collisions).
 3. Calibrer le prototype à partir des mesures faites en jeu (freinage plus long qu'attendu par le modèle),
    sans retoucher les règles du cahier des charges.
-4. Arbitrer les choix A1 à A6 de `ECARTS.md`.
-5. ~~Captures~~ : fonctionnelles depuis l'exclusion Defender `C:\AWTests` ajoutée dans la VM par le propriétaire.
+4. ~~Arbitrer les choix A1 à A6~~ : arbitrés par le propriétaire et appliqués (`ECARTS.md` §3).
+5. ~~Captures~~ : outil compilé dans la VM, l'exclusion Defender `C:\AWTests` n'est plus nécessaire (`docs/VM_TESTS.md`).
 
 ## 1. Contenu proposé
 
@@ -24,7 +24,7 @@ Rien de ce document n'est commencé ; il sert à décider du contenu du lot suiv
 | Suspension | Balayage de forme par roue (shapecast), réglages de géométrie simples | Franchissement de bordures sans accroche anormale |
 | Différentiels et architectures | Différentiel autobloquant optionnel, répartition AWD ; deux prototypes d'essai supplémentaires (FWD et AWD/électrique), toujours hors catalogue | Les trois prototypes se comportent différemment à paramètres documentés |
 | Aides (par modèle) | ABS, antipatinage, ESP disponibles seulement si la définition les déclare ; désactivées par défaut selon les règles validées | Aucune aide active sur un modèle qui n'en dispose pas ; état visible au HUD |
-| Collisions entre joueurs | Étudier la faible poussée mesurée entre deux véhicules conduits (0,2 à 2,2 st contre 3,1 à 4,3 st pour un véhicule garé) : impulsion d'échange validée par le serveur, ou autre approche à mesurer | Poussée comparable à celle d'un véhicule garé sur 10 essais, sans faux positif de validation |
+| Collisions entre joueurs (suite) | Le complément d'impulsion confirmé serveur est livré au lot 0.1 (`ECARTS.md` §4). Reste : le percuteur s'arrête net dans sa propre simulation ; étudier une propriété réseau temporaire pendant le choc, et les chocs frontaux, en angle et à haute vitesse | Percuteur et percuté conformes à la conservation de la quantité de mouvement sur 10 essais par configuration, sans faux positif ni éjection |
 | Dégâts (session) | 3 niveaux visuels sur primitives, effets mécaniques simples, contacts confirmés serveur (AUD-COLL-01) | Dégât appliqué seulement après validation serveur ; **aucune persistance** avant le lot 0.4 |
 | Caméras | Cockpit, capot, pare-chocs | Bascule sans action involontaire ; pas de caméra libre |
 | Mesure de performance | Relevé des temps d'image (médiane, P95, P99) dans le HUD de développement | Premières mesures sur une configuration de référence à définir, sans conclure sur la cible 24 joueurs |

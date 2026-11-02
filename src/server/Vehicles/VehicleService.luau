@@ -23,6 +23,9 @@ local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator")
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
 
 local VehicleFactory = require(script.Parent.VehicleFactory)
+local NetworkOwnership = require(script.Parent.NetworkOwnership)
+local CollisionMediator = require(script.Parent.CollisionMediator)
+local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 local TestZoneBuilder = require(script.Parent.Parent.World.TestZoneBuilder)
 local MovementRules = require(script.Parent.Parent.Security.MovementRules)
 local RateLimiter = require(script.Parent.Parent.Security.RateLimiter)
@@ -36,10 +39,13 @@ local MAINTENANCE_INTERVAL_S = 1
 local RETURN_TO_PAD_AFTER_S = 90
 local RETURN_DISTANCE_STUDS = 40
 local NEARBY_PLAYER_STUDS = 25
+local NEARBY_VEHICLE_STUDS = 40
 local KILL_HEIGHT = -60
 local BOARDING_DISTANCE_STUDS = 16
 local EXIT_PLACEMENT_ATTEMPTS = 3
 local EXIT_PLACEMENT_CHECK_S = 0.3
+local EJECT_ATTEMPTS = 3
+local EJECT_CHECK_S = 1.2
 local SUSPICION_REVIEW_THRESHOLD = 10
 
 type VehicleRecord = {
@@ -62,6 +68,8 @@ type VehicleRecord = {
     SuspicionCount: number,
     LastSuspicionLog: number,
     LastSteer: number,
+    OwnershipFailures: number,
+    LastServerSpeed: number,
 }
 
 type Limiters = {
@@ -73,6 +81,7 @@ type Remotes = {
     Action: RemoteEvent,
     Input: UnreliableRemoteEvent,
     Notice: RemoteEvent,
+    Impulse: RemoteEvent,
 }
 
 local VehicleService = {}
@@ -101,6 +110,18 @@ local function playerFromHumanoid(humanoid: Humanoid?): Player?
     return Players:GetPlayerFromCharacter(character)
 end
 
+local function unseatHumanoid(humanoid: Humanoid, seat: Seat)
+    local weld = seat:FindFirstChild("SeatWeld")
+    if weld then
+        weld:Destroy()
+    end
+    humanoid.Sit = false
+end
+
+-- Défini plus bas (a besoin du placement de sortie) : sort un occupant refusé
+-- ou qui ne peut plus conduire.
+local ejectOccupant: (record: VehicleRecord, humanoid: Humanoid) -> ()
+
 local function limitersFor(player: Player): Limiters
     local existing = limiters[player]
     if existing then
@@ -127,19 +148,72 @@ local function sampleOf(record: VehicleRecord, now: number): MovementRules.Sampl
     }
 end
 
-local function setOwner(record: VehicleRecord, player: Player?)
-    local ok, err = pcall(function()
-        record.Root:SetNetworkOwner(player)
-    end)
-    if not ok then
-        warn("[AutomotiveWorld] Échec d'attribution de la propriété réseau : " .. tostring(err))
-    end
-    record.ServerOwned = player == nil
+local function ownershipPort(record: VehicleRecord): NetworkOwnership.Port<Player>
+    return {
+        set = function(owner: Player?)
+            record.Root:SetNetworkOwner(owner)
+        end,
+        get = function(): Player?
+            return record.Root:GetNetworkOwner()
+        end,
+    }
+end
+
+-- Désigne QUI simule le véhicule : le serveur (owner = nil) ou le conducteur.
+-- Jamais les deux : le serveur ne simule que si ServerOwned, et le client ne
+-- simule que si l'attribut SimulationOwnerUserId porte son UserId.
+local function applySimulationOwner(record: VehicleRecord, owner: Player?)
+    record.ServerOwned = owner == nil
     if record.ServerOwned then
         -- Le serveur reprend la simulation avec un état neuf (frein à main serré).
         record.Simulator = VehicleSimulator.new(record.Model, record.Definition, { ReplicationFriendly = true })
         record.Asleep = false
         record.CalmTimer = 0
+    end
+    if owner then
+        record.Model:SetAttribute(Constants.Attributes.SimulationPivot, record.Root.CFrame)
+    end
+    record.Model:SetAttribute(Constants.Attributes.SimulationOwnerUserId, if owner then owner.UserId else 0)
+end
+
+-- Change la propriété réseau et ne met à jour l'état interne qu'une fois
+-- l'attribution CONFIRMÉE par le moteur. En cas de refus, le serveur garde
+-- (ou reprend) la simulation et la fonction renvoie false : à l'appelant de
+-- traiter le conducteur (voir recoverDriver).
+local function setOwner(record: VehicleRecord, player: Player?): boolean
+    local port = ownershipPort(record)
+    local outcome, detail = NetworkOwnership.transfer(port, player)
+    if outcome == "Applied" then
+        applySimulationOwner(record, player)
+        return true
+    end
+    warn(
+        string.format(
+            "[AutomotiveWorld] Propriété réseau non appliquée sur %s (demandée : %s) : %s — %s",
+            tostring(record.Model:GetAttribute(Constants.Attributes.VehicleId)),
+            if player then tostring(player.UserId) else "serveur",
+            outcome,
+            detail or "?"
+        )
+    )
+    if player ~= nil then
+        -- Récupération sûre : retour explicite au serveur (si le moteur l'accepte).
+        NetworkOwnership.transfer(port, nil)
+    end
+    applySimulationOwner(record, nil)
+    return false
+end
+
+-- Le conducteur ne peut pas (ou plus) simuler le véhicule : il est sorti du
+-- siège, sans sanction ; le véhicule reste simulé par le serveur.
+local function recoverDriver(record: VehicleRecord)
+    local occupant = record.Seat.Occupant
+    local driver = record.Driver
+    if occupant then
+        ejectOccupant(record, occupant)
+    end
+    if driver then
+        notify(driver, "VehicleUnavailable")
     end
 end
 
@@ -155,10 +229,14 @@ local function placeUnderServer(record: VehicleRecord, pivot: CFrame)
     record.LastSample = nil
     if driver then
         task.delay(CORRECTION_HOLD_S, function()
-            if record.Driver == driver then
-                setOwner(record, driver)
+            if record.Driver ~= driver then
+                return
+            end
+            if setOwner(record, driver) then
                 record.LastSample = sampleOf(record, os.clock())
                 record.LastValidPivot = record.Root.CFrame
+            else
+                recoverDriver(record)
             end
         end)
     end
@@ -172,23 +250,21 @@ local function uprightPivot(position: Vector3, look: Vector3): CFrame
     return CFrame.lookAt(position, position + flat.Unit)
 end
 
-local function unseat(humanoid: Humanoid, seat: Seat)
-    local weld = seat:FindFirstChild("SeatWeld")
-    if weld then
-        weld:Destroy()
+-- Renvoie true si la propriété réseau a été confirmée ; sinon rien n'est
+-- attribué et le serveur garde la simulation.
+local function assignDriver(record: VehicleRecord, player: Player): boolean
+    if not setOwner(record, player) then
+        return false
     end
-    humanoid.Sit = false
-end
-
-local function assignDriver(record: VehicleRecord, player: Player)
     record.Driver = player
     recordByDriver[player] = record
     record.Model:SetAttribute(Constants.Attributes.DriverUserId, player.UserId)
     record.Prompt.Enabled = false
     record.SuspicionCount = 0
+    record.OwnershipFailures = 0
     record.LastValidPivot = record.Root.CFrame
-    setOwner(record, player)
     record.LastSample = sampleOf(record, os.clock())
+    return true
 end
 
 local function releaseDriver(record: VehicleRecord)
@@ -221,11 +297,13 @@ local function onOccupantChanged(record: VehicleRecord)
         or (alreadyDriving ~= nil and alreadyDriving ~= record)
     if unauthorized then
         -- Occupation non validée par le serveur : le siège est libéré.
-        unseat(occupant, record.Seat)
+        ejectOccupant(record, occupant)
         return
     end
-    if record.Driver == nil and player then
-        assignDriver(record, player)
+    if record.Driver == nil and player and not assignDriver(record, player) then
+        -- Propriété réseau refusée : pas de conduite possible, siège libéré.
+        ejectOccupant(record, occupant)
+        notify(player, "VehicleUnavailable")
     end
 end
 
@@ -286,6 +364,8 @@ local function findExitPivot(record: VehicleRecord, character: Model): CFrame?
     return nil
 end
 
+local releaseCharacter: (record: VehicleRecord, humanoid: Humanoid) -> ()
+
 local function handleExit(record: VehicleRecord, player: Player)
     local seat = record.Seat
     local humanoid = seat.Occupant
@@ -298,9 +378,15 @@ local function handleExit(record: VehicleRecord, player: Player)
         notify(player, "ExitTooFast", limit)
         return
     end
+    releaseCharacter(record, humanoid)
+end
+
+-- Libère le siège puis dépose le personnage à côté du véhicule (vérifié).
+function releaseCharacter(record: VehicleRecord, humanoid: Humanoid)
+    local seat = record.Seat
     local character = humanoid.Parent
     local exitPivot = if character and character:IsA("Model") then findExitPivot(record, character) else nil
-    unseat(humanoid, seat)
+    unseatHumanoid(humanoid, seat)
     if exitPivot and character and character:IsA("Model") then
         -- Le personnage appartient (réseau) à son joueur : un déplacement imposé
         -- par le serveur pendant que le client reprend la main peut être écrasé
@@ -324,6 +410,21 @@ local function handleExit(record: VehicleRecord, player: Player)
             end
         end)
     end
+end
+
+-- Différé puis vérifié : mesuré dans Studio, une sortie demandée pendant le
+-- changement d'occupant (avant que la soudure du siège n'existe) laissait le
+-- personnage assis. Le siège fait foi (`Seat.Occupant`), pas l'état du personnage.
+function ejectOccupant(record: VehicleRecord, humanoid: Humanoid)
+    task.defer(function()
+        for _ = 1, EJECT_ATTEMPTS do
+            if humanoid.Parent == nil or (record.Seat.Occupant ~= humanoid and humanoid.SeatPart == nil) then
+                return
+            end
+            releaseCharacter(record, humanoid)
+            task.wait(EJECT_CHECK_S)
+        end
+    end)
 end
 
 local function handleUnflip(record: VehicleRecord, player: Player)
@@ -405,6 +506,39 @@ local function validateMovements(now: number)
     end
 end
 
+-- Borne physique de la vitesse d'un véhicule simulé par le serveur (m/s) :
+-- jamais plus de 2 fois la vitesse du véhicule le plus rapide à proximité (choc
+-- élastique), ni une accélération démesurée d'un pas à l'autre. Neutralise les
+-- éjections numériques (mesurées : 79 et 250 st) quand la copie répliquée d'un
+-- véhicule piloté pénètre un véhicule garé. Aucune téléportation : seule la
+-- vitesse est ramenée à la borne, et l'événement est journalisé.
+local function limitImplausibleSpeed(record: VehicleRecord, dt: number)
+    local root = record.Root
+    local speed = root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD
+    local nearbyMax = 0
+    for _, other in records do
+        if other ~= record and (other.Root.Position - root.Position).Magnitude < NEARBY_VEHICLE_STUDS then
+            nearbyMax = math.max(nearbyMax, other.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD)
+        end
+    end
+    local limit = CollisionExchange.maxPlausibleSpeed(record.LastServerSpeed, nearbyMax, dt)
+    if speed > limit then
+        local scale = limit / speed
+        root.AssemblyLinearVelocity *= scale
+        root.AssemblyAngularVelocity *= scale
+        warn(
+            string.format(
+                "[AutomotiveWorld][Validation] Éjection physiquement impossible limitée sur %s (%.1f → %.1f m/s), sans téléportation.",
+                tostring(record.Model:GetAttribute(Constants.Attributes.VehicleId)),
+                speed,
+                limit
+            )
+        )
+        speed = limit
+    end
+    record.LastServerSpeed = speed
+end
+
 -- Simulation serveur d'un véhicule stationné. Une fois immobile, le véhicule
 -- « s'endort » : les forces restent constantes et ne sont plus réécrites
 -- (pas de réplication inutile) jusqu'à la prochaine perturbation.
@@ -428,6 +562,31 @@ local function stepServerVehicle(record: VehicleRecord, dt: number)
         end
     else
         record.CalmTimer = 0
+    end
+end
+
+-- Vérifie que le propriétaire réseau effectif est bien celui attendu ; sinon
+-- le réattribue, et sort le conducteur si le moteur refuse (aucune sanction).
+local function verifyOwnership(record: VehicleRecord)
+    if os.clock() < record.CorrectionUntil then
+        return
+    end
+    local expected = if record.ServerOwned then nil else record.Driver
+    local readable, actual = NetworkOwnership.read(ownershipPort(record))
+    if not readable or actual == expected then
+        record.OwnershipFailures = 0
+        return
+    end
+    record.OwnershipFailures += 1
+    warn(
+        string.format(
+            "[AutomotiveWorld] Propriété réseau inattendue sur %s : réattribution (%d)",
+            tostring(record.Model:GetAttribute(Constants.Attributes.VehicleId)),
+            record.OwnershipFailures
+        )
+    )
+    if not setOwner(record, expected) and record.Driver ~= nil then
+        recoverDriver(record)
     end
 end
 
@@ -481,8 +640,11 @@ local function createRemotes(): Remotes
     local notice = Instance.new("RemoteEvent")
     notice.Name = Constants.Remotes.Notice
     notice.Parent = folder
+    local impulse = Instance.new("RemoteEvent")
+    impulse.Name = Constants.Remotes.Impulse
+    impulse.Parent = folder
     folder.Parent = ReplicatedStorage
-    return { Action = action, Input = input, Notice = notice }
+    return { Action = action, Input = input, Notice = notice, Impulse = impulse }
 end
 
 local function onInput(player: Player, payload: any)
@@ -569,10 +731,25 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
             SuspicionCount = 0,
             LastSuspicionLog = 0,
             LastSteer = 0,
+            OwnershipFailures = 0,
+            LastServerSpeed = 0,
         }
         table.insert(records, record)
         setOwner(record, nil)
 
+        -- Ancrer puis désancrer une pièce rend la propriété réseau à l'attribution
+        -- automatique de Roblox : on réaffirme aussitôt le propriétaire attendu.
+        root:GetPropertyChangedSignal("Anchored"):Connect(function()
+            if root.Anchored then
+                return
+            end
+            task.defer(function()
+                local expected = if record.ServerOwned then nil else record.Driver
+                if not setOwner(record, expected) and record.Driver ~= nil then
+                    recoverDriver(record)
+                end
+            end)
+        end)
         seat:GetPropertyChangedSignal("Occupant"):Connect(function()
             onOccupantChanged(record)
         end)
@@ -584,17 +761,48 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
     RunService.PreSimulation:Connect(function(dt)
         for _, record in records do
             if record.ServerOwned then
+                limitImplausibleSpeed(record, dt)
                 stepServerVehicle(record, dt)
+            else
+                record.LastServerSpeed = 0
             end
         end
     end)
 
+    -- Collisions entre véhicules de deux joueurs : complément d'impulsion confirmé serveur.
+    local mediator = CollisionMediator.new(function(driver, model, normal, deltaV, point)
+        createdRemotes.Impulse:FireClient(driver, model, normal, deltaV, point)
+    end)
+    local participants: { CollisionMediator.Participant } = {}
+    for _, record in records do
+        table.insert(participants, {
+            Model = record.Model,
+            Root = record.Root,
+            MassKg = record.Definition.Chassis.MassKg,
+            Driver = nil,
+            ClientSimulated = false,
+        })
+    end
+
     local validationTimer, maintenanceTimer = 0, 0
     RunService.Heartbeat:Connect(function(dt)
+        local now = os.clock()
+        for index, record in records do
+            local participant = participants[index]
+            participant.Driver = record.Driver
+            participant.ClientSimulated = record.Driver ~= nil
+                and not record.ServerOwned
+                and now >= record.CorrectionUntil
+        end
+        mediator:step(participants, now)
+
         validationTimer += dt
         maintenanceTimer += dt
         if validationTimer >= VALIDATION_INTERVAL_S then
             validationTimer = 0
+            for _, record in records do
+                verifyOwnership(record)
+            end
             validateMovements(os.clock())
         end
         if maintenanceTimer >= MAINTENANCE_INTERVAL_S then

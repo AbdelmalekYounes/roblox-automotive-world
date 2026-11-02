@@ -22,6 +22,7 @@ local VehicleDefinitions = require(VehiclesShared:WaitForChild("VehicleDefinitio
 local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator"))
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
 local Telemetry = require(VehiclesShared:WaitForChild("Telemetry"))
+local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 
 local DriverInput = require(script.Parent.DriverInput)
 local VehicleCamera = require(script.Parent.VehicleCamera)
@@ -36,12 +37,27 @@ local SEND_INTERVAL_S = 1 / Constants.InputSendRateHz
 local KEEPALIVE_S = 0.5
 local ACTION_DEBOUNCE_S = 0.4
 local ACTION_PRIORITY = Enum.ContextActionPriority.High.Value + 10
+local VELOCITY_HISTORY_S = 1.5
+-- Borne défensive d'un complément d'impulsion reçu (studs/s, ≈ 60 km/h).
+local IMPULSE_MAX_DELTA_V = 60
+local IMPULSE_MIN_DELTA_V = 0.3
+-- Écart (studs) au-delà duquel la copie locale est recalée sur la position serveur.
+local RESYNC_DISTANCE = 3
+-- Durée pendant laquelle le personnage est relevé après un refus de prise en main.
+local STAND_UP_WINDOW_S = 3
 
 type Session = {
     Model: Model,
     Seat: Seat,
     Definition: Types.VehicleDefinition,
     Simulator: VehicleSimulator.VehicleSimulator,
+    -- Vrai seulement quand le serveur a CONFIRMÉ la propriété réseau à ce
+    -- joueur (attribut SimulationOwnerUserId) : jamais de double simulation.
+    Simulating: boolean,
+    -- Vitesses récentes du véhicule (studs/s), pour le complément d'impulsion.
+    VelocityHistory: { { Time: number, Velocity: Vector3 } },
+    LastImpulse: number?,
+    Resyncs: number,
     LastInput: Types.DriverInput,
     SendTimer: number,
     KeepaliveTimer: number,
@@ -52,6 +68,7 @@ type Remotes = {
     Action: RemoteEvent,
     Input: UnreliableRemoteEvent,
     Notice: RemoteEvent,
+    Impulse: RemoteEvent,
 }
 
 local session: Session? = nil
@@ -93,21 +110,44 @@ local function sendAction(action: string)
     remotes.Action:FireServer(action)
 end
 
-local function onExitAction(_: string, state: Enum.UserInputState): Enum.ContextActionResult
+-- Une touche du clavier ne déclenche aucune action pendant une saisie de
+-- texte (chat, champ de saisie) : protection explicite, en plus de celle du moteur.
+local function keyboardBlocked(inputObject: InputObject?): boolean
+    return inputObject ~= nil and inputObject.UserInputType == Enum.UserInputType.Keyboard and DriverInput.isTyping()
+end
+
+local function onExitAction(_: string, state: Enum.UserInputState, inputObject: InputObject?): Enum.ContextActionResult
+    if keyboardBlocked(inputObject) then
+        return Enum.ContextActionResult.Pass
+    end
     if state == Enum.UserInputState.Begin then
         sendAction(Constants.Actions.Exit)
     end
     return Enum.ContextActionResult.Sink
 end
 
-local function onUnflipAction(_: string, state: Enum.UserInputState): Enum.ContextActionResult
+local function onUnflipAction(
+    _: string,
+    state: Enum.UserInputState,
+    inputObject: InputObject?
+): Enum.ContextActionResult
+    if keyboardBlocked(inputObject) then
+        return Enum.ContextActionResult.Pass
+    end
     if state == Enum.UserInputState.Begin then
         sendAction(Constants.Actions.Unflip)
     end
     return Enum.ContextActionResult.Sink
 end
 
-local function onCameraAction(_: string, state: Enum.UserInputState): Enum.ContextActionResult
+local function onCameraAction(
+    _: string,
+    state: Enum.UserInputState,
+    inputObject: InputObject?
+): Enum.ContextActionResult
+    if keyboardBlocked(inputObject) then
+        return Enum.ContextActionResult.Pass
+    end
     if state == Enum.UserInputState.Begin then
         DevHud.showNotice("CameraPreset", camera:togglePreset())
     end
@@ -160,10 +200,19 @@ local function unbindActions()
     end
 end
 
+-- Affiche les aides ET la réduction de braquage avec la vitesse (A1) : rien
+-- de ce qui modifie la commande du joueur n'est caché.
 local function aidsDescription(definition: Types.VehicleDefinition): string
     local aids = definition.Aids
+    local steering = definition.Steering
+    local steeringText = string.format(
+        "braquage %d° → %d° à %d km/h",
+        steering.MaxAngleDeg,
+        steering.HighSpeedAngleDeg,
+        steering.HighSpeedReferenceKmh
+    )
     if not (aids.Abs or aids.TractionControl or aids.StabilityControl) then
-        return "Aides : aucune (ABS, antipatinage et ESP absents de ce modèle)"
+        return "Aides : aucune · " .. steeringText
     end
     return "Aides : configuration non prise en charge dans le lot 0.1"
 end
@@ -199,6 +248,10 @@ local function beginSession(model: Model, seat: Seat)
         Seat = seat,
         Definition = definition,
         Simulator = VehicleSimulator.new(model, definition),
+        Simulating = false,
+        VelocityHistory = {},
+        LastImpulse = nil,
+        Resyncs = 0,
         LastInput = InputCodec.Parked,
         SendTimer = 0,
         KeepaliveTimer = 0,
@@ -264,6 +317,10 @@ local function sendInput(current: Session, driverInput: Types.DriverInput, dt: n
     end
 end
 
+local function ownsSimulation(model: Model): boolean
+    return model:GetAttribute(Constants.Attributes.SimulationOwnerUserId) == player.UserId
+end
+
 local function onPreSimulation(dt: number)
     evaluateSession()
     local current = session
@@ -273,8 +330,79 @@ local function onPreSimulation(dt: number)
     local provider = testInputProvider
     local driverInput = if provider then provider() else input:poll(dt)
     current.LastInput = driverInput
-    current.Simulator:step(driverInput, dt)
+    -- Pendant une correction serveur (ou si la propriété réseau n'a pas été
+    -- confirmée), c'est le serveur qui simule : le client suspend sa simulation
+    -- et repart d'un état neuf à la reprise (pas d'état figé ni de double calcul).
+    local owns = ownsSimulation(current.Model)
+    if owns ~= current.Simulating then
+        if owns then
+            -- Mesuré dans Studio : la copie locale d'un véhicule peut être périmée au
+            -- moment où le serveur en confie la simulation ; simuler depuis cette
+            -- position ferait « sauter » le véhicule (correction serveur). On repart
+            -- donc de la position que le serveur a publiée lors de l'attribution.
+            local pivot = current.Model:GetAttribute(Constants.Attributes.SimulationPivot)
+            local root = current.Model.PrimaryPart
+            if typeof(pivot) == "CFrame" and root and (root.Position - pivot.Position).Magnitude > RESYNC_DISTANCE then
+                current.Model:PivotTo(pivot * root.CFrame:ToObjectSpace(current.Model:GetPivot()))
+                root.AssemblyLinearVelocity = Vector3.zero
+                root.AssemblyAngularVelocity = Vector3.zero
+                current.Resyncs += 1
+            end
+            current.Simulator = VehicleSimulator.new(current.Model, current.Definition)
+        else
+            current.Simulator:release()
+        end
+        current.Simulating = owns
+    end
+    if owns then
+        current.Simulator:step(driverInput, dt)
+        local root = current.Model.PrimaryPart
+        if root then
+            local now = os.clock()
+            local history = current.VelocityHistory
+            table.insert(history, { Time = now, Velocity = root.AssemblyLinearVelocity })
+            while #history > 0 and now - history[1].Time > VELOCITY_HISTORY_S do
+                table.remove(history, 1)
+            end
+        end
+    else
+        table.clear(current.VelocityHistory)
+    end
     sendInput(current, driverInput, dt)
+end
+
+-- Complément d'impulsion demandé par le serveur après une collision confirmée
+-- avec le véhicule d'un autre joueur (voir Physics/CollisionExchange). Seule la
+-- part que notre propre simulation n'a pas déjà produite est appliquée.
+local function onImpulse(model: any, normal: any, deltaV: any, point: any)
+    local current = session
+    if current == nil or not current.Simulating or model ~= current.Model then
+        return
+    end
+    if typeof(normal) ~= "Vector3" or typeof(point) ~= "Vector3" or type(deltaV) ~= "number" then
+        return
+    end
+    if deltaV ~= deltaV or deltaV <= 0 or deltaV > IMPULSE_MAX_DELTA_V then
+        return
+    end
+    local root = current.Model.PrimaryPart
+    local flat = Vector3.new(normal.X, 0, normal.Z)
+    if root == nil or flat.Magnitude < 0.5 then
+        return
+    end
+    local direction = flat.Unit
+    local history = {}
+    for _, sample in current.VelocityHistory do
+        table.insert(history, sample.Velocity:Dot(direction))
+    end
+    local already = CollisionExchange.alreadyReceived(history, root.AssemblyLinearVelocity:Dot(direction))
+    local missing = CollisionExchange.complement(deltaV, already)
+    current.LastImpulse = missing
+    if missing < IMPULSE_MIN_DELTA_V then
+        return
+    end
+    local at = Vector3.new(point.X, root.Position.Y, point.Z)
+    root:ApplyImpulseAtPosition(direction * (missing * root.AssemblyMass), at)
 end
 
 local function onPreRender(dt: number)
@@ -330,17 +458,44 @@ function VehicleController.start()
         Action = folder:WaitForChild(Constants.Remotes.Action) :: RemoteEvent,
         Input = folder:WaitForChild(Constants.Remotes.Input) :: UnreliableRemoteEvent,
         Notice = folder:WaitForChild(Constants.Remotes.Notice) :: RemoteEvent,
+        Impulse = folder:WaitForChild(Constants.Remotes.Impulse) :: RemoteEvent,
     }
     local activeRemotes = remotes :: Remotes
+    activeRemotes.Impulse.OnClientEvent:Connect(onImpulse)
     activeRemotes.Notice.OnClientEvent:Connect(function(key: any, value: any)
-        if type(key) == "string" then
-            DevHud.showNotice(key, value)
+        if type(key) ~= "string" then
+            return
+        end
+        DevHud.showNotice(key, value)
+        if key == "VehicleUnavailable" then
+            -- Le serveur libère le siège (après un court délai) ; l'état « assis » du
+            -- personnage est tenu par ce client : on le relève tant qu'il reste assis
+            -- sur un siège conducteur sans conduire (mesuré dans Studio : sinon il
+            -- reste assis sur un véhicule qu'il ne peut pas conduire).
+            task.spawn(function()
+                local deadline = os.clock() + STAND_UP_WINDOW_S
+                while os.clock() < deadline do
+                    local humanoid = currentHumanoid()
+                    local seatPart = if humanoid then humanoid.SeatPart else nil
+                    if humanoid and seatPart and seatPart.Name == "DriverSeat" and session == nil then
+                        humanoid.Sit = false
+                        humanoid.Jump = true
+                    end
+                    task.wait(0.3)
+                end
+            end)
         end
     end)
 
     DevHud.setInputMode(isGamepadInput(UserInputService:GetLastInputType()))
     UserInputService.LastInputTypeChanged:Connect(function(inputType)
         DevHud.setInputMode(isGamepadInput(inputType))
+    end)
+
+    input:setEventHandler(function(event)
+        if session ~= nil then
+            DevHud.showNotice(event)
+        end
     end)
 
     player.CharacterRemoving:Connect(function()
@@ -365,6 +520,13 @@ end
 
 export type TestSnapshot = {
     Driving: boolean,
+    SimulationActive: boolean,
+    ActiveDevice: string?,
+    Typing: boolean,
+    -- Dernier complément d'impulsion appliqué (studs/s), nil si aucun.
+    LastImpulse: number?,
+    -- Recalages de la copie locale sur la position serveur (session en cours).
+    Resyncs: number,
     VehicleName: string?,
     SpeedKmh: number,
     ForwardSpeedMs: number,
@@ -381,6 +543,11 @@ function VehicleController.getTestSnapshot(): TestSnapshot
     if current == nil then
         return {
             Driving = false,
+            SimulationActive = false,
+            ActiveDevice = input.Arbiter.Active,
+            Typing = DriverInput.isTyping(),
+            LastImpulse = nil,
+            Resyncs = 0,
             VehicleName = nil,
             SpeedKmh = 0,
             ForwardSpeedMs = 0,
@@ -394,6 +561,11 @@ function VehicleController.getTestSnapshot(): TestSnapshot
     local telemetry = current.Simulator:getTelemetry()
     return {
         Driving = true,
+        SimulationActive = current.Simulating,
+        ActiveDevice = input.Arbiter.Active,
+        Typing = DriverInput.isTyping(),
+        LastImpulse = current.LastImpulse,
+        Resyncs = current.Resyncs,
         VehicleName = current.Model.Name,
         SpeedKmh = telemetry.SpeedKmh,
         ForwardSpeedMs = telemetry.ForwardSpeedMs,

@@ -4,12 +4,17 @@
 	et sans utiliser ta souris ni ton clavier.
 
 .DESCRIPTION
-	1. Vérifie que la VM tourne (la démarre sans fenêtre si elle n'est pas chiffrée).
+	1. Vérifie que la VM tourne (la démarre sans fenêtre si elle n'est pas chiffrée) et
+	   signale tout dossier partagé qui exposerait le dépôt à la VM.
 	2. Attend le battement de cœur de l'agent de la VM.
-	3. Construit la place (Rojo) et le pilote de tests (Lune) dans une tâche du dossier d'échange.
+	3. Construit la place (Rojo) et le pilote de tests (Lune) dans une tâche du dossier
+	   d'échange, situé HORS du dépôt (par défaut ..\aw-vm-exchange) : la VM ne voit et
+	   n'écrit que ce dossier.
 	4. Attend done.json, puis écrit le rapport (report.md) et une copie dans
-	   build\test-reports\latest-vm.md.
+	   build\test-reports\latest-vm.md. Les fichiers renvoyés par la VM sont lus comme des
+	   DONNÉES : l'hôte n'exécute jamais rien qui provienne du dossier d'échange.
 	vmrun ne sert qu'à démarrer/lister/suspendre la VM : aucun identifiant n'est utilisé.
+	Aucune place n'est publiée : Studio ouvre un fichier local, en mode script.
 
 .EXAMPLE
 	test-vm.cmd
@@ -18,7 +23,8 @@
 #>
 param(
 	[string]$Vmx,
-	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision"),
+	[string]$Exchange,
+	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision", "collision_latence"),
 	[int]$TimeoutSec = 1500,
 	[int]$AgentWaitSec = 240,
 	[switch]$NoVmControl,
@@ -30,10 +36,34 @@ $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $Root
-$exchange = Join-Path $Root "build\vm-exchange"
+$configPath = Join-Path $Root "build\vm-config.json"
+$config = if (Test-Path $configPath) { Get-Content -Raw $configPath | ConvertFrom-Json } else { $null }
+if (-not $Exchange -and $config -and $config.exchange) { $Exchange = $config.exchange }
+if (-not $Exchange) { $Exchange = Join-Path (Split-Path -Parent $Root) "aw-vm-exchange" }
+$exchange = [IO.Path]::GetFullPath($Exchange)
 $jobsDir = Join-Path $exchange "jobs"
 New-Item -ItemType Directory -Force -Path $jobsDir | Out-Null
-$configPath = Join-Path $Root "build\vm-config.json"
+
+# Scripts d'installation publiés dans le dossier d'échange (lecture par la VM).
+$setupDir = Join-Path $exchange "setup"
+New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
+foreach ($name in @("guest-setup.ps1", "guest-agent.ps1")) {
+	Copy-Item (Join-Path $PSScriptRoot $name) (Join-Path $setupDir $name) -Force
+}
+
+# Dossiers partagés déclarés dans le .vmx : aucun ne doit contenir le dépôt.
+function Test-SharedFolders([string]$vmxPath) {
+	$repo = [IO.Path]::GetFullPath($Root).TrimEnd("\") + "\"
+	foreach ($line in Get-Content $vmxPath) {
+		if ($line -match '^sharedFolder\d+\.hostPath\s*=\s*"(.*)"') {
+			$shared = [IO.Path]::GetFullPath($Matches[1]).TrimEnd("\") + "\"
+			if ($repo.StartsWith($shared, [StringComparison]::OrdinalIgnoreCase)) {
+				Write-Warning ("Le dossier partagé « $($Matches[1]) » expose le dépôt à la VM (écriture possible). " +
+					"Voir tools\vm\configure-share.ps1 et docs\VM_TESTS.md.")
+			}
+		}
+	}
+}
 
 function Find-Vmrun {
 	foreach ($candidate in @(
@@ -50,10 +80,11 @@ $vmrun = $null
 if (-not $NoVmControl) {
 	$vmrun = Find-Vmrun
 	if (-not $vmrun) { throw "vmrun.exe introuvable : VMware Workstation est-il installé ?" }
-	if (-not $Vmx -and (Test-Path $configPath)) { $Vmx = (Get-Content -Raw $configPath | ConvertFrom-Json).vmx }
+	if (-not $Vmx -and $config) { $Vmx = $config.vmx }
 	if (-not $Vmx) { $Vmx = "E:\VMS\ROBLOX DEV\ROBLOX DEV.vmx" }
 	if (-not (Test-Path $Vmx)) { throw "Fichier .vmx introuvable : $Vmx (option -Vmx)." }
-	[pscustomobject]@{ vmx = $Vmx } | ConvertTo-Json | Out-File -Encoding utf8 $configPath
+	[pscustomobject]@{ vmx = $Vmx; exchange = $exchange } | ConvertTo-Json | Out-File -Encoding utf8 $configPath
+	Test-SharedFolders $Vmx
 
 	$running = (& $vmrun -T ws list) -join "`n"
 	if ($running -notmatch [regex]::Escape($Vmx)) {
@@ -85,8 +116,8 @@ while ((Get-Date) -lt $deadline) {
 }
 if (-not $agentOk) {
 	throw ("L'agent de la VM ne répond pas (aucun battement de cœur récent dans $heartbeat). " +
-		"Vérifier : session Windows ouverte automatiquement dans la VM, dossier partagé actif, " +
-		"et préparation faite (tools\vm\guest-setup.ps1, voir docs/VM_TESTS.md).")
+		"Vérifier : session Windows ouverte automatiquement dans la VM, dossier partagé « aw-vm-exchange » " +
+		"actif ($exchange), et préparation faite dans la VM (setup\guest-setup.ps1, voir docs/VM_TESTS.md).")
 }
 $beat = Get-Content -Raw $heartbeat | ConvertFrom-Json
 Write-Host "Agent prêt : invité $($beat.guest), utilisateur $($beat.user), version $($beat.agentVersion)."
@@ -100,7 +131,7 @@ if ($LASTEXITCODE -ne 0) { throw "rojo build a échoué." }
 & lune run tests/studio/build-driver.luau (Join-Path $jobDir "driver.luau") ($Sessions -join ",")
 if ($LASTEXITCODE -ne 0) { throw "La génération du pilote de tests a échoué." }
 Copy-Item (Join-Path $PSScriptRoot "job-runner.ps1") (Join-Path $jobDir "job-runner.ps1")
-Copy-Item (Join-Path $PSScriptRoot "capture-screens.ps1") (Join-Path $jobDir "capture-screens.ps1")
+Copy-Item (Join-Path $PSScriptRoot "ScreenCapture.cs") (Join-Path $jobDir "ScreenCapture.cs")
 $commit = (& git rev-parse --short HEAD 2>$null)
 [pscustomobject]@{
 	id = $id; sessions = $Sessions; timeoutSec = $TimeoutSec; dryRun = [bool]$DryRun

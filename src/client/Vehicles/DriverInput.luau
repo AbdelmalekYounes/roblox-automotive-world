@@ -6,35 +6,61 @@
 --           diriger, Espace frein à main.
 -- Manette : gâchette droite accélérer, gâchette gauche freiner/reculer,
 --           stick gauche diriger, bouton A frein à main.
--- Les touches numériques sont progressives (rampes) pour éviter des
--- commandes « tout ou rien » irréalistes ; les gâchettes restent analogiques.
+-- Ce module ne fait que LIRE les périphériques ; le choix du périphérique
+-- actif, les zones mortes, les rampes clavier et les protections contre les
+-- commandes involontaires sont dans InputArbiter (module pur, testé hors Studio).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Types = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("VehicleTypes"))
+local InputArbiter = require(script.Parent.InputArbiter)
 
 local DriverInput = {}
 DriverInput.__index = DriverInput
 
-local GAMEPAD = Enum.UserInputType.Gamepad1
-local STICK_DEADZONE = 0.12
-local TRIGGER_DEADZONE = 0.04
-local PEDAL_RISE_PER_S = 5 -- 0 → 1 en 0,2 s
-local PEDAL_FALL_PER_S = 8
-local STEER_RATE_PER_S = 3.2
-local STEER_RETURN_PER_S = 5
-
 type InputFields = {
-    Throttle: number,
-    Brake: number,
-    Steer: number,
+    Arbiter: InputArbiter.State,
+    Gamepad: Enum.UserInputType,
+    WindowFocused: boolean,
+    OnEvent: ((InputArbiter.Event) -> ())?,
 }
 
 export type DriverInputReader = typeof(setmetatable({} :: InputFields, DriverInput))
 
+local THROTTLE_KEYS = { Enum.KeyCode.W, Enum.KeyCode.Z, Enum.KeyCode.Up }
+local BRAKE_KEYS = { Enum.KeyCode.S, Enum.KeyCode.Down }
+local LEFT_KEYS = { Enum.KeyCode.A, Enum.KeyCode.Q, Enum.KeyCode.Left }
+local RIGHT_KEYS = { Enum.KeyCode.D, Enum.KeyCode.Right }
+
+local function isGamepad(inputType: Enum.UserInputType): boolean
+    return string.sub(inputType.Name, 1, 7) == "Gamepad"
+end
+
 function DriverInput.new(): DriverInputReader
-    return setmetatable({ Throttle = 0, Brake = 0, Steer = 0 } :: InputFields, DriverInput)
+    local self = setmetatable(
+        {
+            Arbiter = InputArbiter.newState(),
+            Gamepad = Enum.UserInputType.Gamepad1,
+            WindowFocused = true,
+            OnEvent = nil,
+        } :: InputFields,
+        DriverInput
+    )
+    -- Manette suivie : la dernière ayant servi (pas seulement Gamepad1).
+    UserInputService.InputBegan:Connect(function(inputObject)
+        if isGamepad(inputObject.UserInputType) then
+            self.Gamepad = inputObject.UserInputType
+        end
+    end)
+    -- Fenêtre sans focus : les relâchements de touches peuvent être perdus.
+    UserInputService.WindowFocusReleased:Connect(function()
+        self.WindowFocused = false
+    end)
+    UserInputService.WindowFocused:Connect(function()
+        self.WindowFocused = true
+    end)
+    return self
 end
 
 local function anyKeyDown(keys: { Enum.KeyCode }): boolean
@@ -46,19 +72,27 @@ local function anyKeyDown(keys: { Enum.KeyCode }): boolean
     return false
 end
 
-local function approach(current: number, target: number, rateUp: number, rateDown: number, dt: number): number
-    if target > current then
-        return math.min(target, current + rateUp * dt)
-    end
-    return math.max(target, current - rateDown * dt)
+-- Vrai si une zone de texte (y compris celle du chat) a le focus.
+function DriverInput.isTyping(): boolean
+    return UserInputService:GetFocusedTextBox() ~= nil
 end
 
-local function readGamepad(): (number, number, number, boolean)
-    if not UserInputService:GetGamepadConnected(GAMEPAD) then
-        return 0, 0, 0, false
+local function readKeyboard(): InputArbiter.KeyboardSample
+    return {
+        Throttle = anyKeyDown(THROTTLE_KEYS),
+        Brake = anyKeyDown(BRAKE_KEYS),
+        Left = anyKeyDown(LEFT_KEYS),
+        Right = anyKeyDown(RIGHT_KEYS),
+        Handbrake = UserInputService:IsKeyDown(Enum.KeyCode.Space),
+    }
+end
+
+local function readGamepad(gamepad: Enum.UserInputType): InputArbiter.GamepadSample
+    if not UserInputService:GetGamepadConnected(gamepad) then
+        return InputArbiter.DisconnectedGamepad
     end
     local throttle, brake, steer = 0, 0, 0
-    for _, state in UserInputService:GetGamepadState(GAMEPAD) do
+    for _, state in UserInputService:GetGamepadState(gamepad) do
         if state.KeyCode == Enum.KeyCode.ButtonR2 then
             throttle = state.Position.Z
         elseif state.KeyCode == Enum.KeyCode.ButtonL2 then
@@ -67,52 +101,38 @@ local function readGamepad(): (number, number, number, boolean)
             steer = state.Position.X
         end
     end
-    throttle = if throttle > TRIGGER_DEADZONE then throttle else 0
-    brake = if brake > TRIGGER_DEADZONE then brake else 0
-    -- Zone morte du stick puis remise à l'échelle sur [0 ; 1].
-    local magnitude = math.abs(steer)
-    steer = if magnitude > STICK_DEADZONE
-        then math.sign(steer) * (magnitude - STICK_DEADZONE) / (1 - STICK_DEADZONE)
-        else 0
-    local handbrake = UserInputService:IsGamepadButtonDown(GAMEPAD, Enum.KeyCode.ButtonA)
-    return math.clamp(throttle, 0, 1), math.clamp(brake, 0, 1), math.clamp(steer, -1, 1), handbrake
-end
-
--- À appeler une fois par image. Le jeu ne lit les touches que lorsque
--- aucune zone de texte n'a le focus (pas d'action involontaire en tapant).
-function DriverInput.poll(self: DriverInputReader, dt: number): Types.DriverInput
-    local typing = UserInputService:GetFocusedTextBox() ~= nil
-
-    local keyThrottle = not typing and anyKeyDown({ Enum.KeyCode.W, Enum.KeyCode.Z, Enum.KeyCode.Up })
-    local keyBrake = not typing and anyKeyDown({ Enum.KeyCode.S, Enum.KeyCode.Down })
-    local keyLeft = not typing and anyKeyDown({ Enum.KeyCode.A, Enum.KeyCode.Q, Enum.KeyCode.Left })
-    local keyRight = not typing and anyKeyDown({ Enum.KeyCode.D, Enum.KeyCode.Right })
-    local keyHandbrake = not typing and UserInputService:IsKeyDown(Enum.KeyCode.Space)
-
-    local padThrottle, padBrake, padSteer, padHandbrake = readGamepad()
-
-    self.Throttle = approach(self.Throttle, if keyThrottle then 1 else 0, PEDAL_RISE_PER_S, PEDAL_FALL_PER_S, dt)
-    self.Brake = approach(self.Brake, if keyBrake then 1 else 0, PEDAL_RISE_PER_S, PEDAL_FALL_PER_S, dt)
-
-    local keySteerTarget = (if keyRight then 1 else 0) - (if keyLeft then 1 else 0)
-    local returning = keySteerTarget == 0 or math.sign(keySteerTarget) ~= math.sign(self.Steer)
-    local rate = if returning then STEER_RETURN_PER_S else STEER_RATE_PER_S
-    self.Steer = approach(self.Steer, keySteerTarget, rate, rate, dt)
-
-    -- Le périphérique le plus sollicité l'emporte (bascule sans à-coup).
     return {
-        Throttle = math.max(self.Throttle, padThrottle),
-        Brake = math.max(self.Brake, padBrake),
-        Steer = if math.abs(padSteer) > math.abs(self.Steer) then padSteer else self.Steer,
-        Handbrake = keyHandbrake or padHandbrake,
+        Connected = true,
+        Throttle = throttle,
+        Brake = brake,
+        Steer = steer,
+        Handbrake = UserInputService:IsGamepadButtonDown(gamepad, Enum.KeyCode.ButtonA),
     }
 end
 
--- Remise à zéro (début/fin de conduite).
+-- Fonction appelée pour chaque événement d'arbitrage (ex. manette déconnectée).
+function DriverInput.setEventHandler(self: DriverInputReader, handler: ((InputArbiter.Event) -> ())?)
+    self.OnEvent = handler
+end
+
+-- À appeler une fois par image.
+function DriverInput.poll(self: DriverInputReader, dt: number): Types.DriverInput
+    local command: Types.DriverInput, event: InputArbiter.Event? =
+        InputArbiter.step(self.Arbiter, readKeyboard(), readGamepad(self.Gamepad), {
+            Typing = DriverInput.isTyping(),
+            WindowFocused = self.WindowFocused,
+        }, dt)
+    local handler = self.OnEvent
+    if event and handler then
+        handler(event)
+    end
+    return command
+end
+
+-- Remise à zéro (début/fin de conduite) : plus aucun périphérique actif, et
+-- une commande déjà maintenue devra être relâchée puis renouvelée.
 function DriverInput.reset(self: DriverInputReader)
-    self.Throttle = 0
-    self.Brake = 0
-    self.Steer = 0
+    self.Arbiter = InputArbiter.newState()
 end
 
 return DriverInput

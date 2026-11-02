@@ -15,6 +15,8 @@ local FRENCH: { [string]: string } = {
     UnflipDone = "Véhicule remis sur ses roues.",
     MovementCorrected = "Position corrigée par le serveur (mouvement jugé impossible). Aucune sanction.",
     CameraPreset = "Caméra : %s",
+    VehicleUnavailable = "Véhicule momentanément indisponible (prise en main refusée par le moteur). Réessayez.",
+    GamepadDisconnected = "Manette déconnectée : commandes manette relâchées.",
 }
 
 function Messages.format(key: string, value: any): string

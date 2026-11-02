@@ -30,6 +30,17 @@ export type EngineDefinition = {
     TorqueCurve: { TorquePoint },
 }
 
+-- Arbitrage A3 : façon d'engager la marche arrière, propre à chaque famille de
+-- boîte. « HoldBrakeAtStop » (maintien de « freiner » à l'arrêt) est réservé à la
+-- boîte automatique ; les autres boîtes passeront par un sélecteur explicite
+-- (commandes ci-dessous). Seule l'automatique est implémentée dans le lot 0.1 :
+-- la validation refuse toute autre transmission.
+export type ReverseEngagement = "HoldBrakeAtStop" | "Selector"
+
+-- Commandes de sélecteur PRÉVUES pour les boîtes manuelle, double embrayage,
+-- séquentielle (lots futurs). Non lues ni envoyées dans le lot 0.1.
+export type GearSelectorCommand = "ShiftUp" | "ShiftDown" | "SelectReverse" | "SelectNeutral" | "SelectDrive"
+
 export type TransmissionDefinition = {
     Kind: TransmissionKind,
     ForwardRatios: { number },
@@ -94,6 +105,8 @@ export type SteeringDefinition = {
     MaxAngleDeg: number,
     -- Angle maximal commandable à haute vitesse (filtre de commande déclaré,
     -- identique pour tous les périphériques ; ce n'est pas une aide de stabilité).
+    -- Arbitrage A1 : l'angle maximal décroît LINÉAIREMENT avec la seule vitesse
+    -- (aucune mesure de glissement, de lacet ni de dérive), jusqu'à cette vitesse.
     HighSpeedAngleDeg: number,
     HighSpeedReferenceKmh: number,
     RackSpeedDegPerS: number,
@@ -124,6 +137,8 @@ export type DriverAids = {
 export type VehicleLimits = {
     -- Vitesse maximale plausible utilisée par la validation serveur.
     MaxPlausibleSpeedKmh: number,
+    -- Arbitrage A4 : seuil PROVISOIRE (20 km/h pour le P-01), à confirmer par
+    -- des essais humains ; validé par le serveur, jamais par le client.
     ExitMaxSpeedKmh: number,
 }
 

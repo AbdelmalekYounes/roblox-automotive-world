@@ -27,7 +27,7 @@ waitFor(function()
     return ReplicatedStorage:GetAttribute("AWTestSession") ~= nil
 end, 15)
 local session = ReplicatedStorage:GetAttribute("AWTestSession")
-if session ~= "scenarios" and session ~= "collision" then
+if session ~= "scenarios" and session ~= "collision" and session ~= "collision_latence" then
     return
 end
 
@@ -135,17 +135,24 @@ local function stop(timeout: number)
     setCommand(0, 0, 0, true)
 end
 
-local function board(label: string): boolean
-    local door = root:FindFirstChild("DriverDoor") :: Attachment
+-- Place le personnage à la portière d'un véhicule et maintient son invite.
+local function triggerPrompt(target: Model, attempt: number)
+    local targetRoot = target.PrimaryPart :: BasePart
+    local door = targetRoot:FindFirstChild("DriverDoor") :: Attachment
     local prompt = door:FindFirstChild("EnterPrompt") :: ProximityPrompt
+    character:PivotTo(CFrame.new(door.WorldPosition + Vector3.new(0, 1.5, 0) - targetRoot.CFrame.RightVector))
+    task.wait(if attempt == 1 then 0.8 else 1.5)
+    pcall(function()
+        prompt:InputHoldBegin()
+        task.wait(prompt.HoldDuration + 0.3)
+        prompt:InputHoldEnd()
+    end)
+end
+
+local function board(label: string, target: Model?): boolean
+    local vehicleModel = target or model
     for attempt = 1, 2 do
-        character:PivotTo(CFrame.new(door.WorldPosition + Vector3.new(0, 1.5, 0) - root.CFrame.RightVector))
-        task.wait(if attempt == 1 then 0.8 else 1.5)
-        pcall(function()
-            prompt:InputHoldBegin()
-            task.wait(prompt.HoldDuration + 0.3)
-            prompt:InputHoldEnd()
-        end)
+        triggerPrompt(vehicleModel, attempt)
         if waitFor(function()
             return snapshot().Driving
         end, 5) then
@@ -156,7 +163,7 @@ local function board(label: string): boolean
             return true
         end
     end
-    seatFallback:FireServer(model)
+    seatFallback:FireServer(vehicleModel)
     local ok = waitFor(function()
         return snapshot().Driving
     end, 5)
@@ -219,6 +226,14 @@ local function ramInto(other: Model, prefix: string)
         end
         return root.Position.Z < -260
     end, 20)
+    -- 0,5 s en roue libre après le contact : vitesse du percuteur et déplacement
+    -- du véhicule percuté TELS QUE VUS PAR CE CLIENT (sa propre simulation).
+    local seenStart = other:GetPivot().Position
+    setCommand(0, 0, 0)
+    task.wait(0.5)
+    measures[prefix .. "_vitesse_0_5s_apres_kmh"] = snapshot().SpeedKmh
+    measures[prefix .. "_cible_deplacee_vue_percuteur_st"] = (other:GetPivot().Position - otherStart).Magnitude
+    measures[prefix .. "_cible_deplacee_vue_percuteur_apres_contact_st"] = (other:GetPivot().Position - seenStart).Magnitude
     stop(5)
     task.wait(2)
     measures[prefix .. "_vitesse_impact_kmh"] = impactKmh
@@ -345,47 +360,126 @@ if session == "scenarios" then
         leave()
     end
     signalEvent:FireServer("collision_parque")
-    finish(model.Name)
-elseif session == "collision" then
-    -- M4 : le joueur 1 percute à ~20 km/h le flanc du véhicule du joueur 2 (frein à main serré).
-    if not (waitStage("collision") and board("collision")) then
-        signalEvent:FireServer(if myIndex == 2 then "CollisionReady" else "collision")
-        finish(model.Name)
-        return
+
+    -- Propriété réseau refusée par le moteur (véhicule ancré par le serveur de test) :
+    -- l'embarquement échoue proprement, sans conduite ni simulation côté client.
+    if waitStage("propriete_refusee") then
+        local locked = folder:WaitForChild("VehiculeEssai_4") :: Model
+        local since = os.clock()
+        triggerPrompt(locked, 1)
+        local refused = waitNotice("VehicleUnavailable", since, 5)
+        -- Le serveur libère le siège puis dépose le personnage (jusqu'à ~1,5 s).
+        local released = waitFor(function()
+            return humanoid.SeatPart == nil
+        end, 5)
+        measures.propriete_refusee_liberation_s = if released then os.clock() - since else -1
+        local s = snapshot()
+        record("client.propriete_refusee_notifiee", refused, "message « véhicule momentanément indisponible »")
+        record(
+            "client.propriete_refusee_pas_de_conduite",
+            not s.Driving and not s.SimulationActive,
+            string.format("conduite=%s simulation=%s", tostring(s.Driving), tostring(s.SimulationActive))
+        )
+        record(
+            "client.propriete_refusee_personnage_releve",
+            released,
+            "assis=" .. tostring(humanoid.SeatPart ~= nil),
+            "véhicule ANCRÉ (cas provoqué par le test) : le serveur libère le siège mais le personnage reste "
+                .. "assis côté client, sans pouvoir conduire ; cause non établie ; voir RAPPORT_VALIDATION.md §6"
+        )
     end
-    if myIndex == 2 then
-        setCommand(0, 0, 0, true)
-        task.wait(1.5)
-        local start = root.Position
-        signalEvent:FireServer("CollisionReady")
-        local maxDisplacement = 0
-        waitFor(function()
-            maxDisplacement = math.max(maxDisplacement, (root.Position - start).Magnitude)
-            return ReplicatedStorage:GetAttribute("AWCollisionDone") == true
-        end, 60)
+    signalEvent:FireServer("propriete_refusee")
+    if waitStage("propriete_retablie") then
+        -- Le serveur de test a fait réapparaître le personnage (état neuf).
+        character = player.Character or player.CharacterAdded:Wait()
+        humanoid = character:WaitForChild("Humanoid") :: Humanoid
         task.wait(1)
-        measures.collision_deplacement_vehicule_percute_st = maxDisplacement
-        record(
-            "client.collision_vehicule_percute_bouge",
-            maxDisplacement > 0.3,
-            string.format("déplacement max %.2f st", maxDisplacement),
-            "transfert d'impulsion faible et variable entre deux véhicules conduits "
-                .. "(0,2 à 2,2 st sur 5 essais, contre 3,1 à 4,3 st pour un véhicule garé) ; "
-                .. "cause supposée : propriétés réseau distinctes, non démontrée ; voir ECARTS.md"
-        )
-        record(
-            "client.collision_percute_reste_droit",
-            root.CFrame.UpVector.Y > 0.9,
-            string.format("UpVector.Y %.3f", root.CFrame.UpVector.Y)
-        )
-        record("client.collision_percute_toujours_conducteur", snapshot().Driving)
-    else
-        waitFor(function()
-            return ReplicatedStorage:GetAttribute("AWCollisionReady") == true
-        end, 60)
-        ramInto(folder:FindFirstChild("VehiculeEssai_4") :: Model, "collision")
-        signalEvent:FireServer("collision")
-        task.wait(2)
+        local locked = folder:WaitForChild("VehiculeEssai_4") :: Model
+        if board("propriete_retablie", locked) then
+            task.wait(1)
+            record("client.propriete_retablie_simulation_active", snapshot().SimulationActive)
+            setCommand(0.4, 0, 0)
+            task.wait(1.5)
+            record(
+                "client.propriete_retablie_roule",
+                snapshot().SpeedKmh > 3,
+                string.format("%.1f km/h après 1,5 s", snapshot().SpeedKmh)
+            )
+            leave()
+        end
+    end
+    signalEvent:FireServer("propriete_retablie")
+    finish(model.Name)
+else
+    -- M4 : expérience de collision pilotée par le serveur (voir ScenarioServer).
+    -- Joueur 1 : percuteur. Joueur 2 : conducteur du véhicule percuté lors des
+    -- essais « pilote » ; il mesure SA simulation et la copie répliquée du percuteur.
+    waitFor(function()
+        return ReplicatedStorage:GetAttribute("AWTrialCount") ~= nil
+    end, 30)
+    local trialCount = ReplicatedStorage:GetAttribute("AWTrialCount") or 0
+    local striker = folder:WaitForChild("VehiculeEssai_1") :: Model
+    for i = 1, trialCount do
+        if not waitStage("essai_" .. i) then
+            record("client.essai_" .. i .. "_demarre", false, "étape non reçue")
+            break
+        end
+        local kind = ReplicatedStorage:GetAttribute("AWTrialKind")
+        local prefix = string.format("essai%d_%s", i, tostring(kind))
+        if myIndex == 2 then
+            if kind == "pilote" then
+                local boarded = board(prefix)
+                setCommand(0, 0, 0, true)
+                task.wait(1.5)
+                signalEvent:FireServer("pret_" .. i)
+                if boarded then
+                    local strikerRoot = striker.PrimaryPart :: BasePart
+                    local start = root.Position
+                    local maxDisplacement, peakSpeed = 0, 0
+                    local minGap, closingAtMinGap = math.huge, 0
+                    -- Écart longitudinal entre l'avant de la copie du percuteur et le flanc du véhicule.
+                    local halfLength = strikerRoot.Size.Z / 2
+                    local halfWidth = root.Size.X / 2
+                    waitFor(function()
+                        maxDisplacement = math.max(maxDisplacement, (root.Position - start).Magnitude)
+                        peakSpeed = math.max(peakSpeed, root.AssemblyLinearVelocity.Magnitude)
+                        local gap = math.abs(strikerRoot.Position.Z - root.Position.Z) - halfLength - halfWidth
+                        if gap < minGap then
+                            minGap = gap
+                            closingAtMinGap = -strikerRoot.AssemblyLinearVelocity.Z
+                        end
+                        return ReplicatedStorage:GetAttribute("AWTrialDone") == i
+                    end, 60)
+                    measures[prefix .. "_percute_deplacement_max_st"] = maxDisplacement
+                    measures[prefix .. "_percute_vitesse_max_st_s"] = peakSpeed
+                    measures[prefix .. "_copie_percuteur_ecart_min_st"] = minGap
+                    measures[prefix .. "_copie_percuteur_vitesse_au_plus_pres_st_s"] = closingAtMinGap
+                    measures[prefix .. "_complement_impulsion_applique_st_s"] = snapshot().LastImpulse or 0
+                    record(
+                        "client." .. prefix .. "_percute_reste_droit",
+                        root.CFrame.UpVector.Y > 0.9,
+                        string.format("UpVector.Y %.3f", root.CFrame.UpVector.Y)
+                    )
+                    record("client." .. prefix .. "_percute_toujours_conducteur", snapshot().Driving)
+                    leave()
+                end
+            end
+            signalEvent:FireServer("p2_" .. i)
+        else
+            if board(prefix) then
+                waitFor(function()
+                    return ReplicatedStorage:GetAttribute("AWTrialGo") == i
+                end, 60)
+                -- Recalages de la copie locale sur la position publiée par le serveur.
+                measures[prefix .. "_recalages_copie_locale"] = snapshot().Resyncs
+                measures[prefix .. "_simulation_client_active_au_depart"] = if snapshot().SimulationActive then 1 else 0
+                local target =
+                    folder:FindFirstChild(if kind == "pilote" then "VehiculeEssai_4" else "VehiculeEssai_2") :: Model
+                ramInto(target, prefix)
+                leave()
+            end
+            signalEvent:FireServer("essai_" .. i)
+        end
     end
     VehicleController.setTestInputProvider(nil)
     finish(model.Name)

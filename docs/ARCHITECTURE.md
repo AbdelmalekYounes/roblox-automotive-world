@@ -47,16 +47,29 @@ La première voiture sera un **prototype technique original**, distinct de tout 
   déplacement impossible, ou valeur non finie) → repositionnement sur la dernière position valide, **sans sanction**.
 - **Multijoueur** : chaque véhicule possède son propre état (`VehicleSimulator` par modèle) ; un joueur ne peut conduire
   qu'un véhicule, un véhicule n'a qu'un conducteur ; aucun état global partagé entre véhicules.
+- **Propriété réseau vérifiée** (`server/Vehicles/NetworkOwnership`) : une transition n'est réussie que si
+  `GetNetworkOwner` confirme le propriétaire demandé. En cas de refus du moteur (pièce ancrée, joueur parti…), le
+  serveur garde la simulation, le joueur est sorti du siège avec un message, sans sanction. Le serveur revérifie le
+  propriétaire effectif chaque seconde. L'attribut `SimulationOwnerUserId` (écrit seulement après confirmation) dit
+  **qui simule** : le client ne simule que s'il porte son identifiant, le serveur seulement s'il vaut 0 — jamais les
+  deux. Pendant une correction serveur, le client suspend sa simulation et repart d'un état neuf.
+- **Collisions entre véhicules de deux joueurs** (`server/Vehicles/CollisionMediator`, `shared/Vehicles/Physics/CollisionExchange`) :
+  chaque client résout le contact contre une copie répliquée de l'autre véhicule ; le serveur confirme le choc à
+  partir de ses propres observations (rapprochement et décélération du percuteur), puis demande au propriétaire du
+  véhicule percuté d'appliquer le **complément** d'impulsion non reçu (borné, sans double comptage). Voir
+  `docs/lot-0.1/ECARTS.md` §4.
+- **Périphériques** (`client/Vehicles/InputArbiter`, module pur) : un seul périphérique actif, activé par une commande
+  fraîche ; clavier ignoré pendant une saisie de texte ou sans focus ; manette déconnectée relâchée.
 
 ### Séparation du code
 
 | Couche | Modules | Dépend de Roblox ? |
 |---|---|---|
-| Dynamique pure (`shared/Vehicles/Physics`) | `TireModel`, `Suspension`, `Powertrain`, `VehicleDynamics`, `SurfaceFriction` | Non — testée par Lune |
+| Dynamique pure (`shared/Vehicles/Physics`) | `TireModel`, `Suspension`, `Powertrain`, `VehicleDynamics`, `SurfaceFriction`, `CollisionExchange` | Non — testée par Lune |
 | Contrats (`shared/Vehicles`) | `VehicleTypes`, `VehicleDefinitions`, `Definitions/PrototypeP01`, `InputCodec`, `Telemetry`, `VehicleConstants` | Non |
 | Adaptateur (`shared/Vehicles/VehicleSimulator`) | rayons de suspension, conversion d'unités, `VectorForce` | Oui — exécuté par le propriétaire réseau |
-| Serveur (`server/`) | `VehicleService`, `VehicleFactory`, `TestZoneBuilder`, `Security/MovementRules`, `Security/RateLimiter` | Oui (sauf règles pures) |
-| Client (`client/`) | `VehicleController`, `DriverInput`, `VehicleCamera`, `WheelVisuals`, `UI/DevHud`, `UI/Messages` | Oui |
+| Serveur (`server/`) | `VehicleService`, `VehicleFactory`, `TestZoneBuilder`, `CollisionMediator`, `NetworkOwnership`, `Security/MovementRules`, `Security/RateLimiter` | Oui (sauf `NetworkOwnership` et règles pures) |
+| Client (`client/`) | `VehicleController`, `DriverInput`, `InputArbiter`, `VehicleCamera`, `WheelVisuals`, `UI/DevHud`, `UI/Messages` | Oui (sauf `InputArbiter`) |
 
 ### Modèle physique
 
@@ -71,8 +84,9 @@ La première voiture sera un **prototype technique original**, distinct de tout 
   boîte automatique à 6 rapports, marche arrière, inertie moteur ramenée aux roues, répartition avant/arrière fixe et
   différentiels ouverts.
 - **Freins** : couple avant/arrière, frein à main arrière ; **aucune aide** (ABS, antipatinage, ESP) n'existe.
-- **Direction** : vitesse de crémaillère limitée, angle maximal décroissant avec la vitesse (filtre de commande déclaré
-  dans la définition, identique pour tous les périphériques), géométrie d'Ackermann.
+- **Direction** : vitesse de crémaillère limitée, angle maximal décroissant **linéairement avec la seule vitesse**
+  (arbitrage A1 : paramètres par modèle, identique pour tous les périphériques, affiché dans le HUD, aucune mesure de
+  glissement ni de lacet), géométrie d'Ackermann.
 
 ### Points d'extension (déclarés, NON implémentés)
 
@@ -80,7 +94,7 @@ La première voiture sera un **prototype technique original**, distinct de tout 
 |---|---|---|
 | Traction / intégrale | `Drivetrain.Layout` + `FrontTorqueShare` | Calcul générique présent et testé unitairement ; seul le RWD est exercé ; non validé en jeu |
 | Électrique | `PowertrainKind = "Electric"` | Refusé par `VehicleDefinitions.validate` |
-| Boîtes manuelle, double embrayage, séquentielle, CVT | `TransmissionKind` | Refusées par la validation |
+| Boîtes manuelle, double embrayage, séquentielle, CVT | `TransmissionKind`, `ReverseEngagement`, `GearSelectorCommand` (A3) | Refusées par la validation ; commandes de sélecteur typées, non câblées |
 | ABS / antipatinage / ESP | `DriverAids` | Toute valeur `true` est refusée |
 | Météo / revêtement mouillé | `WheelContact.SurfaceFriction` | Multiplicateur par matériau seulement |
 | Dégâts, carburant/énergie | — | Non commencés (lot 0.2) |

@@ -2,8 +2,8 @@
 
 Légende : **Conforme** (dans le périmètre du lot) · **Partiel** · **Non commencé** (prévu dans un lot ultérieur,
 le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non tranché par le cahier des charges).
-« Vérifié en Studio » signifie : contrôlé automatiquement dans Roblox Studio, dans la VM de test (149/149, voir
-`RAPPORT_TESTS.md` §4) ; les commandes y sont injectées, la lecture réelle du clavier et de la manette ne l'est pas.
+« Vérifié en Studio » signifie : contrôlé automatiquement dans Roblox Studio, dans la VM de test (voir
+`RAPPORT_VALIDATION.md`) ; les commandes y sont injectées, la lecture réelle du clavier et de la manette ne l'est pas.
 
 ## 1. Exigences du lot 0.1 (prompt de lot)
 
@@ -29,7 +29,7 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 |---|---|---|
 | §1.2 | Univers et véhicules fictifs originaux | Conforme |
 | §1.2 | Physique différenciée par véhicule, pas d'arcade uniforme | Partiel — moteur paramétrable par modèle, mais un seul modèle existe ; différenciation non démontrée |
-| §1.2 | Aides seulement si le modèle en dispose, désactivées par défaut, pas d'aide cachée | Conforme (aucune aide) — voir points à arbitrer A1/A2 |
+| §1.2 | Aides seulement si le modèle en dispose, désactivées par défaut, pas d'aide cachée | Conforme (aucune aide) ; réduction de braquage et rampes clavier arbitrées comme non-aides et affichées (A1, A2) |
 | §1.2 | PC et console prioritaires | Partiel — clavier/souris et manette ; aucun essai sur console |
 | §3.2 | Propulsion / traction / 4 roues motrices | Partiel — RWD implémenté ; calcul FWD/AWD présent mais non exercé |
 | §3.2 | Masse, couple, régime, suspension, adhérence, état de route | Partiel — tous présents ; état de route limité à un multiplicateur par matériau |
@@ -41,7 +41,7 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 | §3.3 | Carburant / énergie consommés et sauvegardés | Non commencé |
 | §3.4 | Caméras proche/lointaine | Conforme, vérifié en Studio (distances et captures) |
 | §3.4 | Cockpit, capot, pare-chocs, mode photo | Non commencé |
-| §3.4 / AUD-INPUT-01 | Indications selon le périphérique actif, pas d'action involontaire | Partiel — aide du HUD selon le dernier périphérique ; contrôles par défaut désactivés en conduite ; sortie bloquée au-dessus de 20 km/h |
+| §3.4 / AUD-INPUT-01 | Indications selon le périphérique actif, pas d'action involontaire | Partiel — un seul périphérique actif, sur commande fraîche ; clavier ignoré en saisie de texte et sans focus ; manette déconnectée relâchée ; contrôles par défaut désactivés en conduite ; sortie bloquée au-dessus de 20 km/h. Logique testée hors Studio ; **lecture réelle des périphériques non vérifiée** (essai humain) |
 | §3.5 | Désenlisement gratuit et limité, sans effet sur dégâts/carburant | Partiel — remise sur roues (immobile, renversé, délai 8 s) ; pas encore de désenlisement hors retournement |
 | §7.1 | HUD vitesse, boîte, régime, alertes | Partiel — HUD **de développement** seulement ; pas d'alertes hiérarchisées ni de GPS |
 | §7.4 / AUD-L10N-01 | Textes essentiels FR/EN | Partiel — messages serveur envoyés par clé ; textes en français uniquement |
@@ -51,23 +51,25 @@ le périmètre n'est pas réduit) · **À arbitrer** (choix de réalisation non 
 | AUD-PERF-01/02 | 24 joueurs, ~60 FPS, percentiles de temps d'image | Non mesuré — aucune donnée de performance |
 | AUD-WORLD-02 | Chargement prioritaire routes/collisions | Non commencé — streaming non configuré (zone unique de petite taille) |
 
-## 3. Choix de réalisation à arbitrer
+## 3. Arbitrages A1 à A6 (orientations du propriétaire, 2 novembre 2026)
 
-| # | Choix fait dans le lot 0.1 | Pourquoi | Alternative |
-|---|---|---|---|
-| A1 | Angle de braquage maximal réduit avec la vitesse (32° → 9° à 140 km/h), pour tous les périphériques | Rend clavier et stick pilotables sans braquages violents à haute vitesse | Le désactiver (`HighSpeedAngleDeg = MaxAngleDeg`) ou le réserver à certains périphériques ; à classer comme « filtre de commande » ou « aide » |
-| A2 | Rampes progressives sur les touches clavier (0 → 100 % en 0,2 s) | Le clavier est tout-ou-rien ; évite des à-coups irréalistes | Rampes réglables par le joueur |
-| A3 | Marche arrière par maintien de « freiner » à l'arrêt | Convention usuelle pour une boîte automatique au clavier/manette | Commande dédiée de sélection D/R |
-| A4 | Sortie interdite au-dessus de 20 km/h | Évite une sortie involontaire en roulant | Autre seuil ou autre règle |
-| A5 | Échelle 1 stud = 0,28 m et gravité « réelle » appliquée aux seuls véhicules | Cohérence physique sans modifier les sauts des personnages | Gravité globale réaliste pour tout le monde |
-| A6 | Le serveur ne re-simule pas le véhicule piloté ; il contrôle seulement la plausibilité | Réactivité, coût serveur, recommandation de tolérance réseau | Re-simulation serveur partielle (coût CPU/latence) |
+Ces choix, d'abord laissés « à arbitrer », ont été tranchés par le propriétaire du projet. Ils sont appliqués dans
+le lot 0.1 tels que décrits ci-dessous ; les modifier relève d'un nouvel arbitrage.
 
-## 4. Limites techniques connues
+| # | Orientation retenue | Mise en œuvre dans le lot 0.1 | Limites | Conséquences pour les lots futurs |
+|---|---|---|---|---|
+| A1 | Braquage maximal évoluant selon la vitesse, paramétré par véhicule, sans assistance électronique cachée | `Steering.MaxAngleDeg`, `HighSpeedAngleDeg`, `HighSpeedReferenceKmh` dans chaque définition (P-01 : 32° à l'arrêt → 9° à 140 km/h) ; loi **linéaire de la seule vitesse** (`VehicleDynamics.maxSteerAngle`), sans mesure de glissement, de lacet ni de dérive ; identique pour clavier et manette ; **affichée dans le HUD** ; tests Lune (bornes, décroissance, symétrie) | Valeurs du P-01 non validées par un essai humain ; loi unique, non réglable par le joueur ; un volant (non traité) pourrait demander une autre loi | Chaque modèle fournit ses trois valeurs ; toute correction dépendant du glissement ou du lacet serait une aide (ESP) et devra être déclarée dans `Aids`, désactivée par défaut |
+| A2 | Rampes progressives conservées pour les touches numériques | `InputArbiter` : pédales 0 → 100 % en 0,2 s (retour en 0,125 s), direction 3,2 /s (retour 5 /s) ; gâchettes et stick restent proportionnels ; tests Lune | Rampes fixes ; pas de réglage joueur ; ressenti non évalué par un humain | Un réglage joueur pourra être exposé (options) sans changer les valeurs par défaut sans arbitrage |
+| A3 | Marche arrière par maintien du frein pour une boîte automatique ; interfaces distinctes prévues pour les autres boîtes | Comportement de l'automatique inchangé ; types `ReverseEngagement` et `GearSelectorCommand` (`VehicleTypes`) ; `VehicleDefinitions.reverseEngagement` : automatique, CVT et rapport unique → maintien du frein ; manuelle, double embrayage, séquentielle → sélecteur ; tests Lune | Le sélecteur n'est **pas câblé** (ni touches, ni réseau, ni simulation) ; toute boîte non automatique reste refusée par la validation | Le lot qui introduira les boîtes manuelles branchera `GearSelectorCommand` (touches et boutons dédiés, champs ajoutés à `DriverInput` et au codec réseau) sans modifier l'automatique |
+| A4 | Seuil provisoire de sortie : 20 km/h | `Limits.ExitMaxSpeedKmh = 20` (P-01), contrôlé par le **serveur** (vitesse observée côté serveur) ; test Lune et essai Studio (sortie refusée en roulant) | Provisoire ; même valeur pour tout modèle à ce stade ; pas de sortie d'urgence | À reconfirmer après les essais humains ; réglable par modèle si nécessaire |
+| A5 | Conversion physique propre aux véhicules, gravité globale inchangée | 1 stud = 0,28 m ; forces calculées en SI puis converties ; compensation de gravité par véhicule (9,81 m/s² ressentis) ; `Workspace.Gravity` inchangée pour les personnages | Les objets qui ne sont pas des véhicules (cônes, personnages, décors mobiles) restent à la gravité Roblox : leurs interactions avec un véhicule ne sont pas « à l'échelle » ; la conversion suppose 0,28 m/stud pour tous les décors | Tout nouvel objet physique lié aux véhicules (remorques, débris, dégâts) doit utiliser la même conversion ; les calculs de collisions et de dégâts se font en SI |
+| A6 | Simulation hybride : propriété réseau au conducteur, validation contextuelle serveur | Propriété **vérifiée** (`NetworkOwnership`, attribut `SimulationOwnerUserId`) ; véhicules stationnés simulés par le serveur ; plausibilité des mouvements (`MovementRules`) ; contacts entre véhicules de deux joueurs **confirmés par le serveur** avec complément d'impulsion (`CollisionMediator`) ; aucune sanction automatique | Le serveur ne re-simule pas le véhicule piloté : il borne et corrige, il ne garantit pas une trajectoire exacte ; un client modifié peut ignorer un complément d'impulsion (constaté et journalisé, sans sanction) ; le percuteur est arrêté net dans sa propre simulation (§4) | Les dégâts (lot 0.2) seront appliqués **après** confirmation serveur du contact, par le même médiateur ; la charge serveur et réseau à 24 joueurs reste à mesurer (AUD-PERF-01) |
+
+@@COLLISIONS@@
+## 5. Limites techniques connues
 
 - Essais Studio automatisés (avec captures) : clavier, manette et ressenti restent à vérifier par un humain.
-- **Collisions entre deux véhicules conduits** : à 19,5 km/h, le véhicule percuté n'est déplacé que de 0,2 à 2,2 st
-  selon les essais (5 essais), contre 3,1 à 4,3 st pour un véhicule garé. Cause supposée (propriétés réseau
-  distinctes) non démontrée ; à traiter avec les collisions et dégâts (AUD-COLL-01).
+- Collisions entre véhicules : voir §4.5.
 - Sous latence, la vue du client reste décalée ~0,5 s après une correction serveur avant de se recaler.
 - Pas de frottement statique : un véhicule freiné sur une pente glisse très lentement (de l'ordre du cm/s selon le modèle).
 - Un seul rayon par roue : une roue peut « tomber » dans un interstice ou accrocher une arête vive ; un balayage de

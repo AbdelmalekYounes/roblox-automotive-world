@@ -19,6 +19,9 @@ local VehicleConstants = {
         Action = "VehicleAction", -- RemoteEvent client → serveur (actions discrètes)
         Input = "VehicleInput", -- UnreliableRemoteEvent client → serveur (commandes)
         Notice = "VehicleNotice", -- RemoteEvent serveur → client (messages)
+        -- RemoteEvent serveur → client : complément d'impulsion après une collision
+        -- confirmée par le serveur. Le serveur n'écoute RIEN sur ce canal.
+        Impulse = "VehicleImpulse",
     }),
 
     -- Actions discrètes acceptées par le serveur (liste fermée).
@@ -31,6 +34,12 @@ local VehicleConstants = {
         VehicleId = "VehicleId",
         DefinitionId = "DefinitionId",
         DriverUserId = "DriverUserId",
+        -- Qui simule le véhicule : UserId du conducteur, ou 0 pour le serveur.
+        -- Écrit par le serveur seulement APRÈS confirmation de la propriété réseau.
+        SimulationOwnerUserId = "SimulationOwnerUserId",
+        -- Position du véhicule (CFrame) vue par le serveur au moment où il confie la
+        -- simulation au conducteur : le client recale sa copie locale si elle diffère.
+        SimulationPivot = "SimulationPivot",
         VisualSteer = "VisualSteer",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",

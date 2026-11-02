@@ -168,6 +168,14 @@ function VehicleDefinitions.validate(definition: Types.VehicleDefinition): (bool
     return #errors == 0, errors
 end
 
+-- Arbitrage A3 : mode d'engagement de la marche arrière selon la boîte.
+function VehicleDefinitions.reverseEngagement(kind: Types.TransmissionKind): Types.ReverseEngagement
+    if kind == "Automatic" or kind == "CVT" or kind == "SingleSpeed" then
+        return "HoldBrakeAtStop"
+    end
+    return "Selector"
+end
+
 -- Vitesse maximale limitée par la boîte (rupteur sur le dernier rapport), km/h.
 -- Il s'agit d'une borne cinématique, pas d'une performance mesurée.
 function VehicleDefinitions.gearLimitedTopSpeedKmh(definition: Types.VehicleDefinition): number

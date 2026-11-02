@@ -2,6 +2,11 @@
 
 **Date** : 2 novembre 2026 · **Branche** : `feat/vehicle-vertical-slice-0.1` · **Version** : `0.1.0-dev`
 
+> **Historique.** Ce rapport décrit la réalisation initiale du lot 0.1 et ses essais jusqu'à la tâche
+> `20261102-143507`. La **finalisation** (collisions, propriété réseau, périphériques, arbitrages, sécurité de la VM)
+> et ses nouvelles exécutions sont consignées dans [RAPPORT_VALIDATION.md](RAPPORT_VALIDATION.md), qui fait foi pour
+> l'état final du lot. Les chiffres ci-dessous ne sont pas ceux de la validation finale.
+
 > **Synthèse.** Les essais Roblox Studio ont été **réalisés automatiquement dans la VM VMware de test**
 > (Studio 0.745.0.7451137), sans utiliser le bureau, la souris ni le clavier de l'utilisateur :
 > **214 contrôles réussis sur 214** lors de la dernière exécution complète (5 sessions : solo, deux joueurs,

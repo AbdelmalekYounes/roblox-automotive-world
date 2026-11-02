@@ -21,6 +21,9 @@ for _, spec in
         require("./specs/Definitions"),
         require("./specs/PhysicsUnit"),
         require("./specs/NetworkSecurity"),
+        require("./specs/NetworkOwnershipSpec"),
+        require("./specs/InputArbiterSpec"),
+        require("./specs/CollisionExchangeSpec"),
         require("./specs/TelemetrySpec"),
         require("./specs/DrivingScenarios"),
     }

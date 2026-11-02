@@ -9,12 +9,14 @@
 	   --task RunScript --localPlaceFile place.rbxl --runScriptFile driver.luau
 	   --outputFile studio-output.log --quitAfterExecution
 	   (l'extension .log du fichier de sortie est obligatoire).
-	3. Démarre en parallèle, si possible, les captures d'écran (capture-screens.ps1).
+	3. Démarre en parallèle, si possible, les captures d'écran : l'outil aw-capture.exe est
+	   compilé dans la VM à partir de ScreenCapture.cs (compilateur C# de Windows) vers
+	   %LOCALAPPDATA%\AutomotiveWorldTests\bin, dossier NON exclu de l'antivirus.
 	4. Au-delà du délai, n'arrête QUE les processus Studio lancés par ce script.
 	5. Dépose sortie, journaux Studio, captures et result.json dans ReportDir.
 
-	Aucune entrée clavier/souris n'est simulée. -DryRun remplace Studio par une
-	sortie factice et ne capture pas l'écran (test du protocole, y compris sur l'hôte).
+	Aucune entrée clavier/souris n'est simulée. Aucun réglage n'est modifié. -DryRun
+	remplace Studio par une sortie factice et ne capture pas l'écran (test du protocole).
 #>
 param(
 	[Parameter(Mandatory = $true)][string]$JobDir,
@@ -35,6 +37,32 @@ function Find-Studio {
 		Sort-Object LastWriteTime -Descending
 	if ($candidates) { return $candidates[0].FullName }
 	return $null
+}
+
+# Compile (dans la VM) puis lance l'outil de capture. Renvoie l'état et le processus.
+function Start-Capture([string]$jobDir, [string]$outDir, [string]$stopFile, [double]$intervalSec) {
+	$source = Join-Path $jobDir "ScreenCapture.cs"
+	if (-not (Test-Path $source)) {
+		return @{ Status = "source de l'outil de capture absente (agent antérieur à la version 2)"; Process = $null }
+	}
+	$csc = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+	if (-not (Test-Path $csc)) { return @{ Status = "compilateur C# de Windows introuvable"; Process = $null } }
+	$toolDir = Join-Path $env:LOCALAPPDATA "AutomotiveWorldTests\bin"
+	New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
+	$exe = Join-Path $toolDir "aw-capture.exe"
+	$compileLog = Join-Path $jobDir "capture-compile.txt"
+	& $csc -nologo -target:winexe "-out:$exe" -r:System.Drawing.dll -r:System.Windows.Forms.dll $source *> $compileLog
+	if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exe)) {
+		return @{ Status = "compilation échouée : " + ((Get-Content -Raw $compileLog) -split "`n")[0]; Process = $null }
+	}
+	$interval = $intervalSec.ToString([Globalization.CultureInfo]::InvariantCulture)
+	try {
+		$process = Start-Process -FilePath $exe -PassThru -WindowStyle Hidden `
+			-ArgumentList @("`"$outDir`"", "`"$stopFile`"", $interval, "600")
+		return @{ Status = "en cours"; Process = $process }
+	} catch {
+		return @{ Status = "lancement refusé : $($_.Exception.Message)"; Process = $null }
+	}
 }
 
 function Get-Descendants([int]$parentId) {
@@ -77,15 +105,8 @@ if ($DryRun) {
 
 	# Captures d'écran dans un processus séparé et facultatif.
 	$stopFile = Join-Path $JobDir "capture.stop"
-	$captureErr = Join-Path $JobDir "capture-stderr.txt"
-	$captureScript = Join-Path $JobDir "capture-screens.ps1"
-	$capture = $null
-	if (Test-Path $captureScript) {
-		$capture = Start-Process -FilePath "powershell.exe" -WindowStyle Hidden -PassThru `
-			-RedirectStandardError $captureErr `
-			-ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$captureScript`"",
-			"-OutDir", "`"$shotsDir`"", "-StopFile", "`"$stopFile`"", "-IntervalSec", [string]$ShotIntervalSec)
-	}
+	$capture = Start-Capture $JobDir $shotsDir $stopFile $ShotIntervalSec
+	$captureStatus = $capture.Status
 
 	$arguments = @(
 		"--task", "RunScript",
@@ -115,15 +136,12 @@ if ($DryRun) {
 		if ($p -and $p.ProcessName -like "RobloxStudio*") { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
 	}
 
-	if ($capture) {
+	if ($capture.Process) {
 		New-Item -ItemType File -Force -Path $stopFile | Out-Null
-		if (-not $capture.WaitForExit(10000)) { Stop-Process -Id $capture.Id -Force -ErrorAction SilentlyContinue }
-		$stderr = if (Test-Path $captureErr) { Get-Content -Raw $captureErr } else { "" }
-		if ($stderr -match "malveillant|malicious|antivirus") { $captureStatus = "bloquées par l'antivirus de la VM" }
-		elseif ($stderr) { $captureStatus = "échec : " + ($stderr -split "`n")[0] }
-		else { $captureStatus = "ok" }
-	} else {
-		$captureStatus = "script de capture absent"
+		if (-not $capture.Process.WaitForExit(10000)) { Stop-Process -Id $capture.Process.Id -Force -ErrorAction SilentlyContinue }
+		$shots = @(Get-ChildItem $shotsDir -Filter *.jpg -ErrorAction SilentlyContinue).Count
+		$captureStatus = if ($shots -gt 0) { "ok (outil compilé dans la VM, hors dossier exclu de l'antivirus)" }
+		else { "aucune capture produite (code de sortie $($capture.Process.ExitCode))" }
 	}
 }
 

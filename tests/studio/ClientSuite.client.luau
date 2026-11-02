@@ -56,7 +56,7 @@ while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - se
     task.wait()
 end
 local currentSession = ReplicatedStorage:GetAttribute("AWTestSession")
-if currentSession == "scenarios" or currentSession == "collision" then
+if currentSession == "scenarios" or currentSession == "collision" or currentSession == "collision_latence" then
     return
 end
 
@@ -455,6 +455,8 @@ since = os.clock()
 model:PivotTo(model:GetPivot() + Vector3.new(0, 400, 0))
 local corrected = waitNotice("MovementCorrected", since, 3)
 task.wait(0.5)
+-- Pendant la correction, le serveur simule : le client doit avoir suspendu la sienne.
+local pausedDuringCorrection = not snapshot().SimulationActive
 -- Vue du client pendant que le serveur détient le véhicule (information).
 local earlyDistance = (root.Position - beforeTeleport).Magnitude
 -- État final : après le retour de la propriété au conducteur (critère).
@@ -465,6 +467,15 @@ task.wait(1.5)
 local backDistance = (root.Position - beforeTeleport).Magnitude
 measures.correction_ecart_0_5s_st = earlyDistance
 measures.correction_ecart_final_st = backDistance
+record(
+    "client.correction_simulation_suspendue_puis_reprise",
+    pausedDuringCorrection and snapshot().SimulationActive,
+    string.format(
+        "suspendue pendant la correction=%s, reprise après=%s",
+        tostring(pausedDuringCorrection),
+        tostring(snapshot().SimulationActive)
+    )
+)
 record(
     "client.correction_mouvement_impossible",
     corrected and backDistance < 20,
