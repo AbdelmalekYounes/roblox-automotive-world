@@ -204,6 +204,9 @@ local function setAid(aid: string, enabled: boolean): boolean
     if (snapshot().Aids[aid] == true) == enabled then
         return true
     end
+    -- Espacement : le serveur limite les actions (5 puis 2 par seconde, lot 0.1) ;
+    -- mesuré : 7 bascules en 3 s faisaient ignorer la dernière.
+    task.wait(0.6)
     invoke(AID_ACTIONS[aid])
     return waitFor(function()
         return (snapshot().Aids[aid] == true) == enabled
@@ -442,6 +445,7 @@ local function aidsStateStage(stage: string)
     local allOff = setAid("Abs", false) and setAid("TractionControl", false) and setAid("StabilityControl", false)
     record("client.aides_desactivation", allOff, snapshot().HudSystems)
     -- Réglage à la manette (croix gauche puis droite) : même chemin serveur.
+    task.wait(1.2)
     invoke("AWVehicleSelectSetting")
     invoke("AWVehicleApplySetting")
     local viaPad = waitFor(function()

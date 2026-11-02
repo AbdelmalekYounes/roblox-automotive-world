@@ -13,6 +13,7 @@
 -- L'état fixé par le serveur (aides activées, récupération, dégâts) est lu dans
 -- les attributs du modèle : le client ne le décide jamais seul.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -81,6 +82,8 @@ type SimulatorFields = {
     Rigs: { WheelRig },
     BodyForce: VectorForce,
     RaycastParams: RaycastParams,
+    -- Balayage de sphère : ignore aussi les autres véhicules (voir step).
+    SphereParams: RaycastParams,
     FilterTimer: number,
     ServerStateTimer: number,
     ReplicationFriendly: boolean,
@@ -130,6 +133,10 @@ function VehicleSimulator.new(model: Model, definition: Types.VehicleDefinition,
     params.FilterType = Enum.RaycastFilterType.Exclude
     params.RespectCanCollide = true
     params.IgnoreWater = true
+    local sphereParams = RaycastParams.new()
+    sphereParams.FilterType = Enum.RaycastFilterType.Exclude
+    sphereParams.RespectCanCollide = true
+    sphereParams.IgnoreWater = true
 
     local self: SimulatorFields = {
         Model = model,
@@ -139,6 +146,7 @@ function VehicleSimulator.new(model: Model, definition: Types.VehicleDefinition,
         Rigs = rigs,
         BodyForce = requireChild(root, "BodyForce", "VectorForce"),
         RaycastParams = params,
+        SphereParams = sphereParams,
         FilterTimer = 0,
         ServerStateTimer = math.huge,
         ReplicationFriendly = options ~= nil and options.ReplicationFriendly == true,
@@ -183,6 +191,16 @@ function VehicleSimulator.refreshFilter(self: VehicleSimulator)
         end
     end
     self.RaycastParams.FilterDescendantsInstances = excluded
+    -- La sphère, plus large que le pneu, ne doit pas prendre appui sur la
+    -- carrosserie d'un véhicule voisin (mesuré dans Studio : un véhicule percuté
+    -- s'est retrouvé sur le flanc, une roue « posée » sur le percuteur).
+    local sphereExcluded = table.clone(excluded)
+    for _, vehicle in CollectionService:GetTagged(Constants.VehicleTag) do
+        if vehicle ~= self.Model then
+            table.insert(sphereExcluded, vehicle)
+        end
+    end
+    self.SphereParams.FilterDescendantsInstances = sphereExcluded
 end
 
 --[[
@@ -287,6 +305,7 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
     local queryTime = 0
     local tireRadius = definition.Tires.RadiusM
     local useSphere = self.Probe == "Sphere"
+    local halfTread = definition.Tires.WidthM / 2 * STUDS_PER_METER + 0.1
 
     for index, rig in self.Rigs do
         local wheel = state.Wheels[index]
@@ -296,18 +315,24 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
         local contact = self.Contacts[index]
 
         -- Sonde : la sphère (rayon du pneu) épouse bordures et arêtes avant que
-        -- l'axe de la roue ne les atteigne ; elle ne voit pas un obstacle déjà
-        -- au contact au départ du balayage (talonnage) : on retombe alors sur le rayon.
+        -- l'axe de la roue ne les atteigne. Elle n'est retenue que pour un contact
+        -- que le pneu pourrait réellement avoir : dans sa largeur, sur une surface
+        -- tournée vers le haut. Sinon (et en cas de contact dès le départ du
+        -- balayage, que la sphère ne voit pas), on retombe sur le rayon.
         local queryStart = os.clock()
         local result: RaycastResult? = nil
         local distance = 0
         if useSphere then
             queries += 1
             local sweep = axle.RestLengthM * STUDS_PER_METER
-            local hit = Workspace:Spherecast(origin, tireRadius * STUDS_PER_METER, -up * sweep, self.RaycastParams)
+            local hit = Workspace:Spherecast(origin, tireRadius * STUDS_PER_METER, -up * sweep, self.SphereParams)
             if hit then
-                result = hit
-                distance = hit.Distance + tireRadius * STUDS_PER_METER
+                local lateralOffset = math.abs((hit.Position - origin):Dot(right))
+                local withinTread = lateralOffset <= halfTread
+                if withinTread and hit.Normal:Dot(up) >= 0.5 then
+                    result = hit
+                    distance = hit.Distance + tireRadius * STUDS_PER_METER
+                end
             end
         end
         if result == nil then
