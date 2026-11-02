@@ -3,9 +3,11 @@
 -- Produit une intention normalisée (`DriverInput`) indépendante du périphérique.
 --
 -- Clavier : Z/W ou ↑ accélérer, S ou ↓ freiner/reculer, Q/A ou ← et D ou →
---           diriger, Espace frein à main.
+--           diriger, Espace frein à main, C embrayage (boîte manuelle).
 -- Manette : gâchette droite accélérer, gâchette gauche freiner/reculer,
---           stick gauche diriger, bouton A frein à main.
+--           stick gauche diriger, bouton A frein à main, bouton B embrayage.
+-- Les commandes ponctuelles (rapports, aides, caméra, sortie…) sont des
+-- actions liées par VehicleController, pas des états lus ici.
 -- Ce module ne fait que LIRE les périphériques ; le choix du périphérique
 -- actif, les zones mortes, les rampes clavier et les protections contre les
 -- commandes involontaires sont dans InputArbiter (module pur, testé hors Studio).
@@ -84,6 +86,7 @@ local function readKeyboard(): InputArbiter.KeyboardSample
         Left = anyKeyDown(LEFT_KEYS),
         Right = anyKeyDown(RIGHT_KEYS),
         Handbrake = UserInputService:IsKeyDown(Enum.KeyCode.Space),
+        Clutch = UserInputService:IsKeyDown(Enum.KeyCode.C),
     }
 end
 
@@ -107,6 +110,7 @@ local function readGamepad(gamepad: Enum.UserInputType): InputArbiter.GamepadSam
         Brake = brake,
         Steer = steer,
         Handbrake = UserInputService:IsGamepadButtonDown(gamepad, Enum.KeyCode.ButtonA),
+        Clutch = UserInputService:IsGamepadButtonDown(gamepad, Enum.KeyCode.ButtonB),
     }
 end
 

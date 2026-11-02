@@ -1,8 +1,10 @@
 --!strict
--- HUD de DÉVELOPPEMENT du lot 0.1 (ce n'est pas le HUD définitif du chapitre 7).
--- Affiche vitesse, rapport, régime, commandes effectives, aides présentes,
--- mesures locales (0–100 km/h, 100–0 km/h) et l'aide des touches adaptée au
--- dernier périphérique utilisé (AUD-INPUT-01).
+-- HUD de DÉVELOPPEMENT (ce n'est pas le HUD définitif du chapitre 7).
+-- Affiche vitesse, rapport, régime, commandes effectives, mesures locales,
+-- énergie, état des aides (absente / désactivée / activée / en action),
+-- récupération, embrayage, dégâts, caméra, et l'aide des touches adaptée au
+-- dernier périphérique utilisé (AUD-INPUT-01). Toute aide ou tout filtre qui
+-- modifie la commande du joueur y est affiché : rien n'est caché.
 
 local Players = game:GetService("Players")
 
@@ -17,6 +19,7 @@ local panel: Frame? = nil
 local speedLabel: TextLabel? = nil
 local gearLabel: TextLabel? = nil
 local detailLabel: TextLabel? = nil
+local systemsLabel: TextLabel? = nil
 local measureLabel: TextLabel? = nil
 local helpLabel: TextLabel? = nil
 local noticeLabel: TextLabel? = nil
@@ -24,9 +27,11 @@ local bars: { [string]: Bar } = {}
 local noticeToken = 0
 local usingGamepad = false
 
-local KEYBOARD_HELP = "Z/W accélérer • S freiner/reculer (maintenir à l'arrêt) • Q/A D diriger • Espace frein à main"
+local KEYBOARD_HELP = "Z/W accélérer • S freiner/reculer (maintenir à l'arrêt : marche arrière en boîte auto) • Q/A D diriger • Espace frein à main"
+    .. "\nMaj gauche / Ctrl gauche rapport + / − • C embrayage • 1 ABS • 2 antipatinage • 3 ESP • G récupération"
     .. "\nV caméra • R remettre sur roues • F sortir"
-local GAMEPAD_HELP = "RT accélérer • LT freiner/reculer (maintenir à l'arrêt) • Stick gauche diriger • A frein à main"
+local GAMEPAD_HELP = "RT accélérer • LT freiner/reculer • Stick gauche diriger • A frein à main"
+    .. "\nRB / LB rapport + / − • B embrayage • Croix gauche choisir un réglage, croix droite le changer"
     .. "\nCroix haut caméra • Croix bas remettre sur roues • Y sortir"
 
 local function makeLabel(parent: Instance, name: string, position: UDim2, size: UDim2, textSize: number): TextLabel
@@ -50,7 +55,7 @@ local function makeBar(parent: Instance, name: string, y: number, color: Color3)
     local frame = Instance.new("Frame")
     frame.Name = name
     frame.Position = UDim2.new(0, 16, 0, y)
-    frame.Size = UDim2.new(1, -32, 0, 8)
+    frame.Size = UDim2.new(1, -32, 0, 7)
     frame.BackgroundColor3 = Color3.fromRGB(45, 52, 62)
     frame.BorderSizePixel = 0
     frame.Parent = parent
@@ -78,22 +83,25 @@ local function ensureGui(): ScreenGui
     frame.Name = "Panneau"
     frame.AnchorPoint = Vector2.new(1, 1)
     frame.Position = UDim2.new(1, -16, 1, -16)
-    frame.Size = UDim2.fromOffset(340, 262)
+    frame.Size = UDim2.fromOffset(380, 404)
     frame.BackgroundColor3 = Color3.fromRGB(18, 24, 33)
     frame.BackgroundTransparency = 0.15
     frame.BorderSizePixel = 0
     frame.Visible = false
     frame.Parent = screen
 
-    speedLabel = makeLabel(frame, "Vitesse", UDim2.fromOffset(16, 10), UDim2.new(1, -110, 0, 44), 38)
-    gearLabel = makeLabel(frame, "Rapport", UDim2.new(1, -90, 0, 10), UDim2.fromOffset(74, 44), 38)
-    detailLabel = makeLabel(frame, "Details", UDim2.fromOffset(16, 58), UDim2.new(1, -32, 0, 34), 14)
-    bars.Rpm = makeBar(frame, "BarreRegime", 96, Color3.fromRGB(255, 122, 26))
-    bars.Throttle = makeBar(frame, "BarreAccelerateur", 110, Color3.fromRGB(80, 200, 120))
-    bars.Brake = makeBar(frame, "BarreFrein", 124, Color3.fromRGB(230, 70, 70))
-    bars.Steer = makeBar(frame, "BarreDirection", 138, Color3.fromRGB(90, 160, 240))
-    measureLabel = makeLabel(frame, "Mesures", UDim2.fromOffset(16, 154), UDim2.new(1, -32, 0, 48), 14)
-    local help = makeLabel(frame, "Aide", UDim2.fromOffset(16, 204), UDim2.new(1, -32, 0, 52), 12)
+    speedLabel = makeLabel(frame, "Vitesse", UDim2.fromOffset(16, 8), UDim2.new(1, -110, 0, 42), 36)
+    gearLabel = makeLabel(frame, "Rapport", UDim2.new(1, -96, 0, 8), UDim2.fromOffset(84, 42), 36)
+    detailLabel = makeLabel(frame, "Details", UDim2.fromOffset(16, 52), UDim2.new(1, -32, 0, 30), 13)
+    bars.Rpm = makeBar(frame, "BarreRegime", 86, Color3.fromRGB(255, 122, 26))
+    bars.Throttle = makeBar(frame, "BarreAccelerateur", 98, Color3.fromRGB(80, 200, 120))
+    bars.Brake = makeBar(frame, "BarreFrein", 110, Color3.fromRGB(230, 70, 70))
+    bars.Clutch = makeBar(frame, "BarreEmbrayage", 122, Color3.fromRGB(200, 170, 255))
+    bars.Steer = makeBar(frame, "BarreDirection", 134, Color3.fromRGB(90, 160, 240))
+    bars.Energy = makeBar(frame, "BarreEnergie", 146, Color3.fromRGB(240, 210, 60))
+    systemsLabel = makeLabel(frame, "Systemes", UDim2.fromOffset(16, 158), UDim2.new(1, -32, 0, 96), 13)
+    measureLabel = makeLabel(frame, "Mesures", UDim2.fromOffset(16, 256), UDim2.new(1, -32, 0, 44), 13)
+    local help = makeLabel(frame, "Aide", UDim2.fromOffset(16, 302), UDim2.new(1, -32, 0, 98), 11)
     help.TextColor3 = Color3.fromRGB(170, 182, 196)
     helpLabel = help
 
@@ -101,7 +109,7 @@ local function ensureGui(): ScreenGui
     notice.Name = "Message"
     notice.AnchorPoint = Vector2.new(0.5, 0)
     notice.Position = UDim2.new(0.5, 0, 0, 72)
-    notice.Size = UDim2.fromOffset(520, 40)
+    notice.Size = UDim2.fromOffset(560, 40)
     notice.BackgroundColor3 = Color3.fromRGB(18, 24, 33)
     notice.BackgroundTransparency = 0.1
     notice.TextColor3 = Color3.fromRGB(255, 214, 160)
@@ -140,13 +148,13 @@ local function refreshHelp()
     end
 end
 
-function DevHud.show(vehicleName: string, aidsText: string)
+function DevHud.show(vehicleName: string, description: string)
     ensureGui()
     if panel then
         panel.Visible = true
     end
     if detailLabel then
-        detailLabel.Text = vehicleName .. "\n" .. aidsText
+        detailLabel.Text = vehicleName .. "\n" .. description
     end
     refreshHelp()
 end
@@ -164,14 +172,31 @@ function DevHud.setInputMode(isGamepad: boolean)
     end
 end
 
+export type AidLine = {
+    Label: string,
+    -- "Absente" (modèle non équipé), "Off", "On", "Active" (intervient).
+    Status: "Absente" | "Off" | "On" | "Active",
+    Selected: boolean,
+}
+
 export type HudData = {
     SpeedKmh: number,
     Gear: number,
+    GearLabel: string?,
     EngineRpm: number,
     RedlineRpm: number,
     Throttle: number,
     Brake: number,
+    Clutch: number,
+    ShowClutch: boolean,
     Steer: number,
+    EnergyFraction: number,
+    EnergyText: string,
+    Aids: { AidLine },
+    RegenText: string?,
+    EngineText: string,
+    DamageText: string,
+    CameraName: string,
     LastLaunchSeconds: number?,
     BestLaunchSeconds: number?,
     LastBrakeDistanceM: number?,
@@ -184,17 +209,46 @@ local function formatOptional(value: number?, pattern: string): string
     return (string.gsub(string.format(pattern, value), "%.", ","))
 end
 
+local STATUS_TEXT = {
+    Absente = "absent",
+    Off = "désactivé",
+    On = "activé",
+    Active = "ACTIVÉ · en action",
+}
+
 function DevHud.update(data: HudData)
     if speedLabel then
         speedLabel.Text = string.format("%d km/h", math.floor(data.SpeedKmh + 0.5))
     end
     if gearLabel then
-        gearLabel.Text = if data.Gear < 0 then "R" elseif data.Gear == 0 then "N" else tostring(data.Gear)
+        gearLabel.Text = data.GearLabel
+            or (if data.Gear < 0 then "R" elseif data.Gear == 0 then "N" else tostring(data.Gear))
     end
-    setBar("Rpm", data.EngineRpm / data.RedlineRpm)
+    setBar("Rpm", data.EngineRpm / math.max(data.RedlineRpm, 1))
     setBar("Throttle", data.Throttle)
     setBar("Brake", data.Brake)
+    setBar("Clutch", if data.ShowClutch then data.Clutch else 0)
     setBar("Steer", data.Steer, true)
+    setBar("Energy", data.EnergyFraction)
+    if systemsLabel then
+        local aids = {}
+        for _, aid in data.Aids do
+            table.insert(
+                aids,
+                string.format("%s%s : %s", if aid.Selected then "▶ " else "", aid.Label, STATUS_TEXT[aid.Status])
+            )
+        end
+        local lines = {
+            data.EngineText .. " • " .. data.EnergyText,
+            table.concat(aids, " • "),
+        }
+        if data.RegenText then
+            table.insert(lines, data.RegenText)
+        end
+        table.insert(lines, "Dégâts : " .. data.DamageText)
+        table.insert(lines, "Caméra : " .. data.CameraName)
+        systemsLabel.Text = table.concat(lines, "\n")
+    end
     if measureLabel then
         measureLabel.Text = string.format(
             "Régime : %d tr/min\n0–100 km/h : %s s (meilleur %s s) • 100–0 km/h : %s m",
@@ -221,6 +275,11 @@ function DevHud.showNotice(key: string, value: any)
             label.Visible = false
         end
     end)
+end
+
+-- Texte actuellement affiché (tests Studio : vérification de l'état des aides).
+function DevHud.systemsText(): string
+    return if systemsLabel then systemsLabel.Text else ""
 end
 
 return DevHud

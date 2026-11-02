@@ -5,8 +5,10 @@
 -- ET lui a attribué le véhicule (attribut DriverUserId), une session de
 -- conduite démarre : commandes, simulation locale, caméra, HUD. Elle s'arrête
 -- dès que l'une de ces conditions n'est plus vraie (sortie, mort, correction).
--- Le client n'envoie au serveur que des commandes bornées et des demandes
--- d'action ; il ne décide jamais seul d'un état critique.
+-- Le client n'envoie au serveur que des commandes bornées, des demandes
+-- d'action et un cumul d'énergie déclaratif ; il ne décide jamais seul d'un
+-- état critique (aides activées, récupération, dégâts, niveau d'énergie : lus
+-- dans les attributs écrits par le serveur).
 
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
@@ -22,7 +24,10 @@ local VehicleDefinitions = require(VehiclesShared:WaitForChild("VehicleDefinitio
 local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator"))
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
 local Telemetry = require(VehiclesShared:WaitForChild("Telemetry"))
-local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
+local PhysicsFolder = VehiclesShared:WaitForChild("Physics")
+local CollisionExchange = require(PhysicsFolder:WaitForChild("CollisionExchange"))
+local DamageModel = require(PhysicsFolder:WaitForChild("DamageModel"))
+local EnergyModel = require(PhysicsFolder:WaitForChild("EnergyModel"))
 
 local DriverInput = require(script.Parent.DriverInput)
 local VehicleCamera = require(script.Parent.VehicleCamera)
@@ -36,6 +41,7 @@ local METERS_PER_STUD = Constants.MetersPerStud
 local SEND_INTERVAL_S = 1 / Constants.InputSendRateHz
 local KEEPALIVE_S = 0.5
 local ACTION_DEBOUNCE_S = 0.4
+local SHIFT_DEBOUNCE_S = 0.12
 local ACTION_PRIORITY = Enum.ContextActionPriority.High.Value + 10
 local VELOCITY_HISTORY_S = 1.5
 -- Borne défensive d'un complément d'impulsion reçu (studs/s, ≈ 60 km/h).
@@ -45,6 +51,38 @@ local IMPULSE_MIN_DELTA_V = 0.3
 local RESYNC_DISTANCE = 3
 -- Durée pendant laquelle le personnage est relevé après un refus de prise en main.
 local STAND_UP_WINDOW_S = 3
+local HUD_SLOW_REFRESH_S = 0.25
+
+local AID_LABELS: { [string]: string } = {
+    Abs = "ABS",
+    TractionControl = "Antipatinage",
+    StabilityControl = "ESP",
+}
+local AID_KEYS: { [string]: Enum.KeyCode } = {
+    Abs = Enum.KeyCode.One,
+    TractionControl = Enum.KeyCode.Two,
+    StabilityControl = Enum.KeyCode.Three,
+}
+local ENERGY_NAMES: { [string]: string } = {
+    Petrol = "Essence",
+    Diesel = "Diesel",
+    Electric = "Électrique",
+}
+local TRANSMISSION_NAMES: { [string]: string } = {
+    Automatic = "boîte automatique",
+    Manual = "boîte manuelle",
+    DualClutch = "double embrayage",
+    Sequential = "boîte séquentielle",
+    CVT = "variateur CVT",
+    SingleSpeed = "rapport unique",
+}
+local LAYOUT_NAMES: { [string]: string } = {
+    FWD = "traction",
+    RWD = "propulsion",
+    AWD = "intégrale",
+}
+local ZONE_NAMES: { [string]: string } = { Front = "AV", Rear = "AR", Left = "G", Right = "D" }
+local LEVEL_NAMES = { "rayures", "localisés", "importants" }
 
 type Session = {
     Model: Model,
@@ -62,6 +100,24 @@ type Session = {
     SendTimer: number,
     KeepaliveTimer: number,
     LastSent: { number }?,
+    -- Énergie : consommation des simulateurs précédents de cette session, et
+    -- prédiction locale entre deux publications du serveur.
+    EnergyBase: number,
+    ServerLevel: number,
+    UsedAtServerLevel: number,
+    EnergyAvailable: boolean,
+    ConsumptionRate: number, -- unités de réserve par seconde, lissé
+    LastEnergyUsed: number,
+    -- Changements à signaler (aides, récupération, calage, dégâts).
+    LastAids: { [string]: boolean },
+    LastRegen: number,
+    LastStalled: boolean,
+    LastImpacts: number,
+    -- Manette : réglage sélectionné à la croix gauche.
+    Selection: number,
+    SlowTimer: number,
+    DamageText: string,
+    LastShift: number,
 }
 
 type Remotes = {
@@ -101,13 +157,36 @@ local function setDefaultControls(enabled: boolean)
     end
 end
 
-local function sendAction(action: string)
+local function sendAction(action: string, argument: string?)
     local now = os.clock()
     if now - lastActionTime < ACTION_DEBOUNCE_S or remotes == nil then
         return
     end
     lastActionTime = now
-    remotes.Action:FireServer(action)
+    remotes.Action:FireServer(action, argument)
+end
+
+-- Réglages modifiables à la manette (croix gauche / droite) : aides présentes
+-- puis récupération si le modèle est électrique.
+local function settingsOf(definition: Types.VehicleDefinition): { string }
+    local list = {}
+    for _, aid in Constants.AidNames do
+        if (definition.Aids :: any)[aid] then
+            table.insert(list, aid)
+        end
+    end
+    if definition.Powertrain.Motor then
+        table.insert(list, "Regen")
+    end
+    return list
+end
+
+local function applySetting(name: string)
+    if name == "Regen" then
+        sendAction(Constants.Actions.CycleRegen)
+    else
+        sendAction(Constants.Actions.ToggleAid, name)
+    end
 end
 
 -- Une touche du clavier ne déclenche aucune action pendant une saisie de
@@ -116,32 +195,80 @@ local function keyboardBlocked(inputObject: InputObject?): boolean
     return inputObject ~= nil and inputObject.UserInputType == Enum.UserInputType.Keyboard and DriverInput.isTyping()
 end
 
-local function onExitAction(_: string, state: Enum.UserInputState, inputObject: InputObject?): Enum.ContextActionResult
-    if keyboardBlocked(inputObject) then
-        return Enum.ContextActionResult.Pass
+local function shift(direction: number)
+    local current = session
+    if current == nil or not current.Simulating then
+        return
     end
-    if state == Enum.UserInputState.Begin then
+    local now = os.clock()
+    if now - current.LastShift < SHIFT_DEBOUNCE_S then
+        return
+    end
+    current.LastShift = now
+    local result = current.Simulator:requestShift(direction)
+    if result ~= "Ok" then
+        DevHud.showNotice("Shift" .. result)
+    end
+end
+
+-- Gestionnaires des actions ponctuelles, par nom de liaison.
+local handlers: { [string]: () -> () } = {
+    AWVehicleExit = function()
         sendAction(Constants.Actions.Exit)
-    end
-    return Enum.ContextActionResult.Sink
-end
-
-local function onUnflipAction(
-    _: string,
-    state: Enum.UserInputState,
-    inputObject: InputObject?
-): Enum.ContextActionResult
-    if keyboardBlocked(inputObject) then
-        return Enum.ContextActionResult.Pass
-    end
-    if state == Enum.UserInputState.Begin then
+    end,
+    AWVehicleUnflip = function()
         sendAction(Constants.Actions.Unflip)
-    end
-    return Enum.ContextActionResult.Sink
-end
+    end,
+    AWVehicleCamera = function()
+        DevHud.showNotice("CameraPreset", camera:togglePreset())
+    end,
+    AWVehicleShiftUp = function()
+        shift(1)
+    end,
+    AWVehicleShiftDown = function()
+        shift(-1)
+    end,
+    AWVehicleAidAbs = function()
+        sendAction(Constants.Actions.ToggleAid, "Abs")
+    end,
+    AWVehicleAidTractionControl = function()
+        sendAction(Constants.Actions.ToggleAid, "TractionControl")
+    end,
+    AWVehicleAidStabilityControl = function()
+        sendAction(Constants.Actions.ToggleAid, "StabilityControl")
+    end,
+    AWVehicleRegen = function()
+        sendAction(Constants.Actions.CycleRegen)
+    end,
+    AWVehicleSelectSetting = function()
+        local current = session
+        if current == nil then
+            return
+        end
+        local list = settingsOf(current.Definition)
+        if #list == 0 then
+            DevHud.showNotice("AidAbsent")
+            return
+        end
+        current.Selection = current.Selection % #list + 1
+    end,
+    AWVehicleApplySetting = function()
+        local current = session
+        if current == nil then
+            return
+        end
+        local list = settingsOf(current.Definition)
+        local name = list[math.clamp(current.Selection, 1, math.max(#list, 1))]
+        if name then
+            applySetting(name)
+        else
+            DevHud.showNotice("AidAbsent")
+        end
+    end,
+}
 
-local function onCameraAction(
-    _: string,
+local function onBoundAction(
+    name: string,
     state: Enum.UserInputState,
     inputObject: InputObject?
 ): Enum.ContextActionResult
@@ -149,77 +276,120 @@ local function onCameraAction(
         return Enum.ContextActionResult.Pass
     end
     if state == Enum.UserInputState.Begin then
-        DevHud.showNotice("CameraPreset", camera:togglePreset())
+        local handler = handlers[name]
+        if handler then
+            handler()
+        end
     end
     return Enum.ContextActionResult.Sink
 end
 
--- Absorbe les touches de conduite pour qu'aucune autre action ne s'y greffe.
+-- Absorbe les touches de conduite pour qu'aucune autre action ne s'y greffe
+-- (saut, verrouillage de la souris, menus).
 local function sinkAction(): Enum.ContextActionResult
     return Enum.ContextActionResult.Sink
 end
 
+local BINDINGS: { { Name: string, Keys: { Enum.KeyCode } } } = {
+    { Name = "AWVehicleExit", Keys = { Enum.KeyCode.F, Enum.KeyCode.ButtonY } },
+    { Name = "AWVehicleUnflip", Keys = { Enum.KeyCode.R, Enum.KeyCode.DPadDown } },
+    { Name = "AWVehicleCamera", Keys = { Enum.KeyCode.V, Enum.KeyCode.DPadUp } },
+    { Name = "AWVehicleShiftUp", Keys = { Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonR1 } },
+    { Name = "AWVehicleShiftDown", Keys = { Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonL1 } },
+    { Name = "AWVehicleAidAbs", Keys = { AID_KEYS.Abs } },
+    { Name = "AWVehicleAidTractionControl", Keys = { AID_KEYS.TractionControl } },
+    { Name = "AWVehicleAidStabilityControl", Keys = { AID_KEYS.StabilityControl } },
+    { Name = "AWVehicleRegen", Keys = { Enum.KeyCode.G } },
+    { Name = "AWVehicleSelectSetting", Keys = { Enum.KeyCode.DPadLeft } },
+    { Name = "AWVehicleApplySetting", Keys = { Enum.KeyCode.DPadRight } },
+}
+
 local function bindActions()
-    ContextActionService:BindActionAtPriority(
-        "AWVehicleExit",
-        onExitAction,
-        false,
-        ACTION_PRIORITY,
-        Enum.KeyCode.F,
-        Enum.KeyCode.ButtonY
-    )
-    ContextActionService:BindActionAtPriority(
-        "AWVehicleUnflip",
-        onUnflipAction,
-        false,
-        ACTION_PRIORITY,
-        Enum.KeyCode.R,
-        Enum.KeyCode.DPadDown
-    )
-    ContextActionService:BindActionAtPriority(
-        "AWVehicleCamera",
-        onCameraAction,
-        false,
-        ACTION_PRIORITY,
-        Enum.KeyCode.V,
-        Enum.KeyCode.DPadUp
-    )
+    for _, binding in BINDINGS do
+        ContextActionService:BindActionAtPriority(
+            binding.Name,
+            onBoundAction,
+            false,
+            ACTION_PRIORITY,
+            table.unpack(binding.Keys)
+        )
+    end
     ContextActionService:BindActionAtPriority(
         "AWVehicleSink",
         sinkAction,
         false,
         ACTION_PRIORITY,
         Enum.KeyCode.Space,
-        Enum.KeyCode.ButtonA
+        Enum.KeyCode.ButtonA,
+        Enum.KeyCode.C,
+        Enum.KeyCode.ButtonB
     )
 end
 
 local function unbindActions()
-    for _, name in { "AWVehicleExit", "AWVehicleUnflip", "AWVehicleCamera", "AWVehicleSink" } do
-        ContextActionService:UnbindAction(name)
+    for _, binding in BINDINGS do
+        ContextActionService:UnbindAction(binding.Name)
     end
+    ContextActionService:UnbindAction("AWVehicleSink")
 end
 
--- Affiche les aides ET la réduction de braquage avec la vitesse (A1) : rien
--- de ce qui modifie la commande du joueur n'est caché.
-local function aidsDescription(definition: Types.VehicleDefinition): string
-    local aids = definition.Aids
+-- Description permanente du modèle : énergie, boîte, architecture et filtre de
+-- braquage A1 (affiché : rien de ce qui modifie la commande n'est caché).
+local function vehicleDescription(definition: Types.VehicleDefinition): string
+    local powertrain = definition.Powertrain
     local steering = definition.Steering
-    local steeringText = string.format(
-        "braquage %d° → %d° à %d km/h",
+    return string.format(
+        "%s · %s · %s · braquage %d° → %d° à %d km/h",
+        ENERGY_NAMES[powertrain.Energy.Kind] or powertrain.Energy.Kind,
+        TRANSMISSION_NAMES[powertrain.Transmission.Kind] or powertrain.Transmission.Kind,
+        LAYOUT_NAMES[powertrain.Drivetrain.Layout] or powertrain.Drivetrain.Layout,
         steering.MaxAngleDeg,
         steering.HighSpeedAngleDeg,
         steering.HighSpeedReferenceKmh
     )
-    if not (aids.Abs or aids.TractionControl or aids.StabilityControl) then
-        return "Aides : aucune · " .. steeringText
-    end
-    return "Aides : configuration non prise en charge dans le lot 0.1"
 end
 
 local function currentHumanoid(): Humanoid?
     local character = player.Character
     return if character then character:FindFirstChildOfClass("Humanoid") else nil
+end
+
+local function sessionEnergyUsed(current: Session): number
+    return current.EnergyBase + current.Simulator.State.EnergyUsed
+end
+
+local function readServerLevel(model: Model, definition: Types.VehicleDefinition): number
+    local level = model:GetAttribute(Constants.Attributes.EnergyLevel)
+    if type(level) == "number" and level == level then
+        return level
+    end
+    return definition.Powertrain.Energy.Capacity * definition.Powertrain.Energy.InitialFraction
+end
+
+-- Prédiction locale prudente : niveau serveur moins ce que ce client a consommé
+-- depuis sa dernière publication. La réserve est vide dès que l'un des deux le dit.
+local function updateEnergyAvailability(current: Session)
+    local used = sessionEnergyUsed(current)
+    local serverLevel = readServerLevel(current.Model, current.Definition)
+    if serverLevel ~= current.ServerLevel then
+        current.ServerLevel = serverLevel
+        current.UsedAtServerLevel = used
+    end
+    local predicted = EnergyModel.predictLevel(serverLevel, used - current.UsedAtServerLevel)
+    local empty = current.Model:GetAttribute(Constants.Attributes.EnergyEmpty) == true
+    local available = not empty and predicted > 0
+    if current.EnergyAvailable and not available then
+        DevHud.showNotice("EnergyEmpty")
+    end
+    current.EnergyAvailable = available
+    current.Simulator.State.EnergyAvailable = available
+end
+
+local function newSimulator(current: Session): VehicleSimulator.VehicleSimulator
+    local simulator = VehicleSimulator.new(current.Model, current.Definition)
+    simulator.State.EnergyAvailable = current.EnergyAvailable
+    simulator:startEngine()
+    return simulator
 end
 
 local function endSession()
@@ -243,7 +413,8 @@ local function beginSession(model: Model, seat: Seat)
     if definition == nil or model.PrimaryPart == nil then
         return
     end
-    session = {
+    local level = readServerLevel(model, definition)
+    local current: Session = {
         Model = model,
         Seat = seat,
         Definition = definition,
@@ -256,13 +427,33 @@ local function beginSession(model: Model, seat: Seat)
         SendTimer = 0,
         KeepaliveTimer = 0,
         LastSent = nil,
+        EnergyBase = 0,
+        ServerLevel = level,
+        UsedAtServerLevel = 0,
+        EnergyAvailable = level > 0 and model:GetAttribute(Constants.Attributes.EnergyEmpty) ~= true,
+        ConsumptionRate = 0,
+        LastEnergyUsed = 0,
+        LastAids = {},
+        LastRegen = 1,
+        LastStalled = false,
+        LastImpacts = 0,
+        Selection = 1,
+        SlowTimer = math.huge,
+        DamageText = "aucun",
+        LastShift = 0,
     }
+    local impacts = model:GetAttribute("DmgImpacts")
+    current.LastImpacts = if type(impacts) == "number" then impacts else 0
+    session = current
     input:reset()
     measures = Telemetry.new()
     setDefaultControls(false)
     bindActions()
     camera:start(model, player.Character)
-    DevHud.show(definition.DisplayName, aidsDescription(definition))
+    DevHud.show(definition.DisplayName, vehicleDescription(definition))
+    if not current.EnergyAvailable then
+        DevHud.showNotice("EnergyEmpty")
+    end
 end
 
 -- Détermine si le joueur doit être en session de conduite, et sur quel véhicule.
@@ -299,7 +490,7 @@ local function sendInput(current: Session, driverInput: Types.DriverInput, dt: n
         return
     end
     current.SendTimer = 0
-    local encoded = InputCodec.encode(driverInput)
+    local encoded = InputCodec.encode(driverInput, sessionEnergyUsed(current))
     local previous = current.LastSent
     local changed = previous == nil
     if previous then
@@ -329,6 +520,9 @@ local function onPreSimulation(dt: number)
     end
     local provider = testInputProvider
     local driverInput = if provider then provider() else input:poll(dt)
+    if driverInput.Clutch == nil then
+        driverInput.Clutch = 0
+    end
     current.LastInput = driverInput
     -- Pendant une correction serveur (ou si la propriété réseau n'a pas été
     -- confirmée), c'est le serveur qui simule : le client suspend sa simulation
@@ -348,12 +542,15 @@ local function onPreSimulation(dt: number)
                 root.AssemblyAngularVelocity = Vector3.zero
                 current.Resyncs += 1
             end
-            current.Simulator = VehicleSimulator.new(current.Model, current.Definition)
+            -- La consommation du simulateur précédent reste comptée dans la session.
+            current.EnergyBase += current.Simulator.State.EnergyUsed
+            current.Simulator = newSimulator(current)
         else
             current.Simulator:release()
         end
         current.Simulating = owns
     end
+    updateEnergyAvailability(current)
     if owns then
         current.Simulator:step(driverInput, dt)
         local root = current.Model.PrimaryPart
@@ -405,12 +602,88 @@ local function onImpulse(model: any, normal: any, deltaV: any, point: any)
     root:ApplyImpulseAtPosition(direction * (missing * root.AssemblyMass), at)
 end
 
+local function gearLabel(definition: Types.VehicleDefinition, gear: number): string
+    if gear < 0 then
+        return "R"
+    elseif gear == 0 then
+        return "N"
+    end
+    local kind = definition.Powertrain.Transmission.Kind
+    if kind == "CVT" or kind == "SingleSpeed" then
+        return "D"
+    elseif kind == "Automatic" or kind == "DualClutch" then
+        return "D" .. gear
+    end
+    return tostring(gear)
+end
+
+local function damageSummary(model: Model): (string, number)
+    local state = DamageModel.fromAttributes(function(name)
+        return model:GetAttribute(name)
+    end)
+    local parts = {}
+    for _, zone in DamageModel.Zones do
+        local level = DamageModel.visualLevel(state.Zones[zone])
+        if level > 0 then
+            table.insert(parts, ZONE_NAMES[zone] .. " " .. LEVEL_NAMES[level])
+        end
+    end
+    local condition = DamageModel.condition(state)
+    if condition.EnginePower < 0.999 then
+        table.insert(parts, string.format("moteur %d %%", math.floor(condition.EnginePower * 100 + 0.5)))
+    end
+    if state.Steering < 0.999 then
+        table.insert(parts, "direction faussée")
+    end
+    for corner, health in state.Suspension do
+        if health < 0.999 then
+            table.insert(parts, string.format("train %s", Constants.WheelNames[corner]))
+        end
+    end
+    return if #parts == 0 then "aucun" else table.concat(parts, ", "), state.Impacts
+end
+
+local function regenText(definition: Types.VehicleDefinition, level: number): string?
+    local motor = definition.Powertrain.Motor
+    if motor == nil then
+        return nil
+    end
+    local fraction = motor.RegenLevels[math.clamp(level, 1, #motor.RegenLevels)]
+    return string.format("%d %%", math.floor(fraction * 100 + 0.5))
+end
+
+-- Signale les changements d'état décidés par le serveur ou la mécanique.
+local function reportChanges(current: Session)
+    local state = current.Simulator.State
+    for _, aid in Constants.AidNames do
+        local enabled = (state.Aids :: any)[aid] == true
+        if current.LastAids[aid] ~= nil and current.LastAids[aid] ~= enabled then
+            DevHud.showNotice("AidChanged", AID_LABELS[aid] .. " : " .. (if enabled then "activé" else "désactivé"))
+        end
+        current.LastAids[aid] = enabled
+    end
+    if state.RegenLevel ~= current.LastRegen then
+        current.LastRegen = state.RegenLevel
+        local text = regenText(current.Definition, state.RegenLevel)
+        if text then
+            DevHud.showNotice("RegenChanged", text)
+        end
+    end
+    if state.EngineStalled and not current.LastStalled then
+        DevHud.showNotice("EngineStalled")
+    end
+    current.LastStalled = state.EngineStalled
+end
+
 local function onPreRender(dt: number)
     local current = session
     local cam = Workspace.CurrentCamera
     if current then
         camera:update(dt)
-        local telemetry = current.Simulator:getTelemetry()
+        local simulator = current.Simulator
+        local telemetry = simulator:getTelemetry()
+        local state = simulator.State
+        local definition = current.Definition
         local root = current.Model.PrimaryPart
         if root then
             local position = root.Position * METERS_PER_STUD
@@ -425,14 +698,105 @@ local function onPreRender(dt: number)
                 dt
             )
         end
+        reportChanges(current)
+
+        -- Consommation instantanée lissée (unités par seconde).
+        local used = sessionEnergyUsed(current)
+        if dt > 0 then
+            local rate = math.max(used - current.LastEnergyUsed, 0) / dt
+            current.ConsumptionRate += (rate - current.ConsumptionRate) * math.min(1, dt * 2)
+        end
+        current.LastEnergyUsed = used
+
+        current.SlowTimer += dt
+        if current.SlowTimer >= HUD_SLOW_REFRESH_S then
+            current.SlowTimer = 0
+            local text, impacts = damageSummary(current.Model)
+            current.DamageText = text
+            if impacts > current.LastImpacts then
+                local condition = state.Condition
+                if condition.EnginePower < 0.999 or condition.SteeringRange < 0.999 then
+                    DevHud.showNotice("DamageMechanical")
+                end
+            end
+            current.LastImpacts = impacts
+        end
+
+        local powertrain = definition.Powertrain
+        local store = powertrain.Energy
+        local predicted =
+            EnergyModel.predictLevel(current.ServerLevel, sessionEnergyUsed(current) - current.UsedAtServerLevel)
+        local unit = EnergyModel.unit(definition)
+        local perHundred = if telemetry.SpeedKmh > 5
+            then current.ConsumptionRate * 3600 / telemetry.SpeedKmh * 100
+            else nil
+        local energyText = string.format(
+            "%s %.1f %s (%d %%)%s",
+            if store.Kind == "Electric" then "Batterie" else "Réservoir",
+            math.max(predicted, 0),
+            unit,
+            math.floor(math.max(predicted, 0) / store.Capacity * 100 + 0.5),
+            if perHundred
+                then string.format(" · %.1f %s/100 km", perHundred, unit)
+                else string.format(" · %.2f %s/h", current.ConsumptionRate * 3600, unit)
+        )
+        local engineText = if powertrain.Engine
+            then string.format(
+                "Moteur %s",
+                if state.EngineRunning then "en marche" elseif state.EngineStalled then "CALÉ" else "arrêté"
+            )
+            else string.format(
+                "Moteur électrique %s · %d kW",
+                if state.EngineRunning then "prêt" else "coupé",
+                math.floor(state.PowerKw + 0.5)
+            )
+
+        local aids: { DevHud.AidLine } = {}
+        local settings = settingsOf(definition)
+        local selected = settings[math.clamp(current.Selection, 1, math.max(#settings, 1))]
+        for _, aid in Constants.AidNames do
+            local present = (definition.Aids :: any)[aid] == true
+            local enabled = (state.Aids :: any)[aid] == true
+            local acting = (state.AidActivity :: any)[aid] == true
+            table.insert(aids, {
+                Label = AID_LABELS[aid],
+                Status = if not present
+                    then "Absente"
+                    elseif not enabled then "Off"
+                    elseif acting then "Active"
+                    else "On",
+                Selected = selected == aid,
+            })
+        end
+        local regen = regenText(definition, state.RegenLevel)
+        local redline = if powertrain.Engine
+            then powertrain.Engine.RedlineRpm
+            else (powertrain.Motor :: Types.ElectricMotorDefinition).MaxRpm
+
         DevHud.update({
             SpeedKmh = telemetry.SpeedKmh,
             Gear = telemetry.Gear,
+            GearLabel = gearLabel(definition, telemetry.Gear),
             EngineRpm = telemetry.EngineRpm,
-            RedlineRpm = current.Definition.Powertrain.Engine.RedlineRpm,
+            RedlineRpm = redline,
             Throttle = current.LastInput.Throttle,
             Brake = current.LastInput.Brake,
+            Clutch = telemetry.ClutchPedal,
+            ShowClutch = powertrain.Transmission.Kind == "Manual",
             Steer = telemetry.SteerPosition,
+            EnergyFraction = math.max(predicted, 0) / store.Capacity,
+            EnergyText = energyText,
+            Aids = aids,
+            RegenText = if regen
+                then string.format(
+                    "%sRécupération au lâcher : %s",
+                    if selected == "Regen" then "▶ " else "",
+                    regen
+                )
+                else nil,
+            EngineText = engineText,
+            DamageText = current.DamageText,
+            CameraName = camera:presetName(),
             LastLaunchSeconds = measures.LastLaunchSeconds,
             BestLaunchSeconds = measures.BestLaunchSeconds,
             LastBrakeDistanceM = measures.LastBrakeDistanceM,
@@ -511,11 +875,43 @@ end
     (tests/studio). Ils refusent de fonctionner hors de Studio.
     - `setTestInputProvider` remplace UNIQUEMENT la lecture clavier/manette :
       simulation, forces, réseau, caméra et HUD restent le vrai chemin du jeu.
+    - `invokeActionForTest` appelle le MÊME gestionnaire que la touche ou le
+      bouton lié (rapports, aides, caméra…) : la lecture réelle des touches
+      reste un essai humain.
     - `getTestSnapshot` expose une copie en lecture seule de l'état de conduite.
 ]]
 function VehicleController.setTestInputProvider(provider: (() -> Types.DriverInput)?)
     assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
     testInputProvider = provider
+end
+
+function VehicleController.invokeActionForTest(name: string): boolean
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    local handler = handlers[name]
+    if handler == nil then
+        return false
+    end
+    -- Contourne seulement l'anti-rebond (les essais enchaînent les commandes).
+    lastActionTime = 0
+    if session then
+        (session :: Session).LastShift = 0
+    end
+    handler()
+    return true
+end
+
+-- Liaisons déclarées (vérifiées par les essais : chaque action a une touche ET un bouton).
+function VehicleController.bindingsForTest(): { [string]: { string } }
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    local result = {}
+    for _, binding in BINDINGS do
+        local names = {}
+        for _, key in binding.Keys do
+            table.insert(names, key.Name)
+        end
+        result[binding.Name] = names
+    end
+    return result
 end
 
 export type TestSnapshot = {
@@ -531,6 +927,7 @@ export type TestSnapshot = {
     -- client le simule réellement) : diagnostic de la propriété réseau.
     ReceiveAge: number,
     VehicleName: string?,
+    DefinitionId: string?,
     SpeedKmh: number,
     ForwardSpeedMs: number,
     Gear: number,
@@ -538,6 +935,28 @@ export type TestSnapshot = {
     GroundedWheels: number,
     LastLaunchSeconds: number?,
     LastBrakeDistanceM: number?,
+    -- Lot 0.2
+    EngineRunning: boolean,
+    EngineStalled: boolean,
+    ClutchPedal: number,
+    Coupled: boolean,
+    CvtRatio: number,
+    YawRate: number,
+    WetWheels: number,
+    EnergyUsed: number,
+    EnergyRecovered: number,
+    ServerEnergyLevel: number,
+    EnergyAvailable: boolean,
+    Aids: { [string]: boolean },
+    AidActivity: { [string]: boolean },
+    RegenLevel: number,
+    EnginePower: number,
+    SteeringPullRad: number,
+    CameraName: string,
+    HudSystems: string,
+    Perf: VehicleSimulator.PerfReport?,
+    WheelSlip: { number },
+    BrakeTorque: { number },
 }
 
 function VehicleController.getTestSnapshot(): TestSnapshot
@@ -553,6 +972,7 @@ function VehicleController.getTestSnapshot(): TestSnapshot
             Resyncs = 0,
             ReceiveAge = 0,
             VehicleName = nil,
+            DefinitionId = nil,
             SpeedKmh = 0,
             ForwardSpeedMs = 0,
             Gear = 0,
@@ -560,9 +980,37 @@ function VehicleController.getTestSnapshot(): TestSnapshot
             GroundedWheels = 0,
             LastLaunchSeconds = measures.LastLaunchSeconds,
             LastBrakeDistanceM = measures.LastBrakeDistanceM,
+            EngineRunning = false,
+            EngineStalled = false,
+            ClutchPedal = 0,
+            Coupled = false,
+            CvtRatio = 0,
+            YawRate = 0,
+            WetWheels = 0,
+            EnergyUsed = 0,
+            EnergyRecovered = 0,
+            ServerEnergyLevel = 0,
+            EnergyAvailable = false,
+            Aids = {},
+            AidActivity = {},
+            RegenLevel = 1,
+            EnginePower = 1,
+            SteeringPullRad = 0,
+            CameraName = camera:presetName(),
+            HudSystems = DevHud.systemsText(),
+            Perf = nil,
+            WheelSlip = {},
+            BrakeTorque = {},
         }
     end
-    local telemetry = current.Simulator:getTelemetry()
+    local simulator = current.Simulator
+    local telemetry = simulator:getTelemetry()
+    local state = simulator.State
+    local slips, brakes = {}, {}
+    for index, wheel in state.Wheels do
+        slips[index] = wheel.SlipRatio
+        brakes[index] = wheel.BrakeTorque
+    end
     return {
         Driving = true,
         SimulationActive = current.Simulating,
@@ -572,6 +1020,7 @@ function VehicleController.getTestSnapshot(): TestSnapshot
         Resyncs = current.Resyncs,
         ReceiveAge = if current.Model.PrimaryPart then current.Model.PrimaryPart.ReceiveAge else 0,
         VehicleName = current.Model.Name,
+        DefinitionId = current.Definition.Id,
         SpeedKmh = telemetry.SpeedKmh,
         ForwardSpeedMs = telemetry.ForwardSpeedMs,
         Gear = telemetry.Gear,
@@ -579,6 +1028,27 @@ function VehicleController.getTestSnapshot(): TestSnapshot
         GroundedWheels = telemetry.GroundedWheels,
         LastLaunchSeconds = measures.LastLaunchSeconds,
         LastBrakeDistanceM = measures.LastBrakeDistanceM,
+        EngineRunning = state.EngineRunning,
+        EngineStalled = state.EngineStalled,
+        ClutchPedal = state.ClutchPedal,
+        Coupled = state.Coupled,
+        CvtRatio = state.CvtRatio,
+        YawRate = telemetry.YawRate,
+        WetWheels = telemetry.WetWheels,
+        EnergyUsed = sessionEnergyUsed(current),
+        EnergyRecovered = state.EnergyRecovered,
+        ServerEnergyLevel = current.ServerLevel,
+        EnergyAvailable = current.EnergyAvailable,
+        Aids = table.clone(state.Aids) :: any,
+        AidActivity = table.clone(state.AidActivity) :: any,
+        RegenLevel = state.RegenLevel,
+        EnginePower = state.Condition.EnginePower,
+        SteeringPullRad = state.Condition.SteeringPullRad,
+        CameraName = camera:presetName(),
+        HudSystems = DevHud.systemsText(),
+        Perf = simulator:getPerf(),
+        WheelSlip = slips,
+        BrakeTorque = brakes,
     }
 end
 
@@ -586,6 +1056,15 @@ end
 function VehicleController.toggleCameraForTest(): string
     assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
     return camera:togglePreset()
+end
+
+-- Remise à zéro des mesures de coût de la simulation locale (tests Studio).
+function VehicleController.resetPerfForTest()
+    assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
+    local current = session
+    if current then
+        current.Simulator:resetPerf()
+    end
 end
 
 return VehicleController

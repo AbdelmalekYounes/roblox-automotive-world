@@ -7,12 +7,17 @@
 -- - propriété réseau : conducteur pendant la conduite, serveur sinon ;
 -- - simulation des véhicules stationnés (propriété serveur) ;
 -- - contrôle de plausibilité des mouvements avec tolérance réseau ;
--- - remise sur roues limitée, retour au plot des véhicules abandonnés.
--- Aucun crédit, achat, récompense ni DataStore n'est manipulé ici.
+-- - remise sur roues limitée, retour au plot des véhicules abandonnés ;
+-- - lot 0.2 : énergie de session (plancher physique serveur, voir EnergyModel),
+--   état des aides et de la récupération (validés selon l'équipement du modèle),
+--   dégâts confirmés serveur (DamageService), mesures de coût.
+-- Aucun crédit, achat, récompense ni DataStore n'est manipulé ici : l'énergie et
+-- les dégâts n'existent que pendant la session technique (persistance : lot 0.4).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
 local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles")
@@ -21,10 +26,13 @@ local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDefinitions = require(VehiclesShared:WaitForChild("VehicleDefinitions"))
 local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator"))
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
+local PerfStats = require(VehiclesShared:WaitForChild("PerfStats"))
+local EnergyModel = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("EnergyModel"))
 
 local VehicleFactory = require(script.Parent.VehicleFactory)
 local NetworkOwnership = require(script.Parent.NetworkOwnership)
 local CollisionMediator = require(script.Parent.CollisionMediator)
+local DamageService = require(script.Parent.DamageService)
 local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 local TestZoneBuilder = require(script.Parent.Parent.World.TestZoneBuilder)
 local MovementRules = require(script.Parent.Parent.Security.MovementRules)
@@ -47,6 +55,10 @@ local EXIT_PLACEMENT_CHECK_S = 0.3
 local EJECT_ATTEMPTS = 3
 local EJECT_CHECK_S = 1.2
 local SUSPICION_REVIEW_THRESHOLD = 10
+-- Écart minimal (unités de réserve) avant de republier le niveau d'énergie.
+local ENERGY_PUBLISH_STEP = 0.002
+-- Repositionnement serveur : délai sans détection de choc.
+local DAMAGE_SUSPEND_S = 1.5
 
 type VehicleRecord = {
     Model: Model,
@@ -71,6 +83,14 @@ type VehicleRecord = {
     OwnershipFailures: number,
     LastServerSpeed: number,
     LastEjectionLog: number,
+    -- Énergie de session (autorité serveur).
+    Energy: EnergyModel.Account,
+    -- Dernier cumul déclaré par le conducteur (simple déclaration, voir EnergyModel).
+    ClientEnergy: number?,
+    EnergySample: { Time: number, SpeedMs: number, Y: number }?,
+    PublishedEnergy: number,
+    -- Véhicule de banc d'essai de charge (Studio uniquement) : commande scriptée.
+    BenchInput: Types.DriverInput?,
 }
 
 type Limiters = {
@@ -89,6 +109,11 @@ local VehicleService = {}
 
 local records: { VehicleRecord } = {}
 local recordByDriver: { [Player]: VehicleRecord } = {}
+local damage = DamageService.new()
+-- Coût mesuré côté serveur (secondes) : simulation des véhicules qu'il possède
+-- (par véhicule et par pas) et battement complet (médiation, dégâts, validation).
+local serverVehicleStep = PerfStats.new(4000)
+local serverHeartbeat = PerfStats.new(1200)
 local limiters: { [Player]: Limiters } = {}
 local remotes: Remotes? = nil
 local started = false
@@ -230,6 +255,8 @@ end
 local function placeUnderServer(record: VehicleRecord, pivot: CFrame)
     local driver = record.Driver
     setOwner(record, nil)
+    damage:suspend(record.Model, DAMAGE_SUSPEND_S + CORRECTION_HOLD_S)
+    record.EnergySample = nil
     record.Model:PivotTo(pivot)
     record.Root.AssemblyLinearVelocity = Vector3.zero
     record.Root.AssemblyAngularVelocity = Vector3.zero
@@ -266,6 +293,15 @@ local function assignDriver(record: VehicleRecord, player: Player): boolean
     end
     record.Driver = player
     recordByDriver[player] = record
+    -- Nouvelle session de conduite : toutes les aides présentes repartent
+    -- DÉSACTIVÉES et la récupération à son niveau par défaut (§1.2).
+    for _, aid in Constants.AidNames do
+        record.Model:SetAttribute((Constants.Attributes :: any)["Aid" .. aid], false)
+    end
+    record.Model:SetAttribute(Constants.Attributes.RegenLevel, 1)
+    EnergyModel.beginDriving(record.Energy)
+    record.ClientEnergy = nil
+    record.EnergySample = nil
     record.Model:SetAttribute(Constants.Attributes.DriverUserId, player.UserId)
     record.Prompt.Enabled = false
     record.SuspicionCount = 0
@@ -454,7 +490,8 @@ local function handleUnflip(record: VehicleRecord, player: Player)
         return
     end
     -- Remise sur roues gratuite et limitée (cahier des charges §3.5) :
-    -- position seulement, sans aucun autre effet (pas de réparation ni d'énergie).
+    -- position seulement, sans aucun autre effet : ni réparation des dégâts, ni
+    -- énergie (vérifié par les essais du lot 0.2).
     record.UnflipReadyAt = now + UNFLIP_COOLDOWN_S
     placeUnderServer(record, uprightPivot(root.Position + Vector3.new(0, 4, 0), root.CFrame.LookVector))
     notify(player, "UnflipDone")
@@ -474,6 +511,53 @@ local function correctMovement(record: VehicleRecord, reason: string)
     if driver then
         notify(driver, "MovementCorrected")
     end
+end
+
+local function publishEnergy(record: VehicleRecord, force: boolean?)
+    local account = record.Energy
+    local model = record.Model
+    if force or math.abs(account.Level - record.PublishedEnergy) >= ENERGY_PUBLISH_STEP or account.Empty then
+        record.PublishedEnergy = account.Level
+        model:SetAttribute(Constants.Attributes.EnergyLevel, account.Level)
+    end
+    if model:GetAttribute(Constants.Attributes.EnergyEmpty) ~= account.Empty then
+        model:SetAttribute(Constants.Attributes.EnergyEmpty, account.Empty)
+        if account.Empty then
+            warn(
+                string.format(
+                    "[AutomotiveWorld][Énergie] Réserve vide sur %s : plus de propulsion, aucune recharge gratuite.",
+                    tostring(model:GetAttribute(Constants.Attributes.VehicleId))
+                )
+            )
+        end
+    end
+end
+
+--[[
+    Règlement de l'énergie d'un véhicule conduit, à partir de ce que le serveur
+    observe (vitesse et altitude répliquées) : plancher physique + déclaration
+    bornée du client (EnergyModel.settle). Rien pendant une correction.
+]]
+local function settleEnergy(record: VehicleRecord, now: number)
+    if record.Driver == nil or record.ServerOwned or now < record.CorrectionUntil then
+        record.EnergySample = nil
+        return
+    end
+    local speed = record.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD
+    local y = record.Root.Position.Y * METERS_PER_STUD
+    local previous = record.EnergySample
+    record.EnergySample = { Time = now, SpeedMs = speed, Y = y }
+    if previous == nil then
+        return
+    end
+    local dt = now - previous.Time
+    if dt <= 0 then
+        return
+    end
+    local used, recovered =
+        EnergyModel.physicsFloor(record.Definition, previous.SpeedMs, speed, (y - previous.Y) / dt, dt)
+    EnergyModel.settle(record.Energy, record.Definition, used, recovered, record.ClientEnergy, dt)
+    publishEnergy(record)
 end
 
 local function validateMovements(now: number)
@@ -567,7 +651,12 @@ local function stepServerVehicle(record: VehicleRecord, dt: number)
             return
         end
     end
-    record.Simulator:step(InputCodec.Parked, dt)
+    local stepStarted = os.clock()
+    record.Simulator:step(record.BenchInput or InputCodec.Parked, dt)
+    PerfStats.add(serverVehicleStep, os.clock() - stepStarted)
+    if record.BenchInput then
+        return
+    end
     if linear < 0.15 and angular < 0.05 then
         record.CalmTimer += dt
         if record.CalmTimer > 2 then
@@ -668,9 +757,14 @@ local function onInput(player: Player, payload: any)
     if record == nil then
         return
     end
-    local input = InputCodec.decode(payload)
+    local input, energy = InputCodec.decode(payload)
     if input == nil then
         return
+    end
+    -- Simple déclaration : le serveur ne l'accepte qu'au-dessus de son plancher,
+    -- à un débit plausible (EnergyModel.settle).
+    if energy then
+        record.ClientEnergy = energy
     end
     -- Le serveur ne simule pas le véhicule piloté : la commande ne sert qu'à
     -- l'affichage du braquage chez les autres joueurs (valeur bornée).
@@ -681,7 +775,31 @@ local function onInput(player: Player, payload: any)
     end
 end
 
-local function onAction(player: Player, action: any)
+-- Active ou désactive une aide : seulement si le modèle en est équipé.
+local function handleToggleAid(record: VehicleRecord, player: Player, aid: any)
+    if type(aid) ~= "string" or table.find(Constants.AidNames, aid) == nil then
+        return
+    end
+    if (record.Definition.Aids :: any)[aid] ~= true then
+        notify(player, "AidAbsent")
+        return
+    end
+    local attribute = (Constants.Attributes :: any)["Aid" .. aid]
+    record.Model:SetAttribute(attribute, record.Model:GetAttribute(attribute) ~= true)
+end
+
+local function handleCycleRegen(record: VehicleRecord, player: Player)
+    local motor = record.Definition.Powertrain.Motor
+    if motor == nil then
+        notify(player, "RegenAbsent")
+        return
+    end
+    local current = record.Model:GetAttribute(Constants.Attributes.RegenLevel)
+    local index = if type(current) == "number" then math.floor(current) else 1
+    record.Model:SetAttribute(Constants.Attributes.RegenLevel, index % #motor.RegenLevels + 1)
+end
+
+local function onAction(player: Player, action: any, argument: any)
     if not RateLimiter.consume(limitersFor(player).Action, os.clock()) then
         return
     end
@@ -696,6 +814,10 @@ local function onAction(player: Player, action: any)
         handleExit(record, player)
     elseif action == Constants.Actions.Unflip then
         handleUnflip(record, player)
+    elseif action == Constants.Actions.ToggleAid then
+        handleToggleAid(record, player, argument)
+    elseif action == Constants.Actions.CycleRegen then
+        handleCycleRegen(record, player)
     end
 end
 
@@ -708,14 +830,14 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
     createdRemotes.Input.OnServerEvent:Connect(onInput)
     createdRemotes.Action.OnServerEvent:Connect(onAction)
 
-    local definition = VehicleDefinitions.get(VehicleDefinitions.DefaultTestVehicleId)
-    assert(definition, "Définition du véhicule d'essai introuvable")
-
     local folder = Instance.new("Folder")
     folder.Name = "VehiculesEssai"
     folder.Parent = Workspace
 
     for index, pad in zone.Pads do
+        local definitionId = VehicleDefinitions.TestFleet[index] or VehicleDefinitions.DefaultTestVehicleId
+        local definition = VehicleDefinitions.get(definitionId)
+        assert(definition, "Définition du véhicule d'essai introuvable : " .. definitionId)
         local pivot = VehicleFactory.spawnPivotForPad(definition, pad)
         local model = VehicleFactory.create(definition, pivot, index)
         model.Parent = folder
@@ -747,9 +869,16 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
             OwnershipFailures = 0,
             LastServerSpeed = 0,
             LastEjectionLog = 0,
+            Energy = EnergyModel.newAccount(definition),
+            ClientEnergy = nil,
+            EnergySample = nil,
+            PublishedEnergy = -1,
+            BenchInput = nil,
         }
         table.insert(records, record)
         setOwner(record, nil)
+        publishEnergy(record, true)
+        damage:register(model, definition)
 
         -- Ancrer puis désancrer une pièce rend la propriété réseau à l'attribution
         -- automatique de Roblox : on réaffirme aussitôt le propriétaire attendu.
@@ -798,17 +927,33 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
         })
     end
 
+    local function correcting(model: Model): boolean
+        for _, record in records do
+            if record.Model == model then
+                return os.clock() < record.CorrectionUntil
+            end
+        end
+        return false
+    end
+
     local validationTimer, maintenanceTimer = 0, 0
     RunService.Heartbeat:Connect(function(dt)
+        local beat = os.clock()
         local now = os.clock()
         for index, record in records do
+            -- Les véhicules de banc (Studio) n'ont pas de participant : ils sont
+            -- simulés par le serveur, dont le moteur résout leurs contacts.
             local participant = participants[index]
+            if participant == nil then
+                continue
+            end
             participant.Driver = record.Driver
             participant.ClientSimulated = record.Driver ~= nil
                 and not record.ServerOwned
                 and now >= record.CorrectionUntil
         end
         mediator:step(participants, now)
+        damage:step(now, correcting)
 
         validationTimer += dt
         maintenanceTimer += dt
@@ -816,6 +961,7 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
             validationTimer = 0
             for _, record in records do
                 verifyOwnership(record)
+                settleEnergy(record, os.clock())
             end
             validateMovements(os.clock())
         end
@@ -823,7 +969,12 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
             maintenanceTimer = 0
             maintainParkedVehicles()
         end
+        PerfStats.add(serverHeartbeat, os.clock() - beat)
     end)
+
+    if RunService:IsStudio() then
+        VehicleService.installTestHooks(folder, mediator)
+    end
 
     Players.PlayerRemoving:Connect(function(player)
         local record = recordByDriver[player]
@@ -833,7 +984,116 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
         limiters[player] = nil
     end)
 
-    print(string.format("[AutomotiveWorld] %d véhicules d'essai « %s » prêts", #records, definition.DisplayName))
+    print(string.format("[AutomotiveWorld] %d véhicules d'essai prêts (parc du lot 0.2)", #records))
+end
+
+local function findRecord(model: any): VehicleRecord?
+    for _, record in records do
+        if record.Model == model then
+            return record
+        end
+    end
+    return nil
+end
+
+--[[
+    Points d'accès RÉSERVÉS aux essais automatisés dans Roblox Studio : une
+    BindableFunction dans ServerStorage (jamais visible des clients), créée
+    seulement si RunService:IsStudio(). Elle permet de lire les états serveur,
+    de placer une réserve presque vide (essai de panne) et de lancer un banc de
+    charge. Rien de tout cela n'existe hors de Studio.
+]]
+function VehicleService.installTestHooks(folder: Folder, _mediator: any)
+    assert(RunService:IsStudio(), "Réservé aux essais dans Studio")
+    local hooks = Instance.new("BindableFunction")
+    hooks.Name = "AWTestHooks"
+    hooks.OnInvoke = function(command: string, model: any, value: any): any
+        local record = findRecord(model)
+        if command == "GetEnergy" and record then
+            local account = record.Energy
+            return {
+                Level = account.Level,
+                Empty = account.Empty,
+                Capacity = account.Capacity,
+                TotalWithdrawn = account.TotalWithdrawn,
+                TotalRecovered = account.TotalRecovered,
+                FloorUsed = account.FloorUsed,
+                ClientAccepted = account.ClientAccepted,
+            }
+        elseif command == "SetEnergy" and record and type(value) == "number" then
+            record.Energy.Level = math.clamp(value, 0, record.Energy.Capacity)
+            record.Energy.Empty = record.Energy.Level <= 0
+            publishEnergy(record, true)
+            return true
+        elseif command == "GetDamage" and model then
+            local state = damage:getState(model)
+            return if state then table.clone(state.Zones) else nil
+        elseif command == "Impacts" then
+            return { Impacts = damage.Impacts, Unconfirmed = damage.Unconfirmed, Queries = damage.Queries }
+        elseif command == "ServerPerf" then
+            return {
+                VehicleStep = PerfStats.summary(serverVehicleStep),
+                Heartbeat = PerfStats.summary(serverHeartbeat),
+                Damage = damage:perf(),
+                Vehicles = #records,
+            }
+        elseif command == "ResetPerf" then
+            PerfStats.reset(serverVehicleStep)
+            PerfStats.reset(serverHeartbeat)
+            return true
+        elseif command == "SpawnBench" and type(value) == "number" then
+            -- Banc de charge : véhicules simulés par le serveur, en cercle, loin du parc.
+            local definition = VehicleDefinitions.get(VehicleDefinitions.DefaultTestVehicleId) :: any
+            local created = 0
+            for i = 1, math.clamp(math.floor(value), 0, 40) do
+                local x = -560 + ((i - 1) % 8) * 40
+                local z = -980 + math.floor((i - 1) / 8) * 45
+                local pivot = CFrame.new(x, definition.Chassis.CgHeightM / Constants.MetersPerStud + 0.3, z)
+                local benchModel = VehicleFactory.create(definition, pivot, 100 + i)
+                benchModel.Name = "Banc_" .. i
+                benchModel.Parent = folder
+                local root = benchModel.PrimaryPart :: BasePart
+                local bench: any = {
+                    Model = benchModel,
+                    Root = root,
+                    Seat = benchModel:FindFirstChild("DriverSeat"),
+                    Prompt = (root:FindFirstChild("DriverDoor") :: Attachment):FindFirstChild("EnterPrompt"),
+                    Definition = definition,
+                    HomePivot = pivot,
+                    Driver = nil,
+                    ServerOwned = true,
+                    Simulator = VehicleSimulator.new(benchModel, definition, { ReplicationFriendly = true }),
+                    Asleep = false,
+                    CalmTimer = 0,
+                    AwayTimer = 0,
+                    LastSample = nil,
+                    LastValidPivot = pivot,
+                    CorrectionUntil = 0,
+                    UnflipReadyAt = 0,
+                    SuspicionCount = 0,
+                    LastSuspicionLog = 0,
+                    LastSteer = 0,
+                    OwnershipFailures = 0,
+                    LastServerSpeed = 0,
+                    LastEjectionLog = 0,
+                    Energy = EnergyModel.newAccount(definition),
+                    ClientEnergy = nil,
+                    EnergySample = nil,
+                    PublishedEnergy = -1,
+                    BenchInput = { Throttle = 0.35, Brake = 0, Steer = 0.6, Handbrake = false, Clutch = 0 },
+                }
+                bench.Prompt.Enabled = false
+                bench.Simulator:startEngine()
+                table.insert(records, bench)
+                root:SetNetworkOwner(nil)
+                damage:register(benchModel, definition)
+                created += 1
+            end
+            return created
+        end
+        return nil
+    end
+    hooks.Parent = ServerStorage
 end
 
 return VehicleService
