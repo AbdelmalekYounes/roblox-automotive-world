@@ -5,8 +5,9 @@
 -- longitudinal, angle de dérive en latéral). Elle croît jusqu'à un pic
 -- d'adhérence puis décroît vers une valeur de glissement franc. Les deux
 -- directions partagent l'adhérence disponible via une ellipse de friction.
--- Ce n'est PAS un modèle Pacejka complet : c'est une base paramétrable,
--- destinée à être affinée (lot 0.2).
+-- Ce n'est PAS un modèle Pacejka complet : c'est une base paramétrable.
+-- Lot 0.2 : frottement statique à l'arrêt (maintien en pente), relaxation
+-- latérale, adhérence mouillée (paramètres de la définition du pneu).
 
 local TireModel = {}
 
@@ -14,9 +15,15 @@ local TireModel = {}
 -- évite la division par zéro et l'instabilité numérique à très basse vitesse.
 -- 4 m/s garde la raideur du pneu sous le seuil de stabilité de l'intégration
 -- explicite du châssis (Roblox applique une force constante pendant l'image).
--- Limite connue : sans modèle de frottement statique, un véhicule freiné sur
--- une pente glisse très lentement (quelques cm/s) ; à traiter au lot 0.2.
+-- À très basse vitesse, la force de glissement s'annule avec la vitesse : seule,
+-- elle laisserait un véhicule freiné glisser lentement en pente (mesuré au lot
+-- 0.1 : quelques cm/s). Le frottement statique (`stiction`) prend le relais.
 TireModel.LowSpeedReference = 4.0
+
+-- Frottement statique : déplacement élastique du contact au décrochage (m),
+-- vitesse en dessous de laquelle le contact peut « coller » (m/s).
+TireModel.StickBreakDistance = 0.02
+TireModel.StickSpeed = 0.3
 
 local ANGULAR_EPSILON = 1e-4
 
@@ -49,6 +56,35 @@ function TireModel.loadAdjustedFriction(
     end
     local factor = 1 - loadSensitivity * (normalForce / nominalLoad - 1)
     return baseFriction * math.clamp(factor, 0.6, 1.25)
+end
+
+--[[
+    Glissement combiné (méthode de « similitude ») : la force disponible dépend
+    du glissement TOTAL, et se répartit entre les deux directions au prorata de
+    chaque glissement normalisé. Une roue bloquée (glissement longitudinal très
+    grand) ne garde donc presque plus de force latérale : elle ne dirige plus,
+    comme un vrai pneu qui glisse. Retourne les facteurs à appliquer aux forces
+    « pures » longitudinale et latérale.
+    Lot 0.2 : remplace la seule ellipse de friction du lot 0.1, qui laissait
+    environ 80 % de la force latérale à une roue bloquée (mesuré sur le banc).
+]]
+function TireModel.combinedFactors(
+    slipRatio: number,
+    peakSlip: number,
+    slipAngle: number,
+    peakSlipAngle: number,
+    slidingRatio: number
+): (number, number)
+    local sx = math.abs(slipRatio) / peakSlip
+    local sy = math.abs(slipAngle) / peakSlipAngle
+    local total = math.sqrt(sx * sx + sy * sy)
+    if total < 1e-6 then
+        return 1, 1
+    end
+    local combined = TireModel.curve(total, slidingRatio)
+    local kx = if sx > 1e-6 then combined / TireModel.curve(sx, slidingRatio) * sx / total else 1
+    local ky = if sy > 1e-6 then combined / TireModel.curve(sy, slidingRatio) * sy / total else 1
+    return math.min(kx, 1), math.min(ky, 1)
 end
 
 -- Ellipse de friction : la somme normalisée des efforts ne dépasse pas 1.
@@ -197,6 +233,49 @@ function TireModel.lateralForce(
     local vref = math.max(math.abs(longitudinalVelocity), TireModel.LowSpeedReference)
     local alpha = math.atan2(lateralVelocity, vref)
     return -math.sign(alpha) * peakForce * TireModel.curve(alpha / peakSlipAngleRad, slidingRatio)
+end
+
+--[[
+    Frottement statique (modèle « à poils » simplifié) : tant que le contact
+    adhère, il se comporte comme un ressort amorti ancré au sol, raide au point
+    de décrocher à `StickBreakDistance`. À l'équilibre la vitesse est nulle :
+    un véhicule freiné tient en pente au lieu de glisser lentement.
+    `limit` = force maximale d'adhérence (N) ; `effectiveMass` = masse portée (kg).
+    Retourne (force, nouveau déplacement), ou (nil, 0) au décrochage.
+    L'amortissement est borné pour rester stable avec une force constante
+    pendant toute l'image (intégration explicite de Roblox).
+]]
+function TireModel.stiction(
+    displacement: number,
+    velocity: number,
+    limit: number,
+    effectiveMass: number,
+    dt: number
+): (number?, number)
+    if limit <= 0 or effectiveMass <= 0 then
+        return nil, 0
+    end
+    local stiffness = limit / TireModel.StickBreakDistance
+    local damping = math.min(1.4 * math.sqrt(stiffness * effectiveMass), 0.9 * effectiveMass / dt)
+    local x = displacement + velocity * dt
+    local force = -stiffness * x - damping * velocity
+    if math.abs(force) > limit then
+        return nil, 0
+    end
+    return force, x
+end
+
+--[[
+    Relaxation latérale : la force s'établit sur la longueur de relaxation
+    parcourue (filtre du premier ordre de constante σ / |v|). Sans effet à basse
+    vitesse (frottement statique et limite anti-dépassement y suffisent).
+]]
+function TireModel.relax(current: number, target: number, speed: number, lengthM: number, dt: number): number
+    local v = math.abs(speed)
+    if lengthM <= 0 or v < 2 then
+        return target
+    end
+    return current + (target - current) * math.min(1, v * dt / lengthM)
 end
 
 return table.freeze(TireModel)

@@ -1,5 +1,5 @@
 --!strict
--- Tests de la validation des définitions : rien de non implémenté ne doit passer.
+-- Tests de la validation des définitions : rien d'incohérent ne doit passer.
 
 local function deepCopy(value: any): any
     if type(value) ~= "table" then
@@ -40,17 +40,50 @@ return function(T: any, H: any)
         end)
     end
 
-    rejects("motorisation électrique (non implémentée)", function(d)
-        d.Powertrain.Kind = "Electric"
+    rejects("moteur électrique sur un véhicule essence", function(d)
+        d.Powertrain.Motor = {
+            MaxTorqueNm = 300,
+            MaxPowerKw = 150,
+            MaxRpm = 15000,
+            InertiaKgM2 = 0.05,
+            TopSpeedKmh = 180,
+            DriveEfficiency = 0.9,
+            RegenMaxPowerKw = 60,
+            RegenMaxTorqueNm = 200,
+            RegenEfficiency = 0.85,
+            RegenLevels = { 0.3 },
+            AuxPowerKw = 1,
+        }
     end)
-    rejects("boîte manuelle (non implémentée)", function(d)
+    rejects("électrique sans moteur électrique", function(d)
+        d.Powertrain.Energy.Kind = "Electric"
+    end)
+    rejects("boîte manuelle sans embrayage", function(d)
         d.Powertrain.Transmission.Kind = "Manual"
     end)
-    rejects("ABS déclaré (aide non implémentée)", function(d)
-        d.Aids.Abs = true
+    rejects("automatique sans convertisseur", function(d)
+        d.Powertrain.Transmission.Converter = nil
     end)
-    rejects("antipatinage déclaré", function(d)
-        d.Aids.TractionControl = true
+    rejects("embrayage plus faible que le moteur", function(d)
+        d.Powertrain.Transmission.Kind = "Sequential"
+        d.Powertrain.Transmission.Clutch = { MaxTorqueNm = 150 }
+    end)
+    rejects("rapport unique sur moteur thermique", function(d)
+        d.Powertrain.Transmission.Kind = "SingleSpeed"
+        d.Powertrain.Transmission.ForwardRatios = { 3 }
+    end)
+    rejects("autobloquant sur l'essieu non moteur", function(d)
+        d.Powertrain.Drivetrain.FrontDifferential =
+            { Kind = "LimitedSlip", PreloadNm = 50, PowerLockRatio = 0.3, CoastLockRatio = 0.2 }
+    end)
+    rejects("aide déclarée par une valeur non booléenne", function(d)
+        d.Aids.Abs = "oui"
+    end)
+    rejects("adhérence mouillée supérieure au sec", function(d)
+        d.Tires.WetGripRatio = 1.2
+    end)
+    rejects("sonde de contact inconnue", function(d)
+        d.Suspension.ContactProbe = "Cube"
     end)
     rejects("RWD avec couple avant", function(d)
         d.Powertrain.Drivetrain.FrontTorqueShare = 0.3
@@ -75,12 +108,58 @@ return function(T: any, H: any)
         d.Suspension.Rear.SpringRateNpm = 5000
     end)
 
-    T.test("AWD cohérent accepté par la validation (architecture prête, non testé en jeu)", function()
-        local copy = deepCopy(P01)
-        copy.Powertrain.Drivetrain.Layout = "AWD"
-        copy.Powertrain.Drivetrain.FrontTorqueShare = 0.4
-        local ok, errors = VehicleDefinitions.validate(copy)
-        T.truthy(ok, table.concat(errors, " ; "))
+    rejects("AWD sans différentiel central", function(d)
+        d.Powertrain.Drivetrain.Layout = "AWD"
+        d.Powertrain.Drivetrain.FrontTorqueShare = 0.4
+    end)
+
+    T.test("tous les prototypes et configurations de validation sont valides et gelés", function()
+        local ids = {}
+        for _, definition in VehicleDefinitions.all() do
+            local ok, errors = VehicleDefinitions.validate(definition)
+            T.truthy(ok, definition.Id .. " : " .. table.concat(errors, " ; "))
+            T.truthy(table.isfrozen(definition.Powertrain.Transmission), definition.Id .. " gelé")
+            T.truthy(definition.IsTestPrototype, definition.Id .. " marqué prototype")
+            table.insert(ids, definition.Id)
+        end
+        for _, id in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "proto_p01_seq", "proto_p01_cvt" } do
+            T.truthy(VehicleDefinitions.get(id) ~= nil, id .. " enregistré")
+        end
+        T.note("Définitions enregistrées : " .. table.concat(ids, ", "))
+    end)
+
+    T.test("P-02 et P-03 conformes à la demande du lot 0.2", function()
+        local p02 = VehicleDefinitions.get("proto_p02")
+        local p03 = VehicleDefinitions.get("proto_p03")
+        T.equal(p02.Powertrain.Drivetrain.Layout, "FWD")
+        T.equal(p02.Powertrain.Energy.Kind, "Diesel")
+        T.equal(p02.Powertrain.Transmission.Kind, "Manual")
+        T.truthy(p02.Chassis.MassKg ~= P01.Chassis.MassKg, "masse distincte du P-01")
+        T.equal(p03.Powertrain.Drivetrain.Layout, "AWD")
+        T.equal(p03.Powertrain.Energy.Kind, "Electric")
+        T.equal(p03.Powertrain.Transmission.Kind, "SingleSpeed")
+        T.truthy(p03.Powertrain.Motor.RegenMaxPowerKw > 0, "freinage régénératif")
+        T.truthy(#p03.Powertrain.Motor.RegenLevels >= 2, "récupération réglable")
+    end)
+
+    T.test("chaque type de boîte est couvert par une définition enregistrée", function()
+        local kinds = {}
+        for _, definition in VehicleDefinitions.all() do
+            kinds[definition.Powertrain.Transmission.Kind] = true
+        end
+        for _, kind in { "Automatic", "Manual", "DualClutch", "Sequential", "CVT", "SingleSpeed" } do
+            T.truthy(kinds[kind], kind)
+        end
+    end)
+
+    T.test("parc de la zone d'essai : plots 1 à 4 inchangés (P-01), puis lot 0.2", function()
+        local fleet = VehicleDefinitions.TestFleet
+        for pad = 1, 4 do
+            T.equal(fleet[pad], "proto_p01")
+        end
+        for _, id in fleet do
+            T.truthy(VehicleDefinitions.get(id) ~= nil, id)
+        end
     end)
 
     T.test("vitesse limitée par la boîte cohérente", function()
@@ -122,10 +201,14 @@ return function(T: any, H: any)
         T.equal(VehicleDefinitions.reverseEngagement("Manual"), "Selector")
         T.equal(VehicleDefinitions.reverseEngagement("DualClutch"), "Selector")
         T.equal(VehicleDefinitions.reverseEngagement("Sequential"), "Selector")
+        T.equal(VehicleDefinitions.reverseEngagement("CVT"), "HoldBrakeAtStop")
+        T.equal(VehicleDefinitions.reverseEngagement("SingleSpeed"), "HoldBrakeAtStop")
         T.equal(VehicleDefinitions.reverseEngagement(P01.Powertrain.Transmission.Kind), "HoldBrakeAtStop")
     end)
 
-    T.test("A4 : seuil de sortie provisoire du P-01 = 20 km/h", function()
-        T.equal(P01.Limits.ExitMaxSpeedKmh, 20)
+    T.test("A4 : seuil de sortie provisoire = 20 km/h pour tous les prototypes", function()
+        for _, definition in VehicleDefinitions.all() do
+            T.equal(definition.Limits.ExitMaxSpeedKmh, 20, definition.Id)
+        end
     end)
 end

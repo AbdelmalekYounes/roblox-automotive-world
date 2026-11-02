@@ -36,7 +36,7 @@ def test_contract_values_and_bootstrap():
     """Contrôle les valeurs approuvées et les points d'entrée présents."""
     config = (SRC / "shared/ProjectSettings.luau").read_text(encoding="utf-8")
     assert 'RequirementsVersion = "1.0"' in config
-    assert 'DevelopmentVersion = "0.1.0-dev"' in config
+    assert 'DevelopmentVersion = "0.2.0-dev"' in config
     assert "LaunchVehicleModelCount = 18" in config
     assert "LaunchZoneCount = 7" in config
     assert "MaximumPlayersTarget = 24" in config

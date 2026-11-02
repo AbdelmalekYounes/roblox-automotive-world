@@ -28,6 +28,15 @@ export type Options = {
     InitialForward: number?,
     Input: (t: number, snapshot: Snapshot, state: any) -> any,
     Stop: ((snapshot: Snapshot) -> boolean)?,
+    -- Revêtement : multiplicateur d'adhérence (par roue possible) et mouillé.
+    Surface: (number | { number })?,
+    Wet: boolean?,
+    -- Préparation de l'état avant le départ (aides, rapport, réserve…).
+    Prepare: ((state: any) -> ())?,
+    -- Moteur arrêté au départ (par défaut : démarré, comme un conducteur à bord).
+    EngineOff: boolean?,
+    -- Pente : sinus de l'angle, positif quand le véhicule est tourné vers la montée.
+    Grade: number?,
 }
 
 function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Snapshot }, any)
@@ -42,12 +51,18 @@ function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Sna
     local w, r, heading, distance = 0, 0, 0, 0
     local ax, ay = 0, 0
 
+    if not options.EngineOff then
+        Dynamics.startEngine(state, definition)
+    end
     -- Roues déjà en rotation si le véhicule part lancé.
     for _, wheel in state.Wheels do
         wheel.AngularVelocity = u / definition.Tires.RadiusM
     end
     if u > 0 then
         state.Gear = 1
+    end
+    if options.Prepare then
+        options.Prepare(state)
     end
 
     local snapshots: { Snapshot } = {}
@@ -67,6 +82,9 @@ function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Sna
 
     while t < options.Duration do
         local input = options.Input(t, snapshot, state)
+        if input.Clutch == nil then
+            input.Clutch = 0
+        end
         Dynamics.updateSteering(state, definition, input.Steer, u, dt)
 
         local contacts = {}
@@ -92,17 +110,19 @@ function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Sna
             local vLat = w + r * place.Longitudinal
             local steer = wheel.SteerAngle
             local c, s = math.cos(steer), math.sin(steer)
+            local surface = options.Surface or 1
             contacts[index] = {
                 Grounded = load > 0,
                 Compression = load / axle.SpringRateNpm,
                 CompressionVelocity = 0,
                 LongitudinalVelocity = vLong * c + vLat * s,
                 LateralVelocity = -vLong * s + vLat * c,
-                SurfaceFriction = 1,
+                SurfaceFriction = if type(surface) == "table" then surface[index] else surface,
+                Wet = options.Wet == true,
             }
         end
 
-        local forces = Dynamics.step(state, definition, input, contacts, u, dt)
+        local forces = Dynamics.step(state, definition, input, contacts, { Forward = u, Lateral = w, YawRate = r }, dt)
 
         local forceForward, forceSide, moment = 0, 0, 0
         for index, place in layout do
@@ -118,6 +138,7 @@ function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Sna
         local speed = math.sqrt(u * u + w * w)
         local dragFactor = 0.5 * 1.225 * chassis.DragAreaM2 * speed
         forceForward -= dragFactor * u
+        forceForward -= mass * 9.81 * (options.Grade or 0)
         forceSide -= dragFactor * w
 
         ax = forceForward / mass
