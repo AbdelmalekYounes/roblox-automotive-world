@@ -24,7 +24,7 @@
 param(
 	[string]$Vmx,
 	[string]$Exchange,
-	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision", "collision_latence"),
+	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision", "collision_latence", "lot02"),
 	[int]$TimeoutSec = 1500,
 	[int]$AgentWaitSec = 240,
 	[switch]$NoVmControl,

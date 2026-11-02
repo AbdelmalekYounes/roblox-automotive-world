@@ -457,6 +457,10 @@ function DamageService.step(self: Service, now: number, skip: (Model) -> boolean
             continue
         end
         entry.CooldownUntil = now + VEHICLE_COOLDOWN_S
+        -- Vitesse d'avant le choc relevée AVANT d'effacer l'historique (mesuré dans
+        -- Studio : l'effacer d'abord faisait prendre la vitesse d'après le choc et
+        -- sous-estimait le rapprochement, le percuteur n'avait aucun dégât).
+        local before = velocityAt(entry, worstTime)
         table.clear(history)
         local otherModel = vehicleOf(obstacle)
         local other = if otherModel then self.ByModel[otherModel] else nil
@@ -470,7 +474,6 @@ function DamageService.step(self: Service, now: number, skip: (Model) -> boolean
             -- Bornes physiques à partir des vitesses observées avant le choc.
             local massA = entry.Definition.Chassis.MassKg
             local massB = other.Definition.Chassis.MassKg
-            local before = velocityAt(entry, worstTime)
             local otherBefore = velocityAt(other, worstTime)
             local closing = math.max(0, horizontal(before - otherBefore):Dot(-push))
             local own = math.min(worstExcess, (1 + RESTITUTION) * massB / (massA + massB) * closing + TOLERANCE_MS)

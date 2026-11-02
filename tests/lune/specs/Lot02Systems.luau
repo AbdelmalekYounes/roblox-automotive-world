@@ -172,6 +172,22 @@ return function(T: any, H: any)
         )
     end)
 
+    T.test("ESP : pas de freinage « sous-virage » quand l'arrière glisse ou au frein à main", function()
+        local state = Dynamics.createState(P03)
+        state.Aids.StabilityControl = true
+        -- Braquage fort à droite, lacet insuffisant : sous-virage franc.
+        state.Wheels[1].SteerAngle = math.rad(10)
+        state.Wheels[2].SteerAngle = math.rad(10)
+        local understeer = { Forward = 20, Lateral = 0, YawRate = 0.1 }
+        DriverAids.updateStability(state, P03, understeer, false)
+        T.truthy(state.Wheels[4].EscBrakeTorque > 0, "roue arrière intérieure freinée")
+        DriverAids.updateStability(state, P03, understeer, true)
+        T.equal(state.Wheels[4].EscBrakeTorque, 0, "frein à main : pas d'intervention de sous-virage")
+        local sliding = { Forward = 20, Lateral = 0.9, YawRate = 0.1 }
+        DriverAids.updateStability(state, P03, sliding, false)
+        T.equal(state.Wheels[4].EscBrakeTorque, 0, "arrière qui dérive : pas de freinage arrière intérieur")
+    end)
+
     T.test("le filtre de braquage A1 reste indépendant des aides", function()
         local state = Dynamics.createState(P03)
         state.Aids.StabilityControl = true

@@ -373,7 +373,7 @@ function VehicleDynamics.step(
     -- 4. Aides électroniques (décisions sur l'état du pas précédent).
     DriverAids.updateAbs(state, definition, brakePedal > 0.05, forwardSpeed, dt)
     DriverAids.updateTraction(state, definition, dt)
-    DriverAids.updateStability(state, definition, motion)
+    DriverAids.updateStability(state, definition, motion, input.Handbrake)
 
     -- 5. Couples de freinage demandés (pédale modulée par l'ABS, frein à main, ESP).
     local requested = table.create(4, 0)

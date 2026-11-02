@@ -129,7 +129,8 @@ end
 function DriverAids.updateStability(
     state: Types.VehicleRuntimeState,
     definition: Types.VehicleDefinition,
-    motion: Types.ChassisMotion
+    motion: Types.ChassisMotion,
+    handbrake: boolean
 )
     for _, wheel in state.Wheels do
         wheel.EscBrakeTorque = 0
@@ -164,8 +165,16 @@ function DriverAids.updateStability(
         state.AidActivity.StabilityControl = true
         return
     end
+    -- Sous-virage : seulement si l'arrière tient (dérive faible) et sans frein à
+    -- main. Mesuré dans Studio : freiner la roue arrière intérieure pendant un
+    -- décrochage provoqué ajoutait de la rotation (dérive 13° au lieu de 5°).
     local deficit = math.abs(reference) - math.abs(yaw)
-    if deficit > ESC_DEADBAND * 1.6 and math.abs(reference) > 0.05 then
+    if
+        deficit > ESC_DEADBAND * 1.6
+        and math.abs(reference) > 0.05
+        and math.abs(slipAngle) < ESC_SLIP_ANGLE * 0.4
+        and not handbrake
+    then
         -- Roue arrière intérieure : à droite (4) pour un virage à droite.
         local inner = if turning > 0 then 4 else 3
         state.Wheels[inner].EscBrakeTorque =

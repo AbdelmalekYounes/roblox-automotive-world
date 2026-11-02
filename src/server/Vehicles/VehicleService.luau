@@ -904,7 +904,11 @@ function VehicleService.start(zone: TestZoneBuilder.TestZone)
     RunService.PreSimulation:Connect(function(dt)
         for _, record in records do
             if record.ServerOwned then
-                limitImplausibleSpeed(record)
+                -- Borne d'éjection (lot 0.1) : pas pour les véhicules de banc, propulsés
+                -- légitimement par le serveur (mesuré : elle bridait leur accélération).
+                if record.BenchInput == nil then
+                    limitImplausibleSpeed(record)
+                end
                 stepServerVehicle(record, dt)
             else
                 record.LastServerSpeed = 0
