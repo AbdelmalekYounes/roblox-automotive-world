@@ -79,6 +79,8 @@ local function call(action: string, payload: any?, requestId: string?): any
     if SENSITIVE[action] and data.RequestId == nil then
         data.RequestId = requestId or HttpService:GenerateGUID(false)
     end
+    -- Rythme d'un joueur : le limiteur du serveur (3 demandes/s) n'est pas visé ici.
+    task.wait(0.4)
     local ok, response = pcall(function()
         return request:InvokeServer(action, data)
     end)
@@ -408,8 +410,14 @@ else
         return offer ~= nil
     end, 8)
     connection:Disconnect()
-    local option = offer and offer.Options and offer.Options[1]
-    record(prefix .. "proposition_entree_invite", option ~= nil, offer and #offer.Options)
+    -- À cette entrée, l'invité voit aussi sa propre propriété : on retient celle du propriétaire.
+    local option = nil
+    for _, candidate in (offer and offer.Options) or {} do
+        if candidate.OwnerUserId ~= player.UserId then
+            option = candidate
+        end
+    end
+    record(prefix .. "proposition_entree_invite", option ~= nil, offer and #offer.Options .. " proposition(s)")
     if option then
         local ownerProperty = option.PropertyId
         local enter = call("Enter", { OwnerUserId = option.OwnerUserId, PropertyId = ownerProperty })
