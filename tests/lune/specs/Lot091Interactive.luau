@@ -219,6 +219,57 @@ return function(T: any, H: any)
         print(string.format("    %d longues routes : destination au milieu acceptée", checked))
     end)
 
+    T.test("QA-A08 : valeurs non finies neutralisées, jamais d'erreur ni de force non finie", function()
+        local Dynamics = H.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
+        local TireModel = H.require(SHARED .. "Vehicles.Physics.TireModel")
+        local P01 = H.require(SHARED .. "Vehicles.Definitions.PrototypeP01")
+        T.equal(TireModel.stopClamp(100, 50, 0 / 0, 1 / 60), 0, "limite NaN")
+        T.equal(TireModel.stopClamp(100, -5, 1, 1 / 60), 0, "limite négative")
+        local state = Dynamics.createState(P01)
+        Dynamics.startEngine(state, P01)
+        state.Wheels[1].AngularVelocity = 0 / 0
+        state.Wheels[2].AngularVelocity = math.huge
+        local before = Dynamics.numericResets()
+        local contacts = {}
+        for i = 1, 4 do
+            contacts[i] = {
+                Grounded = true,
+                Compression = 0.1,
+                CompressionVelocity = 0,
+                LongitudinalVelocity = if i == 3 then 0 / 0 else 0,
+                LateralVelocity = 0,
+                SurfaceFriction = 1,
+                Wet = false,
+            }
+        end
+        local ok, forces = pcall(function()
+            return Dynamics.step(
+                state,
+                P01,
+                { Throttle = 1, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 },
+                contacts,
+                { Forward = 0, Lateral = 0, YawRate = 0 },
+                1 / 60
+            )
+        end)
+        T.truthy(ok, "pas d'erreur : " .. tostring(forces))
+        for index, force in forces do
+            for key, value in force do
+                if type(value) == "number" then
+                    T.truthy(
+                        value == value and math.abs(value) < math.huge,
+                        string.format("roue %d %s fini", index, key)
+                    )
+                end
+            end
+        end
+        T.truthy(Dynamics.numericResets() > before, "neutralisation comptée")
+        T.truthy(
+            contacts[3].LongitudinalVelocity ~= contacts[3].LongitudinalVelocity,
+            "contacts de l'appelant inchangés"
+        )
+    end)
+
     T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")

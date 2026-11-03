@@ -305,6 +305,69 @@ end
     châssis dans son repère. Retourne les efforts par roue, dans le repère de
     contact de chaque roue.
 ]]
+-- Lot 0.9.1 (QA-A08) : valeurs non finies (NaN, infini) dans l'état ou les contacts.
+-- Constat VM (tâche 20261103-224247) : véhicule endommagé, plaqué contre un obstacle,
+-- marche avant et arrière alternées ; 2 372 erreurs « clamp » en 43 s
+-- (TireModel.stopClamp) et simulation figée. Cause première NON ÉTABLIE : l'état est
+-- neutralisé (roue, moteur à l'arrêt ; contact ignoré pour ce pas) et compté ; rien ne
+-- change tant que les valeurs restent finies.
+local function finite(x: number): boolean
+    return x == x and x > -math.huge and x < math.huge
+end
+local numericResets = 0
+local lastResetWarn = -math.huge
+
+function VehicleDynamics.numericResets(): number
+    return numericResets
+end
+
+local function sanitize(state: Types.VehicleRuntimeState, contacts: { Types.WheelContact }): { Types.WheelContact }
+    local reset = false
+    for _, wheel in state.Wheels do
+        if not finite(wheel.AngularVelocity) then
+            wheel.AngularVelocity = 0
+            reset = true
+        end
+        if not finite(wheel.LateralForce) then
+            wheel.LateralForce = 0
+            reset = true
+        end
+    end
+    if not finite(state.EngineOmega) then
+        state.EngineOmega = 0
+        reset = true
+    end
+    local out = contacts
+    for index, contact in contacts do
+        if
+            contact.Grounded
+            and not (
+                finite(contact.LongitudinalVelocity)
+                and finite(contact.LateralVelocity)
+                and finite(contact.Compression)
+                and finite(contact.CompressionVelocity)
+            )
+        then
+            if out == contacts then
+                out = table.clone(contacts)
+            end
+            local ignored = table.clone(contact)
+            ignored.Grounded = false
+            out[index] = ignored
+            reset = true
+        end
+    end
+    if reset then
+        numericResets += 1
+        local now = os.clock()
+        if now - lastResetWarn > 10 then
+            lastResetWarn = now
+            warn("[AutomotiveWorld] Valeur non finie dans la simulation du véhicule : état neutralisé (QA-A08)")
+        end
+    end
+    return out
+end
+
 function VehicleDynamics.step(
     state: Types.VehicleRuntimeState,
     definition: Types.VehicleDefinition,
@@ -313,6 +376,7 @@ function VehicleDynamics.step(
     motion: Types.ChassisMotion,
     dt: number
 ): { Types.WheelForces }
+    contacts = sanitize(state, contacts)
     local powertrain = definition.Powertrain
     local transmission = powertrain.Transmission
     local engine = powertrain.Engine
