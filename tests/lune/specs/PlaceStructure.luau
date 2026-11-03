@@ -2,6 +2,11 @@
 -- Vérifie la place construite par Rojo : arborescence, classes de scripts,
 -- séparation client/serveur/partagé et absence d'API sensibles prématurées.
 
+-- Lot 0.4 : seul l'adaptateur DataStore (persistance, AUD-ENV-01) peut
+-- utiliser le DataStore ; il n'est instancié qu'en environnement Test/Prod.
+local DATASTORE_ADAPTER = "ServerScriptService.AutomotiveWorldServer.Persistence.DataStoreProfileRepository"
+local ADAPTER_ALLOWED = { DataStore = true, ["requête HTTP / stockage"] = true }
+
 local FORBIDDEN_PATTERNS = {
     { Pattern = "DataStoreService", Label = "DataStore" },
     { Pattern = "GetDataStore", Label = "DataStore" },
@@ -69,22 +74,32 @@ return function(T: any, H: any)
         T.equal(find("ReplicatedStorage.Shared.Vehicles.MovementRules"), nil)
     end)
 
-    T.test("aucune API sensible prématurée (DataStore, achats, HTTP, crédits…)", function()
-        local scanned = 0
-        for _, descendant in game:GetDescendants() do
-            local class = descendant.ClassName
-            if class == "Script" or class == "LocalScript" or class == "ModuleScript" then
-                scanned += 1
-                local source = descendant.Source
-                for _, rule in FORBIDDEN_PATTERNS do
+    T.test(
+        "aucune API sensible prématurée (achats, HTTP, crédits… ; DataStore réservé à son adaptateur)",
+        function()
+            local scanned = 0
+            for _, descendant in game:GetDescendants() do
+                local class = descendant.ClassName
+                if class == "Script" or class == "LocalScript" or class == "ModuleScript" then
+                    scanned += 1
+                    local source = descendant.Source
+                    local allowed = if descendant:GetFullName() == DATASTORE_ADAPTER then ADAPTER_ALLOWED else {}
+                    for _, rule in FORBIDDEN_PATTERNS do
+                        if allowed[rule.Label] then
+                            continue
+                        end
+                        T.truthy(
+                            string.find(source, rule.Pattern) == nil,
+                            string.format("%s : motif interdit (%s)", descendant:GetFullName(), rule.Label)
+                        )
+                    end
                     T.truthy(
-                        string.find(source, rule.Pattern) == nil,
-                        string.format("%s : motif interdit (%s)", descendant:GetFullName(), rule.Label)
+                        string.find(source, "%-%-") ~= nil,
+                        "commentaires manquants : " .. descendant:GetFullName()
                     )
                 end
-                T.truthy(string.find(source, "%-%-") ~= nil, "commentaires manquants : " .. descendant:GetFullName())
             end
+            T.truthy(scanned >= 20, "nombre de scripts analysés : " .. scanned)
         end
-        T.truthy(scanned >= 20, "nombre de scripts analysés : " .. scanned)
-    end)
+    )
 end

@@ -3,7 +3,7 @@
 
 local Settings = {
     InternalProjectName = "AutomotiveWorld",
-    DevelopmentVersion = "0.3.0-dev",
+    DevelopmentVersion = "0.4.0-dev",
     RequirementsVersion = "1.0",
     LaunchZoneCount = 7,
     LaunchVehicleModelCount = 18,

@@ -502,51 +502,36 @@ return function(T: any, H: any)
         T.equal(vehicle.Damage.Zones.Front, 0.4)
         -- Une valeur « meilleure » (recharge ou réparation gratuites) est ignorée.
         local repaired = ProfileSchema.pristineDamage()
-        DurableState.reconcile(
-            vehicle,
-            {
-                EnergyFraction = 0.9,
-                Damage = repaired,
-                DistanceKm = 0,
-                ElapsedS = 0,
-                MaxSpeedKmh = 200,
-                Protected = false,
-            },
-            2
-        )
+        DurableState.reconcile(vehicle, {
+            EnergyFraction = 0.9,
+            Damage = repaired,
+            DistanceKm = 0,
+            ElapsedS = 0,
+            MaxSpeedKmh = 200,
+            Protected = false,
+        }, 2)
         T.equal(vehicle.Energy, 0.5)
         T.equal(vehicle.Damage.Zones.Front, 0.4)
         T.equal(vehicle.Damage.Engine, 0.8)
         -- Distance bornée par la vitesse plausible (200 km/h × 1,2 × 60 s = 4 km).
-        DurableState.reconcile(
-            vehicle,
-            {
-                EnergyFraction = 0.5,
-                Damage = damage,
-                DistanceKm = 50,
-                ElapsedS = 60,
-                MaxSpeedKmh = 200,
-                Protected = false,
-            },
-            3
-        )
+        DurableState.reconcile(vehicle, {
+            EnergyFraction = 0.5,
+            Damage = damage,
+            DistanceKm = 50,
+            ElapsedS = 60,
+            MaxSpeedKmh = 200,
+            Protected = false,
+        }, 3)
         T.near(vehicle.OdometerKm, 1 + 4, 1e-6)
         local before = vehicle.OdometerKm
-        T.truthy(
-            not DurableState.reconcile(
-                vehicle,
-                {
-                    EnergyFraction = 0,
-                    Damage = damage,
-                    DistanceKm = 3,
-                    ElapsedS = 60,
-                    MaxSpeedKmh = 200,
-                    Protected = true,
-                },
-                4
-            ),
-            "protégée"
-        )
+        T.truthy(not DurableState.reconcile(vehicle, {
+            EnergyFraction = 0,
+            Damage = damage,
+            DistanceKm = 3,
+            ElapsedS = 60,
+            MaxSpeedKmh = 200,
+            Protected = true,
+        }, 4), "protégée")
         T.equal(vehicle.OdometerKm, before)
         T.equal(vehicle.Energy, 0.5)
     end)
@@ -604,6 +589,29 @@ return function(T: any, H: any)
         T.truthy(not PRIVATE.SwapParts and not PRIVATE.EditTuning, "privé sans module")
         local workshop = GarageModules.privateCapabilities({ Workshop = {} })
         T.truthy(workshop.EditTuning and not workshop.SwapParts, "atelier : réglages seulement")
+    end)
+
+    T.test("données synthétiques de développement : une fois, marquées, jamais un starter", function()
+        local DevSeed = H.require(SERVER .. "Progression.DevSeed")
+        local profile = newProfile()
+        local ok, result = DevSeed.apply(profile, 0, function(id)
+            return Definitions.get(id)
+        end)
+        T.truthy(ok)
+        T.equal(result.Vehicles, 3)
+        for _, vehicle in profile.Vehicles do
+            T.truthy(vehicle.Synthetic and vehicle.Origin == "DevSynthetic", vehicle.Id)
+        end
+        T.equal(profile.Starter.State, "Pending", "aucun starter attribué")
+        T.equal(select(2, DevSeed.apply(profile, 1, Definitions.get)), "DevSeedAlreadyApplied")
+        T.truthy((ProfileSchema.validate(profile)), "cohérent")
+    end)
+
+    T.test("protocole : toute action sensible est une action connue", function()
+        local Protocol = H.require(SHARED .. "Garage.ProgressionProtocol")
+        for action in Protocol.Sensitive do
+            T.truthy(table.find(Protocol.Actions, action) ~= nil, action)
+        end
     end)
 
     T.test("identifiant de demande client : format contrôlé", function()

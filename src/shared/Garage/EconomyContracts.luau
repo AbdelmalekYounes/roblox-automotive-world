@@ -49,7 +49,7 @@ local OPERATIONS: { Operation } = {
 EconomyContracts.Operations = table.freeze(OPERATIONS)
 
 -- Aucune opération payante n'est disponible avant le lot 0.5.
-function EconomyContracts.available(_operation: Operation): boolean
+function EconomyContracts.available(_operation: string): boolean
     return false
 end
 

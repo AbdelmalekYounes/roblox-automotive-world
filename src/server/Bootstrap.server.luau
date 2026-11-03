@@ -14,6 +14,8 @@ local TestZoneBuilder = require(WorldFolder:WaitForChild("TestZoneBuilder"))
 local OpenWorldService = require(WorldFolder:WaitForChild("OpenWorldService"))
 local WeatherService = require(WorldFolder:WaitForChild("WeatherService"))
 local TrafficService = require(WorldFolder:WaitForChild("TrafficService"))
+local ProfileService = require(script.Parent:WaitForChild("Persistence"):WaitForChild("ProfileService"))
+local ProgressionService = require(script.Parent:WaitForChild("Progression"):WaitForChild("ProgressionService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
@@ -27,11 +29,15 @@ if PlaceConfig.Mode == "OpenWorld" then
     VehicleService.start(world)
     WeatherService.start()
     TrafficService.start()
+    ProgressionService.start(world.Root, nil)
 else
     -- La zone est construite sans attente pour exister avant l'apparition des joueurs.
     local zone = TestZoneBuilder.build()
     VehicleService.start(zone)
+    ProgressionService.start(nil, zone)
 end
+-- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
+ProfileService.start()
 ReplicatedStorage:SetAttribute("AutomotiveWorldMode", PlaceConfig.Mode)
 
 -- Cet attribut répliqué permet au client d'observer le démarrage du serveur.

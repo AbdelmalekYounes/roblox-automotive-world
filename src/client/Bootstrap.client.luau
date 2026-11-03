@@ -45,6 +45,8 @@ statusLabel.Parent = screenGui
 screenGui.Parent = playerGui
 
 VehicleController.start()
+-- Lot 0.4 : collection, propriétés, garages (interface provisoire, touche P).
+require(script.Parent:WaitForChild("UI"):WaitForChild("GaragePanel")).start()
 if openWorld then
     local WorldClient = script.Parent:WaitForChild("World")
     require(WorldClient:WaitForChild("Environment")).start()
