@@ -18,6 +18,9 @@ local ProfileService = require(script.Parent:WaitForChild("Persistence"):WaitFor
 local ProgressionService = require(script.Parent:WaitForChild("Progression"):WaitForChild("ProgressionService"))
 local EconomyService = require(script.Parent:WaitForChild("Economy"):WaitForChild("EconomyService"))
 local RaceService = require(script.Parent:WaitForChild("Racing"):WaitForChild("RaceService"))
+local SocialFolder = script.Parent:WaitForChild("Social")
+local InterfaceService = require(SocialFolder:WaitForChild("InterfaceService"))
+local SocialService = require(SocialFolder:WaitForChild("SocialService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
@@ -34,6 +37,7 @@ if PlaceConfig.Mode == "OpenWorld" then
     ProgressionService.start(world.Root, nil)
     EconomyService.start(true, world.Root, nil)
     RaceService.start(true, world.Root)
+    InterfaceService.start(true)
 else
     -- La zone est construite sans attente pour exister avant l'apparition des joueurs.
     local zone = TestZoneBuilder.build()
@@ -41,7 +45,10 @@ else
     ProgressionService.start(nil, zone)
     EconomyService.start(false, nil, zone)
     RaceService.start(false, workspace)
+    InterfaceService.start(false)
 end
+-- Lot 0.7 : groupes, partage de position, canaux de communication.
+SocialService.start()
 -- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
 ProfileService.start()
 ReplicatedStorage:SetAttribute("AutomotiveWorldMode", PlaceConfig.Mode)

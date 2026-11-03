@@ -16,8 +16,6 @@
     Ouvrir ce panneau ne freine jamais la voiture.
 ]]
 
-local ContextActionService = game:GetService("ContextActionService")
-local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,6 +28,8 @@ local RaceProtocol = require(RacingShared:WaitForChild("RaceProtocol"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local Text = require(script.Parent.ProgressionMessages)
+local UIManager = require(script.Parent.UIManager)
+local InputRouter = require(script.Parent.InputRouter)
 
 local RacePanel = {}
 
@@ -111,6 +111,11 @@ end
 
 local function send(action: string, payload: any?)
     if busy then
+        return
+    end
+    -- Lot 0.7 : engagement d'un véhicule seulement d'une pression neuve.
+    if RaceProtocol.Sensitive[action] and not InputRouter.confirmAllowed() then
+        footer.Text = Text.text("ui.confirmAgain")
         return
     end
     busy = true
@@ -493,6 +498,7 @@ render = function()
     if (panel :: any) == nil or not panel.Visible then
         return
     end
+    InputRouter.armConfirm()
     for _, child in body:GetChildren() do
         if not child:IsA("UIListLayout") then
             child:Destroy()
@@ -667,16 +673,14 @@ end
 
 -- ======================== Démarrage ========================
 
+-- Lot 0.7 : ouverture et fermeture par le gestionnaire commun (UIManager).
 local function toggle()
-    if panel.Visible then
-        panel.Visible = false
-        GuiService.SelectedObject = nil
-        return
-    end
-    panel.Visible = true
-    refresh()
-    render()
-    GuiService.SelectedObject = tabButtons[tab]
+    UIManager.toggle("Races")
+end
+
+-- Épreuve en cours (le HUD de conduite cède la place à l'affichage de course).
+function RacePanel.racing(): boolean
+    return current ~= nil and not current.None and (current.State == "Countdown" or current.State == "Running")
 end
 
 function RacePanel.start()
@@ -850,21 +854,32 @@ function RacePanel.start()
         elseif kind == "Open" and type(data) == "table" then
             selected = data.CourseId
             tab = "Épreuves"
-            if not panel.Visible then
-                toggle()
-            else
+            if UIManager.isOpen("Races") then
                 refresh()
                 render()
+            else
+                UIManager.open("Races")
             end
         end
     end)
     RunService.RenderStepped:Connect(updateHud)
-    ContextActionService:BindAction("AWRaceMenu", function(_, inputState)
-        if inputState == Enum.UserInputState.Begin then
-            toggle()
-        end
-        return Enum.ContextActionResult.Sink
-    end, false, Enum.KeyCode.K, Enum.KeyCode.ButtonL3)
+    -- Raccourci K (manette : stick gauche) : InputRouter, lot 0.7.
+    UIManager.register({
+        Name = "Races",
+        Kind = "Modal",
+        Full = true,
+        Open = function()
+            panel.Visible = true
+            refresh()
+            render()
+        end,
+        Close = function()
+            panel.Visible = false
+        end,
+        Focus = function()
+            return tabButtons[tab]
+        end,
+    })
 end
 
 return table.freeze(RacePanel)

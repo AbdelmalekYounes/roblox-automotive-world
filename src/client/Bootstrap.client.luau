@@ -45,12 +45,82 @@ statusLabel.Parent = screenGui
 screenGui.Parent = playerGui
 
 VehicleController.start()
--- Lot 0.4 : collection, propriétés, garages (interface provisoire, touche P).
-require(script.Parent:WaitForChild("UI"):WaitForChild("GaragePanel")).start()
--- Lot 0.5 : économie, métiers, marché (interface provisoire, touche J).
-require(script.Parent:WaitForChild("UI"):WaitForChild("EconomyPanel")).start()
--- Lot 0.6 : courses, salons, classements (interface provisoire, touche K).
-require(script.Parent:WaitForChild("UI"):WaitForChild("RacePanel")).start()
+
+-- Lot 0.7 : interface commune (gestionnaire d'écrans, raccourcis, notifications,
+-- HUD, GPS, carte, téléphone, groupes, paramètres). Les panneaux des lots 0.4 à
+-- 0.6 s'y inscrivent ; leurs règles serveur sont inchangées.
+local UI = script.Parent:WaitForChild("UI")
+local UIManager = require(UI:WaitForChild("UIManager"))
+local InputRouter = require(UI:WaitForChild("InputRouter"))
+local NotificationService = require(UI:WaitForChild("NotificationService"))
+local SettingsController = require(UI:WaitForChild("SettingsController"))
+local GPSController = require(UI:WaitForChild("GPSController"))
+local SocialController = require(UI:WaitForChild("SocialController"))
+local MapController = require(UI:WaitForChild("MapController"))
+local HUDController = require(UI:WaitForChild("HUDController"))
+local PhoneController = require(UI:WaitForChild("PhoneController"))
+local DevHud = require(UI:WaitForChild("DevHud"))
+local UIState = require(UI:WaitForChild("UIState"))
+local GaragePanel = require(UI:WaitForChild("GaragePanel"))
+local EconomyPanel = require(UI:WaitForChild("EconomyPanel"))
+local RacePanel = require(UI:WaitForChild("RacePanel"))
+
+NotificationService.start()
+local function notify(key: string, level: string, params: any?)
+    NotificationService.notify(key, level :: any, params)
+end
+UIManager.setNotifier(notify)
+GPSController.setNotifier(notify)
+SocialController.setNotifier(notify)
+DevHud.setNoticeSink(NotificationService.vehicleNotice)
+UIManager.start()
+SettingsController.start()
+InputRouter.start()
+GPSController.start()
+SocialController.start()
+MapController.start()
+HUDController.setRacingCheck(RacePanel.racing)
+HUDController.setMarkerSource(MapController.markers)
+HUDController.start()
+PhoneController.start()
+-- Lots 0.4 à 0.6 : panneaux provisoires (P, J, K), désormais ouverts par UIManager.
+GaragePanel.start()
+EconomyPanel.start()
+RacePanel.start()
+
+InputRouter.on("Phone", function()
+    UIManager.toggle("Phone")
+end)
+InputRouter.on("Map", function()
+    UIManager.toggle("Map")
+end)
+InputRouter.on("Garage", function()
+    UIManager.toggle("Garage")
+end)
+InputRouter.on("Economy", function()
+    UIManager.toggle("Economy")
+end)
+InputRouter.on("Races", function()
+    UIManager.toggle("Races")
+end)
+InputRouter.on("HudLevel", function()
+    SettingsController.update(function(prefs)
+        local levels = { "Minimal", "Standard", "Full" }
+        local index = table.find(levels, prefs.Hud.Level) or 1
+        prefs.Hud.Level = levels[index % #levels + 1] :: any
+    end)
+    NotificationService.notify("settings.hudLevel", "Info", { level = UIState.prefs().Hud.Level }, "hudLevel")
+end)
+InputRouter.on("ClearRoute", function()
+    GPSController.clear()
+end)
+SocialController.onRaceSuggested(function(courseId: string)
+    for _, point in MapController.points() do
+        if point.Id == "R:" .. courseId then
+            GPSController.setDestination(point.X, point.Z, point.Name, "Race")
+        end
+    end
+end)
 if openWorld then
     local WorldClient = script.Parent:WaitForChild("World")
     require(WorldClient:WaitForChild("Environment")).start()

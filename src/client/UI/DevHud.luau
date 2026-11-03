@@ -26,6 +26,13 @@ local noticeLabel: TextLabel? = nil
 local bars: { [string]: Bar } = {}
 local noticeToken = 0
 local usingGamepad = false
+-- Lot 0.7 : le HUD de conduite est HUDController ; ce panneau de diagnostic
+-- n'est affiché que si le joueur l'active (paramètres), et les notices passent
+-- par le service de notifications central.
+local enabled = false
+local shown = false
+local latestData: HudData? = nil
+local noticeSink: ((string, any) -> ())? = nil
 
 local KEYBOARD_HELP = "Z/W accélérer • S freiner/reculer (maintenir à l'arrêt : marche arrière en boîte auto) • Q/A D diriger • Espace frein à main"
     .. "\nMaj gauche / Ctrl gauche rapport + / − • C embrayage • 1 ABS • 2 antipatinage • 3 ESP • G récupération"
@@ -150,8 +157,9 @@ end
 
 function DevHud.show(vehicleName: string, description: string)
     ensureGui()
+    shown = true
     if panel then
-        panel.Visible = true
+        panel.Visible = enabled
     end
     if detailLabel then
         detailLabel.Text = vehicleName .. "\n" .. description
@@ -160,9 +168,27 @@ function DevHud.show(vehicleName: string, description: string)
 end
 
 function DevHud.hide()
+    shown = false
+    latestData = nil
     if panel then
         panel.Visible = false
     end
+end
+
+function DevHud.setEnabled(on: boolean)
+    enabled = on
+    if panel then
+        panel.Visible = on and shown
+    end
+end
+
+-- Dernières données de conduite (lues par HUDController), nil à pied.
+function DevHud.latest(): HudData?
+    return if shown then latestData else nil
+end
+
+function DevHud.setNoticeSink(sink: (string, any) -> ())
+    noticeSink = sink
 end
 
 function DevHud.setInputMode(isGamepad: boolean)
@@ -200,6 +226,11 @@ export type HudData = {
     LastLaunchSeconds: number?,
     BestLaunchSeconds: number?,
     LastBrakeDistanceM: number?,
+    -- Lot 0.7 (HUD) : type de boîte, motorisation, état du moteur, modèle conduit.
+    TransmissionKind: string?,
+    Electric: boolean?,
+    Stalled: boolean?,
+    Model: Model?,
 }
 
 local function formatOptional(value: number?, pattern: string): string
@@ -217,6 +248,7 @@ local STATUS_TEXT = {
 }
 
 function DevHud.update(data: HudData)
+    latestData = data
     if speedLabel then
         speedLabel.Text = string.format("%d km/h", math.floor(data.SpeedKmh + 0.5))
     end
@@ -261,6 +293,11 @@ function DevHud.update(data: HudData)
 end
 
 function DevHud.showNotice(key: string, value: any)
+    local sink = noticeSink
+    if sink then
+        sink(key, value)
+        return
+    end
     ensureGui()
     local label = noticeLabel
     if label == nil then

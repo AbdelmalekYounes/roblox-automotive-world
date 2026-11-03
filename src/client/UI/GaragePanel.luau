@@ -13,8 +13,6 @@
     Touche : P (clavier) ou Select / Vue (manette).
 ]]
 
-local ContextActionService = game:GetService("ContextActionService")
-local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,9 +25,9 @@ local CosmeticCatalog = require(GarageShared:WaitForChild("CosmeticCatalog"))
 local PartCatalog = require(GarageShared:WaitForChild("PartCatalog"))
 local PropertyCatalog = require(GarageShared:WaitForChild("PropertyCatalog"))
 local VehicleDefinitions = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleDefinitions"))
-local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local Text = require(script.Parent.ProgressionMessages)
+local UIManager = require(script.Parent.UIManager)
 
 local GaragePanel = {}
 
@@ -689,37 +687,29 @@ function render()
     end
 end
 
-local function seatedAndMoving(): boolean
-    local character = player.Character
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    local seat = humanoid and humanoid.SeatPart
-    return seat ~= nil and seat.AssemblyLinearVelocity.Magnitude * Constants.MetersPerStud > 1
+-- Lot 0.7 : ouverture, fermeture et focus par le gestionnaire commun (UIManager).
+local function show()
+    panel.Visible = true
+    send("Snapshot")
+end
+
+local function hide()
+    panel.Visible = false
 end
 
 local function open(which: string?)
-    if seatedAndMoving() then
-        setFooter(Text.text("MenuWhileMoving"))
-        panel.Visible = false
-        return
-    end
     if which then
         tab = which
     end
-    panel.Visible = true
-    send("Snapshot")
-    local first = tabButtons[tab]
-    if first then
-        GuiService.SelectedObject = first
+    if UIManager.isOpen("Garage") then
+        render()
+    else
+        UIManager.open("Garage")
     end
 end
 
 local function toggle()
-    if panel.Visible then
-        panel.Visible = false
-        GuiService.SelectedObject = nil
-    else
-        open(nil)
-    end
+    UIManager.toggle("Garage")
 end
 
 local function updateBadge()
@@ -836,12 +826,17 @@ function GaragePanel.start()
         end
     end)
 
-    ContextActionService:BindAction("AWProgressionMenu", function(_, inputState)
-        if inputState == Enum.UserInputState.Begin then
-            toggle()
-        end
-        return Enum.ContextActionResult.Sink
-    end, false, Enum.KeyCode.P, Enum.KeyCode.ButtonSelect)
+    -- Raccourci P (manette : Select) : InputRouter, lot 0.7.
+    UIManager.register({
+        Name = "Garage",
+        Kind = "Modal",
+        Full = true,
+        Open = show,
+        Close = hide,
+        Focus = function()
+            return tabButtons[tab]
+        end,
+    })
 end
 
 return table.freeze(GaragePanel)

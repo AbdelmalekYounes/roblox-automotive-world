@@ -152,6 +152,15 @@ for _, item in (map and map:GetDescendants()) or {} do
 end
 record("monde.points_inscription_courses", racePrompts == 16, racePrompts)
 record("monde.canal_courses", ReplicatedStorage:FindFirstChild("AWRacing") ~= nil)
+-- Lot 0.7 : canaux d'interface et des groupes, annuaire des points d'intérêt issu des registres.
+local InterfaceService = require(server:WaitForChild("Social"):WaitForChild("InterfaceService"))
+local poiCount = #InterfaceService.publicPoints()
+record(
+    "monde.interface_et_groupes",
+    ReplicatedStorage:FindFirstChild("AWInterface") ~= nil and ReplicatedStorage:FindFirstChild("AWSocial") ~= nil,
+    nil
+)
+record("monde.points_interet", poiCount >= 40, poiCount)
 
 local player = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
 local character = player.Character or player.CharacterAdded:Wait()

@@ -232,8 +232,9 @@ VehicleController.setTestInputProvider(function()
 end)
 
 local camera = Workspace.CurrentCamera
-local hud = player.PlayerGui:FindFirstChild("AutomotiveWorldDevHud")
-local panel = hud and hud:FindFirstChild("Panneau")
+-- Lot 0.7 : le HUD de conduite est « AWHud » (le panneau de diagnostic est facultatif).
+local hud = player.PlayerGui:FindFirstChild("AWHud")
+local panel = hud and hud:FindFirstChild("Tableau")
 record(
     "client.session_conduite",
     camera.CameraType == Enum.CameraType.Scriptable and panel ~= nil and panel.Visible,

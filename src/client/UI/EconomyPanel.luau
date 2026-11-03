@@ -12,8 +12,6 @@
     jamais freiner la voiture. Touche : J (manette : clic du stick droit).
 ]]
 
-local ContextActionService = game:GetService("ContextActionService")
-local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,6 +24,9 @@ local Jobs = require(Shared:WaitForChild("Economy"):WaitForChild("Jobs"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local Text = require(script.Parent.ProgressionMessages)
+local UIManager = require(script.Parent.UIManager)
+local InputRouter = require(script.Parent.InputRouter)
+local GPSController = require(script.Parent.GPSController)
 
 local EconomyPanel = {}
 
@@ -111,6 +112,12 @@ local function execute(action: string, payload: any)
     if busy then
         return
     end
+    -- Lot 0.7 : confirmation seulement d'une pression neuve (jamais par un
+    -- changement de périphérique ou une touche restée enfoncée).
+    if not InputRouter.confirmAllowed() then
+        footer.Text = Text.text("ui.confirmAgain")
+        return
+    end
     if seatedAndMoving() then
         footer.Text = Text.text("MenuWhileMoving")
         return
@@ -138,6 +145,7 @@ local function quote(label: string, action: string, payload: any, quoteArgs: any
         return
     end
     pending = { Label = label, Action = action, Payload = payload, Quote = response.Result }
+    InputRouter.armConfirm()
     render()
 end
 
@@ -641,6 +649,8 @@ local function updateMission()
         or point.X ~= (missionPoint :: any).X
         or point.Z ~= (missionPoint :: any).Z
     missionPoint = point
+    -- Lot 0.7 : l'objectif de mission est suivi par le GPS.
+    GPSController.missionTarget(point, if mission then mission.Label else nil)
     if point then
         if changed or beacon == nil then
             placeBeacon(point)
@@ -679,15 +689,9 @@ local function updateGuide()
     end
 end
 
+-- Lot 0.7 : ouverture et fermeture par le gestionnaire commun (UIManager).
 local function toggle()
-    if panel.Visible then
-        panel.Visible = false
-        GuiService.SelectedObject = nil
-        return
-    end
-    panel.Visible = true
-    simple("Snapshot")
-    GuiService.SelectedObject = tabButtons[tab]
+    UIManager.toggle("Economy")
 end
 
 function EconomyPanel.start()
@@ -814,12 +818,13 @@ function EconomyPanel.start()
                 )
                 else "Mission échouée ou abandonnée : " .. Text.text(data.Reason)
         elseif kind == "Open" and type(data) == "table" then
-            if not panel.Visible then
-                toggle()
-            end
             if type(data.Tab) == "string" then
                 tab = data.Tab
+            end
+            if UIManager.isOpen("Economy") then
                 render()
+            else
+                UIManager.open("Economy")
             end
         elseif kind == "EnergyEnded" and type(data) == "table" then
             footer.Text = string.format(
@@ -840,12 +845,22 @@ function EconomyPanel.start()
             end
         end
     end)
-    ContextActionService:BindAction("AWEconomyMenu", function(_, inputState)
-        if inputState == Enum.UserInputState.Begin then
-            toggle()
-        end
-        return Enum.ContextActionResult.Sink
-    end, false, Enum.KeyCode.J, Enum.KeyCode.ButtonR3)
+    -- Raccourci J (manette : stick droit) : InputRouter, lot 0.7.
+    UIManager.register({
+        Name = "Economy",
+        Kind = "Modal",
+        Full = true,
+        Open = function()
+            panel.Visible = true
+            simple("Snapshot")
+        end,
+        Close = function()
+            panel.Visible = false
+        end,
+        Focus = function()
+            return tabButtons[tab]
+        end,
+    })
 end
 
 return table.freeze(EconomyPanel)
