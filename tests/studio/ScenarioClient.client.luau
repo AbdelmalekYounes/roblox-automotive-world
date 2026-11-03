@@ -127,12 +127,20 @@ local function drive(target: Vector3, targetKmh: number)
     end
 end
 
+-- Arrêt (lot 0.9) : frein relâché sous 3 km/h puis frein à main. Maintenir « freiner »
+-- à l'arrêt engage la marche arrière d'une boîte automatique (arbitrage A3) : l'ancien
+-- arrêt pouvait repartir en arrière (21 à 32 km/h mesurés) et la sortie était alors
+-- refusée à juste titre (ExitTooFast) — origine des « sorties non effectives » (QA-A02).
 local function stop(timeout: number)
     setCommand(0, 1, 0)
     waitFor(function()
-        return snapshot().SpeedKmh < 1
+        local now = snapshot()
+        return now.SpeedKmh < 3 or now.Gear < 0
     end, timeout)
     setCommand(0, 0, 0, true)
+    waitFor(function()
+        return snapshot().SpeedKmh < 1
+    end, 4)
 end
 
 -- Place le personnage à la portière d'un véhicule et maintient son invite.
