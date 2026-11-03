@@ -42,6 +42,7 @@ local ProgressionService = require(Progression.ProgressionService)
 local Locations = require(Progression.Locations)
 local PropertyInteriors = require(Progression.PropertyInteriors)
 local Commerce = require(script.Parent.Commerce)
+local StationRules = require(script.Parent.StationRules)
 local Wallet = require(script.Parent.Wallet)
 local Market = require(script.Parent.Market)
 local MissionService = require(script.Parent.MissionService)
@@ -603,6 +604,15 @@ handlers.StartEnergy = function(player, _payload, txId)
     local services = Locations.services(place)
     if (kind == "Electric" and not services.Charge) or (kind ~= "Electric" and not services.Fuel) then
         return rejected(if kind == "Electric" then "NoCharger" else "NoPump")
+    end
+    -- Lot 0.9 : une place (pompe ou borne) par session, dans la limite du lieu.
+    local occupied: { StationRules.Active } = {}
+    for _, other in energySessions do
+        table.insert(occupied, { PlaceId = other.Place.Id, Electric = other.Kind == "Electric" })
+    end
+    local free, full = StationRules.canStart(occupied, place, kind == "Electric")
+    if not free then
+        return rejected(full :: string)
     end
     local level, capacity = VehicleService.personalEnergy(model)
     local maxUnits = math.floor((capacity - level) * 10) / 10
