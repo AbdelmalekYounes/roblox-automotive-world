@@ -9,7 +9,6 @@
 -- script (mode « Scriptable ») pour cadrer bâtiments et carrosseries ; l'heure et la
 -- météo sont forcées par le serveur de test.
 
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
