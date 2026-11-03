@@ -121,6 +121,24 @@ local function main()
     local calibrated = Gui.calibrate(3)
     record("ui_monde.entrees_reelles", calibrated)
     Gui.calibrateKeys()
+    -- Fenêtre d'arrivée (profil neuf) : « Passer l'introduction » par un vrai clic, pour
+    -- dégager les vues (tâche 20261103-220054 : fenêtre restée devant le décor).
+    local onboarding = playerGui:FindFirstChild("AWOnboarding")
+    local skip = nil
+    waitFor(function()
+        skip = Gui.findButton(onboarding, "Passer l'introduction")
+        return skip ~= nil
+    end, 15)
+    if skip then
+        local ok = Gui.click(skip, "Passer l'introduction")
+        record("ui_monde.arrivee_passee_par_clic", ok)
+        task.wait(1.5)
+        -- Étape suivante (choix du véhicule) : fenêtre refermée par la touche P puis P.
+        Gui.key("P")
+        task.wait(0.8)
+        Gui.key("P")
+        task.wait(0.8)
+    end
     ask("AWUI:Time:12")
     task.wait(2)
 
@@ -239,6 +257,18 @@ local function main()
 
     -- 4. Téléphone en main (touche T), vu de face ; mode photo (touche O).
     task.wait(2)
+    -- Diagnostic du bras levé (InterfaceService : épaule tournée de 60°) : angle relevé
+    -- côté client avant et après l'ouverture.
+    local function shoulderC0(): CFrame?
+        local upper = character():FindFirstChild("RightUpperArm")
+        local motor = upper and upper:FindFirstChild("RightShoulder")
+        if motor == nil then
+            local torso = character():FindFirstChild("Torso")
+            motor = torso and torso:FindFirstChild("Right Shoulder")
+        end
+        return if motor and motor:IsA("Motor6D") then motor.C0 else nil
+    end
+    local before = shoulderC0()
     Gui.key("T")
     local phone = waitFor(function()
         local gui = playerGui:FindFirstChild("AWPhone") :: ScreenGui?
@@ -246,6 +276,15 @@ local function main()
     end, 4)
     record("ui_monde.telephone_touche_T", phone)
     task.wait(1.5)
+    local after = shoulderC0()
+    local raised = if before and after
+        then math.deg(math.acos(math.clamp(before.LookVector:Dot(after.LookVector), -1, 1)))
+        else -1
+    record(
+        "ui_monde.info_bras_leve_angle_epaule",
+        true,
+        string.format("rotation de l'épaule vue par le client : %.0f° (attendu ≈ 60°)", raised)
+    )
     local root = rootPart()
     frame((root.CFrame * CFrame.new(1.5, 1.5, -7)).Position, root.Position + Vector3.new(0, 1, 0))
     task.wait(1)
@@ -253,12 +292,27 @@ local function main()
     release()
     Gui.key("T")
     task.wait(1)
-    Gui.key("O")
-    local photo = waitFor(function()
+    -- La touche O n'atteint pas le jeu dans Studio (limite établie par la session « ui ») :
+    -- ouverture par l'application Photo du téléphone, en vrais clics.
+    local function photoOpen(): boolean
         local gui = playerGui:FindFirstChild("AWPhoto") :: ScreenGui?
         return gui ~= nil and gui.Enabled
-    end, 4)
-    record("ui_monde.mode_photo_touche_O", photo, if photo then "ouvert" else "non ouvert")
+    end
+    Gui.key("T")
+    local photo = false
+    if
+        waitFor(function()
+            local gui = playerGui:FindFirstChild("AWPhone") :: ScreenGui?
+            return gui ~= nil and gui.Enabled
+        end, 4)
+    then
+        local phoneGui = playerGui:FindFirstChild("AWPhone")
+        Gui.click(Gui.findButton(phoneGui, "Photo"), "Photo")
+        task.wait(0.8)
+        Gui.click(Gui.findButton(phoneGui, "Ouvrir le mode photo"), "Ouvrir le mode photo")
+        photo = waitFor(photoOpen, 4)
+    end
+    record("ui_monde.mode_photo_par_le_telephone", photo, if photo then "ouvert" else "non ouvert")
     if photo then
         task.wait(1)
         Gui.shot("mode_photo", { version = version })
