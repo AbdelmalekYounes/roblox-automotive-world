@@ -1,4 +1,5 @@
--- Essais SERVEUR du lot 0.9.1 (sessions « ui » et « ui_monde », 1 joueur), injectés
+-- Essais SERVEUR du lot 0.9.1 (sessions à un joueur : « ui », « ui_monde », « metiers »,
+-- « gps », « drift »), injectés
 -- par le pilote dans le Studio de test uniquement.
 -- Rôle : recueillir le rapport du client, offrir une LECTURE de l'état autoritaire
 -- (AWTestQuery, test seulement) pour vérifier côté serveur le résultat d'un parcours
@@ -15,7 +16,9 @@ local StudioTestService = game:GetService("StudioTestService")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "ui" and session ~= "ui_monde" then
+-- Sessions à un joueur du lot 0.9.1 (interfaces, métiers, trajets, drift).
+local SESSIONS = { ui = true, ui_monde = true, metiers = true, gps = true, drift = true }
+if not SESSIONS[session] then
     return
 end
 

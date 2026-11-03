@@ -25,6 +25,9 @@ if
     or sessionName == "perf"
     or sessionName == "ui"
     or sessionName == "ui_monde"
+    or sessionName == "metiers"
+    or sessionName == "gps"
+    or sessionName == "drift"
 then
     return
 end

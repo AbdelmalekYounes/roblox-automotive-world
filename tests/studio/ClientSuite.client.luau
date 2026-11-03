@@ -69,6 +69,9 @@ if
     or currentSession == "perf"
     or currentSession == "ui"
     or currentSession == "ui_monde"
+    or currentSession == "metiers"
+    or currentSession == "gps"
+    or currentSession == "drift"
 then
     return
 end

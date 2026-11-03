@@ -31,6 +31,10 @@ local KNOWN_SESSIONS = {
     -- tools/vm/ScreenCapture.cs) ; « ui_monde » sur la place MONDE OUVERT.
     ui = { Name = "ui", Players = 1 },
     ui_monde = { Name = "ui_monde", Players = 1 },
+    -- Lot 0.9.1 : huit métiers par un pilote (Dev), trajets GPS (MONDE OUVERT), drift (Dev).
+    metiers = { Name = "metiers", Players = 1 },
+    gps = { Name = "gps", Players = 1 },
+    drift = { Name = "drift", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -47,6 +51,7 @@ local EXTRA = {
     { "AW_TestGui", "GuiDriver.luau", "module" },
     { "AW_TestUiServer", "UiServer.server.luau", false },
     { "AW_TestUiClient", "UiClient.client.luau", true },
+    { "AW_TestMetiersClient", "MetiersClient.client.luau", true },
 }
 
 local output = process.args[1]
