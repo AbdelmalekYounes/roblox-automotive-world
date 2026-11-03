@@ -1,15 +1,18 @@
-# Automotive World — Lot 0.3 (monde ouvert)
+# Automotive World — Lot 0.4 (persistance, propriétés et garages)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
 > trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée et des **prototypes techniques fictifs** (P-01
 > essence/automatique/propulsion, P-02 diesel/manuelle/traction, P-03 électrique/rapport unique/intégrale, et trois
-> configurations de validation des boîtes double embrayage, séquentielle et CVT). Ni catalogue, ni économie, ni
-> sauvegarde : énergie et dégâts n'existent que pendant la session.
-> **Statut** : lot 0.3 en développement sur `feat/open-world-map-0.3` (PR brouillon, base : lot 0.2 ; PR #1 et #2
-> non fusionnées). Rapport : [docs/lot-0.3/RAPPORT_LOT_0.3.md](docs/lot-0.3/RAPPORT_LOT_0.3.md). Les essais Studio,
-> humains et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md) (**NON TESTÉS** à ce jour).
+> configurations de validation des boîtes double embrayage, séquentielle et CVT). Lot 0.4 : profils versionnés
+> (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
+> invitations. Ni catalogue, ni économie : aucune expérience de test ou de production n'est déclarée, donc tout
+> profil reste **en mémoire** (aucune écriture DataStore).
+> **Statut** : lot 0.4 en développement sur `feat/properties-garages-persistence-0.4` (PR brouillon, base : lot 0.3 ;
+> PR #1, #2 et #3 non fusionnées). Rapport : [docs/lot-0.4/RAPPORT_LOT_0.4.md](docs/lot-0.4/RAPPORT_LOT_0.4.md).
+> Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
+> (**NON TESTÉS** à ce jour).
 
 ## Prérequis (Windows)
 
@@ -49,6 +52,14 @@ rojo build openworld.project.json -o build\AutomotiveWorld-OpenWorld.rbxl
 La carte est générée hors ligne, de façon déterministe, à partir des données versionnées de `src/shared/World/Data`.
 La place `build\AutomotiveWorld-OpenWorld.rbxl` contient la carte, le streaming activé, le parc des neuf prototypes en
 métropole et le point d'apparition voisin. Comportement en jeu **non encore vérifié** (`docs/QA_BACKLOG.md` §3).
+
+## Collection, propriétés et garages (lot 0.4)
+
+Touche **P** (manette : **Select**) : panneau provisoire (collection, véhicule, propriétés, préparation,
+configurations, invitations) et badge d'état de sauvegarde. En développement, chaque joueur reçoit une propriété
+gratuite et des données **synthétiques** (trois prototypes, une propriété moyenne, une pièce de chaque type),
+perdues à l'arrêt du serveur. Zone d'essai : entrée de propriété (repère bleu) et garage public (repère orange)
+à l'ouest du point d'apparition.
 
 ## Commandes de conduite
 
@@ -107,6 +118,9 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 
 | Dossier | Contenu |
 |---|---|
+| `src/shared/Garage` | Catalogues et règles **purs** : propriétés, modules de garage, pièces, réglages, esthétique, starter, contrats économiques, protocole |
+| `src/server/Persistence` | Profils versionnés, verrou de session, transactions, migrations, environnements, adaptateurs mémoire et DataStore |
+| `src/server/Progression` | Règles de collection, starter, propriétés, garages, préparation, invitations ; lieux, intérieurs, service des demandes |
 | `src/shared/World` | Données de carte versionnées, réseau routier, mise en page, graphe (A*), feux, météo, trafic et piétons **purs** |
 | `src/shared/Vehicles` | Types, définitions, dynamique **pure** (pneu, suspension, moteurs, boîtes, différentiels, aides, énergie, dégâts), adaptateur Roblox `VehicleSimulator`, codec réseau, mesures |
 | `src/server` | Monde ouvert (parc, météo, trafic PNJ), zone d'essai, fabrique des véhicules, service autoritaire (embarquement, propriété réseau vérifiée, validation des mouvements, énergie, aides, dégâts confirmés serveur, médiation des collisions entre joueurs), limiteur de débit |
@@ -118,6 +132,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.1` | Rapport de validation, rapport de tests, analyse des écarts et arbitrages, proposition du lot 0.2 |
 | `docs/lot-0.2` | Rapport du lot 0.2 (mesures réelles), écarts, changements d'architecture |
 | `docs/lot-0.3` | Rapport du lot 0.3, architecture du monde ouvert |
+| `docs/lot-0.4` | Rapport du lot 0.4, architecture de la persistance et des garages |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 
@@ -130,6 +145,7 @@ Règles permanentes : [CLAUDE.md](CLAUDE.md).
 - Le cahier des charges validé et les 33 décisions AUD font foi.
 - Aucun code, modèle, interface, texture ni donnée de Collectverse ou Mimic Hunters n'est réutilisé ;
   la géométrie du prototype est générée par code à partir de primitives.
-- Aucun crédit, achat, possession définitive, récompense ni DataStore n'est implémenté.
+- Aucun crédit, achat ni récompense n'est implémenté. La persistance (lot 0.4) n'écrit dans un DataStore que pour une
+  expérience de test ou de production explicitement déclarée (aucune aujourd'hui).
 - Aucun objectif (24 joueurs, ~60 FPS) n'est déclaré atteint : les premières mesures de coût du lot 0.2 ont été faites
   dans une VM sans accélération graphique, avec un seul joueur ; elles ne sont pas représentatives.

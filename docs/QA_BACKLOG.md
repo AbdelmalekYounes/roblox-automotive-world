@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1, 0.2 et 0.3. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1, 0.2, 0.3 et 0.4. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03 (lot 0.3, branche `feat/open-world-map-0.3`).
+Dernière mise à jour : 2026-11-03 (lot 0.4, branche `feat/properties-garages-persistence-0.4`).
 
 ## 1. Anomalies ouvertes
 
@@ -48,6 +48,11 @@ Dernière mise à jour : 2026-11-03 (lot 0.3, branche `feat/open-world-map-0.3`)
 | QA-H13 | 0.3 | Routes | P2 | Lisibilité des carrefours, bretelles, lacets de montagne, corniche ; sensation de rues non répétitives | Tracé lisible et varié | **NON TESTÉ** |
 | QA-H14 | 0.3 | Trafic / piétons | P2 | Ressenti du trafic PNJ (feux, priorités, réaction au joueur) et des piétons | Comportement crédible, jamais traversé | **NON TESTÉ** |
 | QA-H15 | 0.3 | Météo / jour-nuit | P2 | Pluie, brouillard, orage, nuit : visibilité et ressenti d'adhérence | Différences visibles et sensibles, conduite toujours possible | **NON TESTÉ** |
+| QA-H16 | 0.4 | Interface progression | P1 | Panneau (touche P / Select) au clavier-souris et à la manette : onglets, sélection, focus, fermeture | Navigation complète sans souris à la manette, aucune action involontaire | **NON TESTÉ** |
+| QA-H17 | 0.4 | Garages | P1 | Entrer dans sa propriété, exposer, ranger, sortir un véhicule, le ramener à l'entrée | Une seule voiture conduisible, maquettes à jour, retour refusé loin de l'entrée | **NON TESTÉ** |
+| QA-H18 | 0.4 | Préparation | P2 | Réglages, esthétique, pièces au garage public ; ressenti des réglages extrêmes | Effet perceptible, refus clairs des combinaisons irréalisables | **NON TESTÉ** |
+| QA-H19 | 0.4 | Visites | P2 | Deux joueurs : invitation, visite, conduite prêtée, révocation pendant la visite et pendant la conduite | Accès refusé sans invitation ; révocation : sortie à l'entrée, descente une fois arrêté | **NON TESTÉ** |
+| QA-H20 | 0.4 | Indications de sauvegarde | P2 | Lisibilité du badge d'état (chargement, en attente, sauvegardé, lecture seule) | Jamais « enregistré » avant confirmation | **NON TESTÉ** |
 
 ## 3. Essais Studio reportés du lot 0.3 (moteur requis)
 
@@ -74,6 +79,33 @@ au monde ouvert reste à écrire dans `tests/studio` (aucune n'existe encore).
 | QA-S15 | Retour au plot | P3 | Prototype abandonné loin du parc | Renvoi au plot après 90 s sans joueur à proximité, sans heurter le trafic | **NON TESTÉ** |
 | QA-S16 | Non-régression | P1 | Les 7 sessions VM existantes sur la place de développement (`test-vm.cmd`) avec le code du lot 0.3 | Mêmes résultats qu'au lot 0.2 (hors anomalies QA-A01/A02) | **NON TESTÉ** |
 
+## 3 bis. Essais reportés du lot 0.4 (persistance et progression)
+
+Toute la logique pure (profils, verrou, migrations, idempotence, environnements, règles de garage) est vérifiée par
+Lune **sur l'adaptateur mémoire** ; la persistance RÉELLE n'est pas validée. Les essais DataStore se feront
+uniquement dans une expérience Roblox de TEST isolée, après déclaration de son identifiant par le propriétaire dans
+`src/server/Persistence/EnvironmentConfig.luau` (jamais l'expérience de production, jamais l'accès Studio aux API
+de production).
+
+| Id | Système | Priorité | Essai | Attendu | État |
+|---|---|---|---|---|---|
+| QA-D01 | DataStore | P1 | Expérience de test isolée : création, sauvegarde, reconnexion, relecture d'un profil réel | Données identiques après reconnexion ; nom de magasin `AW_TEST_Profiles_v1` | **NON TESTÉ** |
+| QA-D02 | Verrou | P1 | Changement rapide de serveur (rejoindre un autre serveur juste après avoir quitté) | Chargement après libération (≤ 40 s de reprises), aucune écriture de l'ancien serveur après la nouvelle | **NON TESTÉ** |
+| QA-D03 | Verrou | P1 | Arrêt brutal d'un serveur (sans BindToClose) puis reconnexion | Reprise du verrou expiré après ≤ 5 min, journalisée ; aucune perte de transaction confirmée | **NON TESTÉ** |
+| QA-D04 | Arrêt serveur | P1 | Fermeture normale (BindToClose) avec plusieurs joueurs, véhicules sortis | Profils sauvegardés et verrous rendus dans le budget de 25 s ; véhicules revenus au garage | **NON TESTÉ** |
+| QA-D05 | Déconnexion | P1 | Déconnexion forcée pendant : le choix de départ (quand la liste existera), une sortie de véhicule, une configuration | Aucun doublon, état cohérent à la reconnexion (SCN-01) | **NON TESTÉ** |
+| QA-D06 | Écritures incertaines | P1 | Erreurs DataStore réelles (budget épuisé, délai) | Réconciliation par relecture, statut « en attente » puis confirmé, jamais rejoué à l'aveugle | **NON TESTÉ** |
+| QA-D07 | Budget | P2 | 24 joueurs : écritures par minute, `GetRequestBudgetForRequestType` | Aucune limitation sur une session normale (sauvegarde 60 s, transactions ≥ 6 s par clé) | **NON TESTÉ** |
+| QA-D08 | Restauration | P2 | Restauration ciblée d'un profil depuis une version DataStore (AUD-REST-01) | Procédure documentée exécutée sur des données de test ; transferts plus récents préservés | **NON TESTÉ** (procédure seulement décrite) |
+| QA-D09 | Migration | P2 | Première migration réelle (v1 → v2) en déploiement progressif | Ancien serveur en lecture seule sur un profil v2, aucune donnée effacée | **NON TESTÉ** (aucune v2 n'existe) |
+| QA-D10 | Taille | P3 | Profil volumineux (milliers de véhicules) | Limite technique explicite, sans perte ; fractionnement à arbitrer | **NON TESTÉ** |
+| QA-S17 | Véhicules personnels | P1 | Sortie, conduite, retour : dégâts, énergie et kilométrage restaurés à la reconnexion | Valeurs serveur réconciliées (énergie jamais augmentée, dégâts jamais réduits) | **NON TESTÉ** |
+| QA-S18 | Définition réglée | P1 | Exemplaire réglé conduit par son propriétaire : même définition chez le client et le serveur | Aucune correction de mouvement due à un écart de réglages | **NON TESTÉ** |
+| QA-S19 | Intérieurs | P2 | Intérieurs privés instanciés (streaming, 10 joueurs dans 10 intérieurs) | Arrivée sans chute, maquettes non conduisibles, sortie à la même entrée | **NON TESTÉ** |
+| QA-S20 | Entrées | P2 | Invites d'entrée sur les 13 emplacements de la carte et les 3 garages publics | Invites présentes, lieux reconnus même secteur non chargé côté client | **NON TESTÉ** |
+| QA-S21 | Zone d'essai | P2 | Place de développement : entrée et garage public d'essai, données synthétiques (3 prototypes, 1 propriété moyenne, pièces) | Disponibles en Dev seulement, perdues à l'arrêt du serveur (stockage mémoire) | **NON TESTÉ** |
+| QA-S22 | Non-régression | P1 | Sessions VM existantes après les modifications du service des véhicules (création des enregistrements, participants des collisions) | Résultats identiques au lot 0.2 (hors anomalies connues) | **NON TESTÉ** |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |
@@ -84,8 +116,11 @@ au monde ouvert reste à écrire dans `tests/studio` (aucune n'existe encore).
 | QA-P04 | Réseau | P2 | Bande passante par joueur (trafic physique, véhicules, attributs météo) | Mesure réelle | **NON TESTÉ** |
 | QA-P05 | Démarrage | P2 | Temps de démarrage serveur (calcul `WorldLayout`, `TrafficModel.newWorld`) et client (index des trottoirs) | Mesure réelle | **NON TESTÉ** |
 | QA-P06 | Stabilité | P2 | Session longue (≥ 2 h) | Pas de fuite (corps PNJ, figurants), pas de blocage du trafic | **NON TESTÉ** |
+| QA-P08 | Profils | P2 | Coût des copies de profil par transaction (profil volumineux) et des instantanés envoyés aux clients | Mesure réelle | **NON TESTÉ** |
+| QA-P09 | Intérieurs | P3 | Coût des maquettes exposées (jusqu'à 10 par intérieur) | Mesure réelle | **NON TESTÉ** |
 | QA-P07 | Réglages | P3 | Budget PNJ (140), rayon physique (260 m), plafond (48), rayon des piétons (150 m), rayons de streaming | Réglages ajustés d'après QA-P01 à P04 | **NON TESTÉ** |
 
 ## 5. Vérifications de la dernière exécution hors Studio
 
-Ces contrôles automatiques ne remplacent aucun essai ci-dessus. Résultat et commande : `docs/lot-0.3/RAPPORT_LOT_0.3.md` §2.
+Ces contrôles automatiques ne remplacent aucun essai ci-dessus. Résultats et commandes : `docs/lot-0.3/RAPPORT_LOT_0.3.md` §2 et
+`docs/lot-0.4/RAPPORT_LOT_0.4.md` §2.
