@@ -172,10 +172,11 @@ local function simple(action: string, payload: any?)
     -- Lot 0.9.1 (QA-F16) : une opération sensible (retrait d'annonce) envoyée sans
     -- identifiant de demande était toujours refusée (RequestIdInvalid) : « Retirer
     -- l'annonce » ne fonctionnait jamais. Identifiant ajouté pour toute opération sensible.
-    local data = payload
+    local data: any = payload
     if EconomyProtocol.Sensitive[action] then
-        data = table.clone(payload or {})
-        data.RequestId = HttpService:GenerateGUID(false)
+        local copy: { [string]: any } = if type(payload) == "table" then table.clone(payload) else {}
+        copy.RequestId = HttpService:GenerateGUID(false)
+        data = copy
     end
     local response = invoke(action, data)
     busy = false
