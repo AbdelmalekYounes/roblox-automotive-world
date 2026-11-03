@@ -38,7 +38,7 @@ Légende : **Implémenté** (code complet, logique testée hors Studio) ; **Part
 ### 2.1 Hors Studio
 
 `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau`, exécutée le
-2026-11-03 à 11:21 sur l'arbre de travail du lot (base `c0c458b` + modifications du lot, non encore commitées) :
+2026-11-03 à 11:21 sur l'arbre de travail du lot, dont le code a ensuite été commité tel quel (`69fd5df`) :
 Rojo (deux places), Selene, StyLua, pilote Studio, **Lune 290 réussis / 0 échoué** (dont 26 nouveaux du lot 0.6),
 génération de la carte, **Pytest 10 réussis**, luau-lsp strict 0 erreur.
 
