@@ -78,6 +78,7 @@ l'attente de la VM.
 | `220054` | `82731da` | Monde ouvert | `gps`, `ui_monde` | 156 / 6 | **5 arrivées GPS sur 7** ; QA-F20 trouvé ; 32 captures du monde |
 | `224247` | `790388e` | Dev | `ui`, `metiers`, `ui_marche` | 262 / 2 376 ² | QA-F16 et QA-F18 vérifiés ; métiers 7 / 8 ; QA-A08 (2 372 erreurs « clamp ») |
 | `225749` | `da9cfa2` | Monde ouvert | `gps2` | 38 / 4 | Itinéraire de montagne calculé (QA-F20 vérifié dans le jeu) ; aucune arrivée (pilote immobilisé) |
+| `231150` | `9b0eebd` | **invalide** | 16 sessions Dev | (598 / 63) | **Tâche invalide** : deux dépôts dans la même seconde ont partagé ce dossier ; les sessions Dev ont tourné sur la place monde ouvert (zone d'essai absente). Défaut de l'outil hôte, corrigé (`10450e1`) ; résultats **non retenus** |
 
 ¹ Le « 0 échec » de `210055` contient **un faux succès du test** (`ui.marche.annonce_retiree_serveur`) : la lecture de
 l'état était refusée par le limiteur du serveur et passait pour « aucune annonce ». La capture 006 et le message du pied
