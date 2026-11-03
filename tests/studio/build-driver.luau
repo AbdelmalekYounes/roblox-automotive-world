@@ -35,6 +35,8 @@ local KNOWN_SESSIONS = {
     metiers = { Name = "metiers", Players = 1 },
     gps = { Name = "gps", Players = 1 },
     drift = { Name = "drift", Players = 1 },
+    -- Lot 0.9.1 : social et permissions, deux clients (Dev).
+    social = { Name = "social", Players = 2 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -54,6 +56,8 @@ local EXTRA = {
     { "AW_TestMetiersClient", "MetiersClient.client.luau", true },
     { "AW_TestGpsClient", "GpsClient.client.luau", true },
     { "AW_TestDriftClient", "DriftClient.client.luau", true },
+    { "AW_TestSocialServer", "SocialServer.server.luau", false },
+    { "AW_TestSocialClient", "SocialClient.client.luau", true },
 }
 
 local output = process.args[1]

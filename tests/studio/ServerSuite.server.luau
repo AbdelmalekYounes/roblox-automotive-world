@@ -28,6 +28,7 @@ if
     or sessionName == "metiers"
     or sessionName == "gps"
     or sessionName == "drift"
+    or sessionName == "social"
 then
     return
 end

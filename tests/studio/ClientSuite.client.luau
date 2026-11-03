@@ -72,6 +72,7 @@ if
     or currentSession == "metiers"
     or currentSession == "gps"
     or currentSession == "drift"
+    or currentSession == "social"
 then
     return
 end
