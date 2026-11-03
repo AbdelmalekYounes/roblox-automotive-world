@@ -430,8 +430,8 @@ register(PrototypeP03)
 for _, definition in ValidationVariants do
     register(definition)
 end
--- Lot 0.5 : modèles de travail PROVISOIRES du catalogue commercial (voir Economy/VehicleCatalog).
-for _, definition in WorkingCatalog do
+-- Lot 0.8 : gamme PROPOSÉE de 18 modèles (en attente d'approbation, voir Economy/VehicleCatalog).
+for _, definition in WorkingCatalog.Definitions do
     register(definition)
 end
 
