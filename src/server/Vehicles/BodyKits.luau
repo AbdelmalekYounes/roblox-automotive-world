@@ -39,6 +39,7 @@ export type Result = {
     RearEnd: number,
     BodyWidth: number,
     FloorY: number,
+    RoofY: number?, -- dessous du pavillon (nil : sans toit), lot 0.9.1
 }
 
 -- Proportions des silhouettes (fractions de la longueur depuis l'avant, hauteurs en m).
@@ -374,6 +375,7 @@ function BodyKits.build(
         RearEnd = -frontEnd,
         BodyWidth = width,
         FloorY = floor,
+        RoofY = if style.Open then nil else roof,
     }
 end
 

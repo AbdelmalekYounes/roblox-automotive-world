@@ -640,7 +640,7 @@ phase("telephone", function()
             task.wait(0.5)
         end
     end
-    click("ui.telephone.fermer", phoneButton("✕"), "✕")
+    click("ui.telephone.fermer", phoneButton("×"), "×")
     local closed = waitFor(function()
         return not phoneOpen()
     end, 4)

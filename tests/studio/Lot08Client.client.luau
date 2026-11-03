@@ -356,6 +356,31 @@ local function main()
     -- ===== 3 et 4. Banc des 18 modèles (et radio, photo en roulant, sur le premier) =====
     local strip = CFrame.lookAt(Vector3.new(0, 3, -6 * S), Vector3.new(0, 3, -60 * S))
     local results = {}
+    -- Lot 0.9.1 (QA-F15) : la vue cockpit passe au-dessus du volant (angle mesuré sur le
+    -- modèle construit : point CameraCockpit → haut de la pièce « Volant »).
+    local cockpit: { string } = {}
+    local worstCockpit = math.huge
+    local function cockpitDrop(model: Model, label: string)
+        local body = model.PrimaryPart
+        local eye = body and body:FindFirstChild("CameraCockpit") :: Attachment?
+        local wheel = model:FindFirstChild("Volant", true) :: BasePart?
+        if body == nil or eye == nil or wheel == nil then
+            table.insert(cockpit, label .. " ?")
+            worstCockpit = -1
+            return
+        end
+        local look = body.CFrame.LookVector
+        local distance = (wheel.Position - eye.WorldPosition):Dot(look)
+        local drop = math.deg(math.atan2(eye.WorldPosition.Y - (wheel.Position.Y + 0.55), math.max(distance, 1e-3)))
+        worstCockpit = math.min(worstCockpit, drop)
+        table.insert(cockpit, string.format("%s %.1f°", label, drop))
+    end
+    local fleet = Workspace:FindFirstChild("VehiculesEssai")
+    for _, item in if fleet then fleet:GetChildren() else {} do
+        if item:IsA("Model") then
+            cockpitDrop(item, item.Name)
+        end
+    end
     for i, spec in WorkingCatalog.Specs do
         rootPart().CFrame = strip
         task.wait(0.8)
@@ -367,6 +392,9 @@ local function main()
         end, 15)
         local folder = Workspace:FindFirstChild("VehiculesPersonnels")
         local model = folder and folder:FindFirstChild(name or "") :: Model?
+        if model then
+            cockpitDrop(model, spec.Id)
+        end
         if model and board(model) then
             if i == 1 then
                 local unavailable = RadioController.setStation("ville")
@@ -391,6 +419,11 @@ local function main()
         signalEvent:FireServer("AW08:Despawn")
         task.wait(1)
     end
+    record(
+        "lot08.client.cockpit_volant_sous_la_ligne_de_visee",
+        worstCockpit >= 9.5,
+        string.format("minimum %.1f° : %s", worstCockpit, table.concat(cockpit, ", "))
+    )
     local measured = 0
     for _, spec in WorkingCatalog.Specs do
         local m = results[spec.Id]

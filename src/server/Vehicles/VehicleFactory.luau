@@ -24,6 +24,7 @@ local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ve
 local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDynamics = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("VehicleDynamics"))
+local CockpitGeometry = require(VehiclesShared:WaitForChild("CockpitGeometry"))
 local BodyKits = require(script.Parent.BodyKits)
 
 local VehicleFactory = {}
@@ -241,6 +242,9 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     local passengerOffset: CFrame?
     local cabinZ: number, dashZ: number, dashTop: number, sideHalf: number
     local cameraHoodY: number, cameraBumperY: number, frontEnd: number
+    -- Volant (centre, en studs du repère du châssis) et pavillon (nil : véhicule ouvert),
+    -- pour placer les yeux de la vue cockpit au-dessus du volant (QA-F15).
+    local wheelY: number, wheelZ: number, roofY: number? = 0, 0, nil
     if styleName and BodyKits.has(styleName) then
         local kit = BodyKits.build(
             styleName :: string,
@@ -268,11 +272,11 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
         cameraHoodY = kit.HoodY + 0.8
         cameraBumperY = kit.FloorY + 0.2
         frontEnd = kit.FrontEnd
+        wheelY, wheelZ, roofY = dashTop + 0.2, dashZ + 0.75, kit.RoofY
         addVisual(root, body, {
             Name = "Volant",
             Size = Vector3.new(0.15, 1.1, 1.1),
-            Offset = CFrame.new(seatOffset.X, dashTop + 0.2, dashZ + 0.75)
-                * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
+            Offset = CFrame.new(seatOffset.X, wheelY, wheelZ) * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
             Color = trim,
             Shape = "Cylinder",
         })
@@ -383,11 +387,11 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
             Offset = CFrame.new(0, tubTop + 0.2, dashZ),
             Color = trim,
         })
+        wheelY, wheelZ = tubTop + 0.45, dashZ + 0.75
         addVisual(root, body, {
             Name = "Volant",
             Size = Vector3.new(0.15, 1.1, 1.1),
-            Offset = CFrame.new(seatOffset.X, tubTop + 0.45, dashZ + 0.75)
-                * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
+            Offset = CFrame.new(seatOffset.X, wheelY, wheelZ) * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
             Color = trim,
             Shape = "Cylinder",
         })
@@ -429,7 +433,10 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
 
     -- Points de vue embarqués (orientés vers l'avant, -Z) : yeux du conducteur
     -- assis, avant du capot, bouclier avant. Dérivés de la géométrie du modèle.
-    addAttachment(root, "CameraCockpit", Vector3.new(seatOffset.X, seatOffset.Y + 2.45, seatOffset.Z - 0.35))
+    -- Yeux relevés au besoin pour voir la route par-dessus le volant (rayon 0,55 stud).
+    local eyeZ = seatOffset.Z - 0.35
+    local eyeY = CockpitGeometry.eyeY(seatOffset.Y, wheelY + 0.55, eyeZ - wheelZ, roofY)
+    addAttachment(root, "CameraCockpit", Vector3.new(seatOffset.X, eyeY, eyeZ))
     addAttachment(root, "CameraHood", Vector3.new(0, cameraHoodY, frontZ + studs(0.45)))
     addAttachment(root, "CameraBumper", Vector3.new(0, cameraBumperY, frontEnd - 0.65))
 

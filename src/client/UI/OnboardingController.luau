@@ -245,7 +245,7 @@ local function renderTraining()
     local done = if status and status.State then status.State.Exercises else {}
     for _, id in OnboardingRules.Exercises do
         local finished = done[id] ~= nil
-        button(string.format("%s %s", if finished then "✓" else "○", Localization.t("exercise." .. id)), function()
+        button(string.format("%s %s", if finished then "●" else "○", Localization.t("exercise." .. id)), function()
             local character = Players.LocalPlayer.Character
             local root = character and character:FindFirstChild("HumanoidRootPart")
             local first = nil

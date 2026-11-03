@@ -1,0 +1,143 @@
+--!strict
+-- Lot 0.9.1 — campagne QA interactive autonome : non-régression des défauts trouvés
+-- par les vrais clics et les captures inspectées dans la VM (règles PURES et
+-- contrôles statiques). Les parcours eux-mêmes sont dans les sessions VM « ui… »
+-- (docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md).
+
+local roblox = require("@lune/roblox")
+local Color3 = roblox.Color3
+
+local SERVER = "ServerScriptService.AutomotiveWorldServer."
+local SHARED = "ReplicatedStorage.Shared."
+local STUDS_PER_METER = 1 / 0.28
+
+return function(T: any, H: any)
+    local CockpitGeometry = H.require(SHARED .. "Vehicles.CockpitGeometry")
+    local BodyKits = H.require(SERVER .. "Vehicles.BodyKits")
+    local VehicleDynamics = H.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
+    local Definitions = H.require(SHARED .. "Vehicles.VehicleDefinitions")
+
+    local function source(path: string): string
+        local node = H.game()
+        for segment in string.gmatch(path, "[^%.]+") do
+            node = node:FindFirstChild(segment)
+        end
+        return node.Source
+    end
+    local function studs(meters: number): number
+        return meters * STUDS_PER_METER
+    end
+
+    T.suite("Lot 0.9.1 — défauts trouvés par la campagne interactive")
+
+    T.test("QA-F15 : yeux du cockpit relevés au-dessus du volant, sous le pavillon", function()
+        -- Volant bas : hauteur d'assise habituelle conservée.
+        T.equal(CockpitGeometry.eyeY(0, 1, 2.5, nil), CockpitGeometry.EyeAboveSeat)
+        -- Volant à hauteur des yeux (cas des prototypes) : yeux relevés, 10° de marge.
+        local eye = CockpitGeometry.eyeY(0, 2.6, 2.5, nil)
+        T.truthy(eye > CockpitGeometry.EyeAboveSeat, "relevés")
+        T.truthy(math.abs(CockpitGeometry.wheelDropDeg(eye, 2.6, 2.5) - CockpitGeometry.MinWheelDropDeg) < 1e-6)
+        -- Pavillon bas : plafonné sous le toit.
+        T.equal(CockpitGeometry.eyeY(0, 2.6, 2.5, 3), 3 - CockpitGeometry.RoofClearance)
+    end)
+
+    T.test("QA-F15 : tous les modèles carrossés voient la route par-dessus le volant", function()
+        local worst, worstId = math.huge, ""
+        local worstBefore, worstBeforeId = math.huge, ""
+        local checked = 0
+        for _, definition in Definitions.all() do
+            local style = definition.Appearance and definition.Appearance.BodyStyle
+            if style and BodyKits.has(style) then
+                -- Mêmes entrées que VehicleFactory.build (repère du centre de gravité).
+                local chassis, tire = definition.Chassis, definition.Tires
+                local layout = VehicleDynamics.wheelLayout(definition)
+                local groundY = -studs(chassis.CgHeightM)
+                local kit = BodyKits.build(
+                    style,
+                    {
+                        GroundY = groundY,
+                        HubY = groundY + studs(tire.RadiusM),
+                        FrontAxleZ = -studs(layout[1].Longitudinal),
+                        RearAxleZ = -studs(layout[3].Longitudinal),
+                        TireRadius = studs(tire.RadiusM),
+                        TireWidth = studs(tire.WidthM),
+                        Width = studs(chassis.WidthM),
+                        Length = studs(chassis.LengthM),
+                        Height = studs(chassis.HeightM),
+                    },
+                    {
+                        Body = Color3.new(1, 1, 1),
+                        Accent = Color3.new(1, 1, 1),
+                        Trim = Color3.new(0, 0, 0),
+                    },
+                    studs,
+                    function(_props: any): any
+                        return nil
+                    end
+                )
+                local seatY, seatZ = kit.SeatOffset.Position.Y, kit.SeatOffset.Position.Z
+                local wheelTop = kit.DashY + 0.25 + 0.2 + 0.55
+                local distance = (seatZ - 0.35) - (kit.DashZ + 0.75)
+                local eye = CockpitGeometry.eyeY(seatY, wheelTop, distance, kit.RoofY)
+                local drop = CockpitGeometry.wheelDropDeg(eye, wheelTop, distance)
+                -- Plafonné par le pavillon : la marge peut être moindre, jamais négative.
+                local capped = kit.RoofY ~= nil and eye >= kit.RoofY - CockpitGeometry.RoofClearance - 1e-6
+                T.truthy(
+                    drop >= CockpitGeometry.MinWheelDropDeg - 1e-6 or (capped and drop > 0),
+                    string.format("%s : %.1f° (yeux %.2f, pavillon %s)", definition.Id, drop, eye, tostring(kit.RoofY))
+                )
+                if drop < worst then
+                    worst, worstId = drop, definition.Id
+                end
+                -- Avant la correction : yeux à hauteur fixe (assise + 2,45).
+                local before = CockpitGeometry.wheelDropDeg(seatY + CockpitGeometry.EyeAboveSeat, wheelTop, distance)
+                if before < worstBefore then
+                    worstBefore, worstBeforeId = before, definition.Id
+                end
+                checked += 1
+            end
+        end
+        T.truthy(checked >= 10, "modèles carrossés contrôlés : " .. checked)
+        print(
+            string.format(
+                "    marge minimale %.1f° (%s), %d modèles ; à hauteur fixe : %.1f° (%s)",
+                worst,
+                worstId,
+                checked,
+                worstBefore,
+                worstBeforeId
+            )
+        )
+    end)
+
+    T.test("QA-F15 : la fabrique place la caméra cockpit par CockpitGeometry", function()
+        local factory = source(SERVER .. "Vehicles.VehicleFactory")
+        T.truthy(string.find(factory, "CockpitGeometry.eyeY(", 1, true) ~= nil, "hauteur des yeux calculée")
+        T.truthy(
+            string.find(factory, "seatOffset.Y + 2.45", 1, true) == nil,
+            "plus de hauteur fixe qui ignore le volant"
+        )
+    end)
+
+    T.test("QA-F14 : aucun signe absent de la police dans les interfaces (⤢ ✕ ✓)", function()
+        local ui = H.game():FindFirstChild("StarterPlayer")
+        local found = {}
+        for _, item in ui:GetDescendants() do
+            if item.ClassName == "ModuleScript" or item.ClassName == "LocalScript" then
+                local code = string.gsub(item.Source, "%-%-[^\n]*", "")
+                for _, glyph in { "⤢", "✕", "✓" } do
+                    if string.find(code, glyph, 1, true) then
+                        table.insert(found, item.Name .. " " .. glyph)
+                    end
+                end
+            end
+        end
+        T.equal(#found, 0, table.concat(found, ", "))
+    end)
+
+    T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
+        local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
+        T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")
+        T.truthy(string.find(onboarding, 'footer.Text = ""', 1, true) ~= nil, "pied périmé effacé")
+    end)
+end
