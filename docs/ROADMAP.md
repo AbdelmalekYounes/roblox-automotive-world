@@ -112,6 +112,18 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   parcours avec de vrais comptes et performances **NON TESTÉS** (`docs/QA_BACKLOG.md` §3 sexies).
 - Rapport : `docs/lot-0.8/RAPPORT_LOT_0.8.md` ; architecture : `docs/lot-0.8/ARCHITECTURE_LOT_0.8.md`.
 
+## État du lot 0.9 (branche `feat/integration-qa-0.9`, PR brouillon #9, base : lot 0.8)
+
+- Version intégrée des lots 0.1 à 0.8 ; registre QA audité et classé ; déclaration du propriétaire (essais du
+  lot 0.1) consignée à part.
+- Campagnes VM : sessions historiques, nouvelles sessions `lot05` (économie, marché, falsifications), `lot06`
+  (courses), `lot08` (arrivée, banc des 18 modèles, photo, radio), `perf` (mesures de référence), `monde` étendu.
+- Corrigé : inscription aux courses impossible en jeu (lot 0.6), annonce du marché jamais publiée (lot 0.5), mât du
+  drag sur la ligne d'essai (lot 0.6), lampadaires et niveau de détail sous streaming (lot 0.8) ; comblé : capacité
+  des stations, chargement visible des missions. QA-A02 expliquée (test) ; QA-A01 rétrogradée P2.
+- Non fait : DataStore réel, charge à 24 joueurs, appareils réels, essais humains (checklist prête).
+- Rapport : `docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
