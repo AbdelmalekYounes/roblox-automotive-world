@@ -122,7 +122,26 @@ function Gui.center(item: GuiObject): Vector2
     return item.AbsolutePosition + item.AbsoluteSize / 2 + offset
 end
 
--- Élément réellement affiché : visible, ancêtres visibles, ScreenGui actif, dans la vue.
+-- Premier ancêtre qui rogne l'élément (cadre défilant ou ClipsDescendants) et le cache
+-- au point visé : le clic réel tomberait ailleurs. Renvoie cet ancêtre, ou nil.
+function Gui.clippedBy(item: GuiObject): GuiObject?
+    local point = item.AbsolutePosition + item.AbsoluteSize / 2
+    local node = item.Parent
+    while node and node:IsA("GuiObject") do
+        if node:IsA("ScrollingFrame") or node.ClipsDescendants then
+            local min = node.AbsolutePosition
+            local max = min + node.AbsoluteSize
+            if point.X < min.X or point.Y < min.Y or point.X > max.X or point.Y > max.Y then
+                return node
+            end
+        end
+        node = node.Parent
+    end
+    return nil
+end
+
+-- Élément réellement affiché : visible, ancêtres visibles, ScreenGui actif, dans la vue,
+-- non rogné par un cadre défilant.
 function Gui.shown(item: Instance?): boolean
     if item == nil or not item:IsA("GuiObject") or not item:IsDescendantOf(playerGui()) then
         return false
@@ -140,8 +159,25 @@ function Gui.shown(item: Instance?): boolean
     local camera = Workspace.CurrentCamera
     local point = Gui.center(item :: GuiObject)
     local size = if camera then camera.ViewportSize else Vector2.new(1e6, 1e6)
-    return point.X >= 0 and point.Y >= 0 and point.X <= size.X and point.Y <= size.Y
+    return point.X >= 0
+        and point.Y >= 0
+        and point.X <= size.X
+        and point.Y <= size.Y
+        and Gui.clippedBy(item :: GuiObject) == nil
 end
+
+-- Affiché, ancêtres compris, sans tenir compte du rognage (élément à faire défiler).
+local function present(item: GuiObject): boolean
+    local node: Instance? = item
+    while node and not node:IsA("LayerCollector") do
+        if node:IsA("GuiObject") and not node.Visible then
+            return false
+        end
+        node = node.Parent
+    end
+    return node ~= nil and (node :: LayerCollector).Enabled
+end
+Gui.present = present
 
 local function textOf(item: Instance): string
     if item:IsA("TextButton") or item:IsA("TextLabel") or item:IsA("TextBox") then
@@ -182,6 +218,26 @@ function Gui.findText(root: Instance?, pattern: string): GuiObject?
         end
     end
     return nil
+end
+
+-- Fait défiler par la VRAIE molette jusqu'à rendre l'élément visible (comme un joueur).
+-- Renvoie (visible, crans utilisés).
+function Gui.reveal(item: GuiObject?, maxNotches: number?): (boolean, number)
+    if item == nil or not present(item) then
+        return false, 0
+    end
+    local used = 0
+    for _ = 1, maxNotches or 15 do
+        local frame = Gui.clippedBy(item)
+        if frame == nil then
+            return true, used
+        end
+        local below = item.AbsolutePosition.Y > frame.AbsolutePosition.Y + frame.AbsoluteSize.Y / 2
+        Gui.wheel(frame, if below then -1 else 1)
+        used += 1
+        task.wait(0.35)
+    end
+    return Gui.clippedBy(item) == nil, used
 end
 
 -- Étalonnage souris : deux carrés magenta, l'outil les repère sur l'écran, puis clique
@@ -405,6 +461,8 @@ end
 -- Capture nommée de la vue du jeu, reliée à sa position et à son contexte.
 local shots: { { [string]: any } } = {}
 function Gui.shot(name: string, context: { [string]: any }?)
+    -- Nom d'un seul mot (l'outil sépare les arguments aux espaces).
+    name = string.gsub(name, "%s+", "_")
     local id = send("shot", name)
     local character = (Players.LocalPlayer :: Player).Character
     local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?

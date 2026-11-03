@@ -65,12 +65,13 @@ local function screen(name: string): Instance?
 end
 
 -- Bouton affiché dont le texte vaut exactement « text » (onglets, « Fermer »).
-local function exact(root: Instance?, text: string): GuiButton?
+-- « clipped » : accepte aussi un bouton affiché mais rogné par un cadre défilant.
+local function exact(root: Instance?, text: string, clipped: boolean?): GuiButton?
     if root == nil then
         return nil
     end
     for _, item in root:GetDescendants() do
-        if item:IsA("TextButton") and item.Text == text and Gui.shown(item) then
+        if item:IsA("TextButton") and item.Text == text and (Gui.shown(item) or clipped and Gui.present(item)) then
             return item
         end
     end
@@ -203,17 +204,33 @@ phase("arrivee", function()
     Gui.shot("arrivee_bienvenue", { step = "Welcome" })
     local visited = {}
     local cancelled = false
+    local visibilityChecked = false
     for _ = 1, 14 do
         local state = server()
         local step = state.Onboarding and state.Onboarding.Step or "?"
         table.insert(visited, step)
-        local confirm = exact(window, "Confirmer")
-        local cancel = exact(window, "Annuler")
+        local confirm = exact(window, "Confirmer", true)
+        local cancel = exact(window, "Annuler", true)
         local choose = Gui.findButton(window, "Choisir la")
         local enter = Gui.findButton(window, "Entrer dans le monde")
         local nextButton = exact(window, "Suivant")
         if confirm and cancel then
             task.wait(0.4) -- garde de confirmation (appui frais ≥ 0,25 s)
+            if not visibilityChecked then
+                -- QA-F13 : la confirmation doit apparaître sans que le joueur ait à la chercher.
+                visibilityChecked = true
+                record(
+                    "ui.arrivee.confirmation_visible_sans_defilement",
+                    Gui.shown(confirm) and Gui.shown(cancel),
+                    string.format("Confirmer à y = %d", confirm.AbsolutePosition.Y)
+                )
+                Gui.shot("arrivee_confirmation_affichee", { step = step })
+            end
+            -- Sinon, défilement par la vraie molette, comme le ferait un joueur.
+            local _, notches = Gui.reveal(if cancelled then confirm else cancel)
+            if notches > 0 then
+                record("ui.arrivee.info_defilement_molette", true, notches .. " cran(s)")
+            end
             if not cancelled then
                 click("ui.arrivee.annuler_le_choix", cancel, "Annuler")
                 task.wait(1)
@@ -233,7 +250,7 @@ phase("arrivee", function()
             task.wait(0.8)
             record(
                 "ui.arrivee.choix_demande_confirmation",
-                server().Starter.State ~= "Chosen" and exact(window, "Confirmer") ~= nil,
+                server().Starter.State ~= "Chosen" and exact(window, "Confirmer", true) ~= nil,
                 "état serveur après « Choisir » : " .. tostring(server().Starter.State)
             )
         elseif enter then
@@ -345,9 +362,39 @@ phase("garage", function()
                 end
             elseif tab == "Collection" then
                 record("ui.garage.info_collection", true, footerText(root))
+                -- Sélection d'un exemplaire (exigée par les onglets Véhicule et Configurations).
+                local row = Gui.findButton(root, "Prototype d'essai P-01")
+                if click("ui.garage.selection_vehicule", row, "Prototype d'essai P-01") then
+                    task.wait(1)
+                    Gui.shot("garage_vehicule_selectionne", {})
+                end
             end
         end
     )
+    -- Touche Entrée alors que le focus (contour) est resté sur un autre bouton que l'onglet
+    -- actif : observation d'une éventuelle action involontaire (aucune attendue côté serveur).
+    local selected = GuiService.SelectedObject
+    local beforeTexts = footerText(root)
+    local stateBefore = server()
+    Gui.key("Return")
+    task.wait(1.2)
+    local stateAfter = server()
+    record(
+        "ui.garage.info_touche_entree_avec_focus",
+        true,
+        string.format(
+            "focus %s ; pied « %s » → « %s »",
+            if selected then "« " .. tostring((selected :: any).Text) .. " »" else "aucun",
+            beforeTexts,
+            footerText(root)
+        )
+    )
+    record(
+        "ui.garage.entree_sans_effet_serveur",
+        stateAfter.Balance == stateBefore.Balance and stateAfter.VehicleCount == stateBefore.VehicleCount,
+        string.format("solde %d → %d", stateBefore.Balance, stateAfter.Balance)
+    )
+    Gui.shot("garage_apres_touche_entree", {})
     closeWith("AWProgression", "garage", "Fermer")
     local after = server()
     record(
@@ -623,10 +670,18 @@ phase("carte", function()
     task.wait(0.6)
     Gui.shot("carte_zoom", {})
     local poi: GuiButton? = nil
+    -- Lieu à plus de 80 m (sinon « Vous êtes arrivé » aussitôt) : distance lue dans le libellé.
     for _, item in (map :: Instance):GetDescendants() do
         if item:IsA("TextButton") and Gui.shown(item) and string.find(item.Text, " — ", 1, true) then
-            poi = item
-            break
+            local value, unit = string.match(item.Text, "— ([%d%.,]+) (k?m)")
+            local meters = tonumber(value and (string.gsub(value, ",", ".")) or "0") or 0
+            if unit == "km" then
+                meters *= 1000
+            end
+            if meters > 80 then
+                poi = item
+                break
+            end
         end
     end
     if click("ui.carte.choisir_lieu", poi, if poi then poi.Text else "lieu") then
@@ -667,9 +722,11 @@ phase("photo", function()
     local camera = Workspace.CurrentCamera :: Camera
     local cameraType = camera.CameraType
     Gui.key("O")
-    local photo = screen("AWPhoto") :: ScreenGui?
+    local photo: ScreenGui? = nil
     local opened = waitFor(function()
-        return photo ~= nil and photo.Enabled and anyShown(photo) or (photo ~= nil and photo.Enabled)
+        -- ScreenGui recherché à chaque essai : il peut n'être créé qu'à l'ouverture.
+        photo = screen("AWPhoto") :: ScreenGui?
+        return photo ~= nil and (photo :: ScreenGui).Enabled
     end, 4)
     record("ui.photo.ouverture_touche_O", opened, notifications())
     if not opened then
