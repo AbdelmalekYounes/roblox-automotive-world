@@ -16,6 +16,11 @@ local MissionCargo = {}
 
 export type Load = { Kind: "Parcel" | "Passenger" | "Part", Count: number }
 
+-- Silhouette du passager (centres, en mètres au-dessus du siège passager). Lot 0.9.1
+-- (QA-F19) : la tête était à 0,95 m, au-dessus du toit des prototypes (captures VM) ;
+-- un avatar assis a la tête vers 0,7 m (yeux du conducteur : 2,45 studs ≈ 0,69 m).
+MissionCargo.Passenger = table.freeze({ BustM = 0.33, HeadM = 0.7 })
+
 function MissionCargo.load(job: string, stepCount: number, stepIndex: number): Load?
     if stepIndex < 2 or stepIndex > stepCount then
         return nil

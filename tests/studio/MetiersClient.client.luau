@@ -114,15 +114,25 @@ end
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 local avoid = { Side = 0, Until = 0, Reverse = 0, StuckSince = nil :: number? }
+-- Trois rayons par direction (centre et coins avant, à 0,25 m et 0,8 m du sol) : les
+-- obstacles bas et étroits (bordures, poteaux) passaient sous un rayon unique
+-- (tâche 20261103-213328 : chocs répétés, trains avant endommagés).
 local function obstacle(body: BasePart, angleDeg: number, lengthM: number): number?
     local look = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
+    local right = Vector3.new(-look.Z, 0, look.X)
     local dir = CFrame.Angles(0, -math.rad(angleDeg), 0):VectorToWorldSpace(look)
-    local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S
-    local hit = Workspace:Raycast(origin, dir * lengthM * S, rayParams)
-    if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
-        return hit.Distance / S
+    local nearest: number? = nil
+    for _, lateral in { 0, -0.9, 0.9 } do
+        for _, height in { -0.25, 0.3 } do
+            local origin = body.Position + Vector3.new(0, height * S, 0) + look * 2 * S + right * lateral * S
+            local hit = Workspace:Raycast(origin, dir * lengthM * S, rayParams)
+            if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
+                local d = hit.Distance / S
+                nearest = if nearest then math.min(nearest, d) else d
+            end
+        end
     end
-    return nil
+    return nearest
 end
 
 local function autopilot(): any
@@ -431,6 +441,10 @@ local function runStep(m: any, job: string): string
             -- Approche alignée sur le cap demandé (0 = nord, -z) depuis 18 m en arrière.
             local back = { X = point.X - math.sin(heading) * 18, Z = point.Z + math.cos(heading) * 18 }
             driveTo(back, 18, 2.5, 120)
+        end
+        if not heading and flatDistanceM(point) > 15 then
+            -- Approche rapide jusqu'à 12 m, puis manœuvre lente (délai de la mission).
+            driveTo(point, 40, 12, 120, true)
         end
         for attempt = 1, 3 do
             driveTo(point, 8, radius * 0.4, 60)

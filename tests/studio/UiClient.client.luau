@@ -28,8 +28,12 @@ local ONLY: { [string]: boolean }? = if sessionName == "ui_marche" then { conces
 
 local steps = {}
 local measures = {}
-local function record(name: string, ok: boolean, detail: any)
-    table.insert(steps, { name = name, ok = ok, detail = if detail ~= nil then tostring(detail) else nil })
+-- `known` : limite connue documentée (jamais comptée comme réussie).
+local function record(name: string, ok: boolean, detail: any, known: string?)
+    table.insert(
+        steps,
+        { name = name, ok = ok, detail = if detail ~= nil then tostring(detail) else nil, known = known }
+    )
 end
 local function trace(message: string)
     print(string.format("[AW_Test] ui %.1f s : %s", os.clock() - sessionStart, message))
@@ -836,6 +840,9 @@ phase("photo", function()
         opened = waitFor(isOpen, 4)
         firstKeys ..= " | témoin et O (code virtuel) : " .. table.concat(stopControl(), ",")
     end
+    local controlOnly = not opened
+        and string.find(firstKeys, "L", 1, true) ~= nil
+        and not string.find(firstKeys, "O", 1, true)
     record(
         "ui.photo.ouverture_touche_O",
         opened,
@@ -845,8 +852,22 @@ phase("photo", function()
             firstKeys,
             tostring(RacePanel.racing()),
             notifications()
-        )
+        ),
+        if controlOnly
+            then "dans Studio, la touche O n'atteint jamais le jeu (témoin L reçu ; O ni par code virtuel ni par code de balayage) — raccourci de Studio présumé ; à vérifier dans le client Roblox (humain)"
+            else nil
     )
+    if not opened then
+        -- Autre chemin du jeu : application Photo du téléphone (vrais clics).
+        Gui.key("T")
+        if waitFor(phoneOpen, 4) then
+            click("ui.photo.app_photo_du_telephone", phoneButton("Photo"), "Photo")
+            task.wait(0.8)
+            click("ui.photo.bouton_ouvrir_le_mode_photo", phoneButton("Ouvrir le mode photo"), "Ouvrir le mode photo")
+            opened = waitFor(isOpen, 4)
+            record("ui.photo.ouverture_par_le_telephone", opened, notifications())
+        end
+    end
     if not opened then
         return
     end
@@ -975,7 +996,7 @@ phase("conduite", function()
         local ok, snapshot = pcall(VehicleController.getTestSnapshot)
         return if ok and type(snapshot) == "table" then snapshot.EngineRpm or 0 else 0
     end
-    Gui.keyDown("Space")
+    -- Sans frein à main (cas d'un joueur) : QA-F18, le véhicule doit rester immobile.
     task.wait(0.8)
     local idle = rpm()
     if openByKey("P", "AWProgression", "conduite_garage") then
@@ -988,14 +1009,23 @@ phase("conduite", function()
             task.wait(0.05)
         end
         Gui.keyUp("W")
+        task.wait(1.5)
         record(
             "ui.conduite.accelerateur_ignore_menu_ouvert",
-            peak < idle + 600 and speed() < 3,
+            peak < idle + 600 and speed() < 1.5,
             string.format("régime %.0f → max %.0f tr/min, %.1f km/h", idle, peak, speed())
+        )
+        record(
+            "ui.conduite.vehicule_immobile_menu_ouvert",
+            speed() < 1.5 and anyShown(screen("AWProgression")),
+            string.format(
+                "%.1f km/h, panneau %s",
+                speed(),
+                if anyShown(screen("AWProgression")) then "ouvert" else "fermé"
+            )
         )
         closeWith("AWProgression", "conduite_garage", "Fermer")
     end
-    Gui.keyUp("Space")
     Gui.key("F", 400)
     local out = waitFor(function()
         return not seated()

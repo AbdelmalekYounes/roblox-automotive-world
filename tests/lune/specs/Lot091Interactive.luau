@@ -163,6 +163,29 @@ return function(T: any, H: any)
         T.equal(props and props.Technology, "Voxel", "place monde ouvert")
     end)
 
+    T.test("QA-F18 : menu modal ouvert à l'arrêt → frein à main serré, relâché à la fermeture", function()
+        local InputArbiter = H.require("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.InputArbiter")
+        local arbiter = InputArbiter.newState()
+        local idle = InputArbiter.NeutralKeyboard
+        local pad = InputArbiter.DisconnectedGamepad
+        local open = { Typing = false, WindowFocused = true, UiCaptured = true }
+        local closed = { Typing = false, WindowFocused = true, UiCaptured = false }
+        local held = InputArbiter.step(arbiter, idle, pad, open, 0.1)
+        T.truthy(held.Handbrake == true, "frein à main serré, menu ouvert")
+        T.equal(held.Throttle, 0, "accélérateur neutralisé")
+        local released = InputArbiter.step(arbiter, idle, pad, closed, 0.1)
+        T.truthy(not released.Handbrake, "relâché à la fermeture du menu")
+    end)
+
+    T.test("QA-F19 : passager du taxi assis dans l'habitacle (tête à hauteur des yeux)", function()
+        local MissionCargo = H.require(SERVER .. "Economy.MissionCargo")
+        local eyeM = CockpitGeometry.EyeAboveSeat * 0.28
+        T.truthy(math.abs(MissionCargo.Passenger.HeadM - eyeM) < 0.1, "tête " .. MissionCargo.Passenger.HeadM .. " m")
+        T.truthy(MissionCargo.Passenger.BustM < MissionCargo.Passenger.HeadM - 0.3, "buste sous la tête")
+        local service = source(SERVER .. "Economy.MissionService")
+        T.truthy(string.find(service, "MissionCargo.Passenger.HeadM", 1, true) ~= nil, "hauteurs utilisées")
+    end)
+
     T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")
