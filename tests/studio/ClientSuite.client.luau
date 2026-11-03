@@ -72,6 +72,7 @@ if
     or currentSession == "ui_marche"
     or currentSession == "metiers"
     or currentSession == "gps"
+    or currentSession == "gps2"
     or currentSession == "drift"
     or currentSession == "social"
 then

@@ -133,13 +133,71 @@ function RouteGuide.plan(
         end
         return false
     end
-    local goal = RoadGraph.nearestNode(graph, toX, toZ, nodeAllowed)
-    if goal == nil then
-        return nil, "NoRoute"
-    end
-    local goalNode = layout.Network.NodeById[goal]
-    if math.sqrt((goalNode.X - toX) ^ 2 + (goalNode.Z - toZ) ^ 2) > RouteGuide.MaxDestinationOffM then
-        return nil, "Invalid"
+    -- Arrivée : tronçon le plus proche de la destination (accepté par le profil), rejoint
+    -- par l'une de ses extrémités puis suivi jusqu'au point projeté. Lot 0.9.1 (QA-F20) :
+    -- seul le carrefour le plus proche comptait ; au milieu d'une longue route de
+    -- montagne (carrefours à plus de 600 m), la destination était déclarée « Invalid »
+    -- alors qu'elle se trouve sur la route (trajet réel dans la VM, tâche 20261103-220054).
+    type Goal = { Node: string, Tail: { { X: number, Z: number } }, TailM: number }
+    local goals: { Goal } = {}
+    local goalEdgeId, _, goalPoint = MapIndex.nearestEdge(
+        index,
+        toX,
+        toZ,
+        RouteGuide.MaxDestinationOffM,
+        function(class)
+            return RouteGuide.allowsClass(profile, class)
+        end
+    )
+    if goalEdgeId and goalPoint then
+        local polyline = index.Edges[goalEdgeId].Polyline
+        local k, bestD = 1, math.huge
+        for i = 1, #polyline - 1 do
+            local a, b = polyline[i], polyline[i + 1]
+            local abx, abz = b.X - a.X, b.Z - a.Z
+            local len2 = abx * abx + abz * abz
+            local t = if len2 > 0
+                then math.clamp(((goalPoint.X - a.X) * abx + (goalPoint.Z - a.Z) * abz) / len2, 0, 1)
+                else 0
+            local d = (a.X + abx * t - goalPoint.X) ^ 2 + (a.Z + abz * t - goalPoint.Z) ^ 2
+            if d < bestD then
+                k, bestD = i, d
+            end
+        end
+        local function tail(indices: { number }): ({ { X: number, Z: number } }, number)
+            local out: { { X: number, Z: number } } = {}
+            for _, i in indices do
+                table.insert(out, { X = polyline[i].X, Z = polyline[i].Z })
+            end
+            table.insert(out, { X = goalPoint.X, Z = goalPoint.Z })
+            local length = 0
+            for i = 2, #out do
+                length += math.sqrt((out[i].X - out[i - 1].X) ^ 2 + (out[i].Z - out[i - 1].Z) ^ 2)
+            end
+            return out, length
+        end
+        local fromSide, toSide = {}, {}
+        for i = 1, k do
+            table.insert(fromSide, i)
+        end
+        for i = #polyline, k + 1, -1 do
+            table.insert(toSide, i)
+        end
+        local edge = index.Edges[goalEdgeId]
+        local fromTail, fromM = tail(fromSide)
+        local toTail, toM = tail(toSide)
+        table.insert(goals, { Node = edge.From, Tail = fromTail, TailM = fromM })
+        table.insert(goals, { Node = edge.To, Tail = toTail, TailM = toM })
+    else
+        local goal = RoadGraph.nearestNode(graph, toX, toZ, nodeAllowed)
+        if goal == nil then
+            return nil, "NoRoute"
+        end
+        local goalNode = layout.Network.NodeById[goal]
+        if math.sqrt((goalNode.X - toX) ^ 2 + (goalNode.Z - toZ) ^ 2) > RouteGuide.MaxDestinationOffM then
+            return nil, "Invalid"
+        end
+        table.insert(goals, { Node = goal, Tail = {}, TailM = 0 })
     end
     -- Départ : extrémités du tronçon le plus proche (accepté par le profil).
     local edgeId, _, projected = MapIndex.nearestEdge(index, fromX, fromZ, RouteGuide.StartSearchM, function(class)
@@ -165,13 +223,15 @@ function RouteGuide.plan(
     local best: any = nil
     local bestCost = math.huge
     for _, candidate in candidates do
-        local route = if candidate.Node == goal
-            then { Nodes = { goal }, Links = {}, LengthM = 0, TimeS = 0 }
-            else RoadGraph.route(graph, candidate.Node, goal, "Time", allowEdge)
-        if route then
-            local cost = route.TimeS + candidate.Lead / 10
-            if cost < bestCost then
-                best, bestCost = { Route = route, Start = candidate.Node }, cost
+        for _, goal in goals do
+            local route = if candidate.Node == goal.Node
+                then { Nodes = { goal.Node }, Links = {}, LengthM = 0, TimeS = 0 }
+                else RoadGraph.route(graph, candidate.Node, goal.Node, "Time", allowEdge)
+            if route then
+                local cost = route.TimeS + candidate.Lead / 10 + goal.TailM / 10
+                if cost < bestCost then
+                    best, bestCost = { Route = route, Start = candidate.Node, Goal = goal }, cost
+                end
             end
         end
     end
@@ -199,6 +259,10 @@ function RouteGuide.plan(
         for _, p in linkPoints(link) do
             push(p.X, p.Z, speed)
         end
+    end
+    -- Fin sur le tronçon de la destination (le long de la route, et non à vol d'oiseau).
+    for _, p in best.Goal.Tail do
+        push(p.X, p.Z, 10)
     end
     push(toX, toZ, 8)
     local along, time = { 0 }, { 0 }

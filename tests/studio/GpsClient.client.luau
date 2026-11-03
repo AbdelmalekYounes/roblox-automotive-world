@@ -18,7 +18,9 @@ local sessionStart = os.clock()
 while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - sessionStart < 15 do
     task.wait()
 end
-if ReplicatedStorage:GetAttribute("AWTestSession") ~= "gps" then
+-- « gps2 » : Montagnes puis Motorsport seulement (vérification ciblée de QA-F20).
+local sessionName = ReplicatedStorage:GetAttribute("AWTestSession")
+if sessionName ~= "gps" and sessionName ~= "gps2" then
     return
 end
 
@@ -73,7 +75,11 @@ end
 -- derrière ; un blocage prolongé déclenche le dégagement (boucle de trajet).
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
+local ignoreObstacles = false
 local function obstacleAhead(body: BasePart, lengthM: number): number?
+    if ignoreObstacles then
+        return nil
+    end
     local look = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
     local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S
     local hit = Workspace:Raycast(origin, look * lengthM * S, rayParams)
@@ -190,7 +196,9 @@ end
 -- ======================== Destinations : une par zone ========================
 
 local layout = WorldLayout.get()
-local ZONES = { "Metropole", "Banlieues", "Docks", "Littoral", "Campagne", "Montagnes", "Motorsport" }
+local ZONES = if sessionName == "gps2"
+    then { "Montagnes", "Motorsport" }
+    else { "Metropole", "Banlieues", "Docks", "Littoral", "Campagne", "Montagnes", "Motorsport" }
 local function zoneTarget(zone: string): { X: number, Z: number }?
     -- Nœud de route ouverte (profil « Road ») le plus proche du centre des tronçons de la zone.
     local sumX, sumZ, n = 0, 0, 0
@@ -267,6 +275,7 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
     local deadline = started + plan.TimeS * 3 + 120
     local hint = nil
     local detourDone = not detour
+    local detourTries = 0
     local recalcSeen = false
     local planBefore = nil
     local stuckSince = nil
@@ -312,15 +321,25 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
                 )
             )
         end
-        -- Sortie volontaire : à 40 % du trajet, cap perpendiculaire pendant ≈ 8 s.
-        if not detourDone and progress.AlongM > plan.LengthM * 0.4 then
-            detourDone = true
+        -- Sortie volontaire : à 35, 55 puis 75 % du trajet (jusqu'à un écart suffisant), cap
+        -- vers le côté dégagé pendant ≈ 8 s. En ville, le freinage devant les façades
+        -- empêchait de quitter l'itinéraire (tâche 20261103-220054 : écart de 2 m).
+        local detourAt = ({ 0.35, 0.55, 0.75 })[detourTries + 1]
+        if not detourDone and detourAt and progress.AlongM > plan.LengthM * detourAt then
+            detourTries += 1
             planBefore = plan
             local look = body.CFrame.LookVector
             local side = Vector3.new(-look.Z, 0, look.X).Unit
+            local probe = RaycastParams.new()
+            probe.FilterType = Enum.RaycastFilterType.Exclude
+            probe.FilterDescendantsInstances = { driving.Model :: Model, character() }
+            if Workspace:Raycast(body.Position, side * 60 * S, probe) then
+                side = -side
+            end
             driving.Target = body.Position + side * 120 * S + look * 40 * S
             driving.SpeedKmh = 35
             driving.Hold = false
+            ignoreObstacles = true
             local off = os.clock()
             local maxOff = 0
             while os.clock() - off < 12 do
@@ -331,6 +350,19 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
                 end
                 task.wait(0.1)
             end
+            ignoreObstacles = false
+            if maxOff <= RouteGuide.OffRouteM and detourTries < 3 then
+                trace(
+                    string.format(
+                        "%s : sortie %d insuffisante (%.0f m), nouvel essai plus loin",
+                        name,
+                        detourTries,
+                        maxOff
+                    )
+                )
+                continue
+            end
+            detourDone = true
             local recomputed = waitFor(function()
                 return GPSController.state().Plan ~= nil and GPSController.state().Plan ~= planBefore
             end, 12)
@@ -489,7 +521,8 @@ local function main()
     local arrivals = 0
     for index, item in ordered do
         -- Sorties volontaires sur les trajets 2 et 5 (zones ouvertes de préférence).
-        if leg(index, item.Zone, item.Target, index == 2 or index == 5) then
+        local detour = if sessionName == "gps2" then index == 1 else (index == 2 or index == 5)
+        if leg(index, item.Zone, item.Target, detour) then
             arrivals += 1
         end
         task.wait(1)

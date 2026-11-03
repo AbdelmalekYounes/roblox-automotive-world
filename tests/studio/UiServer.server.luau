@@ -17,7 +17,7 @@ local StudioTestService = game:GetService("StudioTestService")
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 -- Sessions à un joueur du lot 0.9.1 (interfaces, métiers, trajets, drift).
-local SESSIONS = { ui = true, ui_monde = true, ui_marche = true, metiers = true, gps = true, drift = true }
+local SESSIONS = { ui = true, ui_monde = true, ui_marche = true, metiers = true, gps = true, gps2 = true, drift = true }
 if not SESSIONS[session] then
     return
 end
@@ -116,7 +116,7 @@ signalEvent.OnServerEvent:Connect(function(player, name)
     if type(name) ~= "string" or string.sub(name, 1, 5) ~= "AWUI:" then
         return
     end
-    if name == "AWUI:PlaceStart" and (session == "gps" or session == "ui_monde") then
+    if name == "AWUI:PlaceStart" and (session == "gps" or session == "gps2" or session == "ui_monde") then
         placeStart(player)
         return
     end
@@ -229,7 +229,7 @@ record("ui.serveur.joueur_connecte", joined, #Players:GetPlayers())
 -- Trajets GPS (sept zones) : jusqu'à une heure.
 local gotReport = waitFor(function()
     return next(reports) ~= nil
-end, if session == "gps" then 3500 else 1700)
+end, if session == "gps" or session == "gps2" then 3500 else 1700)
 record("ui.serveur.rapport_client", gotReport)
 
 for _, player in Players:GetPlayers() do

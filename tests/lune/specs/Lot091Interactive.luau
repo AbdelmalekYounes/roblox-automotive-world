@@ -186,6 +186,39 @@ return function(T: any, H: any)
         T.truthy(string.find(service, "MissionCargo.Passenger.HeadM", 1, true) ~= nil, "hauteurs utilisées")
     end)
 
+    T.test("QA-F20 : destination au milieu d'une longue route acceptée, guidage le long de la route", function()
+        local RoadGraph = H.require(SHARED .. "World.RoadGraph")
+        local MapIndex = H.require(SHARED .. "Navigation.MapIndex")
+        local RouteGuide = H.require(SHARED .. "Navigation.RouteGuide")
+        local WorldLayout = H.require(SHARED .. "World.WorldLayout")
+        local graph = RoadGraph.get()
+        local index = MapIndex.build(graph.Layout)
+        local start = graph.Layout.Network.NodeById["O"]
+        local checked, refused = 0, {}
+        for _, edge in graph.Layout.Edges do
+            -- Milieu à plus de 600 m des deux carrefours : refusé avant la correction.
+            if edge.LengthM > 1300 and RouteGuide.allowsClass("Road", edge.Class) then
+                local mid = WorldLayout.sampleAt(edge.Polyline, 0.5)
+                local plan, err = RouteGuide.plan(graph, index, start.X + 5, start.Z + 5, mid.X, mid.Z, "Road")
+                checked += 1
+                if plan == nil then
+                    table.insert(refused, edge.Id .. " " .. tostring(err))
+                else
+                    -- Avant-dernier point sur la route, près de la destination (pas de ligne droite
+                    -- à travers le relief depuis un carrefour lointain).
+                    local before = plan.Points[#plan.Points - 1]
+                    local gap = math.sqrt((before.X - mid.X) ^ 2 + (before.Z - mid.Z) ^ 2)
+                    if gap > 150 then
+                        table.insert(refused, string.format("%s : dernier segment %.0f m", edge.Id, gap))
+                    end
+                end
+            end
+        end
+        T.truthy(checked >= 5, "longues routes contrôlées : " .. checked)
+        T.equal(#refused, 0, table.concat(refused, " ; "))
+        print(string.format("    %d longues routes : destination au milieu acceptée", checked))
+    end)
+
     T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")

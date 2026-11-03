@@ -35,6 +35,7 @@ local KNOWN_SESSIONS = {
     -- Lot 0.9.1 : huit métiers par un pilote (Dev), trajets GPS (MONDE OUVERT), drift (Dev).
     metiers = { Name = "metiers", Players = 1 },
     gps = { Name = "gps", Players = 1 },
+    gps2 = { Name = "gps2", Players = 1 },
     drift = { Name = "drift", Players = 1 },
     -- Lot 0.9.1 : social et permissions, deux clients (Dev).
     social = { Name = "social", Players = 2 },

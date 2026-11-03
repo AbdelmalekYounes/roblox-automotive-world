@@ -28,6 +28,7 @@ if
     or sessionName == "ui_marche"
     or sessionName == "metiers"
     or sessionName == "gps"
+    or sessionName == "gps2"
     or sessionName == "drift"
     or sessionName == "social"
 then
