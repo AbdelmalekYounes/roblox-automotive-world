@@ -19,10 +19,13 @@
 // imprime des commandes « @@AWIN@@ <n> <op> <arguments> » ; Studio les écrit dans son
 // journal (%LOCALAPPDATA%\Roblox\logs), que ce programme lit au fil de l'eau. Il les
 // exécute par SendInput (API Windows), comme une souris et un clavier physiques :
-//   calib n ax ay bx by  repère deux carrés magenta (255, 0, 255) affichés par le test ;
+//   calib n ax ay bx by vw vh
+//                        repère deux carrés magenta (255, 0, 255) affichés par le test ;
 //                        (ax, ay) = coin haut-gauche du premier, (bx, by) = coin
-//                        bas-droit du second, en pixels de la vue du jeu. Donne la
-//                        correspondance vue → écran (décalage et échelle).
+//                        bas-droit du second, (vw, vh) = taille de la vue, en pixels de
+//                        la vue du jeu. Donne la correspondance vue → écran (décalage et
+//                        échelle). Les carrés sont posés À L'INTÉRIEUR de la vue : les
+//                        coins sont couverts par la barre de Roblox et le filigrane Windows.
 //   click n x y          clic gauche au point (x, y) de la vue du jeu.
 //   move n x y           déplace seulement le pointeur.
 //   key n vk ms          appui sur une touche (code virtuel), maintenue ms millisecondes.
@@ -324,7 +327,9 @@ internal sealed class InputBridge
         {
             if (op == "calib")
             {
-                Calibrate(id, Num(parts, 0), Num(parts, 1), Num(parts, 2), Num(parts, 3));
+                Calibrate(id, Num(parts, 0), Num(parts, 1), Num(parts, 2), Num(parts, 3),
+                    parts.Length >= 6 ? Num(parts, 4) : Num(parts, 2) + Num(parts, 0),
+                    parts.Length >= 6 ? Num(parts, 5) : Num(parts, 3) + Num(parts, 1));
                 return;
             }
             if (op == "shot")
@@ -503,7 +508,7 @@ internal sealed class InputBridge
             || sc == 0x50;
     }
 
-    private void Calibrate(string id, double ax, double ay, double bx, double by)
+    private void Calibrate(string id, double ax, double ay, double bx, double by, double vw, double vh)
     {
         using (Bitmap screen = AwCapture.CaptureScreen())
         {
@@ -541,9 +546,8 @@ internal sealed class InputBridge
             scaleY = (maxY + 1 - minY) / (by - ay);
             originX = minX - ax * scaleX;
             originY = minY - ay * scaleY;
-            // Vue du jeu supposée symétrique autour des repères (marge identique).
-            viewWidth = bx + ax;
-            viewHeight = by + ay;
+            viewWidth = vw;
+            viewHeight = vh;
             calibrated = true;
             Note(string.Format(CultureInfo.InvariantCulture,
                 "{0} étalonnage : {1} pixels, écran ({2}, {3})–({4}, {5}), échelle {6:F3} × {7:F3}, origine ({8:F1}, {9:F1})",

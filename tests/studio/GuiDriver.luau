@@ -204,12 +204,16 @@ function Gui.calibrate(attempts: number?): (boolean, string)
         markerA.AutoButtonColor = false
         markerA.BorderSizePixel = 0
         markerA.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
-        markerA.Position = UDim2.fromOffset(20, 20)
+        -- Repères à l'intérieur de la vue : les coins sont couverts par la barre de Roblox
+        -- (au-dessus des interfaces du jeu) et par le filigrane de Windows dans la VM.
+        local ax, ay = math.floor(size.X * 0.22), math.floor(size.Y * 0.3)
+        local bx, by = math.floor(size.X * 0.78), math.floor(size.Y * 0.72)
+        markerA.Position = UDim2.fromOffset(ax, ay)
         markerA.Size = UDim2.fromOffset(30, 30)
         markerA.Parent = holder
         local markerB = markerA:Clone()
         markerB.Name = "RepereB"
-        markerB.Position = UDim2.fromOffset(size.X - 50, size.Y - 50)
+        markerB.Position = UDim2.fromOffset(bx - 30, by - 30)
         markerB.Parent = holder
         local insetHolder = Instance.new("ScreenGui")
         insetHolder.Name = "AW_TestCalibrationInset"
@@ -220,7 +224,7 @@ function Gui.calibrate(attempts: number?): (boolean, string)
         insetButton.Name = "ControleBande"
         insetButton.Text = "AW"
         insetButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        insetButton.Position = UDim2.new(0.5, -40, 0, 30)
+        insetButton.Position = UDim2.new(0.5, -40, 0.45, 0)
         insetButton.Size = UDim2.fromOffset(80, 40)
         insetButton.Parent = insetHolder
         holder.Parent = playerGui()
@@ -235,10 +239,10 @@ function Gui.calibrate(attempts: number?): (boolean, string)
         end)
         frames(5)
         task.wait(0.4)
-        send("calib", 20, 20, size.X - 20, size.Y - 20)
+        send("calib", ax, ay, bx, by, size.X, size.Y)
         task.wait(1.2)
         local sentAt = os.clock()
-        send("click", 35, 35)
+        send("click", ax + 15, ay + 15)
         Gui.waitFor(function()
             return hitA
         end, 8)
