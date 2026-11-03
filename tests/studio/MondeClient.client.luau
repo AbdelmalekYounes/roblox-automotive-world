@@ -80,6 +80,26 @@ for _, part in (decorFolder and decorFolder:GetDescendants()) or {} do
 end
 record("monde.client.routes_recues", roads > 1000, roads .. " pièces de route")
 record("monde.client.decor_proche_recu", decor > 0, decor .. " pièces de décor")
+-- Lot 0.9 : habillage du lot 0.8 (accessoires par zone, streaming normal) reçu près de l'apparition.
+local dressing = Workspace:FindFirstChild("OpenWorld") and (Workspace.OpenWorld :: Instance):FindFirstChild("Habillage")
+local dressingParts, dressingZones = 0, {}
+for _, zoneFolder in (dressing and dressing:GetChildren()) or {} do
+    local count = 0
+    for _, item in zoneFolder:GetDescendants() do
+        if item:IsA("BasePart") then
+            count += 1
+        end
+    end
+    if count > 0 then
+        table.insert(dressingZones, zoneFolder.Name .. " " .. count)
+    end
+    dressingParts += count
+end
+record(
+    "monde.client.habillage_recu",
+    dressing ~= nil and dressingParts > 0,
+    dressingParts .. " pièce(s) : " .. table.concat(dressingZones, ", ")
+)
 measures.routes_recues = roads
 measures.decor_recu = decor
 

@@ -353,9 +353,17 @@ local function main()
         -- ===== Vente conclue (joueur 2) : crédit du vendeur moins la commission =====
         local sold = waitSignal("Bought", 300)
         local sellerAfter = 0
+        -- Le crédit de la vente (prix − 5 %) figure au journal du vendeur, quel que soit le moment
+        -- où il est arrivé (pendant le plein, par exemple).
         local credited = waitFor(function()
-            sellerAfter = balance()
-            return sellerAfter > fuelAfter
+            local snap = snapshot()
+            sellerAfter = if snap.Wallet then snap.Wallet.Balance else 0
+            for _, entry in snap.Ledger or {} do
+                if entry.Amount == 19000 then
+                    return true
+                end
+            end
+            return false
         end, 30)
         record(
             prefix .. "vendeur_credite",

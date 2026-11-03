@@ -49,6 +49,8 @@ local signalEvent = ReplicatedStorage:WaitForChild("AWTestSignal", 30)
 local racingFolder = ReplicatedStorage:WaitForChild("AWRacing", 30) :: Instance
 local racing = racingFolder:WaitForChild("Request", 10) :: RemoteFunction
 local racePush = racingFolder:WaitForChild("Push", 10) :: RemoteEvent
+local RaceCourses =
+    require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Racing"):WaitForChild("RaceCourses")) :: any
 local progression = (ReplicatedStorage:WaitForChild("AWProgression", 30) :: Instance):WaitForChild(
         "Request",
         10
@@ -264,7 +266,8 @@ local function runEvent(label: string, kmh: number, falseStart: boolean?, maxS: 
             local now = Workspace:GetServerTimeNow()
             local startT = me.StartT or v.StartT
             local waiting = startT ~= nil and now < startT
-            if waiting and not (falseStart and now > startT - 1.5) then
+            -- Faux départ volontaire : on part 3 s avant le feu vert (ligne franchie trop tôt).
+            if waiting and not (falseStart and now > startT - 3) then
                 driving.Hold = true
             elseif v.Discipline == "Drift" then
                 -- Drift : cercle serré autour du centre de la zone, frein à main par à-coups.
@@ -279,6 +282,11 @@ local function runEvent(label: string, kmh: number, falseStart: boolean?, maxS: 
                 end
             else
                 local next = me.Checkpoints and me.Checkpoints[1]
+                if next == nil then
+                    -- Sans point de passage publié (drag) : viser le bout du parcours.
+                    local course = RaceCourses.get(v.CourseId)
+                    next = course and course.Points[#course.Points]
+                end
                 if next then
                     driving.Target = meters(next)
                     driving.SpeedKmh = kmh
@@ -291,6 +299,11 @@ local function runEvent(label: string, kmh: number, falseStart: boolean?, maxS: 
     end
     driving.Launch = nil
     driving.Hold = true
+    local final = view and view.Me
+    if final and final.Status == "Racing" then
+        -- Épreuve non terminée dans le délai : abandon (libère l'engagement pour la suivante).
+        race("Abandon")
+    end
     waitFor(function()
         return view == nil or (view.Me and view.Me.Status ~= "Racing") or view.State == "Finished"
     end, 30)
