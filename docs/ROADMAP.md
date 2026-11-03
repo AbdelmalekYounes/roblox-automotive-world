@@ -97,6 +97,20 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   manette, lisibilité, communications, confidentialité multijoueur et DataStore **NON TESTÉS**.
 - Rapport : `docs/lot-0.7/RAPPORT_LOT_0.7.md` ; architecture : `docs/lot-0.7/ARCHITECTURE_LOT_0.7.md`.
 
+## État du lot 0.8 (branche `feat/art-audio-onboarding-0.8`, PR brouillon, base : lot 0.7)
+
+- Livré : manifeste des ressources (aucun identifiant Roblox inventé), direction artistique, gamme PROPOSÉE de 18
+  modèles fictifs intégrée au moteur physique et aux concessions (en attente d'approbation), carrosseries et
+  habitacles par silhouette, place passager, habillage des sept zones, feux de nuit, qualité graphique, audio
+  modulaire et radio (contrôleurs ; 30 sons originaux synthétisés, non téléversés), mode photo, parcours d'arrivée
+  passable avec essais protégés et choix confirmé, exercices de formation, protection d'apparition, traduction des
+  panneaux des lots 0.4 à 0.6, profil v5 et préférences v2.
+- En attente du propriétaire : approbation de la gamme et des trois véhicules de départ, écoute et téléversement
+  des sons.
+- Vérifié : tests Lune et pytest des règles pures ; rendu, sons, radio multijoueur, mode photo, parcours avec de
+  vrais comptes et performances **NON TESTÉS** (`docs/QA_BACKLOG.md` §3 sexies).
+- Rapport : `docs/lot-0.8/RAPPORT_LOT_0.8.md` ; architecture : `docs/lot-0.8/ARCHITECTURE_LOT_0.8.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.

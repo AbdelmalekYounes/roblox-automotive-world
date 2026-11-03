@@ -70,6 +70,8 @@ local DEFAULTS: { Binding } = {
         WhileMoving = true,
     },
     { Action = "HudLevel", Context = "Global", Keyboard = "H", Gamepad = nil, Rebindable = true, WhileMoving = true },
+    -- Lot 0.8 : mode photo (refusé en roulant par PhotoRules ; manette : application Photo du téléphone).
+    { Action = "Photo", Context = "Global", Keyboard = "O", Gamepad = nil, Rebindable = true, WhileMoving = false },
     { Action = "ClearRoute", Context = "Map", Keyboard = "X", Gamepad = nil, Rebindable = true, WhileMoving = true },
     {
         Action = "Back",

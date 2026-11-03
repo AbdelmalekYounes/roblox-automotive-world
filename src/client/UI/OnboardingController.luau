@@ -88,6 +88,7 @@ local function report(response: any)
     footer.Text = if response.Status == "Ok"
             or response.Status == "Confirmed"
             or response.Status == "Pending"
+            or response.Status == "Duplicate"
         then Localization.t("ui.done")
         else Localization.t("ui.refused", { reason = Localization.t(response.Error) })
 end
@@ -132,7 +133,9 @@ local function renderFlow()
             line(Localization.t("onb.devCandidates"), 14)
         end
         if #status.Candidates == 0 then
+            -- Liste officielle pas encore publiée : on poursuit sans choisir (aucun blocage).
             line(Localization.t("StarterCatalogUnavailable"))
+            line(Localization.t("onb.chooseLater"), 14)
         end
         for _, candidate in status.Candidates do
             line(candidateLine(candidate), 15, true)
@@ -153,9 +156,9 @@ local function renderFlow()
                 render()
             end)
         end
-        if current == "Starters" then
+        if current == "Starters" or (#status.Candidates == 0 and not status.StarterChosen) then
             button(Localization.t("onb.next"), function()
-                step("Starters")
+                step(current)
             end)
         end
         if confirming then

@@ -34,6 +34,7 @@ local SocialController = require(script.Parent.SocialController)
 local SettingsController = require(script.Parent.SettingsController)
 local MapController = require(script.Parent.MapController)
 local OnboardingController = require(script.Parent.OnboardingController)
+local PhotoMode = require(script.Parent.PhotoMode)
 local RadioController = require(script.Parent.Parent:WaitForChild("Audio"):WaitForChild("RadioController"))
 
 local PhoneController = {}
@@ -47,6 +48,7 @@ local APPS = {
     "Market",
     "Social",
     "Radio",
+    "Photo",
     "Guide",
     "Settings",
     "Notifications",
@@ -60,6 +62,7 @@ local ICONS = {
     Market = "$",
     Social = "☺",
     Radio = "♪",
+    Photo = "◎",
     Guide = "?",
     Settings = "⚙",
     Notifications = "🔔",
@@ -746,6 +749,12 @@ render = function()
         renderGuide()
     elseif app == "Radio" then
         renderRadio()
+    elseif app == "Photo" then
+        line(Localization.t("photo.rules"))
+        button(Localization.t("photo.open"), function()
+            UIManager.close("Phone")
+            PhotoMode.request()
+        end)
     elseif app == "Settings" then
         renderSettings()
     else

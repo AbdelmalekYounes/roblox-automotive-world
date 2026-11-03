@@ -14,6 +14,10 @@ local VehicleConstants = {
     -- Étiquette CollectionService portée par chaque véhicule d'essai.
     VehicleTag = "AWVehicle",
 
+    -- Lot 0.8 : groupes de collision. Les véhicules entrent en collision avec
+    -- tout, SAUF un personnage protégé à sa première apparition (60 s au plus).
+    CollisionGroups = table.freeze({ Vehicle = "AWVehicule", Protected = "AWArrivee" }),
+
     RemotesFolderName = "AutomotiveWorldRemotes",
     Remotes = table.freeze({
         Action = "VehicleAction", -- RemoteEvent client → serveur (actions discrètes)

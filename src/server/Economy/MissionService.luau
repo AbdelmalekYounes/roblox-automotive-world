@@ -322,7 +322,8 @@ local function sample(player: Player, entry: Active)
     local model = drivenModel(player)
     local body: BasePart = root
     local primary = if model then model.PrimaryPart else nil
-    local inVehicle = primary ~= nil
+    -- Lot 0.8 : un véhicule d'essai (parcours d'arrivée) ne fait jamais progresser une mission.
+    local inVehicle = primary ~= nil and not (model and model:GetAttribute("AWTestDrive") == true)
     if primary then
         body = primary
     end

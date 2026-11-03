@@ -72,6 +72,10 @@ local T: { [string]: { string } } = {
         "Optional and repeatable, they give no reward. Pick an exercise and follow the hint.",
     },
     ["onb.enterWorld"] = { "Entrer dans le monde", "Enter the world" },
+    ["onb.chooseLater"] = {
+        "Vous pourrez choisir votre véhicule de départ depuis le garage dès que la liste officielle sera publiée.",
+        "You will be able to choose your starter vehicle from the garage as soon as the official list is published.",
+    },
     ["phone.app.Guide"] = { "Guide", "Guide" },
     OnboardingStepUnknown = { "Étape inconnue.", "Unknown step." },
     OnboardingStepOrder = { "Étape hors d'ordre.", "Step out of order." },
@@ -80,6 +84,10 @@ local T: { [string]: { string } } = {
         "Choose your starter vehicle first.",
     },
     ExerciseUnknown = { "Exercice inconnu.", "Unknown exercise." },
+    TestDriveNoRewards = {
+        "Véhicule d'essai : aucune course ni mission avec lui.",
+        "Test-drive vehicle: no races or jobs with it.",
+    },
     PassengerIsDriver = { "Vous conduisez déjà ce véhicule.", "You are already driving this vehicle." },
     PassengerNotAllowed = {
         "Place passager réservée au propriétaire et à son groupe (ou au groupe du conducteur).",
@@ -157,6 +165,50 @@ local T: { [string]: { string } } = {
     RadioDriverOnly = { "Seul le conducteur choisit la station.", "Only the driver chooses the station." },
     RadioStationUnknown = { "Station inconnue.", "Unknown station." },
     RadioStationUnavailable = { "Station indisponible pour le moment.", "Station unavailable for now." },
+
+    -- ===================== Mode photo (AUD-PHOTO-01) =====================
+    ["phone.app.Photo"] = { "Photo", "Photo" },
+    ["action.Photo"] = { "Mode photo", "Photo mode" },
+    ["photo.open"] = { "Ouvrir le mode photo", "Open photo mode" },
+    ["photo.rules"] = {
+        "À pied, ou à bord d'un véhicule à l'arrêt ; jamais pendant une course. Caméra limitée autour de vous, sans traverser les murs. Réglages visibles par vous seul.",
+        "On foot, or in a stopped vehicle; never during a race. Camera limited around you, never through walls. Settings only visible to you.",
+    },
+    ["photo.help"] = {
+        "W/A/S/D : déplacer · Q/E : descendre/monter · flèches : orienter · I : interface",
+        "W/A/S/D: move · Q/E: down/up · arrows: aim · I: interface",
+    },
+    ["photo.status"] = {
+        "Champ {fov}° · exposition {exposure} · profondeur {dof} ({focus} m) · filtre {filter}",
+        "FOV {fov}° · exposure {exposure} · depth of field {dof} ({focus} m) · filter {filter}",
+    },
+    ["photo.zoomIn"] = { "Zoom +", "Zoom in" },
+    ["photo.zoomOut"] = { "Zoom −", "Zoom out" },
+    ["photo.exposureUp"] = { "Exposition +", "Exposure +" },
+    ["photo.exposureDown"] = { "Exposition −", "Exposure −" },
+    ["photo.dof"] = { "Profondeur de champ", "Depth of field" },
+    ["photo.focus"] = { "Distance de netteté", "Focus distance" },
+    ["photo.filter"] = { "Filtre suivant", "Next filter" },
+    ["photo.hide"] = { "Masquer l'interface", "Hide interface" },
+    ["photo.capture"] = { "Capturer", "Capture" },
+    ["photo.exit"] = { "Quitter", "Exit" },
+    ["photo.filter.None"] = { "aucun", "none" },
+    ["photo.filter.Warm"] = { "chaud", "warm" },
+    ["photo.filter.Cool"] = { "froid", "cool" },
+    ["photo.filter.Mono"] = { "noir et blanc", "black and white" },
+    ["photo.filter.Vintage"] = { "rétro", "vintage" },
+    ["photo.filter.Vivid"] = { "éclatant", "vivid" },
+    ["photo.captureUnavailable"] = {
+        "Capture intégrée indisponible ici : utilisez la capture d'écran de Roblox.",
+        "Built-in capture unavailable here: use Roblox's screenshot feature.",
+    },
+    PhotoRacing = { "Mode photo indisponible pendant une course.", "Photo mode unavailable during a race." },
+    PhotoDriverMoving = { "Arrêtez-vous pour prendre une photo.", "Stop to take a photo." },
+    PhotoPassengerMoving = {
+        "Mode photo en passager : seulement à l'arrêt.",
+        "Photo mode as a passenger: only when stopped.",
+    },
+    PhotoUnavailable = { "Mode photo indisponible ici.", "Photo mode unavailable here." },
 
     -- ===================== Paramètres : audio et graphismes =====================
     ["settings.volume.Engine"] = { "moteur", "engine" },
@@ -260,8 +312,8 @@ local T: { [string]: { string } } = {
     },
     ["vehicle.wk_vigie.category"] = { "Grand SUV", "Large SUV" },
     ["vehicle.wk_vigie.desc"] = {
-        "Lourd mais puissant, sept places : confortable et rassurant.",
-        "Heavy yet powerful, seven seats: comfortable and reassuring.",
+        "Lourd mais puissant, grand habitacle : confortable et rassurant.",
+        "Heavy yet powerful, roomy cabin: comfortable and reassuring.",
     },
     ["vehicle.wk_sentier.category"] = { "Tout-terrain", "Off-roader" },
     ["vehicle.wk_sentier.desc"] = {

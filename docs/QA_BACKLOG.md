@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.7. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.8. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03, lot 0.7 (branche `feat/ui-gps-social-0.7`).
+Dernière mise à jour : 2026-11-03, lot 0.8 (branche `feat/art-audio-onboarding-0.8`).
 
 ## 1. Anomalies ouvertes
 
@@ -185,8 +185,33 @@ ni les communications Roblox, ni la confidentialité en multijoueur réel.
 | QA-U09 | Préférences sur DataStore | P2 | Préférences sauvegardées puis retrouvées après reconnexion, sur une expérience de test isolée ; changements rapides répétés | Retrouvées ; aucune écriture par changement visuel | **NON TESTÉ** (mémoire seulement) |
 | QA-U10 | Téléphone en main | P2 | Modèle dans la main (R15, R6), bras levé, rangement, vu par les autres joueurs | Pose correcte, écran générique pour les autres | **NON TESTÉ** |
 | QA-U11 | Mini-carte et carte | P2 | Coût du dessin (mini-carte 5 Hz, carte), lisibilité des routes et des icônes, rotation | Images par seconde stables ; dessin lisible | **NON TESTÉ** |
-| QA-U12 | Localisation | P2 | Relecture FR/EN de tous les textes, longueur des textes anglais dans les cadres | Aucun débordement, traductions justes | **NON TESTÉ** (relecture lot 0.8) |
+| QA-U12 | Localisation | P2 | Relecture FR/EN de tous les textes, longueur des textes anglais dans les cadres | Aucun débordement, traductions justes | **NON TESTÉ** (lot 0.8 : panneaux des lots 0.4–0.6 traduits, contrôle automatique des clés seulement ; relecture humaine à faire) |
 | QA-U13 | Notifications en conduite | P2 | Différées, compactes et critiques pendant une conduite réelle ; aide visuelle | Route dégagée, alertes critiques perçues | **NON TESTÉ** (humain) |
+
+## 3 sexies. Essais reportés du lot 0.8 (rendu, gamme, audio, radio, photo, arrivée)
+
+Les règles pures (fiches et définitions des 18 modèles, catalogue, séparation des actifs provisoires, conditions et
+unicité du véhicule de départ, propriété gratuite, isolation des essais, mode photo, radio, réglages audio et
+graphiques, localisation, migrations, manifeste, place passager) sont vérifiées par Lune
+(`tests/lune/specs/Lot08Content.luau`) et pytest (`tests/test_lot08.py`). Cela ne valide ni le rendu, ni le son
+réel, ni le ressenti, ni le comportement multijoueur.
+
+| Id | Système | Priorité | Essai | Attendu | État |
+|---|---|---|---|---|---|
+| QA-V01 | Direction artistique | P2 | Validation artistique humaine : carrosseries des 10 silhouettes, habitacles, habillage des 7 zones, étalonnage jour/nuit, effets par qualité | Cohérent, lisible, conforme à `DIRECTION_ARTISTIQUE.md` | **NON TESTÉ** (humain) |
+| QA-V02 | Gamme de 18 | P1 | Essais réels des 18 modèles (accélération, freinage, virage, vitesse de pointe, boîtes, aides) dans Studio puis par un humain | Comportement conforme aux fiches ; valeurs du banc planaire confirmées ou corrigées | **NON TESTÉ** (banc planaire hors Studio seulement) |
+| QA-V03 | Carrosseries et collisions | P1 | Coque, boucliers et habitacle collidables des 10 silhouettes : chocs, sortie, dommages du lot 0.2, place passager | Aucune pièce coinçante, sortie possible, dommages visibles | **NON TESTÉ** |
+| QA-V04 | Sons moteur | P2 | Ressenti des moteurs et des sons (après téléversement par le propriétaire) : fondus de couches, électrique, calage | Sons crédibles, fondus sans saut | **NON TESTÉ** (aucun son téléversé : rien n'est joué en jeu) |
+| QA-V05 | Audio spatial | P2 | Atténuation par distance, nombre de véhicules sonorisés par qualité, ambiances par zone et pluie | Spatialisation correcte, aucune saturation | **NON TESTÉ** |
+| QA-V06 | Radio multijoueur | P1 | Conducteur et deux passagers : changer de station, couper chez un passager, régler les volumes, sortir du véhicule ; joueur extérieur | Station commune pilotée par le conducteur ; coupure et volume individuels ; rien entendu dehors (SCN-19) | **NON TESTÉ** (stations indisponibles tant que les pistes ne sont pas téléversées) |
+| QA-V07 | Mode photo complet | P1 | À pied, conducteur arrêté, passager ; caméra contre un mur et près d'une propriété ; ouverture en course ; masquage et restauration ; capture et enregistrement | Caméra bornée, aucun mur traversé, refus en course, restauration exacte, capture proposée (SCN-20) | **NON TESTÉ** |
+| QA-V08 | Parcours d'arrivée | P1 | Onboarding avec des comptes réels : nouveau joueur, passage de l'introduction, essai, choix confirmé, reconnexion pendant le choix, joueur existant (migration 4 → 5) | Un seul véhicule, propriété unique, parcours non imposé aux anciens joueurs | **NON TESTÉ** (Dev, candidats synthétiques ; aucune attribution en test ou production avant approbation) |
+| QA-V09 | Protection d'apparition | P2 | Véhicule lancé sur un nouveau joueur pendant 60 s ; fin à la montée en voiture | Aucun choc subi ; protection levée ensuite | **NON TESTÉ** |
+| QA-V10 | Exercices | P3 | Les 8 exercices en jeu, dont stationnement et changement de rapport en boîte automatique | Réussite détectée, aucun crédit | **NON TESTÉ** |
+| QA-V11 | Performances du rendu | P1 | Images par seconde et mémoire avec l'habillage (≈ 47 650 pièces), nuit avec sources de lumière, qualités basse à haute | Mesure réelle ; aucun objectif déclaré atteint | **NON TESTÉ** |
+| QA-V12 | Compatibilité des actifs | P2 | Téléversement réel des 30 sons (modération, formats), puis lecture en jeu | Acceptés et joués | **NON TESTÉ** (propriétaire) |
+| QA-V13 | Charge à 24 joueurs | P1 | 24 joueurs avec feux, sons et radio actifs | Fréquence stable | **NON TESTÉ** |
+| QA-V14 | Manette | P2 | Téléphone sur Select, invite d'entrée sur X, mode photo par l'application Photo, garage par le téléphone | Aucun conflit de touches | **NON TESTÉ** (humain) |
 
 ## 4. Charge, performance et stabilité
 
@@ -194,7 +219,7 @@ ni les communications Roblox, ni la confidentialité en multijoueur réel.
 |---|---|---|---|---|---|
 | QA-P01 | Serveur | P1 | 24 joueurs répartis dans les zones, trafic à 140 agents | Fréquence serveur stable ; coût de `TrafficService` mesuré par pas | **NON TESTÉ** |
 | QA-P02 | Client | P1 | Images par seconde sur un appareil de référence (ordinateur et mobile), métropole dense, pluie, nuit | Mesure réelle ; **aucun objectif (~60 FPS) n'est déclaré atteint** | **NON TESTÉ** |
-| QA-P03 | Mémoire | P2 | Mémoire client et serveur avec la carte complète (≈ 37 000 pièces) et le streaming | Mesure réelle, comparaison avec et sans streaming | **NON TESTÉ** |
+| QA-P03 | Mémoire | P2 | Mémoire client et serveur avec la carte complète (≈ 47 650 pièces depuis le lot 0.8) et le streaming | Mesure réelle, comparaison avec et sans streaming | **NON TESTÉ** |
 | QA-P04 | Réseau | P2 | Bande passante par joueur (trafic physique, véhicules, attributs météo) | Mesure réelle | **NON TESTÉ** |
 | QA-P05 | Démarrage | P2 | Temps de démarrage serveur (calcul `WorldLayout`, `TrafficModel.newWorld`) et client (index des trottoirs) | Mesure réelle | **NON TESTÉ** |
 | QA-P06 | Stabilité | P2 | Session longue (≥ 2 h) | Pas de fuite (corps PNJ, figurants), pas de blocage du trafic | **NON TESTÉ** |

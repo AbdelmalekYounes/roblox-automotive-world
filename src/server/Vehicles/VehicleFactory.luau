@@ -17,6 +17,7 @@
 
 local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
+local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles")
@@ -145,7 +146,23 @@ end
     `pivot` : CFrame du centre de gravité (orientation = sens de marche -Z).
     Le véhicule n'appartient à personne : identifiant de session non persistant.
 ]]
+-- Groupes de collision (lot 0.8) : enregistrés une fois ; véhicule ↔ personnage protégé désactivé.
+local groupsReady = false
+local function ensureCollisionGroups()
+    if groupsReady then
+        return
+    end
+    groupsReady = true
+    local groups = Constants.CollisionGroups
+    pcall(function()
+        PhysicsService:RegisterCollisionGroup(groups.Vehicle)
+        PhysicsService:RegisterCollisionGroup(groups.Protected)
+        PhysicsService:CollisionGroupSetCollidable(groups.Vehicle, groups.Protected, false)
+    end)
+end
+
 function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFrame, padIndex: number): Model
+    ensureCollisionGroups()
     local chassis = definition.Chassis
     local tire = definition.Tires
     local appearance = definition.Appearance
@@ -504,6 +521,12 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     model:SetAttribute(Constants.Attributes.IsTestVehicle, true)
     model:SetAttribute(Constants.Attributes.PadIndex, padIndex)
     CollectionService:AddTag(model, Constants.VehicleTag)
+    -- Même comportement que le groupe par défaut, sauf face à un personnage protégé.
+    for _, item in model:GetDescendants() do
+        if item:IsA("BasePart") then
+            item.CollisionGroup = Constants.CollisionGroups.Vehicle
+        end
+    end
 
     return model
 end

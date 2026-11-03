@@ -72,10 +72,13 @@ end
 
 --[[
     Étape vue (« suivant »). On n'avance que d'une étape à la fois, sans
-    sauter le choix du véhicule (l'étape « Choose » n'est franchie que par
-    starterChosen). Renvoie (accepté, raison).
+    sauter le choix du véhicule : l'étape « Choose » n'est franchie que par
+    starterChosen, SAUF si aucun candidat n'est disponible (`canChoose` faux :
+    liste officielle encore vide en test ou en production) — le joueur n'est
+    alors pas bloqué et choisira son véhicule quand la liste sera publiée.
+    Renvoie (accepté, raison).
 ]]
-function OnboardingRules.advance(state: State, step: any, now: number): (boolean, string?)
+function OnboardingRules.advance(state: State, step: any, now: number, canChoose: boolean?): (boolean, string?)
     local current = index(state.Step)
     local target = if type(step) == "string" then index(step) else nil
     if current == nil or target == nil then
@@ -84,7 +87,7 @@ function OnboardingRules.advance(state: State, step: any, now: number): (boolean
     if target ~= current then
         return false, "OnboardingStepOrder"
     end
-    if step == "Choose" then
+    if step == "Choose" and canChoose ~= false then
         return false, "OnboardingChooseStarter"
     end
     state.Seen[step] = now
@@ -95,10 +98,11 @@ function OnboardingRules.advance(state: State, step: any, now: number): (boolean
     return true, nil
 end
 
--- Passer l'introduction : on va directement au choix du véhicule (ou à la fin s'il est fait).
-function OnboardingRules.skip(state: State, starterChosen: boolean, now: number)
+-- Passer l'introduction : on va directement au choix du véhicule (ou à la fin s'il est
+-- fait, ou si aucun candidat n'est disponible).
+function OnboardingRules.skip(state: State, starterChosen: boolean, now: number, canChoose: boolean?)
     state.Skipped = true
-    if starterChosen then
+    if starterChosen or canChoose == false then
         state.Step = "Done"
         state.CompletedAt = state.CompletedAt or now
     elseif (index(state.Step) or 1) < (index("Choose") :: number) then

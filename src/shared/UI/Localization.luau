@@ -707,6 +707,19 @@ function Localization.t(key: string?, params: { [string]: any }?, language: Lang
 end
 
 -- Ancien format « %d / %s » (notices du véhicule).
+-- Libellés des panneaux des lots 0.4 à 0.6 (lot 0.8) : le texte français sert de clé
+-- (PanelTexts) ; en anglais, repli sur le français seulement si la traduction manque.
+local PANEL: { [string]: string } = require(script.Parent.PanelTexts)
+Localization.PanelTexts = PANEL
+
+function Localization.tr(french: string, ...: any): string
+    local text = if current == "en" then (PANEL[french] or french) else french
+    if select("#", ...) > 0 then
+        return string.format(text, ...)
+    end
+    return text
+end
+
 function Localization.format(key: string, value: any, language: Language?): string
     local text = raw(key, language or current)
     if text == nil then

@@ -5,8 +5,10 @@
     - Progression du parcours dans le profil (Onboarding, schéma 5), par
       mutations NON sensibles (aucun crédit, aucun objet) ; règles pures :
       Shared/Onboarding/OnboardingRules.
-    - Première apparition protégée : champ de force de 60 s (aucune
-      invulnérabilité durable), seulement tant que le parcours n'est pas fini.
+    - Première apparition protégée : champ de force et groupe de collision
+      « AWArrivee » (aucun véhicule ne percute le personnage) pendant 60 s au
+      plus, ou jusqu'à la montée dans un véhicule ; aucune invulnérabilité
+      durable, seulement tant que le parcours n'est pas fini.
     - Essai facultatif d'un candidat : véhicule TEMPORAIRE protégé à côté du
       joueur (aucune écriture durable, jamais dans le profil, aucune
       récompense), 3 min au plus, un à la fois, rejouable.
@@ -29,6 +31,7 @@ local StarterCatalog = require(Shared:WaitForChild("Garage"):WaitForChild("Start
 local VehicleCatalog = require(Shared:WaitForChild("Economy"):WaitForChild("VehicleCatalog"))
 local WorkingCatalog =
     require(Shared:WaitForChild("Vehicles"):WaitForChild("Definitions"):WaitForChild("WorkingCatalog"))
+local Constants = require(Shared.Vehicles:WaitForChild("VehicleConstants"))
 
 local ProfileService = require(script.Parent.Parent.Persistence.ProfileService)
 local RateLimiter = require(script.Parent.Parent.Security.RateLimiter)
@@ -126,16 +129,22 @@ handlers.Status = function(player)
     return { Status = "Ok", Result = status(player) }
 end
 
+-- Un choix est-il possible ici (candidats disponibles et véhicule pas encore choisi) ?
+local function canChoose(profile: any): boolean
+    local candidates = StarterCatalog.candidates(ProfileService.environment().Name)
+    return #candidates > 0 and profile.Starter.State ~= "Chosen"
+end
+
 handlers.Advance = function(player, payload)
     local step = if type(payload) == "table" then payload.Step else nil
     return mutate(player, function(profile)
-        return OnboardingRules.advance(profile.Onboarding, step, os.time())
+        return OnboardingRules.advance(profile.Onboarding, step, os.time(), canChoose(profile))
     end)
 end
 
 handlers.Skip = function(player)
     return mutate(player, function(profile)
-        OnboardingRules.skip(profile.Onboarding, profile.Starter.State == "Chosen", os.time())
+        OnboardingRules.skip(profile.Onboarding, profile.Starter.State == "Chosen", os.time(), canChoose(profile))
         return true, nil
     end)
 end
@@ -157,6 +166,8 @@ handlers.TestDrive = function(player, payload)
     if model == nil then
         return rejected("NoSpaceForVehicle")
     end
+    -- Marque d'essai : refusée par les missions et les courses (aucune récompense possible).
+    model:SetAttribute("AWTestDrive", true)
     testDrives[player] = { Model = model, Until = os.clock() + OnboardingRules.TestDriveS }
     local session = ProfileService.get(player)
     if session and session.Data then
@@ -231,11 +242,47 @@ local function protect(player: Player, character: Model)
     field.Name = "ProtectionArrivee"
     field.Visible = true
     field.Parent = character
-    task.delay(OnboardingRules.SpawnProtectionS, function()
+    -- Aucun véhicule ne peut percuter le personnage pendant la protection.
+    local group = Constants.CollisionGroups.Protected
+    local function shield(item: Instance)
+        if item:IsA("BasePart") then
+            item.CollisionGroup = group
+        end
+    end
+    for _, item in character:GetDescendants() do
+        shield(item)
+    end
+    local added = character.DescendantAdded:Connect(shield)
+    local ended = false
+    local seated: RBXScriptConnection? = nil
+    local function finish()
+        if ended then
+            return
+        end
+        ended = true
+        added:Disconnect()
+        if seated then
+            (seated :: RBXScriptConnection):Disconnect()
+        end
         if field.Parent then
             field:Destroy()
         end
-    end)
+        for _, item in character:GetDescendants() do
+            if item:IsA("BasePart") and item.CollisionGroup == group then
+                item.CollisionGroup = "Default"
+            end
+        end
+    end
+    -- Fin anticipée en montant dans un véhicule (aucune protection au volant).
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        seated = humanoid.Seated:Connect(function(active)
+            if active then
+                finish()
+            end
+        end)
+    end
+    task.delay(OnboardingRules.SpawnProtectionS, finish)
 end
 
 function OnboardingService.start()
