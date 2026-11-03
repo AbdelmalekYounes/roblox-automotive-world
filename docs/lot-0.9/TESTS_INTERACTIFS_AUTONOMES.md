@@ -17,7 +17,7 @@ Les campagnes du lot 0.9 (`20261103-185530`, 649 / 3 ; `20261103-193356`, 41 / 0
 jeu et un pilote automatique : conduite, collisions, banc des 18 modèles, économie et marché, six disciplines de course,
 monde ouvert et mesures. Elles n'ont **pas** été relancées à l'identique : le lot 0.9.1 ajoute ce qui manquait (vrais
 clics et vraies touches, métiers de bout en bout, trajets GPS, social à deux clients, drift noté, captures inspectées).
-Elles sont rejouées **une fois**, en fin de lot, comme contrôle de non-régression du code corrigé (§10).
+Elles sont rejouées **une fois**, en fin de lot, comme contrôle de non-régression du code corrigé (§14).
 
 ## 2. Capacités d'interaction réellement disponibles
 
@@ -77,7 +77,7 @@ l'attente de la VM.
 | `213328` | `e1c7207` | Dev | `ui`, `metiers`, `drift`, `lot08` | 266 / 6 | **Drift : score 310** ; métiers 6 / 8 ; cockpit ≥ 10° sur 27 véhicules ; QA-F18 trouvé |
 | `220054` | `82731da` | Monde ouvert | `gps`, `ui_monde` | 156 / 6 | **5 arrivées GPS sur 7** ; QA-F20 trouvé ; 32 captures du monde |
 | `224247` | `790388e` | Dev | `ui`, `metiers`, `ui_marche` | 262 / 2 376 ² | QA-F16 et QA-F18 vérifiés ; métiers 7 / 8 ; QA-A08 (2 372 erreurs « clamp ») |
-| `225749` | `da9cfa2` | Monde ouvert | `gps2` | voir §6 | Montagnes et Motorsport après QA-F20 |
+| `225749` | `da9cfa2` | Monde ouvert | `gps2` | 38 / 4 | Itinéraire de montagne calculé (QA-F20 vérifié dans le jeu) ; aucune arrivée (pilote immobilisé) |
 
 ¹ Le « 0 échec » de `210055` contient **un faux succès du test** (`ui.marche.annonce_retiree_serveur`) : la lecture de
 l'état était refusée par le limiteur du serveur et passait pour « aucune annonce ». La capture 006 et le message du pied
@@ -169,7 +169,17 @@ vrai clic sur la carte est vérifié en §5).
 
 Zones traversées : Banlieues, Métropole, Littoral, Docks, Campagne (5 / 7). Recalcul après sortie d'itinéraire : une
 sortie dans un champ a été capturée lors de `203235` (capture 019), mais le rapport du client n'est pas arrivé
-(session trop longue) : **non mesuré** ; test refait du côté dégagé dans `gps2`. Résultat de `gps2` (`225749`) : §7 bis, complété en fin de lot.
+(session trop longue) : **non mesuré** ; test refait du côté dégagé dans `gps2`. 
+**`gps2` (`20261103-225749`, commit `da9cfa2`, après QA-F20)** : l'itinéraire vers la destination de montagne,
+refusé « Invalid » avant la correction, est **calculé dans le jeu** (7,5 km, 3 manœuvres, 3,3 km ≥ 90 km/h) ; celui
+du Motorsport aussi (4,9 km). Guidage affiché (« Dans 860 m : Tournez à gauche — Voie rapide de l'Ouest », capture 006)
+et notification **« Recalcul de l'itinéraire… »** observée (capture 016). **Aucune des deux arrivées** : véhicule
+endommagé dès les premières minutes puis immobilisé en Métropole derrière un véhicule arrêté (le pilote freine derrière
+un obstacle mais ne dépasse pas ; 18 et 48 dégagements), trajets abandonnés après 90 s d'immobilisation.
+
+Bilan des sept zones : **5 zones atteintes en conduite réelle** (Banlieues, Métropole, Littoral, Docks, Campagne) ;
+Montagnes et Motorsport : itinéraires calculés et guidage affiché, **arrivée NON OBTENUE** (limite du pilote, pas du
+jeu). Recalcul après sortie : observé (notification, capture 016), **non mesuré** par le contrôle automatique.
 
 ## 8. Campagne 4 — social et permissions à deux clients
 
