@@ -9,7 +9,6 @@
 -- GPS (le choix par vrais clics sur la carte est vérifié par la session « ui ») ; le
 -- véhicule est posé une seule fois, au départ, sur une rue proche du point d'apparition.
 
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
