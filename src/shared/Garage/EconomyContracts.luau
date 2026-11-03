@@ -48,9 +48,11 @@ local OPERATIONS: { Operation } = {
 }
 EconomyContracts.Operations = table.freeze(OPERATIONS)
 
--- Aucune opération payante n'est disponible avant le lot 0.5.
-function EconomyContracts.available(_operation: string): boolean
-    return false
+-- Lot 0.5 : les opérations sont implémentées (Economy/Commerce, Economy/Market).
+-- Le contenu de TRAVAIL (modèles provisoires, modules proposés) reste réservé à
+-- l'environnement de développement (VehicleCatalog.purchasable, Commerce.buyModule).
+function EconomyContracts.available(operation: string): boolean
+    return table.find(OPERATIONS, operation :: any) ~= nil
 end
 
 --[[

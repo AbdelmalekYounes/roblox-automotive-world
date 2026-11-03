@@ -113,13 +113,15 @@ return function(T: any, H: any)
         d.Powertrain.Drivetrain.FrontTorqueShare = 0.4
     end)
 
-    T.test("tous les prototypes et configurations de validation sont valides et gelés", function()
+    T.test("toutes les définitions (prototypes, validation, modèles de travail) sont valides et gelées", function()
         local ids = {}
         for _, definition in VehicleDefinitions.all() do
             local ok, errors = VehicleDefinitions.validate(definition)
             T.truthy(ok, definition.Id .. " : " .. table.concat(errors, " ; "))
             T.truthy(table.isfrozen(definition.Powertrain.Transmission), definition.Id .. " gelé")
-            T.truthy(definition.IsTestPrototype, definition.Id .. " marqué prototype")
+            -- Lot 0.5 : les modèles de travail du catalogue (« wk_ ») ne sont pas des prototypes.
+            local working = string.sub(definition.Id, 1, 3) == "wk_"
+            T.truthy(definition.IsTestPrototype ~= working, definition.Id .. " : statut prototype / travail")
             table.insert(ids, definition.Id)
         end
         for _, id in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "proto_p01_seq", "proto_p01_cvt" } do

@@ -61,6 +61,9 @@ local function add(
         GarageLevel = 0,
         Modules = {},
         Synthetic = synthetic,
+        PaidPrice = 0,
+        PaidExtensions = 0,
+        PaidModules = 0,
     }
     return true, id
 end

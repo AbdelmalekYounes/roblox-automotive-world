@@ -44,7 +44,35 @@ ProfileMigration.deepCopy = deepCopy
     aucune donnée de version 0 n'existe (aucun profil avant le lot 0.4). Les
     futures migrations s'ajoutent ici, dans l'ordre.
 ]]
-local MIGRATIONS: { Migration } = {}
+local MIGRATIONS: { Migration } = {
+    {
+        -- Lot 0.5 : portefeuille, réputation, métiers, historique économique,
+        -- transferts et services récupérables ; prix payés des véhicules et
+        -- propriétés (0 : rien n'a été payé avant le lot 0.5) ; salissure.
+        From = 1,
+        Describe = "économie (lot 0.5)",
+        Apply = function(data: any): any
+            data.Wallet = data.Wallet or { Balance = 0, Reserved = 0, Earned = 0, Spent = 0 }
+            data.Reputation = data.Reputation or { Points = 0, Recent = {} }
+            data.Jobs = data.Jobs or {}
+            data.Ledger = data.Ledger or {}
+            data.Transfers = data.Transfers or {}
+            data.Applied = data.Applied or {}
+            data.Services = data.Services or {}
+            for _, vehicle in data.Vehicles or {} do
+                vehicle.PaidPrice = vehicle.PaidPrice or 0
+                vehicle.Dirt = vehicle.Dirt or 0
+            end
+            for _, property in data.Properties or {} do
+                property.PaidPrice = property.PaidPrice or 0
+                property.PaidExtensions = property.PaidExtensions or 0
+                property.PaidModules = property.PaidModules or 0
+            end
+            data.SchemaVersion = 2
+            return data
+        end,
+    },
+}
 ProfileMigration.Official = table.freeze(MIGRATIONS)
 
 function ProfileMigration.migrate(raw: any, targetVersion: number?, migrations: { Migration }?): Result

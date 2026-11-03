@@ -13,6 +13,7 @@ local PrototypeP01 = require(script.Parent.Definitions.PrototypeP01)
 local PrototypeP02 = require(script.Parent.Definitions.PrototypeP02)
 local PrototypeP03 = require(script.Parent.Definitions.PrototypeP03)
 local ValidationVariants = require(script.Parent.Definitions.ValidationVariants)
+local WorkingCatalog = require(script.Parent.Definitions.WorkingCatalog)
 
 local VehicleDefinitions = {}
 
@@ -427,6 +428,10 @@ register(PrototypeP01)
 register(PrototypeP02)
 register(PrototypeP03)
 for _, definition in ValidationVariants do
+    register(definition)
+end
+-- Lot 0.5 : modèles de travail PROVISOIRES du catalogue commercial (voir Economy/VehicleCatalog).
+for _, definition in WorkingCatalog do
     register(definition)
 end
 
