@@ -847,7 +847,45 @@ local function tickEnergy(dt: number)
     end
 end
 
-function EconomyService.start(openWorld: boolean)
+-- Invites des lieux économiques : ouvrent le panneau sur l'onglet adapté.
+local function installPrompts(map: Instance?, devZone: any)
+    local function attach(part: BasePart, tab: string, label: string)
+        local prompt = Instance.new("ProximityPrompt")
+        prompt.Name = "AWEconomyPrompt"
+        prompt.ActionText = "Ouvrir"
+        prompt.ObjectText = label
+        prompt.HoldDuration = 0.2
+        prompt.MaxActivationDistance = 20
+        prompt.RequiresLineOfSight = false
+        prompt.Parent = part
+        prompt.Triggered:Connect(function(player)
+            push:FireClient(player, "Open", { Tab = tab })
+        end)
+    end
+    if devZone then
+        attach(devZone.Dealer, "Concession", "Concession")
+        attach(devZone.Station, "Services", "Station-service")
+        return
+    end
+    if map == nil then
+        return
+    end
+    for _, place in Locations.all() do
+        local tab = if place.Kind == "Dealership"
+            then "Concession"
+            elseif place.Kind == "FuelStation" or place.Kind == "ChargingHub" or place.Kind == "CarWash" then "Services"
+            else nil
+        if tab then
+            local model = map:FindFirstChild(place.Id, true)
+            local slab = if model and model:IsA("Model") then model.PrimaryPart else nil
+            if slab then
+                attach(slab, tab, place.Label)
+            end
+        end
+    end
+end
+
+function EconomyService.start(openWorld: boolean, map: Instance?, devZone: any)
     assert(not started, "EconomyService déjà démarré")
     started = true
     local existing = ReplicatedStorage:FindFirstChild(EconomyProtocol.FolderName)
@@ -866,6 +904,7 @@ function EconomyService.start(openWorld: boolean)
     request.OnServerInvoke = function(player: Player, action: any, payload: any): any
         return handle(player, action, payload)
     end
+    installPrompts(map, devZone)
 
     MissionService.start_(openWorld, function(player, kind, data)
         push:FireClient(player, kind, data)

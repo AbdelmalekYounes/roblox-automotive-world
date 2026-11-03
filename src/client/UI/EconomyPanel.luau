@@ -671,6 +671,14 @@ function EconomyPanel.start()
                     STATUS_TEXT[data.Status] or data.Status
                 )
                 else "Mission échouée ou abandonnée : " .. Text.text(data.Reason)
+        elseif kind == "Open" and type(data) == "table" then
+            if not panel.Visible then
+                toggle()
+            end
+            if type(data.Tab) == "string" then
+                tab = data.Tab
+                render()
+            end
         elseif kind == "EnergyEnded" and type(data) == "table" then
             footer.Text = string.format(
                 "Énergie livrée : %.1f unités, payé %s (%s).",

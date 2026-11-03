@@ -1054,6 +1054,11 @@ local function installPrompts(openWorld: Instance?, devZone: any)
         return
     end
     for _, place in Locations.all() do
+        -- Seuls les lieux de la progression (entrées, garages publics) ; les
+        -- lieux économiques ont leur propre invite (EconomyService).
+        if place.Kind ~= "Entrance" and place.Kind ~= "PublicGarage" then
+            continue
+        end
         local model = openWorld:FindFirstChild(place.Id, true)
         local slab = if model and model:IsA("Model") then model.PrimaryPart else nil
         if slab then
