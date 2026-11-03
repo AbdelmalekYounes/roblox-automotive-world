@@ -26,7 +26,7 @@ Légende : **Implémenté** (code complet, logique testée hors Studio) ; **Part
 | 9 | Pièces et préparations | Implémenté | Achat, revente 75 % du payé, main-d'œuvre facturée en garage public |
 | 10 | Carburant, recharge, réparation, lavage | Partiel | Énergie progressive réglée au réel et récupérable ; réparation et lavage payants. Salissure visible seulement à la sortie suivante ; pas de réservation par borne (session limitée à 180 s) |
 | 11 | Interfaces provisoires | Implémenté | Panneau J / stick droit (devis → confirmation → état réel). NON TESTÉ par un humain |
-| 12 | Contrôles antifraude | Implémenté | Voir §4 |
+| 12 | Contrôles antifraude | Implémenté | Voir §5 |
 | 13 | Tests et résultats factuels | Ce rapport, §2 |
 | 14–16 | Rapport, architecture, registre QA | `RAPPORT_LOT_0.5.md`, `ARCHITECTURE_LOT_0.5.md`, `docs/QA_BACKLOG.md` |
 
@@ -101,7 +101,23 @@ Les opérations économiques elles-mêmes n'ont été exécutées dans aucune se
 
 Anomalies connues des lots précédents : non corrigées et non retestées dans ce lot (`docs/QA_BACKLOG.md` §1).
 
-## 4. Antifraude (résumé)
+## 4. Correction après livraison : guidage des missions
+
+Retour du propriétaire (2026-11-03) : avec le métier « Essais automobiles » dans le monde ouvert, le point de
+départ est introuvable. Le départ est la piste de drag, à environ 3 à 5 km du point d'apparition, et la colonne
+jaune (60 studs) n'y est plus visible. Le texte de mission affichait aussi l'identifiant technique (« Testing »).
+
+Correction (client seulement, `src/client/UI/EconomyPanel.luau`) : flèche orientée par rapport à la caméra et
+distance à vol d'oiseau sous le texte de mission ; étiquette de distance toujours visible au-dessus du repère ;
+colonne de 400 studs posée au sol (lancer de rayon, répété toutes les 2 s tant que la zone se charge) ; nom
+français du métier. Aucune règle serveur ni récompense modifiée.
+
+Vérifications du 2026-11-03 sur l'arbre de travail (base `b80bf6a` + cette correction) : `scripts\verify.ps1`
+tout OK (Lune 263 / 0, pytest 10, luau-lsp strict 0 erreur) ; VM, tâche `20261103-101510`, session `lot04` :
+63 / 0, aucune erreur serveur. Cette session ne lance pas de mission : **le guidage n'a pas été exercé en jeu
+(NON TESTÉ, `docs/QA_BACKLOG.md` QA-E14)**.
+
+## 5. Antifraude (résumé)
 
 Montants du barème serveur ; lieu physique vérifié ; refus en mouvement ; identifiants de demande contrôlés ;
 transactions idempotentes ; réservations et confirmations durables ; aucune valeur client récompensée (missions et

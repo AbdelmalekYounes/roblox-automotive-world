@@ -17,10 +17,12 @@ local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EconomyProtocol = require(Shared:WaitForChild("Economy"):WaitForChild("EconomyProtocol"))
+local Jobs = require(Shared:WaitForChild("Economy"):WaitForChild("Jobs"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local Text = require(script.Parent.ProgressionMessages)
@@ -42,6 +44,12 @@ local tab = "Portefeuille"
 local busy = false
 local pending: any = nil -- opération en attente de confirmation (devis affiché)
 local beacon: BasePart? = nil
+local beaconTag: BillboardGui? = nil
+local guideFrame: Frame
+local guideArrow: TextLabel
+local guideText: TextLabel
+local missionPoint: { X: number, Z: number }? = nil -- étape en cours, en mètres
+local groundCheckAt = 0
 local listPrice = 20_000
 
 local function make(className: string, props: { [string]: any }, parent: Instance?): any
@@ -240,13 +248,19 @@ local function renderWallet()
     end
 end
 
+-- Nom affiché d'un métier (le serveur envoie l'identifiant technique).
+local function jobLabel(id: any): string
+    local job = if type(id) == "string" then Jobs.get(id) else nil
+    return if job then job.Label else tostring(id)
+end
+
 local function renderJobs()
     local mission = state.Mission
     if mission then
         line(
             string.format(
                 "Mission en cours : %s — étape %d/%d : %s",
-                mission.Job,
+                jobLabel(mission.Job),
                 mission.StepIndex,
                 mission.Steps,
                 mission.Label
@@ -524,14 +538,95 @@ function render()
     end
 end
 
--- Repère local de l'étape en cours (visible seulement par ce joueur).
+-- Repère local de l'étape en cours (visible seulement par ce joueur) : une
+-- colonne lumineuse posée au sol et une étiquette toujours visible, même à
+-- plusieurs kilomètres (la colonne seule devient invisible au-delà d'environ
+-- 1 km). Hauteur en studs ; le sol est retrouvé par lancer de rayon.
+local BEACON_HEIGHT = 400
+
+local function distanceText(meters: number): string
+    if meters < 1000 then
+        return string.format("%d m", math.floor(meters / 10 + 0.5) * 10)
+    end
+    return (string.gsub(string.format("%.1f km", meters / 1000), "%.", ","))
+end
+
+-- Altitude du sol sous le point (studs). Sans réponse (zone pas encore
+-- chargée), 0 : on réessaie régulièrement.
+local function groundY(x: number, z: number): number
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local ignored: { Instance } = { Workspace.CurrentCamera :: Instance }
+    if player.Character then
+        table.insert(ignored, player.Character)
+    end
+    params.FilterDescendantsInstances = ignored
+    local hit = Workspace:Raycast(Vector3.new(x, 3000, z), Vector3.new(0, -6000, 0), params)
+    return if hit then hit.Position.Y else 0
+end
+
+local function placeBeacon(point: { X: number, Z: number })
+    if beacon == nil then
+        local part = Instance.new("Part")
+        part.Name = "RepereMission"
+        part.Anchored = true
+        part.CanCollide = false
+        part.CanQuery = false
+        part.CanTouch = false
+        part.CastShadow = false
+        part.Material = Enum.Material.Neon
+        part.Color = Color3.fromRGB(255, 200, 40)
+        part.Transparency = 0.35
+        part.Shape = Enum.PartType.Cylinder
+        part.Size = Vector3.new(BEACON_HEIGHT, 8, 8)
+        part.Parent = Workspace.CurrentCamera
+        beacon = part
+        beaconTag = make("BillboardGui", {
+            Name = "RepereMissionEtiquette",
+            Adornee = part,
+            AlwaysOnTop = true,
+            LightInfluence = 0,
+            Size = UDim2.fromOffset(150, 34),
+            StudsOffsetWorldSpace = Vector3.new(0, BEACON_HEIGHT / 2 + 8, 0),
+            ResetOnSpawn = false,
+        }, player:WaitForChild("PlayerGui"))
+        make("TextLabel", {
+            Name = "Distance",
+            Size = UDim2.fromScale(1, 1),
+            BackgroundColor3 = Color3.fromRGB(40, 32, 12),
+            BackgroundTransparency = 0.2,
+            TextColor3 = Color3.fromRGB(255, 220, 120),
+            Font = Enum.Font.GothamBold,
+            TextSize = 16,
+            Text = "",
+        }, beaconTag)
+    end
+    local x, z = point.X * S, point.Z * S
+    local y = groundY(x, z)
+    groundCheckAt = os.clock()
+    -- Le cylindre est couché sur X : rotation d'un quart de tour pour le dresser.
+    local part = beacon :: BasePart
+    part.CFrame = CFrame.new(x, y + BEACON_HEIGHT / 2, z) * CFrame.Angles(0, 0, math.pi / 2)
+end
+
+local function removeBeacon()
+    if beacon then
+        beacon:Destroy()
+        beacon = nil
+    end
+    if beaconTag then
+        beaconTag:Destroy()
+        beaconTag = nil
+    end
+end
+
 local function updateMission()
     local mission = state and state.Mission
     if mission then
         missionLabel.Visible = true
         missionLabel.Text = string.format(
             "%s — %s (%d/%d) • %d s",
-            mission.Job,
+            jobLabel(mission.Job),
             mission.Label,
             mission.StepIndex,
             mission.Steps,
@@ -541,26 +636,46 @@ local function updateMission()
         missionLabel.Visible = false
     end
     local point = mission and mission.Point
+    local changed = point == nil
+        or missionPoint == nil
+        or point.X ~= (missionPoint :: any).X
+        or point.Z ~= (missionPoint :: any).Z
+    missionPoint = point
     if point then
-        if beacon == nil then
-            local part = Instance.new("Part")
-            part.Name = "RepereMission"
-            part.Anchored = true
-            part.CanCollide = false
-            part.CanQuery = false
-            part.CanTouch = false
-            part.Material = Enum.Material.Neon
-            part.Color = Color3.fromRGB(255, 200, 40)
-            part.Transparency = 0.4
-            part.Shape = Enum.PartType.Cylinder
-            part.Size = Vector3.new(60, 6, 6)
-            part.Parent = Workspace.CurrentCamera
-            beacon = part
+        if changed or beacon == nil then
+            placeBeacon(point)
         end
-        (beacon :: BasePart).CFrame = CFrame.new(point.X * S, 30, point.Z * S) * CFrame.Angles(0, 0, math.pi / 2)
-    elseif beacon then
-        beacon:Destroy()
-        beacon = nil
+    else
+        removeBeacon()
+        guideFrame.Visible = false
+    end
+end
+
+-- Guidage à chaque image : distance à vol d'oiseau et flèche orientée par
+-- rapport à la caméra (vers le haut = devant soi).
+local function updateGuide()
+    local point = missionPoint
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+    local camera = Workspace.CurrentCamera
+    if point == nil or root == nil or camera == nil then
+        guideFrame.Visible = false
+        return
+    end
+    local here = root.Position
+    local dx, dz = point.X * S - here.X, point.Z * S - here.Z
+    local meters = math.sqrt(dx * dx + dz * dz) * Constants.MetersPerStud
+    local look, right = camera.CFrame.LookVector, camera.CFrame.RightVector
+    local angle = math.atan2(dx * right.X + dz * right.Z, dx * look.X + dz * look.Z)
+    guideFrame.Visible = true
+    guideArrow.Rotation = math.deg(angle)
+    guideText.Text = "Objectif à " .. distanceText(meters)
+    if beaconTag then
+        (beaconTag:FindFirstChild("Distance") :: TextLabel).Text = distanceText(meters)
+    end
+    -- Le sol d'une zone lointaine peut n'être chargé qu'en s'approchant.
+    if os.clock() - groundCheckAt > 2 then
+        placeBeacon(point)
     end
 end
 
@@ -592,6 +707,33 @@ function EconomyPanel.start()
         Visible = false,
         Text = "",
     }, gui)
+    guideFrame = make("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.new(0.5, 0, 0, 96),
+        Size = UDim2.fromOffset(240, 34),
+        BackgroundColor3 = Color3.fromRGB(40, 32, 12),
+        BackgroundTransparency = 0.15,
+        Visible = false,
+    }, gui)
+    guideArrow = make("TextLabel", {
+        Size = UDim2.fromOffset(34, 34),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(255, 200, 40),
+        Font = Enum.Font.GothamBold,
+        TextSize = 24,
+        Text = "▲",
+    }, guideFrame)
+    guideText = make("TextLabel", {
+        Position = UDim2.fromOffset(38, 0),
+        Size = UDim2.new(1, -44, 1, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(255, 220, 120),
+        Font = Enum.Font.GothamMedium,
+        TextSize = 15,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Text = "",
+    }, guideFrame)
+    RunService.RenderStepped:Connect(updateGuide)
     panel = make("Frame", {
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.52),

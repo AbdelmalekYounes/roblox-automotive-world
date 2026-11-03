@@ -132,6 +132,7 @@ Cela ne valide PAS la persistance Roblox ni les transferts entre serveurs réels
 | QA-E08 | Immobilier | P2 | Achat à l'entrée d'un bien, agrandissement, module, revente avec visiteurs présents | Ratios 70/40/60 %, véhicules exposés rangés, revente refusée si occupée | **NON TESTÉ** |
 | QA-E09 | Garage public | P2 | Main-d'œuvre facturée (pièce, esthétique, réglages) ; solde insuffisant | Intervention annulée en entier si le paiement échoue | **NON TESTÉ** |
 | QA-E10 | Interface économie | P1 | Panneau J / stick droit au clavier, souris et manette ; devis, confirmation, état réel ; blocage en mouvement | Jamais de réussite affichée avant confirmation | **NON TESTÉ** (humain) |
+| QA-E14 | Guidage de mission | P1 | Mission lancée loin de son départ (Essais dans le monde ouvert : piste de drag à ~4 km) : flèche, distance, étiquette du repère, colonne posée au sol | Objectif trouvé sans connaître la carte ; flèche juste quel que soit l'angle de caméra | **NON TESTÉ** (humain) |
 | QA-E11 | Équilibrage | P2 | Revenus horaires réels par métier contre la simulation (`tools/economy/simulate.luau`) | Écarts compris et documentés | **NON TESTÉ** |
 | QA-E12 | Lavage | P3 | Salissure visible et lavage | Teinte rendue à la prochaine sortie ; aucune réparation | **NON TESTÉ** |
 | QA-E13 | Bornes | P3 | Occupation d'une borne par plusieurs joueurs | Pas de blocage abusif (session limitée à 180 s) ; réservation par borne non implémentée | **NON TESTÉ** |
