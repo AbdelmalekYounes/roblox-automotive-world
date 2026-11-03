@@ -65,6 +65,15 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   réelle, essais Studio et humains **NON TESTÉS** (`docs/QA_BACKLOG.md`).
 - Rapport : `docs/lot-0.4/RAPPORT_LOT_0.4.md` ; architecture : `docs/lot-0.4/ARCHITECTURE_LOT_0.4.md`.
 
+## État du lot 0.5 (branche `feat/economy-progression-0.5`, PR brouillon, base : lot 0.4)
+
+- Livré : portefeuille (profil v2), réputation à cinq niveaux, huit métiers à boucles serveur, concessions
+  (catalogue de travail provisoire), reprise, marché d'occasion à transferts multiprofils durables et récupérables,
+  immobilier et améliorations, pièces, main-d'œuvre, énergie progressive, réparation, lavage, interface provisoire.
+- Vérifié : 263 tests Lune sur adaptateur mémoire (dont les 17 cas demandés), contrôles de démarrage Studio ;
+  persistance réelle, inter-serveurs, jeu de bout en bout et essais humains **NON TESTÉS**.
+- Rapport : `docs/lot-0.5/RAPPORT_LOT_0.5.md` ; architecture : `docs/lot-0.5/ARCHITECTURE_LOT_0.5.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
