@@ -130,9 +130,22 @@ $beat = Get-Content -Raw $heartbeat | ConvertFrom-Json
 Write-Host "Agent prêt : invité $($beat.guest), utilisateur $($beat.user), version $($beat.agentVersion)."
 
 # 3. Tâche
-$id = Get-Date -Format "yyyyMMdd-HHmmss"
-$jobDir = Join-Path $jobsDir $id
-New-Item -ItemType Directory -Force -Path $jobDir | Out-Null
+# Identifiant réservé de façon exclusive (fichier « <id>.reserve » créé en mode CreateNew) :
+# deux dépôts dans la même seconde partageaient le même dossier et le second écrasait la
+# place du premier (lot 0.9.1, tâche 20261103-231150 : sessions Dev jouées sur la place
+# monde ouvert). Le second prend le suffixe « -1 », « -2 »…
+$suffix = 0
+while ($true) {
+	$id = (Get-Date -Format "yyyyMMdd-HHmmss") + $(if ($suffix -gt 0) { "-$suffix" } else { "" })
+	$jobDir = Join-Path $jobsDir $id
+	try {
+		$claim = [IO.File]::Open("$jobDir.reserve", [IO.FileMode]::CreateNew)
+		$claim.Close()
+		if (-not (Test-Path $jobDir)) { break }
+	} catch { }
+	$suffix++
+}
+New-Item -ItemType Directory -Path $jobDir | Out-Null
 if ($Place -eq "OpenWorld") {
 	# Lot 0.3 : carte générée hors ligne, puis place monde ouvert (StreamingEnabled).
 	& rojo build -o "build\AutomotiveWorld.rbxlx"
