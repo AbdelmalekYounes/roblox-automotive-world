@@ -91,6 +91,24 @@ local view: any = nil -- dernier état d'épreuve publié par le serveur
 racePush.OnClientEvent:Connect(function(kind: any, data: any)
     if kind == "Snapshot" and type(data) == "table" then
         view = if data.None then nil else data
+    elseif kind == "Results" and type(data) == "table" then
+        -- Fin d'épreuve : le serveur publie les résultats (et non un dernier instantané), comme
+        -- le lit le panneau des courses du jeu. On en tire l'état final de ce participant.
+        local mine = data.Mine or {}
+        local me = view and view.Me or {}
+        for _, entry in data.Entries or {} do
+            if entry.UserId == player.UserId or entry.Me then
+                me.OfficialS = entry.OfficialS or entry.TimeS or me.OfficialS
+                me.PenaltyS = entry.PenaltyS or me.PenaltyS
+                me.ReactionS = entry.ReactionS or me.ReactionS
+                me.Score = entry.Score
+                me.TrapSpeedKmh = entry.TrapSpeedKmh
+                me.BestLapS = entry.BestLapS
+            end
+        end
+        me.Status = if mine.Outcome == "Finished" then "Finished" else tostring(mine.Outcome)
+        me.Credits = mine.Credits
+        view = { State = "Finished", Me = me, Discipline = data.Discipline, CourseId = view and view.CourseId }
     end
 end)
 
@@ -514,6 +532,10 @@ local function main()
                 LapTimes = done.LapTimes,
                 ReactionS = done.ReactionS,
                 Drift = done.Drift,
+                Score = done.Score,
+                TrapSpeedKmh = done.TrapSpeedKmh,
+                BestLapS = done.BestLapS,
+                Credits = done.Credits,
             })
             record(prefix .. "entrainement_" .. string.lower(string.sub(plan.Id, 5)), finished, detail)
             measures["entrainement_" .. plan.Label] = detail

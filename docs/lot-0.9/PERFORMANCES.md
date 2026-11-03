@@ -21,7 +21,7 @@ donnent des ordres de grandeur, pas les performances du jeu publié.
 | Phase | Image médiane | P95 | P99 | Max | Mémoire (processus Studio) | Pièces chargées (client) | Lumières actives |
 |---|---|---|---|---|---|---|---|
 | Jour | 16,65 ms | 18,71 ms | 20,09 ms | 26,4 ms | 3 439 Mo | 16 511 | 0 |
-| Nuit | 16,62 ms | 18,65 ms | 20,22 ms | 31,0 ms | 2 695 Mo | 16 511 | 0 (défaut, §4) |
+| Nuit | 16,62 ms | 18,65 ms | 20,22 ms | 31,0 ms | 2 695 Mo | 16 511 | 0 (défaut, §4) → 12 après correction |
 | Nuit + pluie | 16,63 ms | 18,71 ms | 20,29 ms | 45,0 ms | 2 572 Mo | 16 503 | 0 (défaut, §4) |
 
 Serveur, mêmes phases : intervalle de battement médian 16,9 ms, P95 18,4–18,8 ms, P99 19,7–20,7 ms ; 140 agents
@@ -52,7 +52,8 @@ Lecture critique :
 **Lampadaires et niveau de détail de l'habillage jamais suivis** (lot 0.8) : `VehicleLights` et `DetailLod`
 cherchaient `OpenWorld/Habillage` une seule fois au démarrage du client, avant son arrivée par le streaming ; de
 nuit, aucune source ne s'allumait et la qualité « basse » ne masquait pas l'habillage. Corrigé (`f2fe391`) :
-recherche répétée tant que le dossier manque. Vérification : voir `RAPPORT_VALIDATION_GLOBALE.md` §2.
+recherche répétée tant que le dossier manque. Vérification (`20261103-175506`, commit `f2fe391`) : **12 sources
+actives** de nuit (qualité moyenne : 12 lampadaires au plus), 0 de jour ; temps d'image inchangés (P95 ≈ 18,7 ms).
 
 ## 5. Procédure de mesure sur appareils réels (à faire par le propriétaire)
 
