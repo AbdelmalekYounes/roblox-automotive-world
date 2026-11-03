@@ -106,12 +106,48 @@ local function speedKmh(model: Model?): number
     return if body then body.AssemblyLinearVelocity.Magnitude / S * 3.6 else 0
 end
 
+-- Lot 0.9.1 : détection d'obstacle par lancers de rayons (mâts des portiques de course,
+-- bâtiments, véhicules garés) et dégagement en marche arrière si le véhicule reste bloqué.
+-- C'est le PILOTE qui évite les obstacles ; la physique du véhicule n'est pas touchée.
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+local avoid = { Side = 0, Until = 0, Reverse = 0, StuckSince = nil :: number? }
+local function obstacle(body: BasePart, angleDeg: number, lengthM: number): number?
+    local look = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
+    local dir = CFrame.Angles(0, -math.rad(angleDeg), 0):VectorToWorldSpace(look)
+    local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S
+    local hit = Workspace:Raycast(origin, dir * lengthM * S, rayParams)
+    if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
+        return hit.Distance / S
+    end
+    return nil
+end
+
 local function autopilot(): any
     local model = driving.Model
     local body = model and model.PrimaryPart
     if body == nil or driving.Hold or driving.Target == nil then
         local moving = model ~= nil and speedKmh(model) > 3
+        avoid.StuckSince = nil
         return { Throttle = 0, Brake = if moving then 1 else 0, Steer = 0, Handbrake = not moving, Clutch = 0 }
+    end
+    local now = os.clock()
+    rayParams.FilterDescendantsInstances = { model :: Model, character() }
+    -- Bloqué (vitesse nulle 3 s alors qu'on avance) : 2 s de marche arrière braquée.
+    if now < avoid.Reverse then
+        return { Throttle = 0, Brake = 1, Steer = -avoid.Side, Handbrake = false, Clutch = 0 }
+    end
+    if not driving.Launch and speedKmh(model) < 1.5 then
+        avoid.StuckSince = avoid.StuckSince or now
+        if now - (avoid.StuckSince :: number) > 3 then
+            avoid.StuckSince = nil
+            avoid.Side = if avoid.Side == 0 then 1 else avoid.Side
+            avoid.Reverse = now + 2
+            avoid.Until = now + 4
+            trace("pilote : blocage, dégagement en marche arrière")
+        end
+    else
+        avoid.StuckSince = nil
     end
     local target = driving.Target :: Vector3
     local forward = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
@@ -131,6 +167,24 @@ local function autopilot(): any
     end
     if driving.Launch then
         return { Throttle = 1, Brake = 0, Steer = steer, Handbrake = false, Clutch = 0 }
+    end
+    -- Obstacle devant (moins de 14 m, et plus près que la cible) : contournement du côté libre.
+    local ahead = obstacle(body, 0, 14)
+    if ahead and ahead < distanceM then
+        local left, right = obstacle(body, -35, 12), obstacle(body, 35, 12)
+        local side = if left == nil and right ~= nil
+            then -1
+            elseif right == nil and left ~= nil then 1
+            elseif avoid.Side ~= 0 then avoid.Side
+            else (if cross < 0 then 1 else -1)
+        avoid.Side = side
+        avoid.Until = now + 1.2
+        steer = side
+        wanted = math.min(wanted, 12)
+    elseif now < avoid.Until then
+        steer = math.clamp(steer + avoid.Side * 0.6, -1, 1)
+    else
+        avoid.Side = 0
     end
     local throttle = math.clamp((wanted - v) / 12, 0, 1)
     local brake = if v > wanted + 8 then 0.6 else 0
@@ -164,7 +218,25 @@ local function driveTo(point: any, kmh: number, radiusM: number, timeout: number
     driving.Target = meters(point)
     driving.SpeedKmh = kmh
     driving.Hold = false
+    local lastTrace = os.clock()
     local reached = waitFor(function()
+        if os.clock() - lastTrace > 5 then
+            lastTrace = os.clock()
+            local body = (driving.Model :: Model).PrimaryPart
+            if body then
+                trace(
+                    string.format(
+                        "vers (%.0f, %.0f) : position (%.0f, %.0f), %.0f km/h, reste %.0f m",
+                        point.X,
+                        point.Z,
+                        body.Position.X / S,
+                        body.Position.Z / S,
+                        speedKmh(driving.Model),
+                        flatDistanceM(point)
+                    )
+                )
+            end
+        end
         return flatDistanceM(point) < radiusM
     end, timeout)
     if not keepRolling then

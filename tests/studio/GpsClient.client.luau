@@ -69,6 +69,20 @@ local function speedKmh(): number
     return if body then body.AssemblyLinearVelocity.Magnitude / S * 3.6 else 0
 end
 
+-- Obstacle devant (trafic, véhicule arrêté, mobilier) : le pilote ralentit ou s'arrête
+-- derrière ; un blocage prolongé déclenche le dégagement (boucle de trajet).
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+local function obstacleAhead(body: BasePart, lengthM: number): number?
+    local look = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
+    local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S
+    local hit = Workspace:Raycast(origin, look * lengthM * S, rayParams)
+    if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
+        return hit.Distance / S
+    end
+    return nil
+end
+
 local function autopilot(): any
     local model = driving.Model
     local body = model and model.PrimaryPart
@@ -92,6 +106,11 @@ local function autopilot(): any
     local v = speedKmh()
     local steer = math.clamp(-math.sign(cross) * angle / 0.5 / (1 + v / 60), -1, 1)
     local wanted = driving.SpeedKmh * math.clamp(1 - angle / math.pi * 1.8, 0.25, 1)
+    rayParams.FilterDescendantsInstances = { model :: Model, character() }
+    local ahead = obstacleAhead(body, math.clamp(v * 0.45, 10, 35))
+    if ahead then
+        wanted = math.min(wanted, math.max(0, (ahead - 5) * 2.2))
+    end
     local throttle = math.clamp((wanted - v) / 10, 0, 1)
     local brake = if v > wanted + 6 then math.clamp((v - wanted) / 25, 0.3, 1) else 0
     return { Throttle = throttle, Brake = brake, Steer = steer, Handbrake = false, Clutch = 0 }

@@ -721,14 +721,37 @@ end)
 phase("photo", function()
     local camera = Workspace.CurrentCamera :: Camera
     local cameraType = camera.CameraType
-    Gui.key("O")
+    local RacePanel = require(client:WaitForChild("UI"):WaitForChild("RacePanel")) :: any
     local photo: ScreenGui? = nil
-    local opened = waitFor(function()
+    local function isOpen(): boolean
         -- ScreenGui recherché à chaque essai : il peut n'être créé qu'à l'ouverture.
         photo = screen("AWPhoto") :: ScreenGui?
         return photo ~= nil and (photo :: ScreenGui).Enabled
-    end, 4)
-    record("ui.photo.ouverture_touche_O", opened, notifications())
+    end
+    -- Diagnostic : touches reçues par le moteur, état « en course » vu par le mode photo.
+    task.wait(1.5)
+    local stopKeys = Gui.recordKeys()
+    Gui.key("O")
+    local opened = waitFor(isOpen, 4)
+    local firstKeys = table.concat(stopKeys(), ",")
+    local attempts = 1
+    if not opened then
+        task.wait(2)
+        Gui.key("O")
+        attempts = 2
+        opened = waitFor(isOpen, 4)
+    end
+    record(
+        "ui.photo.ouverture_touche_O",
+        opened,
+        string.format(
+            "essai(s) %d, touches reçues au 1er essai : %s, en course : %s, notifications : %s",
+            attempts,
+            firstKeys,
+            tostring(RacePanel.racing()),
+            notifications()
+        )
+    )
     if not opened then
         return
     end
@@ -847,14 +870,34 @@ phase("conduite", function()
     Gui.key("Space", 1200)
     task.wait(1)
     record("ui.conduite.arret_touche_S", speed() < 3, string.format("%.1f km/h", speed()))
-    -- Menu ouvert à l'arrêt : l'accélérateur ne doit rien faire.
+    -- Menu ouvert à l'arrêt : l'accélérateur ne doit rien faire. Frein à main tenu (sinon la
+    -- boîte automatique rampe au ralenti et le panneau se ferme dès 1 m/s, comme prévu) ;
+    -- l'effet de W est lu sur le régime moteur.
+    local function rpm(): number
+        local ok, snapshot = pcall(VehicleController.getTestSnapshot)
+        return if ok and type(snapshot) == "table" then snapshot.EngineRpm or 0 else 0
+    end
+    Gui.keyDown("Space")
+    task.wait(0.8)
+    local idle = rpm()
     if openByKey("P", "AWProgression", "conduite_garage") then
+        task.wait(0.5)
         Gui.keyDown("W")
-        task.wait(2)
+        local peak = idle
+        local t0 = os.clock()
+        while os.clock() - t0 < 2 do
+            peak = math.max(peak, rpm())
+            task.wait(0.05)
+        end
         Gui.keyUp("W")
-        record("ui.conduite.aucune_acceleration_menu_ouvert", speed() < 3, string.format("%.1f km/h", speed()))
+        record(
+            "ui.conduite.accelerateur_ignore_menu_ouvert",
+            peak < idle + 600 and speed() < 3,
+            string.format("régime %.0f → max %.0f tr/min, %.1f km/h", idle, peak, speed())
+        )
         closeWith("AWProgression", "conduite_garage", "Fermer")
     end
+    Gui.keyUp("Space")
     Gui.key("F", 400)
     local out = waitFor(function()
         return not seated()
