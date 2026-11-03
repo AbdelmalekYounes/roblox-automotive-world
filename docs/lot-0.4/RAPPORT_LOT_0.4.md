@@ -115,3 +115,13 @@ lune run tests\lune\run.luau build\AutomotiveWorld.rbxlx
 
 Dans Studio (place de développement ou monde ouvert), le panneau s'ouvre avec **P** (manette : **Select**) ; l'entrée
 de propriété et le garage public d'essai sont à l'ouest du point d'apparition de la zone d'essai (repères bleu et orange).
+
+## 6. Mise à jour après la campagne de tests du 2026-11-03
+
+La session Studio `lot04` (nouvelle, deux joueurs) a trouvé un défaut : une sortie répétée pendant l'attente de
+sauvegarde matérialisait une seconde copie conduisible du véhicule. Corrigé dans `5da05aa` (répétitions sans effet de
+bord, refus si un exemplaire est déjà sorti, test Lune). Après correction : `lot04` 63/63 (tâche
+`20261103-025600`), puis campagne finale des 8 sessions sur le dernier commit (`20261103-030408`) : `lot04` sans
+échec, non-régression sans nouvel échec (échecs uniquement dans les anomalies connues). Les identifiants d'invité
+acceptent désormais tout UserId entier non nul (les joueurs de test de Studio ont des UserId négatifs).
+La persistance réelle (DataStore) reste **NON TESTÉE**. Détail : `docs/QA_CAMPAGNE_2026-11-03.md`.
