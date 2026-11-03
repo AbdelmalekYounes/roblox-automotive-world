@@ -226,9 +226,10 @@ local joined = waitFor(function()
     return #Players:GetPlayers() >= 1
 end, 60)
 record("ui.serveur.joueur_connecte", joined, #Players:GetPlayers())
+-- Trajets GPS (sept zones) : jusqu'à une heure.
 local gotReport = waitFor(function()
     return next(reports) ~= nil
-end, 1700)
+end, if session == "gps" then 3500 else 1700)
 record("ui.serveur.rapport_client", gotReport)
 
 for _, player in Players:GetPlayers() do

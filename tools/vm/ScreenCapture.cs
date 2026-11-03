@@ -89,7 +89,8 @@ internal static class AwCapture
             return 3;
         }
 
-        if (args.Length >= 6)
+        bool bridged = args.Length >= 6;
+        if (bridged)
         {
             InputBridge bridge = new InputBridge(args[4], args[5], stopFile);
             Thread thread = new Thread(bridge.Run);
@@ -98,8 +99,16 @@ internal static class AwCapture
         }
 
         int count = 0;
-        while (!File.Exists(stopFile) && count < maxShots)
+        // Avec le pont d'entrées, le processus reste actif jusqu'au fichier d'arrêt même
+        // une fois le quota de captures atteint (lot 0.9.1 : le pont s'arrêtait avec lui
+        // après 600 captures, soit 20 min, tâche 20261103-203235).
+        while (!File.Exists(stopFile) && (count < maxShots || bridged))
         {
+            if (count >= maxShots)
+            {
+                Thread.Sleep(500);
+                continue;
+            }
             try
             {
                 using (Bitmap full = CaptureScreen())
@@ -300,7 +309,9 @@ internal sealed class InputBridge
             string text = Encoding.UTF8.GetString(buffer, 0, lastNewline + 1);
             foreach (Match match in CommandPattern.Matches(text))
             {
-                string key = Path.GetFileName(file) + "#" + match.Groups[1].Value;
+                // Clé = position dans le journal : les numéros de commande repartent de 1 à
+                // chaque session de jeu, et les sessions solo partagent le même journal.
+                string key = Path.GetFileName(file) + "@" + start + "+" + match.Index;
                 if (done.Add(key))
                 {
                     string[] parts = match.Groups[3].Value.Trim().Split(new[] { ' ' },

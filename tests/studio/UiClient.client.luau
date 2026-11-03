@@ -52,7 +52,16 @@ local function server(): any
 end
 
 -- Lecture par le remote du jeu (même réponse que celle que reçoit l'interface).
+-- Lectures espacées de 0,6 s (limiteur : 6 demandes, 2/s) : une lecture refusée
+-- (« RateLimited ») ne doit jamais passer pour un état vide (faux succès corrigé après la
+-- tâche 20261103-210055).
+local lastRead = 0
 local function read(folder: string, action: string): any
+    local wait = 0.6 - (os.clock() - lastRead)
+    if wait > 0 then
+        task.wait(wait)
+    end
+    lastRead = os.clock()
     local remote = (ReplicatedStorage:WaitForChild(folder, 10) :: Instance):WaitForChild(
             "Request",
             10
@@ -440,9 +449,8 @@ phase("economie", function()
         if click("ui.economie.abandonner_metier", abandon, "Abandonner (sans paiement)") then
             local ended = waitFor(function()
                 local snapshot = read("AWEconomy", "Snapshot")
-                local data = snapshot.Snapshot or snapshot.Result or {}
-                return data.Mission == nil
-            end, 6)
+                return snapshot.Snapshot ~= nil and snapshot.Snapshot.Mission == nil
+            end, 8)
             record("ui.economie.mission_abandonnee_serveur", ended, footerText(root))
         end
     end
@@ -550,8 +558,12 @@ end)
 -- 5. Courses et classements (touche K).
 ---------------------------------------------------------------------------
 -- Marché : mise en vente du véhicule acheté, puis retrait de l'annonce (vrais clics).
-local function myListings(): { any }
-    local snapshot = read("AWEconomy", "Snapshot").Snapshot or {}
+-- nil si la lecture a échoué (jamais confondu avec « aucune annonce »).
+local function myListings(): { any }?
+    local snapshot = read("AWEconomy", "Snapshot").Snapshot
+    if snapshot == nil then
+        return nil
+    end
     local mine = {}
     for _, listing in snapshot.Listings or {} do
         if listing.Mine then
@@ -593,7 +605,8 @@ phase("marche", function()
     Gui.shot("marche_confirmation_mise_en_vente", {})
     click("ui.marche.confirmer_mise_en_vente", exact(root, "Confirmer"), "Confirmer")
     local listed = waitFor(function()
-        return #myListings() > 0
+        local mine = myListings()
+        return mine ~= nil and #mine > 0
     end, 10)
     record("ui.marche.annonce_publiee_serveur", listed, footerText(root))
     task.wait(1)
@@ -601,13 +614,19 @@ phase("marche", function()
     local withdraw = activeButton(root, "Retirer l'annonce")
     Gui.reveal(withdraw)
     if click("ui.marche.retirer_annonce", withdraw, "Retirer l'annonce") then
+        local remaining: { any }? = nil
         local removed = waitFor(function()
-            return #myListings() == 0
+            remaining = myListings()
+            return remaining ~= nil and #(remaining :: { any }) == 0
         end, 8)
         record(
             "ui.marche.annonce_retiree_serveur",
             removed,
-            string.format("pied « %s », annonces restantes %d", footerText(root), #myListings())
+            string.format(
+                "pied « %s », annonces restantes %s",
+                footerText(root),
+                if remaining then tostring(#(remaining :: { any })) else "lecture refusée"
+            )
         )
         Gui.shot("marche_apres_retrait", {})
     end

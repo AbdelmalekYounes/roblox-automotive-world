@@ -151,6 +151,18 @@ return function(T: any, H: any)
         T.truthy(#viaSimple == 0 or covered, "sensibles sans identifiant : " .. table.concat(viaSimple, ", "))
     end)
 
+    T.test("QA-F17 : technologie d'éclairage explicite (Voxel), jamais « Compatibility »", function()
+        -- Sans réglage, la place était en « Compatibility » (retirée par Roblox) : Studio
+        -- affichait une fenêtre de migration modale par-dessus le jeu (tâche 20261103-203235).
+        local lighting = H.game():FindFirstChild("Lighting")
+        T.equal(tostring(lighting.Technology), "Enum.Technology.Voxel", "place de développement")
+        local fs = require("@lune/fs")
+        local serde = require("@lune/serde")
+        local openWorld = serde.decode("json", fs.readFile("openworld.project.json"))
+        local props = openWorld.tree.Lighting and openWorld.tree.Lighting["$properties"]
+        T.equal(props and props.Technology, "Voxel", "place monde ouvert")
+    end)
+
     T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")

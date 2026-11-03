@@ -390,8 +390,15 @@ local function stepKind(label: string): (string, number, number, number?)
     return "Stop", 10, 3, nil
 end
 
+-- Lecture refusée (limiteur) : dernier état connu, jamais « mission terminée ».
+local lastMission: any = nil
 local function mission(): any
-    return snapshot().Mission
+    local response = call(economy, "Snapshot", {}, true)
+    if response.Snapshot == nil then
+        return lastMission
+    end
+    lastMission = response.Snapshot.Mission
+    return lastMission
 end
 
 local function stepChanged(index: number, timeout: number): boolean

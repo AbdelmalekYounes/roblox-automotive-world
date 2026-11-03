@@ -109,7 +109,7 @@ local function autopilot(): any
     rayParams.FilterDescendantsInstances = { model :: Model, character() }
     local ahead = obstacleAhead(body, math.clamp(v * 0.45, 10, 35))
     if ahead then
-        wanted = math.min(wanted, math.max(0, (ahead - 5) * 2.2))
+        wanted = math.min(wanted, math.max(0, (ahead - 7) * 1.6))
     end
     local throttle = math.clamp((wanted - v) / 10, 0, 1)
     local brake = if v > wanted + 6 then math.clamp((v - wanted) / 25, 0.3, 1) else 0
@@ -270,6 +270,9 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
     local recalcSeen = false
     local planBefore = nil
     local stuckSince = nil
+    local anchorPos: Vector3? = nil
+    local anchorSince = os.clock()
+    local abandoned = false
     local nextChecked = false
     local lastSample = 0
     local lastShot = 0
@@ -348,13 +351,17 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         local look = math.clamp(v * 0.3, 10, 32)
         local tx, tz = pointAt(plan, progress.AlongM + look)
         local turn = turnAhead(plan, progress.AlongM, math.clamp(v * 0.9, 30, 90))
-        local cap = math.min(plannedSpeedKmh(plan, progress.AlongM) * 0.85, 110)
+        -- Conduite prudente (tâche 20261103-203235 : chocs répétés, moteur et direction
+        -- endommagés, véhicule immobilisé) : 75 km/h au plus, virages nettement ralentis.
+        local cap = math.min(plannedSpeedKmh(plan, progress.AlongM) * 0.8, 75)
         if turn > 60 then
-            cap = math.min(cap, 22)
+            cap = math.min(cap, 16)
         elseif turn > 35 then
-            cap = math.min(cap, 32)
+            cap = math.min(cap, 24)
         elseif turn > 18 then
-            cap = math.min(cap, 50)
+            cap = math.min(cap, 38)
+        elseif turn > 8 then
+            cap = math.min(cap, 55)
         end
         if progress.OffRouteM > 12 then
             cap = math.min(cap, 25)
@@ -362,6 +369,16 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         driving.Target = Vector3.new(tx * S, body.Position.Y, tz * S)
         driving.SpeedKmh = cap
         driving.Hold = false
+        -- Immobilisé au même endroit (moins de 15 m en 90 s) : trajet abandonné et compté
+        -- comme échoué, pour éprouver les zones suivantes.
+        if anchorPos == nil or (body.Position - (anchorPos :: Vector3)).Magnitude / S > 15 then
+            anchorPos = body.Position
+            anchorSince = os.clock()
+        elseif os.clock() - anchorSince > 90 then
+            abandoned = true
+            trace(string.format("%s : immobilisé 90 s en (%.0f, %.0f), trajet abandonné", name, x, z))
+            break
+        end
         -- Blocage (obstacle, trafic) : marche arrière 2,5 s puis reprise.
         if v < 2 then
             stuckSince = stuckSince or os.clock()
@@ -402,11 +419,12 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         name .. ".arrivee_constatee_par_le_gps",
         arrived,
         string.format(
-            "%.0f s, écart final %.0f m, zone d'arrivée %s, recalcul %s",
+            "%.0f s, écart final %.0f m, zone d'arrivée %s, recalcul %s%s",
             os.clock() - started,
             gap,
             WorldLayout.zoneOf(body.Position.X / S, body.Position.Z / S),
-            if detour then tostring(recalcSeen) else "—"
+            if detour then tostring(recalcSeen) else "—",
+            if abandoned then ", ABANDONNÉ (immobilisé)" else ""
         )
     )
     measures[name .. "_s"] = math.floor(os.clock() - started)
