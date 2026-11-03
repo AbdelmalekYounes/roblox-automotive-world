@@ -15,8 +15,12 @@
 	4. Au-delà du délai, n'arrête QUE les processus Studio lancés par ce script.
 	5. Dépose sortie, journaux Studio, captures et result.json dans ReportDir.
 
-	Aucune entrée clavier/souris n'est simulée. Aucun réglage n'est modifié. -DryRun
-	remplace Studio par une sortie factice et ne capture pas l'écran (test du protocole).
+	Aucune entrée clavier/souris n'est simulée, SAUF si la tâche le demande (job.json
+	« guiInput », lot 0.9.1) : le même outil exécute alors, DANS LA VM seulement, les
+	commandes de clic et de touche imprimées par le client de test (voir ScreenCapture.cs :
+	pointeur limité à la vue du jeu, touches limitées, journal input-log.txt). Aucun
+	réglage n'est modifié. -DryRun remplace Studio par une sortie factice et ne capture
+	pas l'écran (test du protocole).
 #>
 param(
 	[Parameter(Mandatory = $true)][string]$JobDir,
@@ -40,7 +44,7 @@ function Find-Studio {
 }
 
 # Compile (dans la VM) puis lance l'outil de capture. Renvoie l'état et le processus.
-function Start-Capture([string]$jobDir, [string]$outDir, [string]$stopFile, [double]$intervalSec) {
+function Start-Capture([string]$jobDir, [string]$outDir, [string]$stopFile, [double]$intervalSec, [string]$bridgeDir) {
 	$source = Join-Path $jobDir "ScreenCapture.cs"
 	if (-not (Test-Path $source)) {
 		return @{ Status = "source de l'outil de capture absente (agent antérieur à la version 2)"; Process = $null }
@@ -57,8 +61,12 @@ function Start-Capture([string]$jobDir, [string]$outDir, [string]$stopFile, [dou
 	}
 	$interval = $intervalSec.ToString([Globalization.CultureInfo]::InvariantCulture)
 	try {
-		$process = Start-Process -FilePath $exe -PassThru -WindowStyle Hidden `
-			-ArgumentList @("`"$outDir`"", "`"$stopFile`"", $interval, "600")
+		$captureArgs = @("`"$outDir`"", "`"$stopFile`"", $interval, "600")
+		if ($bridgeDir) {
+			# Pont d'entrées réelles : lit les journaux Studio de cette session Windows.
+			$captureArgs += @("`"$(Join-Path $env:LOCALAPPDATA 'Roblox\logs')`"", "`"$bridgeDir`"")
+		}
+		$process = Start-Process -FilePath $exe -PassThru -WindowStyle Hidden -ArgumentList $captureArgs
 		return @{ Status = "en cours"; Process = $process }
 	} catch {
 		return @{ Status = "lancement refusé : $($_.Exception.Message)"; Process = $null }
@@ -105,7 +113,9 @@ if ($DryRun) {
 
 	# Captures d'écran dans un processus séparé et facultatif.
 	$stopFile = Join-Path $JobDir "capture.stop"
-	$capture = Start-Capture $JobDir $shotsDir $stopFile $ShotIntervalSec
+	$jobInfo = Get-Content -Raw (Join-Path $JobDir "job.json") | ConvertFrom-Json
+	$bridgeDir = if ($jobInfo.guiInput) { Join-Path $ReportDir "gui" } else { $null }
+	$capture = Start-Capture $JobDir $shotsDir $stopFile $ShotIntervalSec $bridgeDir
 	$captureStatus = $capture.Status
 
 	$arguments = @(

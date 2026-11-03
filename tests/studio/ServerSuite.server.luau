@@ -23,6 +23,8 @@ if
     or sessionName == "lot06"
     or sessionName == "lot08"
     or sessionName == "perf"
+    or sessionName == "ui"
+    or sessionName == "ui_monde"
 then
     return
 end

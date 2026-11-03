@@ -67,6 +67,8 @@ if
     or currentSession == "lot06"
     or currentSession == "lot08"
     or currentSession == "perf"
+    or currentSession == "ui"
+    or currentSession == "ui_monde"
 then
     return
 end

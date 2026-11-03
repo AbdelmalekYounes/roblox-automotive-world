@@ -27,6 +27,10 @@ local KNOWN_SESSIONS = {
     lot08 = { Name = "lot08", Players = 1 },
     -- Lot 0.9 : mesures de référence (place MONDE OUVERT, -Place OpenWorld).
     perf = { Name = "perf", Players = 1 },
+    -- Lot 0.9.1 : interfaces par vraies entrées dans la VM (pont d'entrées, voir
+    -- tools/vm/ScreenCapture.cs) ; « ui_monde » sur la place MONDE OUVERT.
+    ui = { Name = "ui", Players = 1 },
+    ui_monde = { Name = "ui_monde", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -39,6 +43,10 @@ local EXTRA = {
     { "AW_TestLot08Client", "Lot08Client.client.luau", true },
     { "AW_TestPerfServer", "PerfServer.server.luau", false },
     { "AW_TestPerfClient", "PerfClient.client.luau", true },
+    -- Lot 0.9.1 : pilote d'interface par vraies entrées (module partagé) et campagnes.
+    { "AW_TestGui", "GuiDriver.luau", "module" },
+    { "AW_TestUiServer", "UiServer.server.luau", false },
+    { "AW_TestUiClient", "UiClient.client.luau", true },
 }
 
 local output = process.args[1]
@@ -125,7 +133,7 @@ for _, entry in EXTRA do
                 "table.insert(EXTRA_SUITES, { %q, [==[%s]==], %s })",
                 entry[1],
                 source,
-                if entry[3] then "true" else "false"
+                if entry[3] == "module" then '"module"' elseif entry[3] then "true" else "false"
             )
         )
     end
