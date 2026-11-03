@@ -116,9 +116,48 @@ signalEvent.OnServerEvent:Connect(function(player, name)
     if type(name) ~= "string" or string.sub(name, 1, 5) ~= "AWUI:" then
         return
     end
-    if name == "AWUI:PlaceStart" and session == "gps" then
+    if name == "AWUI:PlaceStart" and (session == "gps" or session == "ui_monde") then
         placeStart(player)
         return
+    end
+    -- Session ui_monde (captures) : heure, météo, point de vue (placement signalé).
+    if session == "ui_monde" then
+        local WorldFolder = ServerScriptService.AutomotiveWorldServer:WaitForChild("World")
+        local hour = string.match(name, "^AWUI:Time:(%d+)$")
+        if hour then
+            local WeatherModel =
+                require(ReplicatedStorage.Shared:WaitForChild("World"):WaitForChild("WeatherModel")) :: any
+            local now = workspace:GetServerTimeNow()
+            workspace:SetAttribute(
+                "AWClockEpoch",
+                now - ((tonumber(hour) :: number - WeatherModel.StartHour) % 24) / 24 * WeatherModel.DayLengthS
+            )
+            ReplicatedStorage:SetAttribute("AWUI_Done", name)
+            return
+        elseif name == "AWUI:Rain" or name == "AWUI:Clear" then
+            local WeatherService = require(WorldFolder:WaitForChild("WeatherService")) :: any
+            WeatherService.force(if name == "AWUI:Rain" then "Rain" else "Clear", if name == "AWUI:Rain" then 1 else 0)
+            ReplicatedStorage:SetAttribute("AWUI_Done", name)
+            return
+        end
+        local gx, gz = string.match(name, "^AWUI:Goto:(-?[%d%.]+),(-?[%d%.]+)$")
+        if gx and gz then
+            local position = Vector3.new(tonumber(gx) :: number * S, 0, tonumber(gz) :: number * S)
+            pcall(function()
+                player:RequestStreamAroundAsync(position, 15)
+            end)
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            params.FilterDescendantsInstances = if player.Character then { player.Character } else {}
+            local hit = workspace:Raycast(position + Vector3.new(0, 2000, 0), Vector3.new(0, -4000, 0), params)
+            local y = if hit then hit.Position.Y + 4 else 20
+            local character = player.Character
+            if character then
+                character:PivotTo(CFrame.new(position.X, y, position.Z))
+            end
+            ReplicatedStorage:SetAttribute("AWUI_Done", name)
+            return
+        end
     end
     ReplicatedStorage:SetAttribute("AWUI_" .. string.sub(name, 6), true)
     record("ui.serveur.info_decor", true, name .. " (" .. player.Name .. ")")

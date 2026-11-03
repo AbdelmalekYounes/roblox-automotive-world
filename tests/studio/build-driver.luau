@@ -58,6 +58,7 @@ local EXTRA = {
     { "AW_TestDriftClient", "DriftClient.client.luau", true },
     { "AW_TestSocialServer", "SocialServer.server.luau", false },
     { "AW_TestSocialClient", "SocialClient.client.luau", true },
+    { "AW_TestUiMondeClient", "UiMondeClient.client.luau", true },
 }
 
 local output = process.args[1]
