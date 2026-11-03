@@ -122,8 +122,9 @@ réussis**, luau-lsp strict 0 erreur. Sessions VM sur ce code : §2.2 (`20261103
 
 ### 2.4 PR
 
-Voir la description de la PR brouillon (base `feat/ui-gps-social-0.7`) ; SHA du dernier commit indiqué dans la PR
-et dans la feuille de route.
+PR brouillon [#8](https://github.com/AbdelmalekYounes/roblox-automotive-world/pull/8), base
+`feat/ui-gps-social-0.7`, non fusionnée. Dernier commit de code vérifié : `099822b` ; les commits suivants ne
+touchent que la documentation.
 
 ## 3. Écarts, choix et points à arbitrer
 

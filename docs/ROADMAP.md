@@ -97,7 +97,7 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   manette, lisibilité, communications, confidentialité multijoueur et DataStore **NON TESTÉS**.
 - Rapport : `docs/lot-0.7/RAPPORT_LOT_0.7.md` ; architecture : `docs/lot-0.7/ARCHITECTURE_LOT_0.7.md`.
 
-## État du lot 0.8 (branche `feat/art-audio-onboarding-0.8`, PR brouillon, base : lot 0.7)
+## État du lot 0.8 (branche `feat/art-audio-onboarding-0.8`, PR brouillon #8, base : lot 0.7)
 
 - Livré : manifeste des ressources (aucun identifiant Roblox inventé), direction artistique, gamme PROPOSÉE de 18
   modèles fictifs intégrée au moteur physique et aux concessions (en attente d'approbation), carrosseries et

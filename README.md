@@ -18,7 +18,7 @@
 > graphique, audio modulaire et radio (contrôleurs ; sons originaux synthétisés mais non téléversés), mode photo,
 > parcours d'arrivée et exercices de formation. Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.8 en développement sur `feat/art-audio-onboarding-0.8` (PR brouillon, base : lot 0.7 ;
+> **Statut** : lot 0.8 en développement sur `feat/art-audio-onboarding-0.8` (PR brouillon #8, base : lot 0.7 ;
 > PR #1 à #7 non fusionnées). Rapport : [docs/lot-0.8/RAPPORT_LOT_0.8.md](docs/lot-0.8/RAPPORT_LOT_0.8.md).
 > Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
 > (**NON TESTÉS** à ce jour).
