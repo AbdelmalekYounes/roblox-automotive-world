@@ -26,7 +26,7 @@ local DevSeed = {}
 DevSeed.TxId = "Grant:DevSeed"
 DevSeed.Models = table.freeze({ "proto_p01", "proto_p02", "proto_p03" })
 DevSeed.PropertyOffer = "RES-METRO-LOFTS"
-DevSeed.Credits = 150_000
+DevSeed.SyntheticBalance = 150_000
 
 function DevSeed.apply(profile: ProfileSchema.Profile, now: number, lookup: (string) -> any): (boolean, any)
     if profile.Grants.DevSeed ~= nil then
@@ -59,7 +59,7 @@ function DevSeed.apply(profile: ProfileSchema.Profile, now: number, lookup: (str
         }
     end
     -- Lot 0.5 : crédits SYNTHÉTIQUES pour éprouver l'économie (Dev, mémoire seulement).
-    Wallet.credit(profile, DevSeed.Credits, "DevSynthetic", "dev-seed", now)
+    Wallet.credit(profile, DevSeed.SyntheticBalance, "DevSynthetic", "dev-seed", now)
     profile.Grants.DevSeed = { At = now, Ref = "synthetic" }
     return true, { Vehicles = vehicles }
 end
