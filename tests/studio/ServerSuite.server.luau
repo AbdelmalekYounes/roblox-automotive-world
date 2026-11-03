@@ -15,6 +15,10 @@ local Workspace = game:GetService("Workspace")
 local args = StudioTestService:GetTestArgs()
 local sessionName = if type(args) == "table" and type(args.Session) == "string" then args.Session else "inconnue"
 local expectedPlayers = if type(args) == "table" and type(args.Players) == "number" then args.Players else 1
+-- Sessions qui ont leur propre suite serveur complète (MondeServer, Lot04Server).
+if sessionName == "monde" or sessionName == "lot04" then
+    return
+end
 local CLIENT_TIMEOUT_S = 240
 
 local steps = {}

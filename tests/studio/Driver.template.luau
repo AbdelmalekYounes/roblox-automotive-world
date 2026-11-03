@@ -18,6 +18,10 @@ local SCENARIO_SERVER_SOURCE = [==[@@SCENARIO_SERVER@@]==]
 local SCENARIO_CLIENT_SOURCE = [==[@@SCENARIO_CLIENT@@]==]
 local LOT02_SERVER_SOURCE = [==[@@LOT02_SERVER@@]==]
 local LOT02_CLIENT_SOURCE = [==[@@LOT02_CLIENT@@]==]
+local MONDE_SERVER_SOURCE = [==[@@MONDE_SERVER@@]==]
+local MONDE_CLIENT_SOURCE = [==[@@MONDE_CLIENT@@]==]
+local LOT04_SERVER_SOURCE = [==[@@LOT04_SERVER@@]==]
+local LOT04_CLIENT_SOURCE = [==[@@LOT04_CLIENT@@]==]
 local SESSIONS = HttpService:JSONDecode([==[@@SESSIONS@@]==])
 
 local function emit(kind: string, data: any)
@@ -61,6 +65,24 @@ local lot02ClientScript = Instance.new("LocalScript")
 lot02ClientScript.Name = "AW_TestLot02Client"
 lot02ClientScript.Source = LOT02_CLIENT_SOURCE
 lot02ClientScript.Parent = StarterPlayer:WaitForChild("StarterPlayerScripts")
+
+-- Essais des lots 0.3 (« monde », place monde ouvert) et 0.4 (« lot04 ») :
+-- inactifs hors de leur session.
+local extraScripts = {}
+for _, entry in
+    {
+        { "AW_TestMondeServer", MONDE_SERVER_SOURCE, false },
+        { "AW_TestMondeClient", MONDE_CLIENT_SOURCE, true },
+        { "AW_TestLot04Server", LOT04_SERVER_SOURCE, false },
+        { "AW_TestLot04Client", LOT04_CLIENT_SOURCE, true },
+    }
+do
+    local item = Instance.new(if entry[3] then "LocalScript" else "Script")
+    item.Name = entry[1]
+    item.Source = entry[2]
+    item.Parent = if entry[3] then StarterPlayer:WaitForChild("StarterPlayerScripts") else ServerScriptService
+    table.insert(extraScripts, item)
+end
 
 -- Émulation de latence de Studio (réglages réseau) ; l'application effective
 -- aux processus clients est mesurée par la suite client (ping), pas supposée.
@@ -117,4 +139,7 @@ scenarioServerScript:Destroy()
 scenarioClientScript:Destroy()
 lot02ServerScript:Destroy()
 lot02ClientScript:Destroy()
+for _, item in extraScripts do
+    item:Destroy()
+end
 emit("end", {})

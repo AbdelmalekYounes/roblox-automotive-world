@@ -64,7 +64,9 @@ function InvitationRules.create(
     if type(propertyId) ~= "string" or profile.Properties[propertyId] == nil then
         return false, "PropertyNotOwned"
     end
-    if type(guestUserId) ~= "number" or guestUserId ~= math.floor(guestUserId) or guestUserId <= 0 then
+    -- Identifiant entier non nul (les joueurs des sessions de test de Studio ont
+    -- des UserId négatifs) ; la présence réelle du joueur est vérifiée par le service.
+    if type(guestUserId) ~= "number" or guestUserId ~= math.floor(guestUserId) or guestUserId == 0 then
         return false, "InviteGuestInvalid"
     end
     if guestUserId == profile.UserId then

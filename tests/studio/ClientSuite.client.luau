@@ -61,6 +61,8 @@ if
     or currentSession == "collision"
     or currentSession == "collision_latence"
     or currentSession == "lot02"
+    or currentSession == "monde"
+    or currentSession == "lot04"
 then
     return
 end
