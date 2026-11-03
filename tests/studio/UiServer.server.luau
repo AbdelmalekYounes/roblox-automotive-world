@@ -17,7 +17,7 @@ local StudioTestService = game:GetService("StudioTestService")
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 -- Sessions à un joueur du lot 0.9.1 (interfaces, métiers, trajets, drift).
-local SESSIONS = { ui = true, ui_monde = true, metiers = true, gps = true, drift = true }
+local SESSIONS = { ui = true, ui_monde = true, ui_marche = true, metiers = true, gps = true, drift = true }
 if not SESSIONS[session] then
     return
 end

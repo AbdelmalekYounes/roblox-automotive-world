@@ -31,6 +31,7 @@ local KNOWN_SESSIONS = {
     -- tools/vm/ScreenCapture.cs) ; « ui_monde » sur la place MONDE OUVERT.
     ui = { Name = "ui", Players = 1 },
     ui_monde = { Name = "ui_monde", Players = 1 },
+    ui_marche = { Name = "ui_marche", Players = 1 },
     -- Lot 0.9.1 : huit métiers par un pilote (Dev), trajets GPS (MONDE OUVERT), drift (Dev).
     metiers = { Name = "metiers", Players = 1 },
     gps = { Name = "gps", Players = 1 },

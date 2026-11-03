@@ -19,9 +19,12 @@ local sessionStart = os.clock()
 while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - sessionStart < 15 do
     task.wait()
 end
-if ReplicatedStorage:GetAttribute("AWTestSession") ~= "ui" then
+-- « ui_marche » : seulement la concession et le marché (reproduction ciblée, lot 0.9.1).
+local sessionName = ReplicatedStorage:GetAttribute("AWTestSession")
+if sessionName ~= "ui" and sessionName ~= "ui_marche" then
     return
 end
+local ONLY: { [string]: boolean }? = if sessionName == "ui_marche" then { concession = true, marche = true } else nil
 
 local steps = {}
 local measures = {}
@@ -183,6 +186,9 @@ record("ui.entrees.clavier_reel_recu", keysOk, keysDetail)
 Gui.park()
 
 local function phase(name: string, body: () -> ())
+    if ONLY and not ONLY[name] then
+        return
+    end
     trace("phase " .. name)
     local ok, err = xpcall(body, debug.traceback)
     if not ok then
@@ -543,6 +549,71 @@ end)
 ---------------------------------------------------------------------------
 -- 5. Courses et classements (touche K).
 ---------------------------------------------------------------------------
+-- Marché : mise en vente du véhicule acheté, puis retrait de l'annonce (vrais clics).
+local function myListings(): { any }
+    local snapshot = read("AWEconomy", "Snapshot").Snapshot or {}
+    local mine = {}
+    for _, listing in snapshot.Listings or {} do
+        if listing.Mine then
+            table.insert(mine, listing)
+        end
+    end
+    return mine
+end
+local function activeButton(root: Instance?, text: string): GuiButton?
+    if root == nil then
+        return nil
+    end
+    for _, item in root:GetDescendants() do
+        if item:IsA("TextButton") and item.Text == text and item.AutoButtonColor and Gui.present(item) then
+            return item
+        end
+    end
+    return nil
+end
+
+phase("marche", function()
+    if not openByKey("J", "AWEconomy", "marche") then
+        return
+    end
+    local root = screen("AWEconomy")
+    click("ui.marche.onglet", exact(root, "Marché"), "Marché")
+    task.wait(1.2)
+    local listButton = activeButton(root, "Devis de mise en vente")
+    Gui.reveal(listButton)
+    if not click("ui.marche.devis_mise_en_vente", listButton, "Devis de mise en vente") then
+        record("ui.marche.info_vehicules", true, "aucun exemplaire cessible : " .. footerText(root))
+        closeWith("AWEconomy", "marche", "Fermer")
+        return
+    end
+    waitFor(function()
+        return exact(root, "Confirmer") ~= nil
+    end, 5)
+    task.wait(0.45)
+    Gui.shot("marche_confirmation_mise_en_vente", {})
+    click("ui.marche.confirmer_mise_en_vente", exact(root, "Confirmer"), "Confirmer")
+    local listed = waitFor(function()
+        return #myListings() > 0
+    end, 10)
+    record("ui.marche.annonce_publiee_serveur", listed, footerText(root))
+    task.wait(1)
+    Gui.shot("marche_annonce_publiee", {})
+    local withdraw = activeButton(root, "Retirer l'annonce")
+    Gui.reveal(withdraw)
+    if click("ui.marche.retirer_annonce", withdraw, "Retirer l'annonce") then
+        local removed = waitFor(function()
+            return #myListings() == 0
+        end, 8)
+        record(
+            "ui.marche.annonce_retiree_serveur",
+            removed,
+            string.format("pied « %s », annonces restantes %d", footerText(root), #myListings())
+        )
+        Gui.shot("marche_apres_retrait", {})
+    end
+    closeWith("AWEconomy", "marche", "Fermer")
+end)
+
 phase("courses", function()
     if not openByKey("K", "AWRacing", "courses") then
         return

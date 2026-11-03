@@ -25,6 +25,7 @@ if
     or sessionName == "perf"
     or sessionName == "ui"
     or sessionName == "ui_monde"
+    or sessionName == "ui_marche"
     or sessionName == "metiers"
     or sessionName == "gps"
     or sessionName == "drift"

@@ -69,6 +69,7 @@ if
     or currentSession == "perf"
     or currentSession == "ui"
     or currentSession == "ui_monde"
+    or currentSession == "ui_marche"
     or currentSession == "metiers"
     or currentSession == "gps"
     or currentSession == "drift"
