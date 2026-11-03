@@ -33,7 +33,28 @@ celui de la tête au dépôt de la tâche.
 | `174932` | `28816d9` | Monde ouvert | `monde`, `perf` | **41 / 0** | Lampadaires éteints relevés par la mesure (défaut, `PERFORMANCES.md` §4) |
 | `175506` | `f2fe391` | Monde ouvert | `perf` | 3 / 0 | 12 lampadaires allumés de nuit |
 | `175825` | `f2fe391` | Dev | `lot06` | 23 / 1 | Faux départ pénalisé (5 s) ; pilote bloqué contre un poteau d'arrivée |
-| _final_ | _à compléter_ | | | | |
+| `182533`, `184407` | `025717c`, `737d081` | Dev | `lot06` | 36 / 7, 38 / 5 | Fin d'épreuve lue dans « Results » ; sprint à deux et drag jusqu'au résultat |
+| **`185530`** | **`855b93b`** | Dev | **11 sessions** (7 historiques, `lot04`, `lot05`, `lot06`, `lot08`) | **649 / 3** (+1 limite connue) | **Campagne finale** : voir ci-dessous |
+| **`193356`** | `741d848` (code identique à `855b93b`) | Monde ouvert | `monde`, `perf` | **41 / 0** | Habillage reçu (686 pièces), autoroute 133,5 km/h, 12 lampadaires de nuit |
+
+**Campagne finale** (`20261103-185530`, 2026-11-03 18:55–19:33) : 649 réussis, 3 échecs, 1 limite connue.
+
+- Échecs : 2 × `scenario.propriete_reseau_sans_anomalie` (une « réattribution (1) » chacun, QA-A01 résiduel) ;
+  `lot06.j2.pret_au_depart` (`RaceAlreadyLocked` : le joueur 2 se déclare prêt après le verrouillage automatique ;
+  il court quand même — refus légitime, minutage du test).
+- Limite connue : véhicule ancré par le test (QA-A05).
+- **Courses** : les **six disciplines jouées jusqu'au résultat** dans Studio par le pilote automatique — sprint
+  officiel à deux (49,4 s et 50,4 s, faux départ pénalisé de 5 s, récompenses +74 et +46), drag (11,4 s, 113 km/h,
+  réaction 1,43 s), contre-la-montre (42,6 s), circuit de 3 tours (141,9 s, meilleur tour 46,8 s), rallye
+  (59,8 s), drift (session de 90 s, score 0 : le pilote ne dérive pas — le calcul du score est vérifié en Lune) ;
+  entraînements sans crédit ; aucun engagement ni exemplaire réservé restant.
+- **Banc** 18 / 18 ; parcours d'arrivée, photo, radio ; `lot05` et `lot04` entièrement réussis ; `lot02`,
+  `solo`, `multijoueur`, `latence`, `scenarios` réussis.
+
+Vérification hors Studio sur le même commit (`855b93b`, 2026-11-03 18:55) :
+`scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` — Rojo (deux places), Selene, StyLua, pilote
+Studio, **Lune 329 / 0**, génération déterministe de la carte (47 653 pièces), **pytest 14**, luau-lsp strict
+0 erreur.
 
 Nouvelles sessions écrites pour ce lot : **`lot05`** (économie et marché à deux joueurs, falsifications),
 **`lot06`** (courses : épreuve officielle à deux, cinq disciplines en entraînement, pilote automatique),
@@ -55,7 +76,7 @@ partiel), **basse** (logique seulement, ou dépend d'un essai humain ou externe)
 | Propriétés, garages, collection, préparation, configurations, invitations | Implémenté | `lot04` (2 joueurs) | DataStore réel | — | — | Haute (mémoire) | Expérience isolée (R1) |
 | Économie : crédits, concessions, marché, pièces, carburant, recharge, lavage, réparation, immobilier | Implémenté | `lot05` (achats, falsifications, rejeu, solde, débit abusif, marché concurrent, pièces, plein, lavage) | Immobilier et réparation en jeu, recharge électrique, inter-serveurs | — | **QA-F08** (marché), QA-F10 (stations) | Haute (mémoire) | R1 |
 | Huit métiers, récompenses | Implémenté (présentation partielle) | Lune (8 métiers, gain unique) ; `lot05` (démarrage, fin falsifiée refusée, abandon sans paiement) | **Mission complète en jeu** (QA-E04, E05) | Remorquage non implémenté | QA-F11 (chargement visible) | Moyenne | — |
-| Courses : 6 disciplines, départs, faux départs, points de passage, tours, drift, salons, modes, réservation, classements, récompenses | Implémenté | Lune (19 + tests) ; `lot06` : épreuve officielle de bout en bout (inscription, grille, départ, arrivée, récompense, libération), faux départ pénalisé, classée sans file refusée | Cinq disciplines d'entraînement de bout en bout (pilote automatique insuffisant, §4), classé réel, inter-serveurs | — | **QA-F07** (inscription impossible) | Moyenne | R1 (inter-serveurs) |
+| Courses : 6 disciplines, départs, faux départs, points de passage, tours, drift, salons, modes, réservation, classements, récompenses | Implémenté | Lune (19 + tests) ; `lot06` : épreuve officielle à deux de bout en bout (inscription, réservation, grille, départ, arrivée, récompense, libération), faux départ pénalisé, **six disciplines jusqu'au résultat**, classée sans file refusée | Classé réel, drift avec dérive réelle, monde ouvert, inter-serveurs, jeu humain | — | **QA-F07** (inscription impossible) | Haute (Dev) | R1 (inter-serveurs) |
 | HUD, GPS, carte, smartphone, groupes, permissions, notifications, localisation, accessibilité | Implémenté | Lune (lot 0.7) ; HUD en jeu (sessions historiques) ; panneaux traduits (Lune) | Parcours d'interface, manette, lisibilité (humain) | — | — | Moyenne | Humain |
 | Mode photo | Implémenté | Lune ; `lot08` (ouverture à pied, caméra restaurée à l'identique) | Mur, propriété, capture | — | — | Moyenne | Humain |
 | Parcours d'arrivée et exercices | Implémenté (Dev) | `lot08` (11 étapes, essai, refus en course, choix unique, propriété, exercices) | Comptes réels | — | QA-F09 (lot 0.8) | Haute (Dev) | **D2** (liste officielle) |
@@ -70,7 +91,7 @@ partiel), **basse** (logique seulement, ou dépend d'un essai humain ou externe)
 | 1. Nouveau joueur | **Oui**, `lot08` (Dev, candidats synthétiques) | Introduction, refus hors ordre, essai d'un candidat (véhicule marqué, refusé en course), fin de l'essai, choix confirmé, second choix sans effet, propriété gratuite, parcours terminé, exercices ; protection d'apparition relevée par le serveur |
 | 2. Progression normale | **Partiel**, `lot05` + `lot04` | Achats à la concession, pièces au garage public, sortie du garage, plein, mission démarrée puis abandonnée ; **mission complète NON exécutée** (pilotage jusqu'aux étapes non automatisé) |
 | 3. Conduite et exploration | **Partiel**, `monde` | Autoroute à 133 km/h, repos sur route de montagne, rue et chemin, trafic, piétons, pluie ; **traversée des sept zones avec GPS NON exécutée** |
-| 4. Compétition | **Oui** (sprint officiel), `lot06` | Inscription avec véhicule personnel, exemplaire réservé pendant l'épreuve, grille, départ, arrivée (41,8 s), récompense, libération, aucun engagement restant ; faux départ pénalisé de 5 s |
+| 4. Compétition | **Oui**, `lot06` | Inscription avec véhicule personnel, exemplaire réservé pendant l'épreuve, grille, départ, arrivée (49,4 s), récompense, libération, aucun engagement restant ; faux départ pénalisé de 5 s ; cinq disciplines d'entraînement jusqu'au résultat, sans crédit |
 | 5. Commerce entre joueurs | **Oui**, `lot05` | Annonce, deux achats simultanés (un seul aboutit), débit de l'acheteur, crédit du vendeur (prix − 5 %), exemplaire unique ; interruption réelle (arrêt de serveur) NON exécutée (Lune seulement) |
 | 6. Social | **Partiel**, `lot04` | Invitation, visite, révocation ; groupes et partage de position : Lune seulement |
 | 7. Conditions dégradées | **Partiel** | Latence 100 ms (`latence`, `collision_latence`) ; stockage indisponible, écriture incertaine, verrou repris, interruption de transfert : **simulations mémoire** (§6) ; crash de serveur réel : NON TESTÉ |
@@ -168,4 +189,34 @@ Procédure de l'essai réel (à exécuter seulement après les décisions R1 et 
 
 ## 8. Recommandation pour le lot 1.0
 
-_À compléter après la campagne finale._
+**Recommandation : NON pour un lancement public ; OUI pour engager le lot 1.0 en tant que lot de vérification du
+périmètre, à condition de lever d'abord les dépendances externes bloquantes.**
+
+Ce que le lot 0.9 établit :
+
+- Les huit lots fonctionnent ensemble ; toutes les sessions automatisées passent, hors une anomalie réseau
+  bénigne (QA-A01 résiduel, P2, aucun effet mesuré).
+- Les chaînes critiques sont vérifiées **en jeu** et plus seulement en logique : conduite et six boîtes, 18 modèles,
+  progression et garages, économie et marché (falsifications refusées, vente concurrente, rejeu), courses dans les
+  six disciplines avec résultat, récompense et libération, parcours d'arrivée.
+- Quatre défauts **bloquants** jamais vus auparavant ont été trouvés et corrigés (courses injouables, annonces
+  bloquées, ligne d'essai obstruée, éclairage de nuit inopérant) : preuve que les campagnes en jeu étaient
+  nécessaires et qu'il en reste à faire sur les parties non couvertes.
+
+Ce qui empêche une ouverture publique :
+
+1. **Persistance jamais exécutée sur DataStore** : risque de perte ou de doublon de biens non mesuré (QA-D01 à
+   D10). Bloquant.
+2. **Aucune mesure sur appareils réels ni à 24 joueurs** : objectifs de performance non démontrés (QA-P01 à P09).
+3. **Aucun essai humain consigné** depuis le lot 0.1 (ressenti, manette, lisibilité, interfaces) : checklist prête.
+4. **Contenu en attente d'approbation** : gamme, véhicules de départ (liste officielle vide), sons non téléversés
+   (aucun son en jeu), direction artistique provisoire.
+5. Inter-serveurs (marché, matchmaking) jamais exécuté.
+
+Ordre proposé avant ou au début du lot 1.0 :
+
+1. Décisions D1, D2, D4 (gamme, départs, sons) et création de l'expérience de test isolée (R1, R2).
+2. Campagne DataStore réelle (§6), puis inter-serveurs.
+3. Essais humains (checklist, huit sessions) et mesures sur appareils réels.
+4. Lot 1.0 : vérification du périmètre complet contre le CDC et décision GO / NO-GO, sur la base de ces
+   résultats.
