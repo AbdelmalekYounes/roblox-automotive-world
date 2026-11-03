@@ -83,6 +83,6 @@ Aucune erreur d'exécution de notre code dans aucune session (contrôles `aucune
 
 ## 6. Vérifications hors Studio (finales)
 
-`scriptserify.ps1 -RobloxTypes .tooling\globalTypes.d.luau`, 2026-11-03 à 03:25, code du commit `b41e0f1` (arbre de
+`scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau`, 2026-11-03 à 03:25, code du commit `b41e0f1` (arbre de
 travail : documentation seule modifiée) : Rojo (2 places), Selene, StyLua, **236 tests Lune**, génération de la carte
 (37 239 pièces, aucune au-delà de 2 048 studs), **10 pytest**, luau-lsp strict : tout OK.
