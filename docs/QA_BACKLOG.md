@@ -38,16 +38,24 @@ Dernière mise à jour : 2026-11-03, lot 0.8 (branche `feat/art-audio-onboarding
 | QA-F03 | 0.5 | Lieux économiques | P2 | Les 13 lieux économiques recevaient l'invite « Préparer / Garage public » de la progression (29 invites au lieu de 16, `20261103-035626`) | `2caf0c9` | `20261103-035902` : 16 + 13 invites, aucune erreur |
 | QA-F02 | 0.3 | Carte | P1 | 195 pièces dépassaient 2 048 studs et étaient raccourcies par le moteur : trous aux bouts des longues chaussées droites (P-01 sur l'herbe, 37,8 km/h, `20261103-025743`) | `b41e0f1` | `20261103-030159` : 133,4 km/h sur A6-2, toujours sur la route |
 
-## 2. Essais humains (aucun n'a été réalisé)
+## 2. Essais humains
+
+**Déclaration du propriétaire** (brief du lot 0.2, 2026-11-02) : « Le propriétaire a terminé ses neuf vérifications
+manuelles du lot 0.1 sans signaler de problème. » Ces essais n'ont laissé ni étapes, ni résultats chiffrés, ni
+journal : ils sont classés **DÉCLARÉ (propriétaire)**, une origine distincte des essais automatisés et des essais
+consignés. Écart à lever : le rapport du lot 0.1 ne liste que **sept** essais humains (H1 à H7 de
+`docs/lot-0.1/RAPPORT_VALIDATION.md` §4, repris en QA-H01 à QA-H06 ; H7 « ressenti » n'a pas de ligne propre) ; la
+correspondance exacte des neuf vérifications reste à confirmer par le propriétaire. Aucun autre essai humain n'a été
+déclaré ou consigné.
 
 | Id | Lot | Système | Priorité | Essai | Attendu | État |
 |---|---|---|---|---|---|---|
-| QA-H01 | 0.1 | Commandes | P1 | Conduite au clavier (Z/W, S, Q/A/D, Espace, V, R, F) | Réponse progressive, marche arrière en maintenant S à l'arrêt, sortie refusée au-dessus de 20 km/h | **NON TESTÉ** |
-| QA-H02 | 0.1 | Commandes | P1 | Conduite à la manette (RT, LT, stick, A, croix, Y) | Idem, aide du HUD en mode manette | **NON TESTÉ** |
-| QA-H03 | 0.1 | Commandes | P2 | Clavier et manette ensemble | Le dernier périphérique sollicité pilote, pas de cumul | **NON TESTÉ** |
-| QA-H04 | 0.1 | Commandes | P2 | Taper dans le chat en conduisant | Aucune commande ni sortie | **NON TESTÉ** |
-| QA-H05 | 0.1 | Commandes | P2 | Débrancher / rebrancher la manette gâchette enfoncée | Relâchement, message, pas de redémarrage avant un nouvel appui | **NON TESTÉ** |
-| QA-H06 | 0.1 | Commandes | P3 | Perte de focus de la fenêtre en conduisant | Relâchement, touche « bloquée » ignorée au retour | **NON TESTÉ** |
+| QA-H01 | 0.1 | Commandes | P1 | Conduite au clavier (Z/W, S, Q/A/D, Espace, V, R, F) | Réponse progressive, marche arrière en maintenant S à l'arrêt, sortie refusée au-dessus de 20 km/h | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H02 | 0.1 | Commandes | P1 | Conduite à la manette (RT, LT, stick, A, croix, Y) | Idem, aide du HUD en mode manette | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H03 | 0.1 | Commandes | P2 | Clavier et manette ensemble | Le dernier périphérique sollicité pilote, pas de cumul | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H04 | 0.1 | Commandes | P2 | Taper dans le chat en conduisant | Aucune commande ni sortie | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H05 | 0.1 | Commandes | P2 | Débrancher / rebrancher la manette gâchette enfoncée | Relâchement, message, pas de redémarrage avant un nouvel appui | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H06 | 0.1 | Commandes | P3 | Perte de focus de la fenêtre en conduisant | Relâchement, touche « bloquée » ignorée au retour | **DÉCLARÉ (propriétaire)** — non consigné en détail |
 | QA-H07 | 0.2 | Commandes | P1 | Clavier : Maj / Ctrl gauche (rapports), C (embrayage), 1/2/3 (aides), G (récupération), V (caméras) | Effet immédiat, affiché au HUD | **NON TESTÉ** |
 | QA-H08 | 0.2 | Commandes | P1 | Manette : RB / LB, B, croix gauche / droite, croix haut | Idem | **NON TESTÉ** |
 | QA-H09 | 0.2 | Boîte manuelle | P2 | Démarrage en côte et calage au clavier et à la manette | Rampe d'embrayage de 0,6 s utilisable | **NON TESTÉ** |
