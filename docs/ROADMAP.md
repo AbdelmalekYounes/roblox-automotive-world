@@ -41,6 +41,19 @@ Commencé à la demande du propriétaire alors que la PR #1 n'est pas fusionnée
 - Hors périmètre, prévus aux lots suivants : monde ouvert, stations et recharge payantes, crédits, profils et
   persistance (dont dégâts et énergie, lot 0.4), garages, compétitions, smartphone/GPS, catalogue des 18 modèles.
 
+## État du lot 0.3 (branche `feat/open-world-map-0.3`, PR brouillon, base : lot 0.2)
+
+Commencé à la demande du propriétaire alors que les PR #1 et #2 ne sont pas fusionnées ; les lots précédents restent
+intacts sur leurs branches. Décision du propriétaire : essais humains, non-régression approfondie et charge regroupés
+dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
+
+- Livré : carte d'un seul tenant à sept zones en maquette (1 285 carrefours, 2 224 tronçons), générée hors ligne de
+  façon déterministe ; infrastructures aux quantités du cahier des charges (emplacements et volumes) ; graphe routier
+  (A*) ; trafic PNJ (virtuel / physique) et piétons ; météo et cycle jour/nuit de 30 min ; humidité de chaussée
+  appliquée une seule fois ; place monde ouvert avec streaming ; zone d'essai conservée dans la place de développement.
+- Vérifié hors Studio uniquement (187 tests Lune, 9 pytest, typage strict) ; **aucun essai Studio ni humain**.
+- Rapport : `docs/lot-0.3/RAPPORT_LOT_0.3.md` ; architecture : `docs/lot-0.3/ARCHITECTURE_LOT_0.3.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
