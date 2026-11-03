@@ -29,6 +29,7 @@ for _, spec in
         require("./specs/Lot02Powertrain"),
         require("./specs/Lot02Chassis"),
         require("./specs/Lot02Systems"),
+        require("./specs/Lot03World"),
     }
 do
     spec(TestKit, Harness)
