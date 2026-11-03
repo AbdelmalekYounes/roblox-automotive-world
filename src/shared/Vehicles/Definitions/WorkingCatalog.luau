@@ -103,7 +103,7 @@ local function peakPowerKw(curve: { { Rpm: number, TorqueNm: number } }): number
 end
 
 local function build(spec: Spec): Types.VehicleDefinition
-    local base = if spec.Base == "Petrol"
+    local base: any = if spec.Base == "Petrol"
         then PrototypeP01
         elseif spec.Base == "Diesel" then PrototypeP02
         else PrototypeP03
@@ -134,8 +134,9 @@ local function build(spec: Spec): Types.VehicleDefinition
         Front = spec.MassKg * spec.FrontWeight / (base.Chassis.MassKg * baseFront),
         Rear = spec.MassKg * (1 - spec.FrontWeight) / (base.Chassis.MassKg * (1 - baseFront)),
     }
-    for axleName, axle in { Front = d.Suspension.Front, Rear = d.Suspension.Rear } do
-        local load = loadFactor[axleName]
+    local axles: { [string]: any } = { Front = d.Suspension.Front, Rear = d.Suspension.Rear }
+    for axleName, axle in axles do
+        local load = (loadFactor :: any)[axleName]
         axle.SpringRateNpm *= load * math.max(1, spec.Stiffness * spec.Stiffness)
         axle.BumpDampingNsPm *= load * spec.Stiffness
         axle.ReboundDampingNsPm *= load * spec.Stiffness

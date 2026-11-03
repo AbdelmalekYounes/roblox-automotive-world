@@ -23,6 +23,7 @@ local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ve
 local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDynamics = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("VehicleDynamics"))
+local BodyKits = require(script.Parent.BodyKits)
 
 local VehicleFactory = {}
 
@@ -47,11 +48,24 @@ type VisualProps = {
     Material: Enum.Material?,
     Transparency: number?,
     CanCollide: boolean?,
+    -- Lot 0.8 (carrosseries) : forme, détail masquable au loin, feu du véhicule.
+    Shape: string?, -- "Wedge" | "Cylinder"
+    Detail: boolean?,
+    Light: string?, -- "Head" (projecteur) | "Tail" (feu arrière)
 }
 
 -- Pièce visuelle soudée au châssis, sans masse (n'affecte pas la dynamique).
-local function addVisual(root: BasePart, parent: Instance, props: VisualProps): Part
-    local part = Instance.new("Part")
+local function addVisual(root: BasePart, parent: Instance, props: VisualProps): BasePart
+    local part: BasePart
+    if props.Shape == "Wedge" then
+        part = Instance.new("WedgePart")
+    else
+        local block = Instance.new("Part")
+        if props.Shape == "Cylinder" then
+            block.Shape = Enum.PartType.Cylinder
+        end
+        part = block
+    end
     part.Name = props.Name
     part.Size = props.Size
     part.CFrame = root.CFrame * props.Offset
@@ -64,12 +78,40 @@ local function addVisual(root: BasePart, parent: Instance, props: VisualProps): 
     part.CanCollide = props.CanCollide == true
     part.CanQuery = props.CanCollide == true
     part.CanTouch = false
+    part.CastShadow = props.Detail ~= true
     part.Anchored = false
     local weld = Instance.new("WeldConstraint")
     weld.Part0 = root
     weld.Part1 = part
     weld.Parent = part
-    part.Parent = parent
+    if props.Light then
+        -- Éclairage du véhicule : éteint par défaut, allumé la nuit par le client
+        -- (nombre limité de véhicules proches, réglage de qualité).
+        local light: any = if props.Light == "Head" then Instance.new("SpotLight") else Instance.new("PointLight")
+        light.Name = "Lumiere"
+        light.Enabled = false
+        light.Brightness = if props.Light == "Head" then 3 else 1
+        light.Range = if props.Light == "Head" then 40 else 8
+        light.Color = if props.Light == "Head" then Color3.fromRGB(255, 244, 214) else Color3.fromRGB(255, 40, 30)
+        if light:IsA("SpotLight") then
+            light.Face = Enum.NormalId.Front
+            light.Angle = 60
+        end
+        light.Parent = part
+        part:SetAttribute("AWLight", props.Light)
+    end
+    if props.Detail then
+        local details: Instance? = parent:FindFirstChild("Details")
+        if details == nil then
+            local created = Instance.new("Folder")
+            created.Name = "Details"
+            created.Parent = parent
+            details = created
+        end
+        part.Parent = details
+    else
+        part.Parent = parent
+    end
     return part
 end
 
@@ -169,108 +211,177 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     bodyForce.Force = Vector3.zero
     bodyForce.Parent = root
 
-    -- Carrosserie de prototype : coque centrale étroite, ailes au-dessus des
-    -- roues apparentes, habitacle vitré et arceau. Silhouette originale.
+    -- Carrosserie : silhouette propre au modèle (lot 0.8) ou carrosserie de
+    -- prototype technique (lots 0.1–0.2). Les deux exposent les mêmes repères.
     local body = Instance.new("Folder")
     body.Name = "Carrosserie"
     body.Parent = model
     local bodyColor = rgb(appearance.BodyRgb)
     local accent = rgb(appearance.AccentRgb)
     local trim = rgb(appearance.TrimRgb)
-    local frontEnd = frontZ - studs(0.85)
-    local rearEnd = rearZ + studs(0.9)
-    local tubLength = rearEnd - frontEnd
-    local tubCenterZ = (frontEnd + rearEnd) / 2
-    local tubBottom = groundY + studs(0.32)
-    local tubTop = groundY + studs(0.85)
-    local tubWidth = trackFront - tireWidth - 0.3
-
-    local tub = addVisual(root, body, {
-        Name = "Coque",
-        Size = Vector3.new(tubWidth, tubTop - tubBottom, tubLength),
-        Offset = CFrame.new(0, (tubTop + tubBottom) / 2, tubCenterZ),
-        Color = bodyColor,
-        CanCollide = true,
-    })
-    addSideLabel(tub, Enum.NormalId.Left, appearance.Label, accent)
-    addSideLabel(tub, Enum.NormalId.Right, appearance.Label, accent)
-
-    addVisual(root, body, {
-        Name = "BandeAvant",
-        Size = Vector3.new(tubWidth + 0.02, 0.25, studs(0.5)),
-        Offset = CFrame.new(0, tubTop - 0.1, frontEnd + studs(0.25)),
-        Color = accent,
-    })
-    addVisual(root, body, {
-        Name = "BouclierAvant",
-        Size = Vector3.new(studs(chassis.WidthM) - 0.4, 0.8, 0.6),
-        Offset = CFrame.new(0, tubBottom + 0.4, frontEnd - 0.2),
-        Color = trim,
-        CanCollide = true,
-    })
-    addVisual(root, body, {
-        Name = "BouclierArriere",
-        Size = Vector3.new(studs(chassis.WidthM) - 0.4, 0.8, 0.6),
-        Offset = CFrame.new(0, tubBottom + 0.4, rearEnd + 0.2),
-        Color = trim,
-        CanCollide = true,
-    })
-    for _, side in { -1, 1 } do
+    local styleName = appearance.BodyStyle
+    local seatOffset: CFrame
+    local passengerOffset: CFrame?
+    local cabinZ: number, dashZ: number, dashTop: number, sideHalf: number
+    local cameraHoodY: number, cameraBumperY: number, frontEnd: number
+    if styleName and BodyKits.has(styleName) then
+        local kit = BodyKits.build(
+            styleName :: string,
+            {
+                GroundY = groundY,
+                HubY = hubY,
+                FrontAxleZ = frontZ,
+                RearAxleZ = rearZ,
+                TireRadius = studs(tire.RadiusM),
+                TireWidth = tireWidth,
+                Width = studs(chassis.WidthM),
+                Length = studs(chassis.LengthM),
+                Height = studs(chassis.HeightM),
+            },
+            { Body = bodyColor, Accent = accent, Trim = trim },
+            studs,
+            function(props: any): BasePart
+                return addVisual(root, body, props)
+            end
+        )
+        seatOffset = kit.SeatOffset
+        passengerOffset = kit.PassengerOffset
+        cabinZ, dashZ, dashTop = kit.CabinZ, kit.DashZ, kit.DashY + 0.25
+        sideHalf = kit.BodyWidth / 2
+        cameraHoodY = kit.HoodY + 0.8
+        cameraBumperY = kit.FloorY + 0.2
+        frontEnd = kit.FrontEnd
         addVisual(root, body, {
-            Name = "Phare" .. (if side < 0 then "Gauche" else "Droit"),
-            Size = Vector3.new(1, 0.4, 0.2),
-            Offset = CFrame.new(side * (tubWidth / 2 - 0.7), tubTop - 0.45, frontEnd - 0.05),
-            Color = Color3.fromRGB(255, 250, 225),
-            Material = Enum.Material.Neon,
+            Name = "Volant",
+            Size = Vector3.new(0.15, 1.1, 1.1),
+            Offset = CFrame.new(seatOffset.X, dashTop + 0.2, dashZ + 0.75)
+                * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
+            Color = trim,
+            Shape = "Cylinder",
         })
-        addVisual(root, body, {
-            Name = "Feu" .. (if side < 0 then "Gauche" else "Droit"),
-            Size = Vector3.new(1, 0.4, 0.2),
-            Offset = CFrame.new(side * (tubWidth / 2 - 0.7), tubTop - 0.45, rearEnd + 0.05),
-            Color = Color3.fromRGB(200, 20, 20),
-            Material = Enum.Material.Neon,
-        })
-    end
+        addSideLabel(body:FindFirstChild("Coque") :: BasePart, Enum.NormalId.Left, appearance.Label, accent)
+    else
+        -- Carrosserie de prototype : coque centrale étroite, ailes au-dessus des
+        -- roues apparentes, habitacle vitré et arceau. Silhouette originale.
+        frontEnd = frontZ - studs(0.85)
+        local rearEnd = rearZ + studs(0.9)
+        local tubLength = rearEnd - frontEnd
+        local tubCenterZ = (frontEnd + rearEnd) / 2
+        local tubBottom = groundY + studs(0.32)
+        local tubTop = groundY + studs(0.85)
+        local tubWidth = trackFront - tireWidth - 0.3
 
-    -- Ailes au-dessus de chaque roue.
-    for index in Constants.WheelNames do
-        local place = layout[index]
-        addVisual(root, body, {
-            Name = "Aile" .. Constants.WheelNames[index],
-            Size = Vector3.new(tireWidth + 0.5, 0.25, studs(tire.RadiusM) * 2 + 0.8),
-            Offset = CFrame.new(studs(place.Lateral), hubY + studs(tire.RadiusM) + 0.45, -studs(place.Longitudinal)),
+        local tub = addVisual(root, body, {
+            Name = "Coque",
+            Size = Vector3.new(tubWidth, tubTop - tubBottom, tubLength),
+            Offset = CFrame.new(0, (tubTop + tubBottom) / 2, tubCenterZ),
             Color = bodyColor,
+            CanCollide = true,
+        })
+        addSideLabel(tub, Enum.NormalId.Left, appearance.Label, accent)
+        addSideLabel(tub, Enum.NormalId.Right, appearance.Label, accent)
+
+        addVisual(root, body, {
+            Name = "BandeAvant",
+            Size = Vector3.new(tubWidth + 0.02, 0.25, studs(0.5)),
+            Offset = CFrame.new(0, tubTop - 0.1, frontEnd + studs(0.25)),
+            Color = accent,
+        })
+        addVisual(root, body, {
+            Name = "BouclierAvant",
+            Size = Vector3.new(studs(chassis.WidthM) - 0.4, 0.8, 0.6),
+            Offset = CFrame.new(0, tubBottom + 0.4, frontEnd - 0.2),
+            Color = trim,
+            CanCollide = true,
+        })
+        addVisual(root, body, {
+            Name = "BouclierArriere",
+            Size = Vector3.new(studs(chassis.WidthM) - 0.4, 0.8, 0.6),
+            Offset = CFrame.new(0, tubBottom + 0.4, rearEnd + 0.2),
+            Color = trim,
+            CanCollide = true,
+        })
+        for _, side in { -1, 1 } do
+            addVisual(root, body, {
+                Name = "Phare" .. (if side < 0 then "Gauche" else "Droit"),
+                Size = Vector3.new(1, 0.4, 0.2),
+                Offset = CFrame.new(side * (tubWidth / 2 - 0.7), tubTop - 0.45, frontEnd - 0.05),
+                Color = Color3.fromRGB(255, 250, 225),
+                Material = Enum.Material.Neon,
+            })
+            addVisual(root, body, {
+                Name = "Feu" .. (if side < 0 then "Gauche" else "Droit"),
+                Size = Vector3.new(1, 0.4, 0.2),
+                Offset = CFrame.new(side * (tubWidth / 2 - 0.7), tubTop - 0.45, rearEnd + 0.05),
+                Color = Color3.fromRGB(200, 20, 20),
+                Material = Enum.Material.Neon,
+            })
+        end
+
+        -- Ailes au-dessus de chaque roue.
+        for index in Constants.WheelNames do
+            local place = layout[index]
+            addVisual(root, body, {
+                Name = "Aile" .. Constants.WheelNames[index],
+                Size = Vector3.new(tireWidth + 0.5, 0.25, studs(tire.RadiusM) * 2 + 0.8),
+                Offset = CFrame.new(
+                    studs(place.Lateral),
+                    hubY + studs(tire.RadiusM) + 0.45,
+                    -studs(place.Longitudinal)
+                ),
+                Color = bodyColor,
+            })
+        end
+
+        -- Habitacle : vitrage collisionnable (les piétons ne traversent pas le toit).
+        local cabinBottom = tubTop
+        local cabinTop = groundY + studs(chassis.HeightM)
+        local cabinLength = studs(1.9)
+        cabinZ = tubCenterZ + studs(0.15)
+        addVisual(root, body, {
+            Name = "Habitacle",
+            Size = Vector3.new(tubWidth - 0.6, cabinTop - cabinBottom, cabinLength),
+            Offset = CFrame.new(0, (cabinTop + cabinBottom) / 2, cabinZ),
+            Color = Color3.fromRGB(150, 190, 220),
+            Material = Enum.Material.Glass,
+            Transparency = 0.55,
+            CanCollide = true,
+        })
+        addVisual(root, body, {
+            Name = "Toit",
+            Size = Vector3.new(tubWidth - 0.5, 0.2, cabinLength - 0.4),
+            Offset = CFrame.new(0, cabinTop + 0.1, cabinZ + 0.2),
+            Color = accent,
+        })
+
+        seatOffset = CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
+        dashZ = cabinZ - cabinLength / 2 + 0.35
+        dashTop = tubTop + 0.2
+        sideHalf = tubWidth / 2
+        cameraHoodY = tubTop + 0.8
+        cameraBumperY = tubBottom + 0.35
+        addVisual(root, body, {
+            Name = "PlancheDeBord",
+            Size = Vector3.new(tubWidth - 0.8, 0.5, 0.7),
+            Offset = CFrame.new(0, tubTop + 0.2, dashZ),
+            Color = trim,
+        })
+        addVisual(root, body, {
+            Name = "Volant",
+            Size = Vector3.new(0.15, 1.1, 1.1),
+            Offset = CFrame.new(seatOffset.X, tubTop + 0.45, dashZ + 0.75)
+                * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
+            Color = trim,
+            Shape = "Cylinder",
         })
     end
-
-    -- Habitacle : vitrage collisionnable (les piétons ne traversent pas le toit).
-    local cabinBottom = tubTop
-    local cabinTop = groundY + studs(chassis.HeightM)
-    local cabinLength = studs(1.9)
-    local cabinZ = tubCenterZ + studs(0.15)
-    addVisual(root, body, {
-        Name = "Habitacle",
-        Size = Vector3.new(tubWidth - 0.6, cabinTop - cabinBottom, cabinLength),
-        Offset = CFrame.new(0, (cabinTop + cabinBottom) / 2, cabinZ),
-        Color = Color3.fromRGB(150, 190, 220),
-        Material = Enum.Material.Glass,
-        Transparency = 0.55,
-        CanCollide = true,
-    })
-    addVisual(root, body, {
-        Name = "Toit",
-        Size = Vector3.new(tubWidth - 0.5, 0.2, cabinLength - 0.4),
-        Offset = CFrame.new(0, cabinTop + 0.1, cabinZ + 0.2),
-        Color = accent,
-    })
 
     -- Siège conducteur (conduite à gauche). Il ne s'active pas au simple
     -- contact (CanTouch = false) : l'embarquement passe par le serveur.
     local seat = Instance.new("Seat")
     seat.Name = "DriverSeat"
     seat.Size = Vector3.new(1.8, 0.4, 1.8)
-    -- Hauteur d'assise réglée d'après la mesure en Studio (avatar assis sous le toit).
-    seat.CFrame = root.CFrame * CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
+    seat.CFrame = root.CFrame * seatOffset
     seat.Color = trim
     seat.Massless = true
     seat.CanCollide = false
@@ -281,30 +392,29 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     seatWeld.Part1 = seat
     seatWeld.Parent = seat
     seat.Parent = model
-
-    -- Poste de conduite simplifié (vue cockpit) : planche de bord et volant,
-    -- sans masse ni collision.
-    local seatOffset = CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
-    local dashZ = cabinZ - cabinLength / 2 + 0.35
-    addVisual(root, body, {
-        Name = "PlancheDeBord",
-        Size = Vector3.new(tubWidth - 0.8, 0.5, 0.7),
-        Offset = CFrame.new(0, tubTop + 0.2, dashZ),
-        Color = trim,
-    })
-    local wheelRing = addVisual(root, body, {
-        Name = "Volant",
-        Size = Vector3.new(0.15, 1.1, 1.1),
-        Offset = CFrame.new(seatOffset.X, tubTop + 0.45, dashZ + 0.75) * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
-        Color = trim,
-    })
-    wheelRing.Shape = Enum.PartType.Cylinder
+    -- Lot 0.8 : place passager (radio, photo) ; l'embarquement est revalidé par le serveur.
+    if passengerOffset then
+        local passenger = Instance.new("Seat")
+        passenger.Name = "PassengerSeat"
+        passenger.Size = Vector3.new(1.8, 0.4, 1.8)
+        passenger.CFrame = root.CFrame * (passengerOffset :: CFrame)
+        passenger.Color = trim
+        passenger.Massless = true
+        passenger.CanCollide = false
+        passenger.CanTouch = false
+        passenger.Anchored = false
+        local passengerWeld = Instance.new("WeldConstraint")
+        passengerWeld.Part0 = root
+        passengerWeld.Part1 = passenger
+        passengerWeld.Parent = passenger
+        passenger.Parent = model
+    end
 
     -- Points de vue embarqués (orientés vers l'avant, -Z) : yeux du conducteur
     -- assis, avant du capot, bouclier avant. Dérivés de la géométrie du modèle.
     addAttachment(root, "CameraCockpit", Vector3.new(seatOffset.X, seatOffset.Y + 2.45, seatOffset.Z - 0.35))
-    addAttachment(root, "CameraHood", Vector3.new(0, tubTop + 0.8, frontZ + studs(0.45)))
-    addAttachment(root, "CameraBumper", Vector3.new(0, tubBottom + 0.35, frontEnd - 0.65))
+    addAttachment(root, "CameraHood", Vector3.new(0, cameraHoodY, frontZ + studs(0.45)))
+    addAttachment(root, "CameraBumper", Vector3.new(0, cameraBumperY, frontEnd - 0.65))
 
     -- Roues : purement visuelles (sans masse, sans collision, ignorées des rayons).
     for index, name in Constants.WheelNames do
@@ -360,7 +470,7 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     end
 
     -- Invite d'embarquement côté conducteur (gauche). Le serveur revalide tout.
-    local door = addAttachment(root, "DriverDoor", Vector3.new(-tubWidth / 2 - 1, 0, cabinZ))
+    local door = addAttachment(root, "DriverDoor", Vector3.new(-sideHalf - 1, 0, cabinZ))
     local prompt = Instance.new("ProximityPrompt")
     prompt.Name = "EnterPrompt"
     prompt.ActionText = "Conduire"
