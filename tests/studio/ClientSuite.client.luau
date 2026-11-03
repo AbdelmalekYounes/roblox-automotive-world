@@ -63,6 +63,10 @@ if
     or currentSession == "lot02"
     or currentSession == "monde"
     or currentSession == "lot04"
+    or currentSession == "lot05"
+    or currentSession == "lot06"
+    or currentSession == "lot08"
+    or currentSession == "perf"
 then
     return
 end
