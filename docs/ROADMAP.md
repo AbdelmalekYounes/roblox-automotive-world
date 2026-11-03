@@ -124,6 +124,19 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Non fait : DataStore réel, charge à 24 joueurs, appareils réels, essais humains (checklist prête).
 - Rapport : `docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md`.
 
+## État du lot 0.9.1 (branche `feat/autonomous-interactive-qa-0.9.1`, PR brouillon #10, base : lot 0.9)
+
+- Pont d'entrées réelles **dans la VM** (`tools/vm/ScreenCapture.cs`, module `tests/studio/GuiDriver.luau`) : vrais
+  clics, touches, saisie, molette, captures nommées ; sessions `ui`, `ui_marche`, `ui_monde`, `metiers`, `gps`, `gps2`,
+  `drift`, `social`.
+- Résultats : interfaces parcourues, 8 métiers terminés et payés (au moins une fois chacun), 5 arrivées GPS sur 7 en
+  conduite réelle, social et confidentialité à deux clients, drift 310 points, prêt après verrouillage refusé.
+- Corrigé : QA-F13 à F20 (confirmation hors de vue, signes de police, vue cockpit, retrait d'annonce, éclairage,
+  véhicule qui rampe menu ouvert, passager du taxi, destination GPS de montagne) ; QA-A08 neutralisée (cause ouverte).
+- Non fait : manette, deux clients en vrais clics, touche O dans le client Roblox, DataStore réel, appareils réels.
+- Rapports : `docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md`, `docs/lot-0.9/COUVERTURE_QA.md`. **La V1.0 n'est pas
+  commencée.**
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
