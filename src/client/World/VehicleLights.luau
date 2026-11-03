@@ -124,26 +124,33 @@ end
 
 function VehicleLights.start()
     local lanterns: { [BasePart]: boolean } = {}
-    local world = Workspace:FindFirstChild("OpenWorld")
-    local dressing = if world then world:FindFirstChild("Habillage") else nil
-    if dressing then
-        local function consider(item: Instance)
-            if item:IsA("BasePart") and item:GetAttribute("AWStreetLight") then
-                lanterns[item] = true
-            end
+    local function consider(item: Instance)
+        if item:IsA("BasePart") and item:GetAttribute("AWStreetLight") then
+            lanterns[item] = true
         end
-        for _, item in dressing:GetDescendants() do
-            consider(item)
-        end
-        dressing.DescendantAdded:Connect(consider)
     end
+    -- Dossier d'habillage cherché à chaque passage tant qu'il manque : avec le streaming,
+    -- « OpenWorld » arrive APRÈS le démarrage du client (lot 0.9 : lampadaires jamais suivis).
+    local dressing: Instance? = nil
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         timer += dt
-        if timer >= UPDATE_S then
-            timer = 0
-            update(lanterns)
+        if timer < UPDATE_S then
+            return
         end
+        timer = 0
+        if dressing == nil then
+            local world = Workspace:FindFirstChild("OpenWorld")
+            local found = if world then world:FindFirstChild("Habillage") else nil
+            if found then
+                dressing = found
+                for _, item in found:GetDescendants() do
+                    consider(item)
+                end
+                found.DescendantAdded:Connect(consider)
+            end
+        end
+        update(lanterns)
     end)
 end
 

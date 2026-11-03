@@ -242,7 +242,33 @@ local function runEvent(label: string, kmh: number, falseStart: boolean?, maxS: 
     local started = os.clock()
     -- Grille : rejoindre sa place dès qu'elle est publiée.
     local slotDone = false
+    local lastTrace = 0
     while os.clock() - started < maxS do
+        if os.clock() - lastTrace > 2 and driving.Model and (driving.Model :: Model).PrimaryPart then
+            lastTrace = os.clock()
+            local body = (driving.Model :: Model).PrimaryPart :: BasePart
+            local me0 = view and view.Me or {}
+            trace(
+                string.format(
+                    "%s : état %s/%s, point %s, position (%.0f, %.0f) m, %.0f km/h, cible %s, maintien %s",
+                    label,
+                    tostring(view and view.State),
+                    tostring(me0.Status),
+                    tostring(me0.Next),
+                    body.Position.X / S,
+                    body.Position.Z / S,
+                    speedKmh(driving.Model :: Model),
+                    if driving.Target
+                        then string.format(
+                            "(%.0f, %.0f)",
+                            (driving.Target :: Vector3).X / S,
+                            (driving.Target :: Vector3).Z / S
+                        )
+                        else "aucune",
+                    tostring(driving.Hold)
+                )
+            )
+        end
         local v = view
         if v == nil then
             task.wait(0.2)

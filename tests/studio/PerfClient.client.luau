@@ -65,6 +65,7 @@ local function summarize(name: string)
         SendKbps = math.floor(Stats.DataSendKbps * 10) / 10,
         Parts = parts,
         ActiveLights = lights,
+        ClockTime = math.floor(game:GetService("Lighting").ClockTime * 10) / 10,
     }
 end
 
