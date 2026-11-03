@@ -164,8 +164,9 @@ if index == 1 then
     local vehicles = snapshot.Vehicles
     local a, b = vehicles[1], vehicles[2]
 
+    -- Lot 0.8 : en Dev, seuls les trois candidats proposés sont acceptés ; un prototype est refusé.
     local starter = call("ChooseStarter", { ModelId = "proto_p01" })
-    record(prefix .. "starter_refuse_liste_vide", starter.Error == "StarterCatalogUnavailable", describe(starter))
+    record(prefix .. "starter_refuse_hors_candidats", starter.Error == "StarterNotCandidate", describe(starter))
     local outside = call("SetTuning", { VehicleId = a.Id, Tuning = {} })
     record(prefix .. "preparation_refusee_hors_garage", outside.Error == "NotInGarage", describe(outside))
     local farEnter = call("Enter", { OwnerUserId = player.UserId, PropertyId = free.Id })

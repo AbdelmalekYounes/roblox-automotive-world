@@ -37,7 +37,9 @@ local DEFAULTS: { Binding } = {
         Action = "Phone",
         Context = "Global",
         Keyboard = "T",
-        Gamepad = "ButtonX",
+        -- Lot 0.8 : « Select » plutôt que X, réservé à l'invite d'entrée dans un
+        -- véhicule (ProximityPrompt, ButtonX), que l'action prioritaire absorbait.
+        Gamepad = "ButtonSelect",
         Rebindable = true,
         WhileMoving = true,
     },
@@ -46,7 +48,8 @@ local DEFAULTS: { Binding } = {
         Action = "Garage",
         Context = "Global",
         Keyboard = "P",
-        Gamepad = "ButtonSelect",
+        -- Manette : depuis le téléphone (application Véhicules → garage).
+        Gamepad = nil,
         Rebindable = true,
         WhileMoving = false,
     },

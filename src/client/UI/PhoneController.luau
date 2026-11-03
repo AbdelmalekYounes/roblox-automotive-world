@@ -33,10 +33,12 @@ local NotificationService = require(script.Parent.NotificationService)
 local SocialController = require(script.Parent.SocialController)
 local SettingsController = require(script.Parent.SettingsController)
 local MapController = require(script.Parent.MapController)
+local OnboardingController = require(script.Parent.OnboardingController)
 
 local PhoneController = {}
 
-local APPS = { "Map", "Vehicles", "Properties", "Missions", "Races", "Market", "Social", "Settings", "Notifications" }
+local APPS =
+    { "Map", "Vehicles", "Properties", "Missions", "Races", "Market", "Social", "Guide", "Settings", "Notifications" }
 local ICONS = {
     Map = "🗺",
     Vehicles = "🚗",
@@ -45,6 +47,7 @@ local ICONS = {
     Races = "🏁",
     Market = "$",
     Social = "☺",
+    Guide = "?",
     Settings = "⚙",
     Notifications = "🔔",
 }
@@ -237,6 +240,18 @@ local function renderVehicles()
     end
     button(Localization.t("ui.panel.garage"), function()
         openPanel("Garage")
+    end)
+end
+
+-- Lot 0.8 : introduction consultable à tout moment et exercices de formation.
+local function renderGuide()
+    for _, step in { "Welcome", "World", "Controls", "Phone" } do
+        line(Localization.t("onb.title." .. step), true)
+        line(Localization.t("onb.text." .. step))
+    end
+    button(Localization.t("onb.training"), function()
+        UIManager.close("Phone")
+        OnboardingController.openTraining()
     end)
 end
 
@@ -657,6 +672,8 @@ render = function()
         renderMarket()
     elseif app == "Social" then
         renderSocial()
+    elseif app == "Guide" then
+        renderGuide()
     elseif app == "Settings" then
         renderSettings()
     else

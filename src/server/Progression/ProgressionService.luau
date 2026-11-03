@@ -226,8 +226,9 @@ local function snapshot(player: Player, page: number?): any
     result.Starter = {
         State = profile.Starter.State,
         ModelId = profile.Starter.ModelId,
-        Available = StarterCatalog.available(),
-        Candidates = StarterCatalog.Candidates,
+        Available = #(StarterCatalog.candidates(ProfileService.environment().Name)) > 0,
+        Candidates = (StarterCatalog.candidates(ProfileService.environment().Name)),
+        Official = StarterCatalog.available(),
     }
     local vehicles, pages = VehicleOwnership.page(profile, page or 1, ProgressionProtocol.PageSize)
     result.Vehicles = {}
@@ -515,14 +516,15 @@ handlers.ChooseStarter = function(player, payload)
     end
     local modelId = if type(payload) == "table" then payload.ModelId else nil
     -- Identifiant FIXE : un double clic ou une reprise ne crée jamais de doublon.
+    local candidates, synthetic = StarterCatalog.candidates(ProfileService.environment().Name)
     local result = session:commit(StarterSelection.TxId, "Starter", function(profile)
-        return StarterSelection.choose(profile, modelId, StarterCatalog.Candidates, now(), function(id)
+        return StarterSelection.choose(profile, modelId, candidates, now(), function(id)
             local definition = VehicleDefinitions.get(id)
             if definition == nil then
                 return nil, nil
             end
             return definition.Powertrain.Energy.InitialFraction, CosmeticCatalog.defaults(definition)
-        end)
+        end, synthetic)
     end)
     return reply(result, player)
 end
@@ -1225,6 +1227,11 @@ function ProgressionService.raceResume(
     outVehicles[player] = { Model = model, VehicleId = fresh.Id }
     moveCharacter(player, frame * CFrame.new(-(definition.Chassis.WidthM * S / 2 + 4), 4, 0))
     return "Ok", model
+end
+
+-- Lot 0.8 : choix du véhicule de départ depuis le parcours d'arrivée (même transaction unique).
+function ProgressionService.chooseStarter(player: Player, modelId: any): any
+    return handlers.ChooseStarter(player, { ModelId = modelId }, nil)
 end
 
 ProgressionService.snapshot = function(player: Player): any

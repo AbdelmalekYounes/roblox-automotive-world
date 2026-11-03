@@ -10,9 +10,8 @@
       0.1–0.2) gardent leurs formats « %d / %s » dans les deux langues.
     - Changement de langue à chaud : aucune session ni progression touchée ;
       les interfaces se redessinent (Localization.changed).
-    Relecture linguistique et textes définitifs : lot 0.8. Les libellés
-    internes des panneaux provisoires des lots 0.4 à 0.6 restent en français
-    (écart documenté) ; leurs messages d'état et d'erreur passent par ici.
+    Lot 0.8 : textes du lot dans Texts08 ; libellés des panneaux des lots
+    0.4 à 0.6 (garage, économie, courses) traduits via PanelTexts.
 ]]
 
 local Localization = {}
@@ -641,6 +640,12 @@ local E: { [string]: Entry } = {
     ["action.ClearRoute"] = { "Effacer l'itinéraire", "Clear route" },
     ["action.Back"] = { "Retour", "Back" },
 }
+
+-- Textes du lot 0.8 (module séparé) : fusionnés sans jamais écraser une clé existante.
+for key, entry in require(script.Parent.Texts08) do
+    assert(E[key] == nil, "Clé de localisation en double : " .. key)
+    E[key] = entry
+end
 
 Localization.Entries = E
 

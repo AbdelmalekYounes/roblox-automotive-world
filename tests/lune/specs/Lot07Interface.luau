@@ -548,7 +548,7 @@ return function(T: any, H: any)
         v3.Preferences = nil
         local migrated = ProfileMigration.migrate(v3)
         T.equal(migrated.Status, "Migrated", "migré")
-        T.equal(migrated.Data.SchemaVersion, 4, "schéma 4")
+        T.equal(migrated.Data.SchemaVersion, ProfileSchema.Version, "schéma courant")
         T.truthy((ProfileSchema.validate(migrated.Data)), "profil valide")
         T.equal(migrated.Data.Preferences.Language, "fr", "langue par défaut")
         T.equal(v3.Preferences, nil, "original intact")

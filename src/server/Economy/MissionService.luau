@@ -286,6 +286,11 @@ function MissionService.abandon(player: Player): (string, any)
 end
 
 -- Mission en cours, pour l'interface (étape, point à rejoindre, temps restant).
+-- Lot 0.8 : véhicule temporaire protégé à côté du joueur (essais du parcours d'arrivée).
+function MissionService.spawnBeside(player: Player, modelId: string, vehicleId: string): Model?
+    return spawnBeside(player, modelId, vehicleId)
+end
+
 function MissionService.snapshot(player: Player): any
     local entry = active[player]
     if entry == nil then

@@ -64,6 +64,7 @@ local UIState = require(UI:WaitForChild("UIState"))
 local GaragePanel = require(UI:WaitForChild("GaragePanel"))
 local EconomyPanel = require(UI:WaitForChild("EconomyPanel"))
 local RacePanel = require(UI:WaitForChild("RacePanel"))
+local OnboardingController = require(UI:WaitForChild("OnboardingController"))
 
 NotificationService.start()
 local function notify(key: string, level: string, params: any?)
@@ -87,6 +88,8 @@ PhoneController.start()
 GaragePanel.start()
 EconomyPanel.start()
 RacePanel.start()
+-- Lot 0.8 : parcours d'arrivée (passable) et exercices de formation.
+task.spawn(OnboardingController.start)
 
 InputRouter.on("Phone", function()
     UIManager.toggle("Phone")
