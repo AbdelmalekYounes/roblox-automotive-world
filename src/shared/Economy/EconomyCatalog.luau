@@ -49,7 +49,9 @@ EconomyCatalog.Labor = table.freeze({
 })
 
 -- Énergie : prix par unité réellement délivrée ; débits de livraison.
-EconomyCatalog.EnergyPrice = table.freeze({ Petrol = 4, Diesel = 4, Electric = 3 }) -- crédits par L ou kWh
+-- Plein d'une berline (≈ 50 L) ≈ 600 crédits ≈ 4 minutes de mission : coût lisible,
+-- sans impasse (AUD-ECO-01 : une mission ordinaire reste accessible sans crédit).
+EconomyCatalog.EnergyPrice = table.freeze({ Petrol = 12, Diesel = 11, Electric = 8 }) -- crédits par L ou kWh
 EconomyCatalog.DeliveryRate = table.freeze({ Petrol = 2, Diesel = 2, Electric = 0.5 }) -- L/s ou kWh/s (accéléré)
 
 -- Lavage et réparation.

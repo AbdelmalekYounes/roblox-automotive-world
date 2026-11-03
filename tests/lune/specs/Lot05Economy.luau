@@ -375,7 +375,8 @@ return function(T: any, H: any)
             end).Status,
             "Confirmed"
         )
-        T.equal(s.Data.Wallet.Reserved, 80)
+        local unit = EconomyCatalog.EnergyPrice.Diesel
+        T.equal(s.Data.Wallet.Reserved, 20 * unit)
         -- Serveur arrêté brutalement : la session disparaît sans régler.
         clock.Now += 400
         local recovered = ProfileSession.new({
@@ -406,8 +407,8 @@ return function(T: any, H: any)
         local settle = recovered:commit("C:energy-0003", "Energy", function(profile)
             return Commerce.settleEnergy(profile, "E2", 7.5, 42, clock.Now)
         end)
-        T.equal(settle.Result.Cost, 30)
-        T.equal(recovered.Data.Wallet.Balance, balanceBefore - 30)
+        T.equal(settle.Result.Cost, math.ceil(7.5 * unit))
+        T.equal(recovered.Data.Wallet.Balance, balanceBefore - math.ceil(7.5 * unit))
         T.equal(recovered.Data.Wallet.Reserved, 0)
         T.near(recovered.Data.Vehicles[id].Energy, energyBefore + 7.5 / 42, 1e-9)
         T.truthy((ProfileSchema.validate(recovered.Data)), "cohérent")
