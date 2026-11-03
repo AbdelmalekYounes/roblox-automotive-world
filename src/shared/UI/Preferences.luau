@@ -5,7 +5,8 @@
     et le serveur (sauvegarde dans le profil, schéma 4).
 
     Seules des préférences DURABLES utiles sont conservées : HUD, mini-carte,
-    notifications, accessibilité, langue, audio, préférences sociales et
+    notifications, accessibilité, langue, audio, graphismes (lot 0.8),
+    préférences sociales et
     raccourcis clavier personnalisés. Rien de temporaire (état d'un menu,
     animation). Le partage de position n'est JAMAIS une préférence durable :
     il est désactivé par défaut à chaque groupe (AUD-PRIV-01).
@@ -15,7 +16,9 @@
 
 local Preferences = {}
 
-Preferences.Version = 1
+-- Version 2 (lot 0.8) : volumes par catégorie, coupure radio, qualité graphique.
+-- Les anciennes valeurs « Vehicles » et « World » deviennent Moteur et Environnement.
+Preferences.Version = 2
 -- Délai minimal entre deux envois du client (le serveur ne fait que marquer
 -- le profil « à sauvegarder » : l'écriture suit la sauvegarde périodique).
 Preferences.SendIntervalS = 5
@@ -47,7 +50,17 @@ export type Prefs = {
     Hud: Hud,
     Access: Access,
     Notifications: { Info: boolean, Warning: boolean },
-    Audio: { Master: number, Vehicles: number, Interface: number, World: number },
+    Audio: {
+        Master: number,
+        Engine: number,
+        Environment: number,
+        Interface: number,
+        Effects: number,
+        Radio: number,
+        Voice: number,
+        RadioMuted: boolean, -- coupure personnelle de la radio (chaque occupant)
+    },
+    Graphics: { Quality: "Low" | "Medium" | "High" },
     Social: { ShowSharedMembers: boolean, AcceptInvites: boolean },
     Bindings: { [string]: string }, -- action → touche clavier personnalisée
 }
@@ -76,7 +89,17 @@ function Preferences.defaults(): Prefs
             VisualAlerts = true,
         },
         Notifications = { Info = true, Warning = true },
-        Audio = { Master = 100, Vehicles = 100, Interface = 80, World = 100 },
+        Audio = {
+            Master = 100,
+            Engine = 100,
+            Environment = 90,
+            Interface = 80,
+            Effects = 100,
+            Radio = 70,
+            Voice = 100,
+            RadioMuted = false,
+        },
+        Graphics = { Quality = "Medium" },
         Social = { ShowSharedMembers = true, AcceptInvites = true },
         Bindings = {},
     }
@@ -130,6 +153,7 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
     local notifications = if type(source.Notifications) == "table" then source.Notifications else {}
     local audio = if type(source.Audio) == "table" then source.Audio else {}
     local social = if type(source.Social) == "table" then source.Social else {}
+    local graphics = if type(source.Graphics) == "table" then source.Graphics else {}
     local bindings: { [string]: string } = {}
     if type(source.Bindings) == "table" then
         local count = 0
@@ -171,9 +195,20 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
         },
         Audio = {
             Master = number(audio.Master, d.Audio.Master, r.Volume),
-            Vehicles = number(audio.Vehicles, d.Audio.Vehicles, r.Volume),
+            Engine = number(if audio.Engine ~= nil then audio.Engine else audio.Vehicles, d.Audio.Engine, r.Volume),
+            Environment = number(
+                if audio.Environment ~= nil then audio.Environment else audio.World,
+                d.Audio.Environment,
+                r.Volume
+            ),
             Interface = number(audio.Interface, d.Audio.Interface, r.Volume),
-            World = number(audio.World, d.Audio.World, r.Volume),
+            Effects = number(audio.Effects, d.Audio.Effects, r.Volume),
+            Radio = number(audio.Radio, d.Audio.Radio, r.Volume),
+            Voice = number(audio.Voice, d.Audio.Voice, r.Volume),
+            RadioMuted = bool(audio.RadioMuted, d.Audio.RadioMuted),
+        },
+        Graphics = {
+            Quality = enum(graphics.Quality, { "Low", "Medium", "High" }, d.Graphics.Quality),
         },
         Social = {
             ShowSharedMembers = bool(social.ShowSharedMembers, d.Social.ShowSharedMembers),

@@ -27,7 +27,8 @@ local dirtySince: number? = nil
 local lastSendAt = -math.huge
 
 local function applyAudio(prefs: Preferences.Prefs)
-    for _, name in { "Vehicles", "Interface", "World" } do
+    -- Une catégorie = un SoundGroup (lot 0.8). La radio coupée garde son volume réglé.
+    for _, name in { "Engine", "Environment", "Interface", "Effects", "Radio", "Voice" } do
         local groupName = "AW" .. name
         local group = SoundService:FindFirstChild(groupName)
         if group == nil then
@@ -35,7 +36,9 @@ local function applyAudio(prefs: Preferences.Prefs)
             group.Name = groupName
             group.Parent = SoundService
         end
-        (group :: SoundGroup).Volume = (prefs.Audio :: any)[name] / 100 * prefs.Audio.Master / 100
+        local muted = name == "Radio" and prefs.Audio.RadioMuted
+        local sound = group :: SoundGroup
+        sound.Volume = if muted then 0 else (prefs.Audio :: any)[name] / 100 * prefs.Audio.Master / 100
     end
 end
 

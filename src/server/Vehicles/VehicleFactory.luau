@@ -481,6 +481,20 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     prompt.KeyboardKeyCode = Enum.KeyCode.E
     prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
     prompt.Parent = door
+    if passengerOffset then
+        -- Lot 0.8 : invite passager côté droit (PassengerRules, revalidée par le serveur).
+        local passengerDoor = addAttachment(root, "PassengerDoor", Vector3.new(sideHalf + 1, 0, cabinZ))
+        local passengerPrompt = Instance.new("ProximityPrompt")
+        passengerPrompt.Name = "PassengerPrompt"
+        passengerPrompt.ActionText = "Monter (passager)"
+        passengerPrompt.ObjectText = definition.DisplayName
+        passengerPrompt.HoldDuration = 0.3
+        passengerPrompt.MaxActivationDistance = 10
+        passengerPrompt.RequiresLineOfSight = false
+        passengerPrompt.KeyboardKeyCode = Enum.KeyCode.E
+        passengerPrompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+        passengerPrompt.Parent = passengerDoor
+    end
 
     -- Identité de session (non persistante, aucune possession).
     model:SetAttribute(Constants.Attributes.VehicleId, "essai-" .. HttpService:GenerateGUID(false))

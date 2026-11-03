@@ -80,6 +80,11 @@ local T: { [string]: { string } } = {
         "Choose your starter vehicle first.",
     },
     ExerciseUnknown = { "Exercice inconnu.", "Unknown exercise." },
+    PassengerIsDriver = { "Vous conduisez déjà ce véhicule.", "You are already driving this vehicle." },
+    PassengerNotAllowed = {
+        "Place passager réservée au propriétaire et à son groupe (ou au groupe du conducteur).",
+        "Passenger seat reserved for the owner and their group (or the driver's group).",
+    },
 
     -- ===================== Exercices =====================
     ["exercise.AccelerateBrake"] = { "Accélérer puis freiner", "Accelerate then brake" },
@@ -120,6 +125,54 @@ local T: { [string]: { string } } = {
     },
     ["exercise.DiscoverRaces.hint"] = { "Ouvrez le panneau des courses (K).", "Open the races panel (K)." },
     ["exercise.done"] = { "Exercice réussi : {name}", "Exercise completed: {name}" },
+
+    -- ===================== Radio (AUD-RADIO-01) =====================
+    ["phone.app.Radio"] = { "Radio", "Radio" },
+    ["radio.seat.Driver"] = {
+        "Vous conduisez : vous choisissez la station.",
+        "You are driving: you choose the station.",
+    },
+    ["radio.seat.Passenger"] = {
+        "Passager : la station est choisie par le conducteur ; réglez ou coupez votre écoute.",
+        "Passenger: the driver chooses the station; adjust or mute your own listening.",
+    },
+    ["radio.seat.None"] = {
+        "Montez dans un véhicule pour écouter la radio.",
+        "Get in a vehicle to listen to the radio.",
+    },
+    ["radio.current"] = { "Station : {station}", "Station: {station}" },
+    ["radio.station.Off"] = { "Éteinte", "Off" },
+    ["radio.station.ville"] = { "AW Ville — pop urbaine", "AW City — urban pop" },
+    ["radio.station.route"] = { "AW Route — rock de route", "AW Road — road rock" },
+    ["radio.station.nuit"] = { "AW Nuit — électro de nuit", "AW Night — night electro" },
+    ["radio.unavailable"] = {
+        "{station} : indisponible (pistes non téléversées)",
+        "{station}: unavailable (tracks not uploaded)",
+    },
+    ["radio.mute"] = { "Couper ma radio : {state}", "Mute my radio: {state}" },
+    ["radio.note"] = {
+        "Musiques originales uniquement ; rien n'est diffusé à l'extérieur du véhicule.",
+        "Original music only; nothing is played outside the vehicle.",
+    },
+    RadioDriverOnly = { "Seul le conducteur choisit la station.", "Only the driver chooses the station." },
+    RadioStationUnknown = { "Station inconnue.", "Unknown station." },
+    RadioStationUnavailable = { "Station indisponible pour le moment.", "Station unavailable for now." },
+
+    -- ===================== Paramètres : audio et graphismes =====================
+    ["settings.volume.Engine"] = { "moteur", "engine" },
+    ["settings.volume.Environment"] = { "environnement", "environment" },
+    ["settings.volume.Effects"] = { "effets", "effects" },
+    ["settings.volume.Radio"] = { "radio", "radio" },
+    ["settings.volume.Voice"] = { "voix", "voice" },
+    ["settings.graphics"] = { "Graphismes", "Graphics" },
+    ["settings.quality"] = { "Qualité graphique : {value}", "Graphics quality: {value}" },
+    ["settings.quality.note"] = {
+        "Basse : habillage et détails masqués, aucune source de lumière ni effet. Haute : tout visible plus loin.",
+        "Low: dressing and details hidden, no light sources or effects. High: everything visible further away.",
+    },
+    ["quality.Low"] = { "basse", "low" },
+    ["quality.Medium"] = { "moyenne", "medium" },
+    ["quality.High"] = { "haute", "high" },
 
     -- ===================== Caractéristiques =====================
     ["energy.Petrol"] = { "essence", "petrol" },

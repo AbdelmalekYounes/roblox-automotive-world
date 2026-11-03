@@ -13,6 +13,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeatherModel = require(Shared:WaitForChild("World"):WaitForChild("WeatherModel"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
+local ArtDirection = require(Shared:WaitForChild("Art"):WaitForChild("ArtDirection"))
+local UIState = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIState"))
 
 local Environment = {}
 
@@ -57,6 +59,29 @@ function Environment.start()
     rain.LightInfluence = 1
     rain.Parent = rainPart
     rainPart.Parent = Workspace.CurrentCamera
+
+    -- Lot 0.8 : étalonnage selon l'heure et effets selon la qualité (visuel seulement).
+    local function effect(className: string, name: string): any
+        local existing = Lighting:FindFirstChild(name)
+        if existing then
+            return existing
+        end
+        local created = Instance.new(className)
+        created.Name = name
+        created.Parent = Lighting
+        return created
+    end
+    local grading = effect("ColorCorrectionEffect", "AWEtalonnage") :: ColorCorrectionEffect
+    local bloom = effect("BloomEffect", "AWBloom") :: BloomEffect
+    bloom.Intensity = 0.35
+    bloom.Size = 24
+    bloom.Threshold = 1.6
+    local sunRays = effect("SunRaysEffect", "AWRayons") :: SunRaysEffect
+    sunRays.Intensity = 0.04
+    sunRays.Spread = 0.6
+    local function rgb(c: { number }): Color3
+        return Color3.fromRGB(c[1], c[2], c[3])
+    end
 
     local fog, haze, brightness, rainRate = air.Density, air.Haze, 1, 0
     local flashUntil, nextFlash = 0, 0
@@ -108,6 +133,18 @@ function Environment.start()
         local wet = Workspace:GetAttribute(Constants.RoadWetnessAttribute)
         local wetness = if type(wet) == "number" then wet else 0
         Lighting.EnvironmentSpecularScale = 0.4 + 0.6 * wetness
+
+        local profile = ArtDirection.profile(UIState.prefs().Graphics.Quality)
+        local grade = ArtDirection.grade(Lighting.ClockTime)
+        Lighting.Ambient = rgb(grade.Ambient)
+        Lighting.OutdoorAmbient = rgb(grade.OutdoorAmbient)
+        Lighting.ExposureCompensation = grade.ExposureCompensation
+        grading.Enabled = profile.ColorGrading
+        grading.TintColor = rgb(grade.Tint)
+        grading.Contrast = grade.Contrast
+        grading.Saturation = grade.Saturation
+        bloom.Enabled = profile.Bloom
+        sunRays.Enabled = profile.SunRays
     end)
 end
 

@@ -124,6 +124,29 @@ SocialController.onRaceSuggested(function(courseId: string)
         end
     end
 end)
+-- Lot 0.8 : niveau de détail, éclairage de nuit, audio et radio (les deux modes).
+do
+    local WorldFolder = script.Parent:WaitForChild("World")
+    require(WorldFolder:WaitForChild("DetailLod")).start()
+    require(WorldFolder:WaitForChild("VehicleLights")).start()
+    local AudioFolder = script.Parent:WaitForChild("Audio")
+    local AudioController = require(AudioFolder:WaitForChild("AudioController"))
+    AudioController.start()
+    NotificationService.setSoundSink(AudioController.playUi)
+    local RadioController = require(AudioFolder:WaitForChild("RadioController"))
+    RadioController.start()
+    RadioController.onRefused(function(reason: string)
+        NotificationService.notify(reason, "Warning")
+    end)
+    if openWorld then
+        -- Zone sous la caméra (ambiances) : mise en page déjà calculée pour le GPS.
+        task.defer(function()
+            local WorldLayout =
+                require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("World"):WaitForChild("WorldLayout"))
+            AudioController.setZoneLookup(WorldLayout.get().ZoneOf)
+        end)
+    end
+end
 if openWorld then
     local WorldClient = script.Parent:WaitForChild("World")
     require(WorldClient:WaitForChild("Environment")).start()

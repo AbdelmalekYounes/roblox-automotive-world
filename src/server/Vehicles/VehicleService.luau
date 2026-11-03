@@ -23,6 +23,7 @@ local Workspace = game:GetService("Workspace")
 local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles")
 local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
+local PassengerRules = require(VehiclesShared:WaitForChild("PassengerRules"))
 local VehicleDefinitions = require(VehiclesShared:WaitForChild("VehicleDefinitions"))
 local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator"))
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
@@ -78,6 +79,8 @@ type VehicleRecord = {
     Root: BasePart,
     Seat: Seat,
     Prompt: ProximityPrompt,
+    -- Lot 0.8 : place passager (absente sur les prototypes sans habitacle).
+    Passenger: Seat?,
     Definition: Types.VehicleDefinition,
     HomePivot: CFrame,
     Driver: Player?,
@@ -405,6 +408,63 @@ local function onPromptTriggered(record: VehicleRecord, player: Player)
         return
     end
     record.Seat:Sit(humanoid)
+end
+
+-- Groupes (lot 0.7) : branchés au démarrage, sans dépendance de ce module vers Social.
+local sameGroup: (number, number) -> boolean = function(_a: number, _b: number): boolean
+    return false
+end
+
+local function passengerContext(record: VehicleRecord, player: Player): PassengerRules.Context
+    return {
+        OwnerUserId = if record.Personal then record.Personal.OwnerUserId else nil,
+        DriverUserId = if record.Driver then record.Driver.UserId else nil,
+        RiderUserId = player.UserId,
+    }
+end
+
+-- Place passager : mêmes revalidations que pour conduire, règle PassengerRules.
+local function onPassengerPrompt(record: VehicleRecord, player: Player)
+    local passenger = record.Passenger
+    if passenger == nil or passenger.Occupant ~= nil then
+        notify(player, "VehicleBusy")
+        return
+    end
+    local allowed, reason = PassengerRules.mayRide(passengerContext(record, player), sameGroup)
+    if not allowed then
+        notify(player, reason or "PassengerNotAllowed")
+        return
+    end
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if humanoid == nil or humanoid.Health <= 0 or humanoid.SeatPart ~= nil then
+        return
+    end
+    if not (rootPart and rootPart:IsA("BasePart")) then
+        return
+    end
+    if (rootPart.Position - record.Root.Position).Magnitude > BOARDING_DISTANCE_STUDS then
+        return
+    end
+    passenger:Sit(humanoid)
+end
+
+-- Occupation passager non validée (siège pris autrement) : libérée aussitôt.
+local function onPassengerChanged(record: VehicleRecord)
+    local passenger = record.Passenger
+    local occupant = if passenger then passenger.Occupant else nil
+    if passenger == nil or occupant == nil then
+        return
+    end
+    local player = playerFromHumanoid(occupant)
+    if
+        player == nil
+        or recordByDriver[player] ~= nil
+        or not PassengerRules.mayRide(passengerContext(record, player), sameGroup)
+    then
+        unseatHumanoid(occupant, passenger)
+    end
 end
 
 -- Cherche un emplacement libre à côté du véhicule pour déposer le personnage.
@@ -886,6 +946,7 @@ local function createRecord(definition: Types.VehicleDefinition, pivot: CFrame, 
         Root = root,
         Seat = seat,
         Prompt = prompt,
+        Passenger = model:FindFirstChild("PassengerSeat") :: Seat?,
         Definition = definition,
         HomePivot = pivot,
         Driver = nil,
@@ -943,6 +1004,17 @@ local function createRecord(definition: Types.VehicleDefinition, pivot: CFrame, 
     prompt.Triggered:Connect(function(player)
         onPromptTriggered(record, player)
     end)
+    local passenger = record.Passenger
+    local passengerDoor = root:FindFirstChild("PassengerDoor")
+    local passengerPrompt = passengerDoor and passengerDoor:FindFirstChild("PassengerPrompt")
+    if passenger and passengerPrompt and passengerPrompt:IsA("ProximityPrompt") then
+        passenger:GetPropertyChangedSignal("Occupant"):Connect(function()
+            onPassengerChanged(record)
+        end)
+        passengerPrompt.Triggered:Connect(function(player)
+            onPassengerPrompt(record, player)
+        end)
+    end
     return record
 end
 
@@ -952,6 +1024,11 @@ end
 export type SpawnSet = {
     Pads: { BasePart },
 }
+
+-- Lot 0.8 : appartenance à un même groupe (fournie par SocialService), pour la place passager.
+function VehicleService.setGroupCheck(check: (number, number) -> boolean)
+    sameGroup = check
+end
 
 function VehicleService.start(zone: SpawnSet)
     assert(not started, "VehicleService déjà démarré")
