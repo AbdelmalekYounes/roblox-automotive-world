@@ -207,7 +207,21 @@ if index == 1 then
     local out = call("TakeOut", { VehicleId = a.Id }, requestId)
     record(prefix .. "sortie_vehicule", accepted(out), describe(out))
     local again = call("TakeOut", { VehicleId = a.Id }, requestId)
-    record(prefix .. "sortie_double_clic_sans_doublon", again.Status == "Duplicate", describe(again))
+    -- Répétition : réponse d'origine (« Duplicate », ou « Pending » tant que la
+    -- sauvegarde n'est pas confirmée), et jamais un second véhicule.
+    task.wait(1)
+    local copies = 0
+    local personalFolder = Workspace:FindFirstChild("VehiculesPersonnels")
+    for _, child in (personalFolder and personalFolder:GetChildren()) or {} do
+        if child:GetAttribute("PersonalVehicleId") == a.Id then
+            copies += 1
+        end
+    end
+    record(
+        prefix .. "sortie_double_clic_sans_doublon",
+        (again.Status == "Duplicate" or again.Status == "Pending") and copies == 1,
+        describe(again) .. ", " .. copies .. " exemplaire(s) dans le monde"
+    )
     local second = call("TakeOut", { VehicleId = b.Id })
     record(prefix .. "seconde_sortie_refusee", second.Error == "AnotherVehicleOut", describe(second))
     record(prefix .. "sorti_hors_interieur", not inside())

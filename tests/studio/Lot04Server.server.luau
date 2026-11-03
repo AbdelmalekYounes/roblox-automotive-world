@@ -82,6 +82,10 @@ local ProfileService = require(
 )
 local ProfileSchema = require(ServerScriptService.AutomotiveWorldServer.Persistence.ProfileSchema)
 
+-- L'attribut est publié au démarrage de ProfileService (après les autres services).
+waitFor(function()
+    return ReplicatedStorage:GetAttribute("AWStorageEnvironment") ~= nil
+end, 20)
 record(
     "lot04.serveur.environnement_memoire",
     ReplicatedStorage:GetAttribute("AWStorageEnvironment") == "Dev",

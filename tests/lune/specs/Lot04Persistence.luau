@@ -239,6 +239,35 @@ return function(T: any, H: any)
         T.equal(a:tick(), "Saved")
     end)
 
+    T.test(
+        "répétition d'une transaction en attente ou confirmée : signalée « rejouée », sans nouvel effet",
+        function()
+            local clock, _, session = harness()
+            local a = session("A")
+            a:load()
+            clock.Now += 1 -- moins de 6 s après la prise du verrou : l'écriture attend
+            local applied = 0
+            local function mutate(profile)
+                applied += 1
+                profile.Counters.Vehicle += 1
+                return true, "sortie"
+            end
+            local first = a:commit("C:replay-0001", "Test", mutate)
+            T.equal(first.Status, "Pending")
+            T.truthy(not first.Replayed, "première application")
+            local pending = a:commit("C:replay-0001", "Test", mutate)
+            T.equal(pending.Status, "Pending")
+            T.truthy(pending.Replayed, "répétition en attente signalée")
+            clock.Now += 7
+            a:tick()
+            local duplicate = a:commit("C:replay-0001", "Test", mutate)
+            T.equal(duplicate.Status, "Duplicate")
+            T.truthy(duplicate.Replayed, "répétition confirmée signalée")
+            T.equal(applied, 1, "mutation exécutée une seule fois")
+            T.equal(a.Data.Counters.Vehicle, 1)
+        end
+    )
+
     T.test("mutation refusée : profil inchangé ; profil incohérent : refusé", function()
         local clock, _, session = harness()
         local a = session("A")

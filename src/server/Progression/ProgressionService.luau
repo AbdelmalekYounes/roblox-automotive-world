@@ -580,6 +580,17 @@ handlers.TakeOut = function(player, payload, txId)
     if vehicle == nil then
         return rejected("VehicleNotOwned")
     end
+    -- Un exemplaire déjà matérialisé : jamais de second exemplaire physique.
+    if outVehicles[player] ~= nil then
+        local again = TransactionService.previous(profile, txId :: string)
+        if again then
+            return reply(
+                { Status = if session:isPending(txId :: string) then "Pending" else "Duplicate", Result = again.Result },
+                player
+            )
+        end
+        return rejected("AnotherVehicleOut")
+    end
     -- Sortie depuis l'intérieur d'une propriété possédée, ou à son entrée.
     local context = contextOf(player, profile)
     local place: Locations.Place? = nil
@@ -609,7 +620,7 @@ handlers.TakeOut = function(player, payload, txId)
     local result = session_:commit(txId :: string, "TakeOut", function(data)
         return GarageRules.takeOut(data, vehicleId, session_.Options.Session, now())
     end)
-    if result.Status ~= "Confirmed" and result.Status ~= "Pending" then
+    if (result.Status ~= "Confirmed" and result.Status ~= "Pending") or result.Replayed then
         return reply(result, player)
     end
     -- L'état « Out » est appliqué (confirmé ou en attente) : matérialisation.

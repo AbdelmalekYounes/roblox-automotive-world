@@ -58,6 +58,9 @@ export type CommitResult = {
     Status: "Confirmed" | "Pending" | "Duplicate" | "Rejected" | "Unavailable",
     Result: any,
     Error: string?,
+    -- Vrai si la transaction avait DÉJÀ été appliquée (répétition) : l'appelant
+    -- ne doit refaire aucun effet de bord (ex. matérialiser un véhicule).
+    Replayed: boolean?,
 }
 
 type Fields = {
@@ -375,9 +378,9 @@ function ProfileSession.commit(
     local previous = TransactionService.previous(data, txId)
     if previous then
         if self.Pending[txId] then
-            return { Status = "Pending", Result = previous.Result }
+            return { Status = "Pending", Result = previous.Result, Replayed = true }
         end
-        return { Status = "Duplicate", Result = previous.Result }
+        return { Status = "Duplicate", Result = previous.Result, Replayed = true }
     end
     local now = self.Options.Clock()
     local ok, result, updated = TransactionService.apply(data, txId, kind, now, mutate)
