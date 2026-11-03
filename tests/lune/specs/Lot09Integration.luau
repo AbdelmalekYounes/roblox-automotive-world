@@ -54,6 +54,17 @@ return function(T: any, H: any)
         )
     end)
 
+    T.test("courses : le siège conducteur (Seat) est reconnu à l'inscription", function()
+        local code = source(SERVER .. "Racing.RaceService")
+        T.truthy(string.find(code, 'not seat:IsA("VehicleSeat") then', 1, true) == nil, "ancien contrôle retiré")
+        T.truthy(string.find(code, 'seat.Name ~= "DriverSeat"', 1, true) ~= nil, "siège conducteur seulement")
+        local factory = source(SERVER .. "Vehicles.VehicleFactory")
+        T.truthy(
+            string.find(factory, 'local seat = Instance.new("Seat")', 1, true) ~= nil,
+            "les véhicules utilisent bien un Seat"
+        )
+    end)
+
     T.test("courses : l'arbre de départ du drag n'est plus au centre de la chaussée", function()
         local code = source(SERVER .. "Racing.RaceInstallations")
         T.truthy(

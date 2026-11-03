@@ -89,6 +89,34 @@ local function provider(): any
     return command
 end
 
+-- Dernière notification du véhicule (diagnostic d'un embarquement refusé).
+local lastNotice = "aucune"
+local remotes = ReplicatedStorage:WaitForChild("AutomotiveWorldRemotes", 20)
+local noticeRemote = remotes and remotes:FindFirstChild("VehicleNotice")
+if noticeRemote and noticeRemote:IsA("RemoteEvent") then
+    noticeRemote.OnClientEvent:Connect(function(key: any)
+        lastNotice = tostring(key)
+    end)
+end
+
+local function boardDiagnostic(model: Model): string
+    local body = model.PrimaryPart
+    local door = body and body:FindFirstChild("DriverDoor")
+    local prompt = door and door:FindFirstChild("EnterPrompt") :: ProximityPrompt?
+    local seat = model:FindFirstChild("DriverSeat") :: Seat?
+    local humanoid = (player.Character :: Model):FindFirstChildOfClass("Humanoid")
+    return string.format(
+        "notification %s ; invite %s ; distance porte %.1f st, centre %.1f st ; siège occupé %s ; joueur assis %s ; conducteur %s",
+        lastNotice,
+        if prompt then tostring(prompt.Enabled) else "absente",
+        if door then (rootPart().Position - (door :: Attachment).WorldPosition).Magnitude else -1,
+        if body then (rootPart().Position - body.Position).Magnitude else -1,
+        tostring(seat and seat.Occupant ~= nil),
+        tostring(humanoid and humanoid.SeatPart ~= nil),
+        tostring(model:GetAttribute("DriverUserId"))
+    )
+end
+
 local function board(model: Model): boolean
     local body = model.PrimaryPart
     local door = body and body:FindFirstChild("DriverDoor")
@@ -126,6 +154,11 @@ local function bench(model: Model, modelId: string): any
     VehicleController.setTestInputProvider(provider)
     command = { Throttle = 0, Brake = 0, Steer = 0, Handbrake = false, Clutch = if manual then 1 else 0 }
     task.wait(0.5)
+    if manual then
+        -- Boîte manuelle au point mort à l'embarquement : première engagée, embrayage enfoncé.
+        VehicleController.invokeActionForTest("AWVehicleShiftUp")
+        task.wait(0.3)
+    end
     local launchAt = os.clock()
     local reached: number? = nil
     local shifting = false
@@ -340,7 +373,11 @@ local function main()
             trace(spec.Id .. " : " .. HttpService:JSONEncode(measure))
             leave()
         else
-            results[spec.Id] = { Error = "embarquement impossible (" .. tostring(name) .. ")" }
+            results[spec.Id] = {
+                Error = "embarquement impossible (" .. tostring(name) .. ") : " .. (if model
+                    then boardDiagnostic(model)
+                    else "modèle introuvable"),
+            }
         end
         signalEvent:FireServer("AW08:Despawn")
         task.wait(1)

@@ -144,7 +144,10 @@ local function driven(player: Player): (Model?, BasePart?)
     local character = player.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     local seat = humanoid and humanoid.SeatPart
-    if seat == nil or not seat:IsA("VehicleSeat") then
+    -- Siège conducteur des véhicules (classe Seat depuis le lot 0.1, jamais VehicleSeat) ;
+    -- la place passager est exclue. Lot 0.9 : l'ancien contrôle « VehicleSeat » refusait
+    -- toute inscription en jeu (RaceDriveToJoin), défaut révélé par la session VM lot06.
+    if seat == nil or seat.Name ~= "DriverSeat" or not (seat:IsA("Seat") or seat:IsA("VehicleSeat")) then
         return nil, nil
     end
     local model = seat:FindFirstAncestorWhichIsA("Model")
