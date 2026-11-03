@@ -74,6 +74,18 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   persistance réelle, inter-serveurs, jeu de bout en bout et essais humains **NON TESTÉS**.
 - Rapport : `docs/lot-0.5/RAPPORT_LOT_0.5.md` ; architecture : `docs/lot-0.5/ARCHITECTURE_LOT_0.5.md`.
 
+## État du lot 0.6 (branche `feat/racing-competition-0.6`, PR brouillon, base : lot 0.5)
+
+- Livré : socle de compétition commun et six disciplines (sprint, circuit, contre-la-montre, drift, drag, rallye),
+  22 parcours versionnés validés sur le graphe routier (16 monde ouvert, 6 zone d'essai) et leurs installations,
+  salons officiels, classés, privés et entraînement, modes protégé et réaliste, réservation exclusive des véhicules,
+  chronométrage et validation serveur, récompenses idempotentes, classement compétitif, saisons de huit semaines,
+  reconnexion et récupération, matchmaking (repli local), interface provisoire, simulation d'équilibrage.
+- Vérifié : tests Lune sur échantillons synthétiques et adaptateur mémoire (dont les 20 cas demandés), contrôles de
+  démarrage Studio ; matchmaking inter-serveurs, DataStore réel, courses jouées, latence, charge et essais humains
+  **NON TESTÉS**.
+- Rapport : `docs/lot-0.6/RAPPORT_LOT_0.6.md` ; architecture : `docs/lot-0.6/ARCHITECTURE_LOT_0.6.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
