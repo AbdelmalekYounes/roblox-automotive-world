@@ -177,7 +177,10 @@ function RaceInstallations.build(
         end
         local lights: { [string]: BasePart }? = nil
         if built.Discipline == "Drag" then
-            local base = flatFrame(start.X, start.Z, startY, start.Heading)
+            -- Arbre de départ en BORD de chaussée (lot 0.9) : au centre, son mât solide
+            -- barrait la ligne droite d'essai (bancs du lot 0.2 bloqués, risque de choc).
+            local side = width * S / 2 + 3
+            local base = flatFrame(start.X, start.Z, startY, start.Heading) * CFrame.new(side, 0, 0)
             part(
                 folder,
                 "ArbreMat",
