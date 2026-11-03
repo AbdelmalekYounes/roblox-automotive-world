@@ -508,9 +508,20 @@ local function main()
             { Id = "DEV-DRIFT", Label = "drift", Kmh = 45, MaxS = 240 },
         }
     do
-        local where = registrationOf(plan.Id)
-        if where then
-            driveTo(where, 25, 30, 90)
+        -- Mise en place : sortir, faire poser le prototype au point d'inscription, remonter.
+        local humanoidNow = character():FindFirstChildOfClass("Humanoid")
+        if humanoidNow then
+            humanoidNow.Sit = false
+            humanoidNow.Jump = true
+        end
+        task.wait(2)
+        if proto then
+            signalEvent:FireServer("AW06:Place:" .. (proto :: Model).Name .. ":" .. plan.Id)
+            waitFor(function()
+                return ReplicatedStorage:GetAttribute("AW06_Placed") == plan.Id
+            end, 10)
+            task.wait(1)
+            board(proto :: Model)
         end
         local created = race("CreatePrivate", { CourseId = plan.Id, Kind = "Training", Mode = "Protected" })
         if created.Status == "Ok" then

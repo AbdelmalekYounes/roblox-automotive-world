@@ -48,10 +48,31 @@ local reports = {}
 reportEvent.OnServerEvent:Connect(function(player, payload)
     reports[tostring(player.UserId)] = payload
 end)
+-- Mise en place (test seulement) : « AW06:Place:<véhicule>:<épreuve> » pose le prototype
+-- INOCCUPÉ du parc au point d'inscription de l'épreuve, puis « AW06_Placed » est publié.
 signalEvent.OnServerEvent:Connect(function(_, name)
-    if type(name) == "string" and string.sub(name, 1, 5) == "AW06:" then
-        ReplicatedStorage:SetAttribute("AW06_" .. string.sub(name, 6), true)
+    if type(name) ~= "string" or string.sub(name, 1, 5) ~= "AW06:" then
+        return
     end
+    local vehicleName, courseId = string.match(name, "^AW06:Place:([^:]+):(.+)$")
+    if vehicleName and courseId then
+        local RaceService = require(
+            game:GetService("ServerScriptService").AutomotiveWorldServer
+                :WaitForChild("Racing")
+                :WaitForChild("RaceService")
+        ) :: any
+        local built = RaceService.state().Courses[courseId]
+        local fleet = workspace:FindFirstChild("VehiculesEssai")
+        local model = fleet and fleet:FindFirstChild(vehicleName) :: Model?
+        if built and model and model:GetAttribute("DriverUserId") == 0 then
+            local reg = built.Registration
+            local S = 1 / 0.28
+            model:PivotTo(CFrame.new(reg.X * S, 4, reg.Z * S) * CFrame.Angles(0, -(reg.Heading or 0), 0))
+        end
+        ReplicatedStorage:SetAttribute("AW06_Placed", courseId)
+        return
+    end
+    ReplicatedStorage:SetAttribute("AW06_" .. string.sub(name, 6), true)
 end)
 
 local joinCount = 0
