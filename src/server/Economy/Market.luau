@@ -191,7 +191,11 @@ function Market.createListing(
                 }
         end
     )
-    if outcome.Status ~= "Confirmed" and outcome.Status ~= "Duplicate" then
+    -- « Pending » : réservation APPLIQUÉE au profil, écriture différée (budget par clé).
+    -- L'annonce doit alors exister aussi (lot 0.9 : sinon l'exemplaire restait réservé
+    -- pour une annonce introuvable jusqu'à l'échéance). L'achat revérifie la réservation
+    -- du vendeur à chaque étape (SaleNotReserved, compensation).
+    if outcome.Status ~= "Confirmed" and outcome.Status ~= "Duplicate" and outcome.Status ~= "Pending" then
         return outcome.Status, outcome.Error
     end
     summary = outcome.Result

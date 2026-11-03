@@ -280,7 +280,7 @@ local function main()
         )
         local itemId = nil
         for _, owned in snapshot().OwnedParts or {} do
-            if owned.PartId == "TIRE-SPORT" and not owned.Installed then
+            if owned.PartId == "TIRE-SPORT" and not owned.Installed and (owned.Resale or 0) > 0 then
                 itemId = owned.Id
             end
         end
