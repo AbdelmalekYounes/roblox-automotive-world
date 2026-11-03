@@ -139,5 +139,12 @@ return function(T: any, H: any)
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")
         T.truthy(string.find(onboarding, 'footer.Text = ""', 1, true) ~= nil, "pied périmé effacé")
+        local economy = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.EconomyPanel")
+        local quoteAt = string.find(economy, "InputRouter.armConfirm()", 1, true)
+        T.truthy(
+            quoteAt ~= nil
+                and string.find(string.sub(economy, quoteAt, quoteAt + 300), 'footer.Text = ""', 1, true) ~= nil,
+            "économie : pied effacé à la confirmation"
+        )
     end)
 end

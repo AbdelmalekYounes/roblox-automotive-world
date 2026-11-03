@@ -158,6 +158,9 @@ local function quote(label: string, action: string, payload: any, quoteArgs: any
     end
     pending = { Label = label, Action = action, Payload = payload, Quote = response.Result }
     InputRouter.armConfirm()
+    -- Lot 0.9.1 (QA-F13, même cause) : le « Fait. » de la demande précédente laissait
+    -- croire l'opération déjà faite pendant la confirmation.
+    footer.Text = ""
     render()
 end
 
