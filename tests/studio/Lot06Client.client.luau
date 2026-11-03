@@ -163,9 +163,15 @@ local function autopilot(): any
     local direction = offset.Unit
     local cross = forward:Cross(direction).Y
     local angle = math.acos(math.clamp(forward:Dot(direction), -1, 1))
-    local steer = math.clamp(-math.sign(cross) * angle / 0.6, -1, 1)
-    local wanted = driving.SpeedKmh * math.clamp(1 - angle / math.pi * 1.6, 0.35, 1)
     local v = speedKmh(model :: Model)
+    -- Direction adoucie avec la vitesse (sinon oscillation à 100 km/h et plus) ; ralenti
+    -- à l'approche de la cible (évite de dépasser un point puis de couper vers un poteau).
+    local steer = math.clamp(-math.sign(cross) * angle / 0.6 / (1 + v / 45), -1, 1)
+    local wanted = driving.SpeedKmh * math.clamp(1 - angle / math.pi * 1.6, 0.35, 1)
+    local distanceM = offset.Magnitude / S
+    if not driving.Launch and distanceM < 25 then
+        wanted = math.min(wanted, math.max(18, distanceM * 1.4))
+    end
     if driving.Launch then
         return { Throttle = 1, Brake = 0, Steer = steer, Handbrake = false, Clutch = 0 }
     end
