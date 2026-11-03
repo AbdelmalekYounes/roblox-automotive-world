@@ -211,6 +211,7 @@ réel, ni le ressenti, ni le comportement multijoueur.
 | QA-V11 | Performances du rendu | P1 | Images par seconde et mémoire avec l'habillage (≈ 47 650 pièces), nuit avec sources de lumière, qualités basse à haute | Mesure réelle ; aucun objectif déclaré atteint | **NON TESTÉ** |
 | QA-V12 | Compatibilité des actifs | P2 | Téléversement réel des 30 sons (modération, formats), puis lecture en jeu | Acceptés et joués | **NON TESTÉ** (propriétaire) |
 | QA-V13 | Charge à 24 joueurs | P1 | 24 joueurs avec feux, sons et radio actifs | Fréquence stable | **NON TESTÉ** |
+| QA-V15 | Focus de la fenêtre d'arrivée | P2 | Ouverture automatique au clavier, à la souris puis à la manette, dans un vrai client (hors Studio) ; vérifier que la cause du gel (sélection imposée, corrigée au lot 0.8) ne touche aucune autre fenêtre ouverte d'elle-même | Aucun gel ; focus seulement à la manette | **NON TESTÉ** (hors Studio) |
 | QA-V14 | Manette | P2 | Téléphone sur Select, invite d'entrée sur X, mode photo par l'application Photo, garage par le téléphone | Aucun conflit de touches | **NON TESTÉ** (humain) |
 
 ## 4. Charge, performance et stabilité

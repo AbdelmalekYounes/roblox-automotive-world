@@ -73,6 +73,8 @@ Défauts trouvés et corrigés pendant le lot :
 - un véhicule d'essai pouvait servir à une course ou à une mission (récompense) : désormais refusé ;
 - la touche X de la manette (téléphone, priorité haute) absorbait l'invite d'entrée dans un véhicule : téléphone
   déplacé sur Select.
+- la fenêtre du parcours d'arrivée figeait un client Studio à deux joueurs (focus imposé au clavier) : focus
+  réservé à la manette (§2.2).
 
 Banc de la gamme : `lune run tools/vehicles/catalog.luau build/AutomotiveWorld.rbxlx` (2026-11-03) — résultats
 dans le catalogue (modèle planaire, pas des mesures en jeu). Synthèse audio : `python tools/audio/synth.py`
@@ -81,15 +83,47 @@ identique sur deux générations.
 
 ### 2.2 Contrôles de démarrage dans Studio (VM)
 
-À compléter après exécution.
+Sessions courtes de démarrage (`tools\vm\host-run.ps1 -NoVmControl`, VM VMware, 2026-11-03). Elles vérifient le
+chargement, la conduite de base, la progression du lot 0.4 à deux joueurs et le monde ouvert ; **aucune interface
+du lot 0.8 n'y est parcourue** (parcours d'arrivée, téléphone, radio, photo : NON TESTÉS en jeu).
+
+**Défaut bloquant trouvé et corrigé.** Sur le code du lot (`f60366d`, puis `9a4877b` avec un test client du lot 0.4
+qui rapporte ses plantages et trace son avancement), la session `lot04` échouait : un client Studio se figeait
+juste après l'ouverture automatique de la fenêtre du parcours d'arrivée (aucun rapport client reçu). Démarche :
+
+| Tâche | Code | Session | Résultat |
+|---|---|---|---|
+| `20261103-131229` | `f60366d` | `solo` + `lot04` | `solo` OK ; `lot04` : aucun rapport client |
+| `20261103-132351`, `-133253` | arbre de travail (traces) | `lot04` | échec : un client figé (journal arrêté net) |
+| `20261103-134249` | `f48e886` (lot 0.7) | `lot04` | **66 / 0** : le défaut vient du lot 0.8 |
+| `20261103-134520` | groupes de collision retirés | `lot04` | 66 / 0 (passage isolé, voir ci-dessous) |
+| `20261103-134706`, `-135552` | groupes partiellement / entièrement retirés | `lot04` | échec : les groupes ne sont pas en cause |
+| `20261103-140513` | ajouts client du lot 0.8 neutralisés | `lot04` | 66 / 0 |
+| `20261103-140655` | seuls parcours d'arrivée et mode photo neutralisés | `lot04` | 66 / 0 |
+| `20261103-140838` … `-143429` | essais sur la fenêtre (barre de défilement, tailles calculées, traces fines) | `lot04` | échec ; les traces situent le gel juste après le rendu, dans la sélection automatique du premier bouton |
+| `20261103-144307` | focus automatique réservé à la manette (traces) | `lot04` | **66 / 0** |
+| `20261103-144513` | même correction, sans traces, sans groupes | `solo` + `lot04` | **102 / 0** |
+| `20261103-144747` | même correction, groupes de collision rétablis (= `099822b`) | `solo` + `lot04` | **102 / 0** |
+| `20261103-145029` | `099822b` | `monde` (monde ouvert) | **37 / 0** : 55 points d'intérêt, 133 km/h sur l'autoroute, aucune erreur |
+
+Avant correction, 11 sessions `lot04` sur 12 ont échoué avec la fenêtre d'arrivée active ; après correction,
+3 sur 3 ont réussi. Cause retenue : la sélection imposée (`GuiService.SelectedObject`) du premier bouton d'une
+fenêtre ouverte d'elle-même, au clavier et à la souris, dans un client Studio à deux joueurs — mécanisme exact non
+établi (comportement du moteur). Correction : focus automatique seulement à la manette (`099822b`) ; les lignes de
+texte de la fenêtre n'utilisent plus de taille automatique. Les tâches marquées « arbre de travail » ont été
+exécutées sur des modifications non commitées (expériences), décrites dans la colonne « Code ».
 
 ### 2.3 Exécution finale
 
-À compléter après exécution.
+`powershell -ExecutionPolicy Bypass -File scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau`, exécutée le
+2026-11-03 à 14:52 sur le commit `099822b` (code du lot) : Rojo (deux places), Selene, StyLua, pilote Studio,
+**Lune 324 réussis / 0 échoué** (dont 17 du lot 0.8), génération de la carte (47 653 pièces), **Pytest 14
+réussis**, luau-lsp strict 0 erreur. Sessions VM sur ce code : §2.2 (`20261103-144747`, `20261103-145029`).
 
 ### 2.4 PR
 
-À compléter.
+Voir la description de la PR brouillon (base `feat/ui-gps-social-0.7`) ; SHA du dernier commit indiqué dans la PR
+et dans la feuille de route.
 
 ## 3. Écarts, choix et points à arbitrer
 

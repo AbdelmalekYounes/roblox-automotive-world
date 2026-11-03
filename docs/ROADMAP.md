@@ -107,8 +107,9 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   panneaux des lots 0.4 à 0.6, profil v5 et préférences v2.
 - En attente du propriétaire : approbation de la gamme et des trois véhicules de départ, écoute et téléversement
   des sons.
-- Vérifié : tests Lune et pytest des règles pures ; rendu, sons, radio multijoueur, mode photo, parcours avec de
-  vrais comptes et performances **NON TESTÉS** (`docs/QA_BACKLOG.md` §3 sexies).
+- Vérifié : tests Lune et pytest des règles pures ; sessions de démarrage Studio `solo`, `lot04` et `monde` (un
+  défaut bloquant du parcours d'arrivée y a été trouvé et corrigé) ; rendu, sons, radio multijoueur, mode photo,
+  parcours avec de vrais comptes et performances **NON TESTÉS** (`docs/QA_BACKLOG.md` §3 sexies).
 - Rapport : `docs/lot-0.8/RAPPORT_LOT_0.8.md` ; architecture : `docs/lot-0.8/ARCHITECTURE_LOT_0.8.md`.
 
 ## Critères de passage du socle 0.0.1
