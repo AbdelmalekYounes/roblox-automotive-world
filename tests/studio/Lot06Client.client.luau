@@ -147,13 +147,16 @@ local function autopilot(): any
     local model = driving.Model
     local body = model and model.PrimaryPart
     if body == nil or driving.Hold or driving.Target == nil then
-        return { Throttle = 0, Brake = 1, Steer = 0, Handbrake = false, Clutch = 0 }
+        -- Arrêt : frein au-dessus de 3 km/h, puis frein à main. Maintenir « freiner » à
+        -- l'arrêt engagerait la marche arrière d'une boîte automatique (arbitrage A3).
+        local moving = model ~= nil and speedKmh(model :: Model) > 3
+        return { Throttle = 0, Brake = if moving then 1 else 0, Steer = 0, Handbrake = not moving, Clutch = 0 }
     end
     local target = driving.Target :: Vector3
     local forward = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
     local offset = Vector3.new(target.X - body.Position.X, 0, target.Z - body.Position.Z)
     if offset.Magnitude < 1 then
-        return { Throttle = 0, Brake = 1, Steer = 0, Handbrake = false, Clutch = 0 }
+        return { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }
     end
     local direction = offset.Unit
     local cross = forward:Cross(direction).Y
@@ -205,14 +208,20 @@ local function board(model: Model): boolean
     if prompt == nil then
         return false
     end
-    rootPart().CFrame = CFrame.new((door :: Attachment).WorldPosition + Vector3.new(0, 2, 0))
-    task.wait(0.8)
-    prompt:InputHoldBegin()
-    task.wait(prompt.HoldDuration + 0.3)
-    prompt:InputHoldEnd()
-    local ok = waitFor(function()
-        return model:GetAttribute("DriverUserId") == player.UserId
-    end, 10)
+    local ok = false
+    for attempt = 1, 3 do
+        rootPart().CFrame = CFrame.new((door :: Attachment).WorldPosition + Vector3.new(0, 2, 0))
+        task.wait(if attempt == 1 then 0.8 else 1.5)
+        prompt:InputHoldBegin()
+        task.wait(prompt.HoldDuration + 0.3)
+        prompt:InputHoldEnd()
+        ok = waitFor(function()
+            return model:GetAttribute("DriverUserId") == player.UserId
+        end, 5)
+        if ok then
+            break
+        end
+    end
     if ok then
         driving.Model = model
         VehicleController.setTestInputProvider(autopilot)

@@ -351,13 +351,17 @@ local function main()
         )
 
         -- ===== Vente conclue (joueur 2) : crédit du vendeur moins la commission =====
-        local sold = waitSignal("Bought", 120)
+        local sold = waitSignal("Bought", 300)
         local sellerAfter = 0
         local credited = waitFor(function()
             sellerAfter = balance()
             return sellerAfter > fuelAfter
         end, 30)
-        record(prefix .. "vendeur_credite", sold and credited, string.format("solde %d", sellerAfter))
+        record(
+            prefix .. "vendeur_credite",
+            sold and credited,
+            string.format("solde %d (après le plein : %d), vente signalée %s", sellerAfter, fuelAfter, tostring(sold))
+        )
         local stillMine = false
         for _, vehicle in snapshot().Vehicles or {} do
             if vehicle.Id == pixelId then

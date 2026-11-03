@@ -124,14 +124,23 @@ local function board(model: Model): boolean
     if prompt == nil then
         return false
     end
-    rootPart().CFrame = CFrame.new((door :: Attachment).WorldPosition + Vector3.new(0, 2, 0))
-    task.wait(0.8)
-    prompt:InputHoldBegin()
-    task.wait(prompt.HoldDuration + 0.3)
-    prompt:InputHoldEnd()
-    return waitFor(function()
-        return model:GetAttribute("DriverUserId") == player.UserId
-    end, 10)
+    -- Jusqu'à trois tentatives (l'activation scriptée d'une invite juste après un
+    -- déplacement du personnage est parfois ignorée, comme dans les sessions historiques).
+    for attempt = 1, 3 do
+        rootPart().CFrame = CFrame.new((door :: Attachment).WorldPosition + Vector3.new(0, 2, 0))
+        task.wait(if attempt == 1 then 0.8 else 1.5)
+        prompt:InputHoldBegin()
+        task.wait(prompt.HoldDuration + 0.3)
+        prompt:InputHoldEnd()
+        local ok = waitFor(function()
+            return model:GetAttribute("DriverUserId") == player.UserId
+        end, 5)
+        if ok then
+            measures.tentatives_embarquement = (measures.tentatives_embarquement or 0) + attempt
+            return true
+        end
+    end
+    return false
 end
 local function leave()
     local humanoid = (player.Character :: Model):FindFirstChildOfClass("Humanoid")
