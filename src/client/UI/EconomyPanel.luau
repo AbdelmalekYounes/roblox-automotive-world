@@ -169,7 +169,15 @@ local function simple(action: string, payload: any?)
         return
     end
     busy = true
-    local response = invoke(action, payload)
+    -- Lot 0.9.1 (QA-F16) : une opération sensible (retrait d'annonce) envoyée sans
+    -- identifiant de demande était toujours refusée (RequestIdInvalid) : « Retirer
+    -- l'annonce » ne fonctionnait jamais. Identifiant ajouté pour toute opération sensible.
+    local data = payload
+    if EconomyProtocol.Sensitive[action] then
+        data = table.clone(payload or {})
+        data.RequestId = HttpService:GenerateGUID(false)
+    end
+    local response = invoke(action, data)
     busy = false
     footer.Text = describe(response)
     render()

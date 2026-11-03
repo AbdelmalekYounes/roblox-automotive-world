@@ -135,6 +135,22 @@ return function(T: any, H: any)
         T.equal(#found, 0, table.concat(found, ", "))
     end)
 
+    T.test("QA-F16 : les opérations sensibles du panneau économique portent un identifiant", function()
+        local EconomyProtocol = H.require(SHARED .. "Economy.EconomyProtocol")
+        local panel = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.EconomyPanel")
+        local first, last = string.find(panel, "local function simple%(")
+        local body = if first then string.sub(panel, first, (string.find(panel, "\nend", last, true) or #panel)) else ""
+        local covered = string.find(body, "EconomyProtocol.Sensitive[action]", 1, true) ~= nil
+            and string.find(body, "RequestId", 1, true) ~= nil
+        local viaSimple = {}
+        for action in string.gmatch(panel, 'simple%("(%w+)"') do
+            if EconomyProtocol.Sensitive[action] then
+                table.insert(viaSimple, action)
+            end
+        end
+        T.truthy(#viaSimple == 0 or covered, "sensibles sans identifiant : " .. table.concat(viaSimple, ", "))
+    end)
+
     T.test("QA-F13 : confirmation du premier véhicule amenée dans la vue", function()
         local onboarding = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.OnboardingController")
         T.truthy(string.find(onboarding, "revealConfirmation()", 1, true) ~= nil, "défilement vers la confirmation")
