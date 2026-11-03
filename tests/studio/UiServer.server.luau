@@ -62,8 +62,62 @@ end)
 
 -- Décor d'essai (signalé) : « AWUI:Seat » assoit le joueur au volant d'un prototype libre
 -- du parc (comme le ferait l'invite, quand l'activation scriptée de l'invite échoue).
+local S = 1 / 0.28
+-- « AWUI:PlaceStart » (session gps) : un prototype libre du parc est posé UNE fois, au
+-- départ, sur une rue proche du point d'apparition, dans le sens de la rue.
+local function placeStart(player: Player)
+    local Shared = ReplicatedStorage:WaitForChild("Shared")
+    local WorldLayout = require(Shared:WaitForChild("World"):WaitForChild("WorldLayout")) :: any
+    local layout = WorldLayout.get()
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+    local fleet = workspace:FindFirstChild("VehiculesEssai")
+    local model = fleet and fleet:FindFirstChild("VehiculeEssai_1") :: Model?
+    if root == nil or model == nil then
+        return
+    end
+    local px, pz = root.Position.X / S, root.Position.Z / S
+    local best, bestD, bestDir = nil, math.huge, nil
+    for _, edge in layout.Edges do
+        if (edge.Class == "Rue" or edge.Class == "Avenue") and edge.LengthM > 60 then
+            local mid, tangent = WorldLayout.sampleAt(edge.Polyline, 0.5)
+            local d = (mid.X - px) ^ 2 + (mid.Z - pz) ^ 2
+            if d < bestD then
+                best, bestD, bestDir = mid, d, tangent
+            end
+        end
+    end
+    if best == nil then
+        return
+    end
+    local direction = Vector3.new(bestDir.X, 0, bestDir.Z).Unit
+    local right = Vector3.new(-direction.Z, 0, direction.X)
+    local position = (Vector3.new(best.X, best.Y, best.Z) + right * 2) * S
+    pcall(function()
+        player:RequestStreamAroundAsync(position, 10)
+    end)
+    local pivot = CFrame.lookAt(
+        position + Vector3.new(0, 0.5 * S + 1.5, 0),
+        position + Vector3.new(0, 0.5 * S + 1.5, 0) + direction
+    )
+    model:PivotTo(pivot)
+    local body = model.PrimaryPart :: BasePart
+    body.AssemblyLinearVelocity = Vector3.zero
+    body.AssemblyAngularVelocity = Vector3.zero
+    root.CFrame = CFrame.new(position + right * 4 * S + Vector3.new(0, 4, 0))
+    ReplicatedStorage:SetAttribute("AWUI_StartVehicle", model.Name)
+    record(
+        "ui.serveur.info_placement_depart",
+        true,
+        string.format("%s posé en (%.0f, %.0f) m, à %.0f m du joueur", model.Name, best.X, best.Z, math.sqrt(bestD))
+    )
+end
+
 signalEvent.OnServerEvent:Connect(function(player, name)
     if type(name) ~= "string" or string.sub(name, 1, 5) ~= "AWUI:" then
+        return
+    end
+    if name == "AWUI:PlaceStart" and session == "gps" then
+        placeStart(player)
         return
     end
     ReplicatedStorage:SetAttribute("AWUI_" .. string.sub(name, 6), true)

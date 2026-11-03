@@ -52,6 +52,7 @@ local EXTRA = {
     { "AW_TestUiServer", "UiServer.server.luau", false },
     { "AW_TestUiClient", "UiClient.client.luau", true },
     { "AW_TestMetiersClient", "MetiersClient.client.luau", true },
+    { "AW_TestGpsClient", "GpsClient.client.luau", true },
 }
 
 local output = process.args[1]
