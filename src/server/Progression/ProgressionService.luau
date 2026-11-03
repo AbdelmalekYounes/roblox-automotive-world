@@ -52,6 +52,7 @@ local DurableState = require(script.Parent.DurableState)
 local Locations = require(script.Parent.Locations)
 local Commerce = require(script.Parent.Parent.Economy.Commerce)
 local PropertyInteriors = require(script.Parent.PropertyInteriors)
+local VehicleRaceReservation = require(script.Parent.Parent.Racing.VehicleRaceReservation)
 
 local ProgressionService = {}
 
@@ -664,6 +665,11 @@ handlers.Return = function(player, _payload, txId)
         return rejected("VehicleNotOut")
     end
     local profile = session.Data :: ProfileSchema.Profile
+    -- Lot 0.6 : un exemplaire engagé en course ne rentre pas au garage avant la fin.
+    local stored = profile.Vehicles[out.VehicleId]
+    if stored and VehicleOwnership.reserved(stored, now()) then
+        return rejected("VehicleReserved")
+    end
     local position = out.Model:GetPivot().Position
     -- Le véhicule doit être physiquement ramené à une de ses entrées ou à un garage public.
     local allowed = Locations.near(position, "PublicGarage") ~= nil
@@ -1154,6 +1160,71 @@ end
 function ProgressionService.context(player: Player): any
     local session = ProfileService.get(player)
     return contextOf(player, if session then session.Data else nil)
+end
+
+--[[
+    Lot 0.6 : reprise d'une course après reconnexion (même épreuve). L'exemplaire
+    engagé, rentré au garage au départ du joueur, est de nouveau matérialisé à
+    la position de reprise décidée par la session de course (dernier point de
+    contrôle validé), avec l'état de course conservé par le serveur (mode
+    protégé) ou l'état durable (mode réaliste). Transition EXPLICITE : jamais
+    déclenchée par le client seul, jamais un second exemplaire.
+]]
+function ProgressionService.raceResume(
+    player: Player,
+    entryId: string,
+    frame: CFrame,
+    protected: boolean,
+    runtime: { Energy: number?, Damage: any? }?
+): (string, Model?)
+    local session = activeSession(player)
+    if session == nil then
+        return "Unavailable", nil
+    end
+    if outVehicles[player] ~= nil then
+        return "AnotherVehicleOut", nil
+    end
+    local profile = session.Data :: ProfileSchema.Profile
+    local active = profile.Racing.Active
+    if active == nil or active.EntryId ~= entryId then
+        return "RaceNotEngaged", nil
+    end
+    local vehicle = profile.Vehicles[active.VehicleId]
+    if vehicle == nil then
+        return "VehicleNotOwned", nil
+    end
+    local definition, spec = derivedDefinition(profile, vehicle)
+    if definition == nil then
+        return "VehicleModelMissing", nil
+    end
+    local session_ = session
+    local result = session_:commit(
+        "RaceResume:" .. entryId .. ":" .. session_.Options.Session,
+        "RaceResume",
+        function(data)
+            return VehicleRaceReservation.resumeTakeOut(data, entryId, session_.Options.Session, now())
+        end
+    )
+    if result.Status ~= "Confirmed" and result.Status ~= "Pending" then
+        return result.Error or "RaceResumeFailed", nil
+    end
+    local fresh = (session.Data :: ProfileSchema.Profile).Vehicles[vehicle.Id]
+    local model = VehicleService.spawnPersonal({
+        Definition = definition,
+        Pivot = frame * CFrame.new(0, definition.Chassis.CgHeightM * S + 0.3, 0),
+        OwnerUserId = player.UserId,
+        VehicleId = fresh.Id,
+        Protected = protected,
+        MayDrive = function(candidate: Player)
+            return candidate.UserId == player.UserId
+        end,
+        EnergyFraction = if runtime and runtime.Energy then runtime.Energy else fresh.Energy,
+        Damage = if runtime and runtime.Damage then runtime.Damage else fresh.Damage,
+        TuningSpec = spec,
+    })
+    outVehicles[player] = { Model = model, VehicleId = fresh.Id }
+    moveCharacter(player, frame * CFrame.new(-(definition.Chassis.WidthM * S / 2 + 4), 4, 0))
+    return "Ok", model
 end
 
 ProgressionService.snapshot = function(player: Player): any

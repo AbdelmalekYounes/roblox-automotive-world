@@ -72,6 +72,17 @@ local MIGRATIONS: { Migration } = {
             return data
         end,
     },
+    {
+        -- Lot 0.6 : courses, classement et saisons (section vide : aucune
+        -- course n'a existé avant ce lot ; aucune réservation « Race »).
+        From = 2,
+        Describe = "courses et saisons (lot 0.6)",
+        Apply = function(data: any): any
+            data.Racing = data.Racing or ProfileSchema.newRacing()
+            data.SchemaVersion = 3
+            return data
+        end,
+    },
 }
 ProfileMigration.Official = table.freeze(MIGRATIONS)
 

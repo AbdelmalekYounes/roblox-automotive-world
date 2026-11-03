@@ -380,21 +380,25 @@ return function(T: any, H: any)
         raw.Unknown = { Keep = true }
         local migrations = {
             {
-                From = 2,
+                From = ProfileSchema.Version,
                 Describe = "essai",
                 Apply = function(data)
                     ProfileMigration.retire(data, "OldField")
-                    data.SchemaVersion = 3
+                    data.SchemaVersion = ProfileSchema.Version + 1
                     return data
                 end,
             },
         }
-        local result = ProfileMigration.migrate(raw, 3, migrations)
+        local result = ProfileMigration.migrate(raw, ProfileSchema.Version + 1, migrations)
         T.equal(result.Status, "Migrated")
         T.equal(result.Data.Legacy.OldField, "à conserver")
         T.truthy(result.Data.Unknown.Keep, "champ inconnu conservé")
-        T.equal(raw.SchemaVersion, 2, "original intact")
-        T.equal(ProfileMigration.migrate(raw, 4, migrations).Status, "Invalid", "migration manquante")
+        T.equal(raw.SchemaVersion, ProfileSchema.Version, "original intact")
+        T.equal(
+            ProfileMigration.migrate(raw, ProfileSchema.Version + 2, migrations).Status,
+            "Invalid",
+            "migration manquante"
+        )
     end)
 
     T.test("donnée d'une version plus récente : lecture seule, jamais réécrite", function()

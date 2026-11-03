@@ -1197,6 +1197,51 @@ function VehicleService.restorePersonalDamage(model: Model, state: any)
 end
 
 --[[
+    Lot 0.6 (courses) : session PROTÉGÉE (aucune écriture durable : dégâts et
+    consommation de course isolés), droit de conduire restreint au
+    propriétaire pendant l'engagement, énergie restaurée exactement à la
+    sortie d'une course protégée.
+]]
+function VehicleService.setPersonalProtected(model: Model, protected: boolean)
+    local record = personalRecord(model)
+    if record then
+        (record.Personal :: PersonalInfo).Protected = protected
+    end
+end
+
+function VehicleService.setPersonalMayDrive(model: Model, rule: (Player) -> boolean)
+    local record = personalRecord(model)
+    if record then
+        (record.Personal :: PersonalInfo).MayDrive = rule
+    end
+end
+
+function VehicleService.personalMayDrive(model: Model): ((Player) -> boolean)?
+    local record = personalRecord(model)
+    return if record then (record.Personal :: PersonalInfo).MayDrive else nil
+end
+
+function VehicleService.setPersonalEnergy(model: Model, fraction: number)
+    local record = personalRecord(model)
+    if record == nil then
+        return
+    end
+    local account = record.Energy
+    account.Level = math.clamp(fraction, 0, 1) * account.Capacity
+    account.Empty = account.Level <= 0
+    publishEnergy(record, true)
+end
+
+-- État mesuré sans remise à zéro de la distance (conservé pour une reprise).
+function VehicleService.peekPersonal(model: Model): (number?, any?)
+    local record = personalRecord(model)
+    if record == nil then
+        return nil, nil
+    end
+    return record.Energy.Level / math.max(record.Energy.Capacity, 1e-9), damage:getState(model)
+end
+
+--[[
     Lot 0.5 (missions) : usure cumulée et corrections subies par N'IMPORTE quel
     véhicule suivi (parc, exemplaire personnel, véhicule professionnel), lues
     par le serveur seul.

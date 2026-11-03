@@ -49,6 +49,8 @@ VehicleController.start()
 require(script.Parent:WaitForChild("UI"):WaitForChild("GaragePanel")).start()
 -- Lot 0.5 : économie, métiers, marché (interface provisoire, touche J).
 require(script.Parent:WaitForChild("UI"):WaitForChild("EconomyPanel")).start()
+-- Lot 0.6 : courses, salons, classements (interface provisoire, touche K).
+require(script.Parent:WaitForChild("UI"):WaitForChild("RacePanel")).start()
 if openWorld then
     local WorldClient = script.Parent:WaitForChild("World")
     require(WorldClient:WaitForChild("Environment")).start()

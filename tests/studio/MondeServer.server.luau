@@ -143,6 +143,15 @@ end
 record("monde.invites_lieux", prompts == 16, prompts)
 -- Lot 0.5 : 2 concessions, 6 stations-service, 2 bornes, 3 lavages.
 record("monde.invites_lieux_economiques", economyPrompts == 13, economyPrompts)
+-- Lot 0.6 : 16 parcours du monde ouvert, chacun avec son point d'inscription physique.
+local racePrompts = 0
+for _, item in (map and map:GetDescendants()) or {} do
+    if item:IsA("ProximityPrompt") and item.Name == "AWRacePrompt" then
+        racePrompts += 1
+    end
+end
+record("monde.points_inscription_courses", racePrompts == 16, racePrompts)
+record("monde.canal_courses", ReplicatedStorage:FindFirstChild("AWRacing") ~= nil)
 
 local player = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
 local character = player.Character or player.CharacterAdded:Wait()

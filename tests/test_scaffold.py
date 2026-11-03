@@ -46,6 +46,10 @@ def test_contract_values_and_bootstrap():
 
 
 DATASTORE_ADAPTER = "DataStoreProfileRepository.luau"
+# Lot 0.6 : coordination inter-serveurs (MemoryStore, téléportation) et tableaux
+# de classement (OrderedDataStore) isolés dans un adaptateur instancié seulement
+# si une expérience de test isolée ou de production est déclarée (aucune).
+CROSS_SERVER_ADAPTER = "CrossServerAdapter.luau"
 
 
 def test_no_premature_datastore_economy_or_external_code():
@@ -63,12 +67,14 @@ def test_no_premature_datastore_economy_or_external_code():
     for script in _sources():
         source = script.read_text(encoding="utf-8")
         for token in forbidden:
+            if script.name == CROSS_SERVER_ADAPTER and token == "SetAsync(":
+                continue
             assert token not in source, f"{token} interdit dans {script.name}"
         if any(token in source for token in datastore_tokens):
             adapters.append(script.name)
         assert not re.search(r"require\(\s*\d", source), f"module externe par identifiant dans {script.name}"
         assert "--" in source, f"Commentaires manquants dans {script.name}"
-    assert adapters == [DATASTORE_ADAPTER], f"DataStore hors de son adaptateur : {adapters}"
+    assert sorted(adapters) == sorted([DATASTORE_ADAPTER, CROSS_SERVER_ADAPTER]), f"DataStore hors de ses adaptateurs : {adapters}"
 
 
 def test_storage_environments_not_declared():
