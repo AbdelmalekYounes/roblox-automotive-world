@@ -242,7 +242,6 @@ if highwayPoint and highwayDirection and driveModel then
     character:PivotTo(CFrame.new((highwayPoint + right * (1.5 + 2.5 * 3.5 - 3)) * S + Vector3.new(0, 4, 0)))
     task.wait(3)
     ReplicatedStorage:SetAttribute("AWMondeVehicle", driveModel.Name)
-    ReplicatedStorage:SetAttribute("AWMondeRoadY", highwayPoint.Y * S)
     ReplicatedStorage:SetAttribute("AWMondeStage", "drive")
     local finished = waitFor(function()
         return done.MondeDriveDone == true

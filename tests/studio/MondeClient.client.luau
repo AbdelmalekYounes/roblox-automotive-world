@@ -153,9 +153,12 @@ if stageReached then
     record("monde.client.embarquement_autoroute", boarded)
     if boarded and model then
         local vehicleRoot = model.PrimaryPart :: BasePart
-        local roadY = ReplicatedStorage:GetAttribute("AWMondeRoadY") or vehicleRoot.Position.Y
         local startPosition = vehicleRoot.Position
-        local maxSpeed, minHeight, minUpright = 0, math.huge, 1
+        local maxSpeed, minHeight, minUpright, noGround = 0, math.huge, 1, 0
+        -- Garde au sol mesurée par un lancer vertical (la route peut monter ou descendre).
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = { model, character }
         VehicleController.setTestInputProvider(function()
             return { Throttle = 1, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
         end)
@@ -163,7 +166,12 @@ if stageReached then
         while os.clock() - t0 < 14 do
             local speedKmh = vehicleRoot.AssemblyLinearVelocity.Magnitude * 0.28 * 3.6
             maxSpeed = math.max(maxSpeed, speedKmh)
-            minHeight = math.min(minHeight, vehicleRoot.Position.Y - roadY)
+            local hit = Workspace:Raycast(vehicleRoot.Position, Vector3.new(0, -30, 0), params)
+            if hit then
+                minHeight = math.min(minHeight, vehicleRoot.Position.Y - hit.Position.Y)
+            else
+                noGround += 1
+            end
             minUpright = math.min(minUpright, vehicleRoot.CFrame.UpVector.Y)
             task.wait(0.1)
         end
@@ -185,8 +193,8 @@ if stageReached then
         )
         record(
             "monde.client.autoroute_jamais_sous_la_route",
-            minHeight > 0.3,
-            string.format("hauteur min %.2f st au-dessus du tracé", minHeight)
+            noGround == 0 and minHeight > 0.3,
+            string.format("garde au sol min %.2f st, %d échantillon(s) sans sol", minHeight, noGround)
         )
         record("monde.client.autoroute_reste_droit", minUpright > 0.9, string.format("%.3f", minUpright))
         local humanoid = character:FindFirstChildOfClass("Humanoid")
