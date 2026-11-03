@@ -11,6 +11,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
@@ -67,21 +68,35 @@ local function clear()
     order = 0
 end
 
+-- Largeur utile d'une ligne (fenêtre 640 px, marges et barre de défilement).
+local LINE_WIDTH = 592
+
+--[[
+    Texte sur plusieurs lignes à hauteur CALCULÉE (TextService) : aucune taille
+    automatique dans le cadre défilant. Les tailles automatiques imbriquées
+    (texte + canevas) figeaient un client Studio à deux joueurs (essais VM du
+    2026-11-03, lot 0.8).
+]]
 local function line(text: string, size: number?, bold: boolean?)
     order += 1
+    local font = if bold then UITheme.FontBold else UITheme.Font
+    local textSize = UITheme.text(size or 16)
+    local ok, bounds = pcall(function()
+        return TextService:GetTextSize(text, textSize, font, Vector2.new(LINE_WIDTH, 10000))
+    end)
+    local height = if ok then bounds.Y else textSize * 3
     UITheme.label(text, size or 16, {
-        Size = UDim2.new(1, -8, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
+        Size = UDim2.new(0, LINE_WIDTH, 0, height + 4),
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = if bold then UITheme.FontBold else UITheme.Font,
+        Font = font,
         LayoutOrder = order,
     }, body)
 end
 
 local function button(text: string, fn: () -> ())
     order += 1
-    UITheme.button(text, { Size = UDim2.new(1, -8, 0, 36), LayoutOrder = order }, body, fn)
+    UITheme.button(text, { Size = UDim2.new(0, LINE_WIDTH, 0, 36), LayoutOrder = order }, body, fn)
 end
 
 local function report(response: any)
@@ -326,10 +341,14 @@ function OnboardingController.start()
         Size = UDim2.new(1, -32, 1, -100),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 6,
     }, window)
-    UITheme.make("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+    local layout =
+        UITheme.make("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+    -- Canevas calé sur le contenu (sans taille automatique).
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        body.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 8)
+    end)
     footer = UITheme.label("", 14, {
         Position = UDim2.new(0, 20, 1, -40),
         Size = UDim2.new(1, -40, 0, 30),
@@ -348,7 +367,13 @@ function OnboardingController.start()
         Close = function()
             gui.Enabled = false
         end,
+        -- Focus seulement à la manette : la fenêtre s'ouvre d'elle-même à l'arrivée.
+        -- Une sélection imposée au clavier et à la souris figeait un client Studio
+        -- à deux joueurs (essais VM du 2026-11-03) et n'apporte rien sans manette.
         Focus = function()
+            if InputRouter.lastDevice() ~= "Gamepad" then
+                return nil
+            end
             return body:FindFirstChildWhichIsA("GuiButton")
         end,
     })
