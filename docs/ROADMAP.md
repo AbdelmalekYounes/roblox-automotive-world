@@ -86,6 +86,17 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   **NON TESTÉS**.
 - Rapport : `docs/lot-0.6/RAPPORT_LOT_0.6.md` ; architecture : `docs/lot-0.6/ARCHITECTURE_LOT_0.6.md`.
 
+## État du lot 0.7 (branche `feat/ui-gps-social-0.7`, PR brouillon, base : lot 0.6)
+
+- Livré : architecture d'interface commune (gestionnaire d'écrans, raccourcis, focus, conduite), HUD contextuel à
+  trois niveaux, mini-carte, carte interactive, GPS routier avec guidage et recalcul, points d'intérêt issus des
+  registres existants, smartphone tenu en main et ses applications, groupes de huit, invitations, partage de
+  position volontaire et révocable, canaux Roblox officiels, notifications hiérarchisées, accessibilité,
+  localisation FR/EN centralisée, préférences sauvegardées (profil v4).
+- Vérifié : tests Lune des règles pures, contrôles de démarrage Studio ; parcours utilisateur, GPS réel,
+  manette, lisibilité, communications, confidentialité multijoueur et DataStore **NON TESTÉS**.
+- Rapport : `docs/lot-0.7/RAPPORT_LOT_0.7.md` ; architecture : `docs/lot-0.7/ARCHITECTURE_LOT_0.7.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
