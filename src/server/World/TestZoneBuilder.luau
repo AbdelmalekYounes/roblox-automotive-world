@@ -19,6 +19,9 @@ export type TestZone = {
     -- et d'un garage public du monde ouvert.
     Entrance: BasePart,
     PublicGarage: BasePart,
+    -- Lot 0.5 : concession et station-service d'essai (carburant, recharge, lavage).
+    Dealer: BasePart,
+    Station: BasePart,
 }
 
 type PartProps = {
@@ -331,8 +334,32 @@ function TestZoneBuilder.build(): TestZone
     })
     addSign(folder, "Garage public", Vector3.new(-170, 0, 130))
 
+    local dealer = makePart(folder, {
+        Name = "ConcessionEssai",
+        Size = Vector3.new(24, 0.05, 16),
+        CFrame = CFrame.new(-230, 0.03, 120),
+        Color = Color3.fromRGB(230, 200, 60),
+        CanCollide = false,
+    })
+    addSign(folder, "Concession", Vector3.new(-230, 0, 130))
+    local station = makePart(folder, {
+        Name = "StationEssai",
+        Size = Vector3.new(24, 0.05, 16),
+        CFrame = CFrame.new(-290, 0.03, 120),
+        Color = Color3.fromRGB(80, 200, 160),
+        CanCollide = false,
+    })
+    addSign(folder, "Station", Vector3.new(-290, 0, 130))
+
     folder.Parent = Workspace
-    return { Folder = folder, Pads = pads, Entrance = entrance, PublicGarage = garage }
+    return {
+        Folder = folder,
+        Pads = pads,
+        Entrance = entrance,
+        PublicGarage = garage,
+        Dealer = dealer,
+        Station = station,
+    }
 end
 
 return TestZoneBuilder

@@ -37,10 +37,6 @@ ProgressionProtocol.Actions = table.freeze({
     "RevokeInvite",
     "Enter",
     "Exit",
-    "BuyProperty",
-    "SellProperty",
-    "UpgradeGarage",
-    "InstallModule",
 })
 
 -- Actions qui modifient le profil : identifiant de demande obligatoire.

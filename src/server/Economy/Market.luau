@@ -625,6 +625,30 @@ function Market.purchase(ctx: Context, buyerUserId: number, listingId: any, requ
     return state, { TxId = txId }
 end
 
+--[[
+    Bornage du profil (au chargement) : identifiants de transferts appliqués et
+    entrées terminées plus anciens que la rétention (30 jours) retirés. Une
+    entrée encore en cours (fonds réservés, séquestre) n'est jamais retirée.
+]]
+function Market.prune(profile: ProfileSchema.Profile, now: number): boolean
+    local changed = false
+    local retention = ProfileSchema.AppliedRetentionS
+    for txId, at in profile.Applied do
+        if now - at > retention then
+            profile.Applied[txId] = nil
+            changed = true
+        end
+    end
+    for txId, entry in profile.Transfers do
+        local finished = entry.State == "Done" or entry.State == "Refunded"
+        if finished and now - entry.At > retention then
+            profile.Transfers[txId] = nil
+            changed = true
+        end
+    end
+    return changed
+end
+
 -- Transactions en attente pour un joueur (boîte de réception), à reprendre.
 function Market.processInbox(ctx: Context, userId: number): { [string]: string }
     local ok, inbox = read(ctx, Market.inboxKey(userId))

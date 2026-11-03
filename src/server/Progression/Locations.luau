@@ -21,9 +21,14 @@ local Locations = {}
 
 local S = 1 / Constants.MetersPerStud
 
+-- Lot 0.5 : concessions, stations-service, bornes, lavages.
+export type Kind = "Entrance" | "PublicGarage" | "Dealership" | "FuelStation" | "ChargingHub" | "CarWash"
+
 export type Place = {
     Id: string,
-    Kind: "Entrance" | "PublicGarage",
+    Kind: Kind,
+    Pumps: number?,
+    Chargers: number?,
     Label: string,
     Zone: string,
     Frame: CFrame, -- centre au niveau du sol, regard vers la route (studs)
@@ -41,16 +46,23 @@ end
 -- Monde ouvert : entrées (emplacements de propriétés) et trois garages publics.
 function Locations.loadOpenWorld()
     local layout = WorldLayout.get()
-    local wanted: { [string]: "Entrance" | "PublicGarage" } = {}
+    local wanted: { [string]: Kind } = {}
     for _, offer in PropertyCatalog.Offers do
         wanted[offer.Entrance] = "Entrance"
     end
     for _, placement in layout.Placements do
-        if placement.Kind == "PublicGarage" then
-            wanted[placement.Id] = "PublicGarage"
+        local kind = placement.Kind
+        if
+            kind == "PublicGarage"
+            or kind == "Dealership"
+            or kind == "FuelStation"
+            or kind == "ChargingHub"
+            or kind == "CarWash"
+        then
+            wanted[placement.Id] = kind :: Kind
         end
     end
-    for id, kind: "Entrance" | "PublicGarage" in wanted do
+    for id, kind: Kind in wanted do
         local placement = layout.PlacementById[id]
         assert(placement, "Emplacement absent de la carte : " .. id)
         local c = placement.Center
@@ -67,13 +79,15 @@ function Locations.loadOpenWorld()
             Frame = frame,
             Radius = (math.max(placement.Width, placement.Depth) / 2 + 12) * S,
             ExitFrame = frame * CFrame.new(0, 0, -exitOffset),
+            Pumps = placement.Pumps,
+            Chargers = placement.Chargers,
         })
     end
 end
 
 -- Place de développement : deux points de la zone d'essai, alias de tous les lieux.
-function Locations.loadDev(entrance: BasePart, garage: BasePart)
-    local function place(id: string, kind: "Entrance" | "PublicGarage", part: BasePart, label: string)
+function Locations.loadDev(entrance: BasePart, garage: BasePart, dealer: BasePart?, station: BasePart?)
+    local function place(id: string, kind: Kind, part: BasePart, label: string)
         local frame = CFrame.lookAt(part.Position, part.Position + part.CFrame.LookVector * Vector3.new(1, 0, 1))
         register({
             Id = id,
@@ -83,6 +97,8 @@ function Locations.loadDev(entrance: BasePart, garage: BasePart)
             Frame = frame,
             Radius = math.max(part.Size.X, part.Size.Z) / 2 + 30,
             ExitFrame = frame * CFrame.new(0, 0, -(part.Size.Z / 2 + 14)),
+            Pumps = 2,
+            Chargers = 2,
         })
     end
     place("DEV-ENTREE", "Entrance", entrance, "Entrée de propriété (essai)")
@@ -92,6 +108,16 @@ function Locations.loadDev(entrance: BasePart, garage: BasePart)
     end
     for _, id in { "SVC-GARAGE-METRO", "SVC-GARAGE-BANLIEUE", "SVC-GARAGE-DOCKS" } do
         aliases[id] = "DEV-GARAGE"
+    end
+    -- Lot 0.5 : concession et station d'essai (carburant, recharge, lavage).
+    if dealer then
+        place("DEV-CONCESSION", "Dealership", dealer, "Concession (essai)")
+        for _, id in { "SVC-DEALER-METRO", "SVC-DEALER-BANLIEUE" } do
+            aliases[id] = "DEV-CONCESSION"
+        end
+    end
+    if station then
+        place("DEV-STATION", "FuelStation", station, "Station-service (essai)")
     end
 end
 
@@ -116,11 +142,39 @@ function Locations.all(): { Place }
 end
 
 -- Lieu d'un type donné le plus proche d'une position, s'il est dans son rayon.
-function Locations.near(position: Vector3, kind: "Entrance" | "PublicGarage"): Place?
+function Locations.near(position: Vector3, kind: Kind): Place?
     local best: Place? = nil
     local bestDistance = math.huge
     for _, place in places do
         if place.Kind == kind then
+            local offset = position - place.Frame.Position
+            local distance = Vector3.new(offset.X, 0, offset.Z).Magnitude
+            if distance <= place.Radius and distance < bestDistance then
+                best, bestDistance = place, distance
+            end
+        end
+    end
+    return best
+end
+
+-- Lot 0.5 : services d'un lieu (carburant, recharge, lavage).
+function Locations.services(place: Place): { Fuel: boolean, Charge: boolean, Wash: boolean }
+    if place.Id == "DEV-STATION" then
+        return { Fuel = true, Charge = true, Wash = true }
+    end
+    return {
+        Fuel = place.Kind == "FuelStation" and (place.Pumps or 0) > 0,
+        Charge = (place.Kind == "FuelStation" or place.Kind == "ChargingHub") and (place.Chargers or 0) > 0,
+        Wash = place.Kind == "CarWash",
+    }
+end
+
+-- Lieu de service le plus proche offrant au moins un service.
+function Locations.nearService(position: Vector3): Place?
+    local best: Place? = nil
+    local bestDistance = math.huge
+    for _, place in places do
+        if place.Kind == "FuelStation" or place.Kind == "ChargingHub" or place.Kind == "CarWash" then
             local offset = position - place.Frame.Position
             local distance = Vector3.new(offset.X, 0, offset.Z).Magnitude
             if distance <= place.Radius and distance < bestDistance then
