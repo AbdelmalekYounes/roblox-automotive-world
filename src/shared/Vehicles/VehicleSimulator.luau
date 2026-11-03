@@ -126,6 +126,7 @@ function VehicleSimulator.new(model: Model, definition: Types.VehicleDefinition,
             LateralVelocity = 0,
             SurfaceFriction = 1,
             Wet = false,
+            Wetness = 0,
         }
     end
 
@@ -302,6 +303,9 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
     local contactPositions: { Vector3 } = table.create(4)
     local contactAxes: { { Vector3 } } = table.create(4)
     local grounded, wetWheels, queries = 0, 0, 0
+    -- Humidité météo de la chaussée (attribut serveur ; 0 hors monde ouvert).
+    local wetAttribute = workspace:GetAttribute(Constants.RoadWetnessAttribute)
+    local roadWetness = if type(wetAttribute) == "number" then math.clamp(wetAttribute, 0, 1) else 0
     local queryTime = 0
     local tireRadius = definition.Tires.RadiusM
     local useSphere = self.Probe == "Sphere"
@@ -376,7 +380,8 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
             contact.LateralVelocity = pointVelocity:Dot(sideOnGround) * METERS_PER_STUD
             contact.SurfaceFriction = SurfaceFriction.forMaterialName(result.Material.Name)
             contact.Wet = isWet(hitPart)
-            if contact.Wet then
+            contact.Wetness = roadWetness
+            if contact.Wet or roadWetness >= 0.5 then
                 wetWheels += 1
             end
 
@@ -390,6 +395,7 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
             contact.LateralVelocity = 0
             contact.SurfaceFriction = 1
             contact.Wet = false
+            contact.Wetness = 0
         end
     end
 

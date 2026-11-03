@@ -64,6 +64,9 @@ local VehicleConstants = {
 
     -- Attribut d'une pièce de décor : revêtement mouillé (zone d'essai).
     WetSurfaceAttribute = "AWWet",
+    -- Attribut de Workspace : humidité de chaussée due à la météo (0 à 1), écrit
+    -- par le serveur seul (WeatherService, lot 0.3).
+    RoadWetnessAttribute = "AWRoadWetness",
 
     -- Ordre canonique des roues : avant gauche, avant droite, arrière gauche, arrière droite.
     WheelNames = table.freeze({ "FL", "FR", "RL", "RR" }),

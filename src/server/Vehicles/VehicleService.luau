@@ -34,7 +34,6 @@ local NetworkOwnership = require(script.Parent.NetworkOwnership)
 local CollisionMediator = require(script.Parent.CollisionMediator)
 local DamageService = require(script.Parent.DamageService)
 local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
-local TestZoneBuilder = require(script.Parent.Parent.World.TestZoneBuilder)
 local MovementRules = require(script.Parent.Parent.Security.MovementRules)
 local RateLimiter = require(script.Parent.Parent.Security.RateLimiter)
 
@@ -821,7 +820,14 @@ local function onAction(player: Player, action: any, argument: any)
     end
 end
 
-function VehicleService.start(zone: TestZoneBuilder.TestZone)
+-- Plots d'apparition des véhicules : zone d'essai (place de développement) ou
+-- parc des prototypes du monde ouvert (lot 0.3). Un véhicule par plot, dans
+-- l'ordre de VehicleDefinitions.TestFleet.
+export type SpawnSet = {
+    Pads: { BasePart },
+}
+
+function VehicleService.start(zone: SpawnSet)
     assert(not started, "VehicleService déjà démarré")
     started = true
 

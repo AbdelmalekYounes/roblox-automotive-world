@@ -351,9 +351,11 @@ function VehicleDynamics.step(
         if contact.Grounded and normal > 0 then
             local nominal = VehicleDynamics.nominalCornerLoad(definition, wheel.IsFront)
             local surface = contact.SurfaceFriction * condition.CornerGrip[index]
-            if contact.Wet then
-                surface *= tire.WetGripRatio
-            end
+            -- Humidité effective : maximum (jamais produit) entre la surface
+            -- mouillée par conception et la chaussée mouillée par la météo, pour
+            -- n'appliquer la réduction d'adhérence qu'une seule fois.
+            local wetness = math.max(if contact.Wet then 1 else 0, math.clamp(contact.Wetness or 0, 0, 1))
+            surface *= 1 + (tire.WetGripRatio - 1) * wetness
             peakX[index] = TireModel.loadAdjustedFriction(
                 tire.PeakFrictionLongitudinal,
                 normal,
@@ -366,7 +368,8 @@ function VehicleDynamics.step(
                 nominal,
                 tire.LoadSensitivity
             ) * surface * normal
-            sliding[index] = if contact.Wet then tire.WetSlidingFrictionRatio else tire.SlidingFrictionRatio
+            sliding[index] = tire.SlidingFrictionRatio
+                + (tire.WetSlidingFrictionRatio - tire.SlidingFrictionRatio) * wetness
         end
     end
 
