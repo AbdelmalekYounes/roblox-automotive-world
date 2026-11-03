@@ -19,6 +19,8 @@ local FRENCH: { [string]: string } = {
     Locked = "Profil : ouvert sur un autre serveur, réessayez dans un instant",
     ReadOnly = "Profil : lecture seule (aucune modification possible)",
     Lost = "Profil : session remplacée par un autre serveur — reconnectez-vous",
+    Suspended = "Profil : opérations sensibles suspendues (maintenance), rien n'est perdu",
+    WritesSuspended = "Opération suspendue temporairement (maintenance) : rien n'a été modifié.",
     -- Erreurs
     ProfileUnavailable = "Votre profil n'est pas modifiable pour le moment.",
     MenuWhileMoving = "Arrêtez-vous pour utiliser ce menu.",

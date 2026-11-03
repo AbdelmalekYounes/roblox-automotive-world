@@ -49,6 +49,9 @@ export type Options = {
     Migrations: { ProfileMigration.Migration }?,
     -- Préparation d'un profil chargé (normalisation, attributions dues).
     OnLoaded: ((ProfileSchema.Profile, now: number) -> boolean)?,
+    -- Suspension des opérations sensibles (incident, AUD-INC-01) : renvoie la
+    -- raison ou nil. Les sauvegardes ordinaires continuent.
+    Suspended: (() -> string?)?,
 }
 
 export type CommitResult = {
@@ -363,6 +366,10 @@ function ProfileSession.commit(
 ): CommitResult
     if self.State ~= "Active" or self.Data == nil then
         return { Status = "Unavailable", Result = nil, Error = "Profile" .. self.State }
+    end
+    local suspended = self.Options.Suspended and self.Options.Suspended()
+    if suspended then
+        return { Status = "Unavailable", Result = nil, Error = "WritesSuspended" }
     end
     local data = self.Data :: ProfileSchema.Profile
     local previous = TransactionService.previous(data, txId)

@@ -271,6 +271,30 @@ return function(T: any, H: any)
         )
     end)
 
+    T.test("suspension ciblée des opérations sensibles (AUD-INC-01)", function()
+        local reason: string? = "incident"
+        local clock, _, session = harness()
+        local a = session("A", {
+            Suspended = function()
+                return reason
+            end,
+        })
+        a:load()
+        clock.Now += 7
+        local refused = a:commit("C:request-0009", "Test", function()
+            return true, nil
+        end)
+        T.equal(refused.Status, "Unavailable")
+        T.equal(refused.Error, "WritesSuspended")
+        reason = nil
+        T.equal(
+            a:commit("C:request-0009", "Test", function()
+                return true, nil
+            end).Status,
+            "Confirmed"
+        )
+    end)
+
     T.test("verrou rafraîchi périodiquement même sans modification", function()
         local clock, repo, session = harness()
         local a = session("A")

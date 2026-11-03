@@ -54,6 +54,8 @@ local sessions: { [Player]: ProfileSession.Session } = {}
 local loadedCallbacks: { (Player, ProfileSession.Session) -> () } = {}
 local releasingCallbacks: { (Player, ProfileSession.Session) -> () } = {}
 local confirmedCallbacks: { (Player, { string }) -> () } = {}
+-- Suspension des opérations sensibles (AUD-INC-01), décidée côté serveur.
+local suspension: string? = nil
 local log = StructuredLog.new(500, os.time, function(entry)
     if entry.Level ~= "Info" then
         warn(StructuredLog.format(entry))
@@ -112,6 +114,9 @@ local function newSession(player: Player): ProfileSession.Session
         AutosaveInterval = 60,
         OnLoaded = function(profile, now)
             return GarageRules.normalize(profile, now)
+        end,
+        Suspended = function()
+            return suspension
         end,
     })
 end
@@ -274,6 +279,24 @@ function ProfileService.start()
             waited += 0.5
         end
     end)
+end
+
+--[[
+    Suspend (raison) ou rétablit (nil) les opérations sensibles sur ce serveur
+    (incident, AUD-INC-01) : les demandes sont refusées « WritesSuspended »,
+    les sauvegardes ordinaires et la libération des verrous continuent.
+    Usage réservé à l'exploitation (console serveur) ; aucun accès client.
+]]
+function ProfileService.suspendWrites(reason: string?)
+    suspension = reason
+    log:write(
+        if reason then "Warn" else "Info",
+        if reason then "WritesSuspended" else "WritesResumed",
+        { Reason = reason or "" }
+    )
+    for player in sessions do
+        publish(player, if reason then "Suspended" else "Saved")
+    end
 end
 
 -- Marque l'état « en cours d'écriture » visible du client après une mutation.
