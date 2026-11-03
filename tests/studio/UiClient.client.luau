@@ -807,10 +807,15 @@ phase("photo", function()
     local firstKeys = table.concat(stopKeys(), ",")
     local attempts = 1
     if not opened then
-        task.wait(2)
-        Gui.key("O")
+        -- Diagnostic : touche témoin (L), puis O par code virtuel au lieu du code de balayage.
+        task.wait(1)
+        local stopControl = Gui.recordKeys()
+        Gui.key("L")
+        task.wait(0.8)
+        Gui.keyWith("vk", "O")
         attempts = 2
         opened = waitFor(isOpen, 4)
+        firstKeys ..= " | témoin et O (code virtuel) : " .. table.concat(stopControl(), ",")
     end
     record(
         "ui.photo.ouverture_touche_O",
@@ -875,9 +880,12 @@ phase("conduite", function()
     local model: Model? = nil
     if fleet then
         for _, item in fleet:GetChildren() do
+            -- Boîte automatique (P-01) : une boîte manuelle resterait au point mort sans
+            -- passage de rapport (capture 0088 de la tâche 20261103-203223).
             if
                 item:IsA("Model")
                 and item:GetAttribute("DriverUserId") == 0
+                and item:GetAttribute("DefinitionId") == "proto_p01"
                 and item:FindFirstChild("DriverSeat", true)
             then
                 model = item

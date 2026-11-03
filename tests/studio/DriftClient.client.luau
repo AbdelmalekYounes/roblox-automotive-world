@@ -177,11 +177,12 @@ local function driftInput(body: BasePart): any
         return pursue(body, Vector3.new(c.X, body.Position.Y, c.Z), 30)
     end
     if phase == "approach" then
-        if v >= 40 and math.abs(r - RADIUS_M) < 7 and now - phaseSince > 1.5 then
+        -- Lancement dès 32 km/h sur le cercle (la poursuite du cercle plafonne vers 35 km/h).
+        if v >= 32 and math.abs(r - RADIUS_M) < 8 and now - phaseSince > 1.5 then
             setPhase("kick")
             stats.kicks += 1
         end
-        return pursue(body, ahead, 46)
+        return pursue(body, ahead, 55)
     elseif phase == "kick" then
         if now - phaseSince > 0.35 then
             setPhase("hold")

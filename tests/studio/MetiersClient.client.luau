@@ -54,6 +54,8 @@ local progression = (ReplicatedStorage:WaitForChild("AWProgression", 30) :: Inst
     ) :: RemoteFunction
 local client = player:WaitForChild("PlayerScripts"):WaitForChild("AutomotiveWorldClient")
 local VehicleController = require(client:WaitForChild("Vehicles"):WaitForChild("VehicleController", 10)) :: any
+local Gui = require(ReplicatedStorage:WaitForChild("AW_TestGui", 30)) :: any
+local interventions = { Unflip = 0, Reboard = 0, Diagnostics = 0 }
 
 local function call(remote: RemoteFunction, action: string, payload: any?, noRequestId: boolean?): any
     local data = payload or {}
@@ -210,8 +212,59 @@ local function stopHere()
     end, 12)
 end
 
+local board: (Model) -> boolean
+
+-- Véhicule immobile malgré les commandes : relevé de diagnostic (une fois), puis les
+-- gestes d'un joueur, comptés dans le rapport : remise sur roues (R), puis descendre et
+-- remonter (relance la simulation locale du conducteur).
+local function unstick(stuckS: number, state: { [string]: boolean })
+    local model = driving.Model :: Model
+    local body = model.PrimaryPart :: BasePart
+    if stuckS > 12 and not state.Diag then
+        state.Diag = true
+        interventions.Diagnostics += 1
+        local ok, controller = pcall(VehicleController.getTestSnapshot)
+        local below = Workspace:Raycast(body.Position, Vector3.new(0, -12, 0), rayParams)
+        trace("diagnostic d'immobilisation : " .. HttpService:JSONEncode({
+            Snapshot = if ok then controller else tostring(controller),
+            Anchored = body.Anchored,
+            Up = body.CFrame.UpVector.Y,
+            Position = { body.Position.X / S, body.Position.Y / S, body.Position.Z / S },
+            Below = if below then below.Instance:GetFullName() else "rien",
+            Cargo = model:FindFirstChild("ChargementMission") ~= nil,
+        }))
+        Gui.shot("metiers_immobilise_" .. math.floor(body.Position.X / S) .. "_" .. math.floor(body.Position.Z / S), {})
+    end
+    if stuckS > 22 and not state.Unflip then
+        state.Unflip = true
+        interventions.Unflip += 1
+        VehicleController.invokeActionForTest("AWVehicleUnflip")
+    end
+    if stuckS > 35 and not state.Reboard then
+        state.Reboard = true
+        interventions.Reboard += 1
+        local target, kmh = driving.Target, driving.SpeedKmh
+        VehicleController.setTestInputProvider(nil)
+        VehicleController.invokeActionForTest("AWVehicleExit")
+        waitFor(function()
+            return humanoid().SeatPart == nil
+        end, 5)
+        task.wait(1)
+        board(model)
+        driving.Target, driving.SpeedKmh, driving.Hold = target, kmh, false
+    end
+end
+
 -- Conduit jusqu'à un point (m) puis s'arrête. Vrai si atteint dans le délai.
-local function driveTo(point: any, kmh: number, radiusM: number, timeout: number, keepRolling: boolean?): boolean
+-- `acceptM` : distance suffisante si le véhicule est bloqué (rayon réel de l'étape).
+local function driveTo(
+    point: any,
+    kmh: number,
+    radiusM: number,
+    timeout: number,
+    keepRolling: boolean?,
+    acceptM: number?
+): boolean
     if driving.Model == nil then
         return false
     end
@@ -219,7 +272,20 @@ local function driveTo(point: any, kmh: number, radiusM: number, timeout: number
     driving.SpeedKmh = kmh
     driving.Hold = false
     local lastTrace = os.clock()
+    local stillSince: number? = nil
+    local unstickState = {}
     local reached = waitFor(function()
+        if speedKmh(driving.Model) < 2 then
+            stillSince = stillSince or os.clock()
+            local still = os.clock() - (stillSince :: number)
+            -- Bloqué dans le rayon de l'étape : on s'arrête là, comme un joueur.
+            if acceptM and flatDistanceM(point) < acceptM and still > 2 then
+                return true
+            end
+            unstick(still, unstickState)
+        else
+            stillSince = nil
+        end
         if os.clock() - lastTrace > 5 then
             lastTrace = os.clock()
             local body = (driving.Model :: Model).PrimaryPart
@@ -251,7 +317,7 @@ local function seatedIn(model: Model): boolean
 end
 
 -- Embarquement par l'invite (activée par script, comme lors des campagnes 0.9).
-local function board(model: Model): boolean
+function board(model: Model): boolean
     local body = model.PrimaryPart
     local door = body and body:FindFirstChild("DriverDoor")
     local prompt = door and door:FindFirstChild("EnterPrompt") :: ProximityPrompt?
@@ -344,7 +410,7 @@ local function runStep(m: any, job: string): string
     if kind == "Stop" then
         -- Panne : arrêt à distance de la maquette (ancrée sur le point).
         local within = if m.Label == "Rejoindre le véhicule en panne" then 9 else radius * 0.45
-        driveTo(point, 45, within, 150)
+        driveTo(point, 45, within, 150, nil, radius * 0.9)
         stepChanged(index, hold + 6)
     elseif kind == "Pass" then
         local slow = job == "Precision"
@@ -543,6 +609,7 @@ local function main()
         task.wait(11)
     end
     record("metiers.bilan_huit_metiers", completed == 8, completed .. " / 8 terminés et payés")
+    record("metiers.info_interventions_du_pilote", true, HttpService:JSONEncode(interventions))
 end
 
 local ok, err = xpcall(main, debug.traceback)

@@ -397,6 +397,12 @@ function Gui.key(key: string, holdMs: number?)
     note("key", { id = id, key = key, hold = holdMs or 60, mode = keyMode })
 end
 
+-- Appui forcé dans un mode donné (« vk » ou « scan ») : diagnostic.
+function Gui.keyWith(mode: string, key: string, holdMs: number?)
+    local id = if mode == "scan" then send("skey", scanOf(key), holdMs or 60) else send("key", vkOf(key), holdMs or 60)
+    note("key", { id = id, key = key, hold = holdMs or 60, mode = mode })
+end
+
 function Gui.keyDown(key: string)
     local id = if keyMode == "scan" then send("sdown", scanOf(key)) else send("down", vkOf(key))
     note("down", { id = id, key = key, mode = keyMode })
