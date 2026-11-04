@@ -126,7 +126,10 @@ if session == "avatar2" then
         record("avatar2.observateur.telephone_du_porteur_visible", seen)
         task.wait(1.5) -- montée progressive du bras (0,25 s) et animation
         local angle = if model then armAngle(model) else nil
-        local toHand, front = if model then phonePlacement(model) else nil, nil
+        local toHand, front = nil, nil
+        if model then
+            toHand, front = phonePlacement(model)
+        end
         record(
             "avatar2.observateur.bras_du_porteur_leve",
             angle ~= nil and (angle :: number) >= 30,
@@ -151,13 +154,25 @@ end
 local Gui = require(ReplicatedStorage:WaitForChild("AW_TestGui", 30)) :: any
 local askEvent = ReplicatedStorage:WaitForChild("AWAvatarAsk", 30) :: RemoteEvent
 
--- Caméra imposée pour une capture (au-dessus de tout script de caméra).
+-- Caméra imposée pour une capture. Au volant, le contrôleur du véhicule replace la caméra
+-- à chaque image (`PreRender`, tâche 20261104-104818 : captures extérieures restées en vue
+-- capot) : cadrage réimposé à chaque étape de rendu et à chaque changement.
 local function withView(view: CFrame, fn: () -> ())
     RunService:BindToRenderStep("AWAvatarShot", Enum.RenderPriority.Last.Value + 10, function()
         camera.CFrame = view
     end)
-    task.wait(0.4)
+    local preRender = RunService.PreRender:Connect(function()
+        camera.CFrame = view
+    end)
+    local changed = camera:GetPropertyChangedSignal("CFrame"):Connect(function()
+        if camera.CFrame ~= view then
+            camera.CFrame = view
+        end
+    end)
+    task.wait(0.5)
     fn()
+    changed:Disconnect()
+    preRender:Disconnect()
     RunService:UnbindFromRenderStep("AWAvatarShot")
 end
 
@@ -280,6 +295,7 @@ handlers.standing = function(_id, data)
         record("avatar.client." .. morph .. ".personnage", false)
         return
     end
+    task.wait(1) -- personnage reconstruit et posé
     local start = root.Position
     Gui.keyDown("W")
     task.wait(0.9)
@@ -442,12 +458,9 @@ while not finished and os.clock() - sessionStart < 3300 do
     signal(id)
 end
 
-for _, shot in Gui.report().shots do
-    record(
-        "avatar.capture." .. shot.name,
-        true,
-        string.format("(%d, %d, %d) st, %s", shot.x, shot.y, shot.z, tostring(shot.context))
-    )
-end
-measures.captures = #Gui.report().shots
-reportEvent:FireServer({ vehicle = "avatar", steps = steps, measures = measures, gui = Gui.report() })
+-- Rapport compact (ligne de résultat tronquée par Studio au-delà de 100 000 caractères) :
+-- captures comptées ; noms et contextes dans le dossier des captures.
+local shots = Gui.report().shots
+record("avatar.client.captures", #shots > 0, #shots)
+measures.captures = #shots
+reportEvent:FireServer({ vehicle = "avatar", steps = steps, measures = measures })

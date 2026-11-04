@@ -311,19 +311,32 @@ local function applyMorph(player: Player, morph: Morph): (boolean, string)
     for _, prop in morph.Props do
         addProp(humanoid, prop)
     end
-    task.wait(0.6)
+    -- Pose stabilisée avant la mesure (reconstruction du personnage, animation d'attente).
+    task.wait(1.6)
     local applied = humanoid:GetAppliedDescription()
-    local size = character:GetExtentsSize()
+    -- Hauteur du corps (pieds → sommet de la tête, sans accessoire) et hors tout.
+    local bodyTop, bodyBottom, allTop = -math.huge, math.huge, -math.huge
+    for _, part in character:GetDescendants() do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local top = part.Position.Y + part.Size.Y / 2
+            allTop = math.max(allTop, top)
+            if part:FindFirstAncestorOfClass("Accessory") == nil then
+                bodyTop = math.max(bodyTop, top)
+                bodyBottom = math.min(bodyBottom, part.Position.Y - part.Size.Y / 2)
+            end
+        end
+    end
     return true,
         string.format(
-            "échelles lues H %.2f L %.2f P %.2f T %.2f corps %.2f prop. %.2f ; hauteur totale %.2f st, HipHeight %.2f",
+            "échelles lues H %.2f L %.2f P %.2f T %.2f corps %.2f prop. %.2f ; corps %.2f st, hors tout %.2f st, HipHeight %.2f",
             applied.HeightScale,
             applied.WidthScale,
             applied.DepthScale,
             applied.HeadScale,
             applied.BodyTypeScale,
             applied.ProportionScale,
-            size.Y,
+            bodyTop - bodyBottom,
+            allTop - bodyBottom,
             humanoid.HipHeight
         )
 end
@@ -383,7 +396,7 @@ local function measureSeated(model: Model, seat: Seat, character: Model): Seated
     local root = model.PrimaryPart :: BasePart
     local frame = root.CFrame
     local result: Seated = {}
-    local top, sideMax = -math.huge, 0
+    local top, bodyTop, sideMax = -math.huge, -math.huge, 0
     local feetMin = math.huge
     local legs: { { Name: string, Min: Vector3, Max: Vector3 } } = {}
     local charMass = 0
@@ -392,6 +405,9 @@ local function measureSeated(model: Model, seat: Seat, character: Model): Seated
             local minV, maxV = localBounds(part, frame)
             top = math.max(top, maxV.Y)
             local accessory = part:FindFirstAncestorOfClass("Accessory")
+            if accessory == nil then
+                bodyTop = math.max(bodyTop, maxV.Y) -- tête sans cheveux ni chapeau
+            end
             if accessory == nil or accessory:GetAttribute("AWTestProp") == nil then
                 -- Côtés : corps et accessoires du joueur (les accessoires d'essai géants
                 -- du dos dépassent par construction ; mesurés à part).
@@ -409,9 +425,16 @@ local function measureSeated(model: Model, seat: Seat, character: Model): Seated
         end
     end
     result.TopY = top
+    result.BodyTopY = bodyTop
     result.CharacterMass = charMass
     -- Pavillon, coque, intérieur.
-    local roofs = partsNamed(model, { Toit = true })
+    -- Pavillon réel seulement (le roadster porte un repère « Toit » de 0,1 st à la ceinture).
+    local roofs = {}
+    for _, part in partsNamed(model, { Toit = true }) do
+        if part.Size.X > 1 and part.Size.Z > 1 then
+            table.insert(roofs, part)
+        end
+    end
     if #roofs > 0 then
         local roofMin, roofMax = math.huge, -math.huge
         for _, part in roofs do
@@ -419,15 +442,23 @@ local function measureSeated(model: Model, seat: Seat, character: Model): Seated
             roofMin = math.min(roofMin, minV.Y)
             roofMax = math.max(roofMax, maxV.Y)
         end
-        result.RoofMargin = roofMin - top -- > 0 : dégagement sous le pavillon
+        result.RoofMargin = roofMin - top -- > 0 : dégagement sous le pavillon (accessoires compris)
+        result.RoofMarginBody = roofMin - bodyTop -- même mesure, tête seule
         result.ThroughRoof = top > roofMax
     end
-    local hulls = partsNamed(model, { Coque = true })
-    if #hulls > 0 then
-        local minV, maxV = localBounds(hulls[1], frame)
-        local half = math.max(math.abs(minV.X), math.abs(maxV.X))
+    -- Enveloppe de la carrosserie (rétroviseurs exclus) : flancs et dessous de caisse.
+    local body = model:FindFirstChild("Carrosserie")
+    if body then
+        local half, bottom = 0, math.huge
+        for _, part in body:GetDescendants() do
+            if part:IsA("BasePart") and part.Transparency < 1 and part.Name ~= "Retroviseur" then
+                local minV, maxV = localBounds(part, frame)
+                half = math.max(half, math.abs(minV.X), math.abs(maxV.X))
+                bottom = math.min(bottom, minV.Y)
+            end
+        end
         result.SideMargin = half - sideMax -- > 0 : rien ne dépasse des flancs
-        result.FloorMargin = feetMin - minV.Y -- > 0 : pieds au-dessus du dessous de caisse
+        result.FloorMargin = feetMin - bottom -- > 0 : pieds au-dessus du dessous de caisse
     end
     local seatTop = frame:PointToObjectSpace((seat.CFrame * CFrame.new(0, seat.Size.Y / 2, 0)).Position).Y
     local lower = character:FindFirstChild("LowerTorso")
@@ -624,9 +655,11 @@ local function readSetting(name: string): any
     end)
     return if ok then value else "illisible"
 end
+-- Tâche 20261104-104818 : GameSettingsAvatar n'est pas lisible par script ; le réglage est
+-- contrôlé dans la place construite (Lune) et par le squelette constaté ci-dessous.
 record(
-    "avatar.reglage.place_r15",
-    readSetting("GameSettingsAvatar") == Enum.GameAvatarType.R15,
+    "avatar.reglage.info_place",
+    true,
     string.format(
         "GameSettingsAvatar %s, LoadCharacterAppearance %s, AvatarJointUpgrade %s",
         tostring(readSetting("GameSettingsAvatar")),
@@ -897,8 +930,10 @@ end
 standUp(player)
 despawn()
 
--- 4. Bilan par véhicule et par siège (critères dans le repère du véhicule, studs).
-local ROOF_MIN = 0 -- tête et accessoires sous le pavillon
+-- 4. Bilan par véhicule et par siège (critères dans le repère du véhicule, studs). Détail
+-- COMPACT (morphologies en échec seulement) : la sortie de Studio tronque une ligne de
+-- résultat au-delà de 100 000 caractères (tâche 20261104-104818) ; les valeurs complètes
+-- sont dans le journal « @@AWAVATAR@@ ».
 local SEAT_MAX = 0.6 -- enfoncement du bassin dans l'assise au plus (≈ 17 cm)
 local INTERIOR_MAX = 0.5 -- recouvrement jambes / planche de bord au plus (≈ 14 cm)
 local function fmt(value: number?): string
@@ -910,6 +945,51 @@ for modelId in results do
 end
 table.sort(vehicles)
 local seatedTotal, seatedOk = 0, 0
+type Criterion = { Key: string, Field: string, Bad: (number) -> boolean }
+local CRITERIA: { Criterion } = {
+    {
+        Key = "tete_sous_le_pavillon",
+        Field = "RoofMarginBody",
+        Bad = function(v: number): boolean
+            return v < 0
+        end,
+    },
+    {
+        Key = "accessoires_sous_le_pavillon",
+        Field = "RoofMargin",
+        Bad = function(v: number): boolean
+            return v < 0
+        end,
+    },
+    {
+        Key = "assise_sans_enfoncement_excessif",
+        Field = "SeatPenetration",
+        Bad = function(v: number): boolean
+            return v > SEAT_MAX
+        end,
+    },
+    {
+        Key = "rien_ne_traverse_les_flancs",
+        Field = "SideMargin",
+        Bad = function(v: number): boolean
+            return v < 0
+        end,
+    },
+    {
+        Key = "pieds_dans_l_habitacle",
+        Field = "FloorMargin",
+        Bad = function(v: number): boolean
+            return v < 0
+        end,
+    },
+    {
+        Key = "jambes_et_planche_de_bord",
+        Field = "InteriorOverlap",
+        Bad = function(v: number): boolean
+            return v > INTERIOR_MAX
+        end,
+    },
+}
 for _, modelId in vehicles do
     for _, key in { "conducteur", "passager" } do
         local byMorph = results[modelId][key]
@@ -921,100 +1001,46 @@ for _, modelId in vehicles do
             table.insert(ids, id)
         end
         table.sort(ids)
-        local seatedList, roof, seatPen, side, floor, interior, hands = {}, {}, {}, {}, {}, {}, {}
-        local okSeated, okRoof, okSeat, okSide, okFloor, okInterior = true, true, true, true, true, true
-        local hasRoof = false
-        for _, id in ids do
-            local data = byMorph[id]
-            seatedTotal += 1
-            if not data.Seated then
-                okSeated = false
-                table.insert(seatedList, id .. " non assis")
-                continue
-            end
-            seatedOk += 1
-            if data.RoofMargin ~= nil then
-                hasRoof = true
-                if data.RoofMargin < ROOF_MIN then
-                    okRoof = false
-                end
-                table.insert(
-                    roof,
-                    string.format("%s %s%s", id, fmt(data.RoofMargin), if data.ThroughRoof then " TRAVERSE" else "")
-                )
-            end
-            if (data.SeatPenetration or 0) > SEAT_MAX then
-                okSeat = false
-            end
-            table.insert(seatPen, id .. " " .. fmt(data.SeatPenetration))
-            if (data.SideMargin or 1) < 0 then
-                okSide = false
-            end
-            table.insert(side, id .. " " .. fmt(data.SideMargin))
-            if (data.FloorMargin or 1) < -0.1 then
-                okFloor = false
-            end
-            table.insert(floor, id .. " " .. fmt(data.FloorMargin))
-            if (data.InteriorOverlap or 0) > INTERIOR_MAX then
-                okInterior = false
-            end
-            table.insert(
-                interior,
-                string.format(
-                    "%s %s%s",
-                    id,
-                    fmt(data.InteriorOverlap),
-                    if data.InteriorPair ~= "" then " (" .. data.InteriorPair .. ")" else ""
-                )
-            )
-            if data.HandsToWheel then
-                table.insert(hands, id .. " " .. fmt(data.HandsToWheel))
-            end
-        end
         local prefix = string.format("avatar.%s.%s.", modelId, key)
-        record(
-            prefix .. "assise",
-            okSeated,
-            #ids .. " morphologie(s)" .. (if #seatedList > 0 then " ; " .. table.concat(seatedList, ", ") else "")
-        )
-        if hasRoof then
-            record(prefix .. "sous_le_pavillon", okRoof, "dégagement (st) : " .. table.concat(roof, " / "))
-        else
-            record(prefix .. "info_sans_pavillon", true, "véhicule ouvert")
+        local notSeated = {}
+        for _, id in ids do
+            seatedTotal += 1
+            if byMorph[id].Seated then
+                seatedOk += 1
+            else
+                table.insert(notSeated, id)
+            end
         end
-        record(
-            prefix .. "assise_sans_enfoncement_excessif",
-            okSeat,
-            "bassin dans l'assise (st, max 0,6) : " .. table.concat(seatPen, " / ")
-        )
-        record(prefix .. "rien_ne_traverse_les_flancs", okSide, "marge aux flancs (st) : " .. table.concat(side, " / "))
-        record(
-            prefix .. "pieds_dans_l_habitacle",
-            okFloor,
-            "pieds au-dessus du dessous de caisse (st) : " .. table.concat(floor, " / ")
-        )
-        record(
-            prefix .. "jambes_et_planche_de_bord",
-            okInterior,
-            "recouvrement (st, max 0,5) : " .. table.concat(interior, " / ")
-        )
-        if #hands > 0 then
-            record(
-                prefix .. "info_mains_au_volant",
-                true,
-                "main la plus éloignée du centre du volant (st) : " .. table.concat(hands, " / ")
-            )
+        record(prefix .. "assise", #notSeated == 0, #ids .. " morph. ; non assis : " .. table.concat(notSeated, ","))
+        for _, criterion in CRITERIA do
+            local failing, measured = {}, 0
+            for _, id in ids do
+                local value = byMorph[id][criterion.Field]
+                if byMorph[id].Seated and type(value) == "number" then
+                    measured += 1
+                    if criterion.Bad(value) then
+                        table.insert(failing, id .. " " .. fmt(value))
+                    end
+                end
+            end
+            if measured > 0 then
+                record(prefix .. criterion.Key, #failing == 0, table.concat(failing, " / "))
+            end
         end
     end
 end
 for key, list in exits do
-    local ok = true
+    local failing = {}
     for _, entry in list do
         if string.find(entry, "ÉCHEC", 1, true) then
-            ok = false
+            table.insert(failing, (string.gsub(entry, " ÉCHEC", "")))
         end
     end
-    record("avatar." .. key .. ".sorties", ok, table.concat(list, " / "))
+    record(
+        "avatar." .. key .. ".sorties",
+        #failing == 0,
+        #list .. " essai(s) ; échecs : " .. table.concat(failing, ",")
+    )
 end
 record("avatar.bilan.assises", seatedOk == seatedTotal, string.format("%d / %d", seatedOk, seatedTotal))
 -- Masse du personnage assis comptée dans l'ensemble du véhicule (forces rapportées à cette
@@ -1025,17 +1051,7 @@ for _, modelId in SAMPLE do
     for _, id in { "M2", "M4" } do
         local data = byMorph and byMorph[id]
         if data and data.Seated and data.MassBefore then
-            table.insert(
-                massNotes,
-                string.format(
-                    "%s %s : véhicule %.0f → %.0f, personnage %.1f",
-                    modelId,
-                    id,
-                    data.MassBefore,
-                    data.AssemblyMass,
-                    data.CharacterMass
-                )
-            )
+            table.insert(massNotes, string.format("%s %s %.0f→%.0f", modelId, id, data.MassBefore, data.AssemblyMass))
         end
     end
 end
