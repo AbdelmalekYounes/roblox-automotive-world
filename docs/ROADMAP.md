@@ -141,7 +141,7 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 
 - Stabilisation finale avant la V1.0, essais Studio dans la VM uniquement, sans publication ni DataStore réel.
 - Corrigé : **QA-A08** (cause : couple du convertisseur sans borne de stabilité, `ebe4714`) ; **QA-A12** moteur calé
-  sans relance sur boîte automatique (`5805636`, règle à arbitrer) ; **QA-A10** bras du téléphone sur le squelette R15
+  sans relance sur boîte automatique (`5805636`, règle validée par le propriétaire le 2026-11-04) ; **QA-A10** bras du téléphone sur le squelette R15
   à contraintes (`000045c`) ; focus de navigation seulement à la manette (`9b8b052`).
 - **QA-A09** expliquée : erreur du scénario de test (poteaux du portique du drag), tests corrigés, 24 virages sur 24.
 - GPS : Montagnes et Motorsport atteints en conduite réelle, recalcul après sortie d'itinéraire ; 5 zones sur 7

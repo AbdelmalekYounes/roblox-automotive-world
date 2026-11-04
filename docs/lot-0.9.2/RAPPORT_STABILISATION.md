@@ -251,9 +251,9 @@ Aucun échec n'est classé « dépendance externe ». Aucun échec n'a été ré
 - **QA-A11 (nouveau, P2)** : véhicule conduit percuté qui se retourne sous latence (une occurrence) ; cause non
   établie ; à reproduire avant toute correction.
 - **Mécanisme exact du calage de P-01** en jeu : non reproduit hors moteur (§3.2) ; la relance corrige le blocage.
-- **Règle de relance à arbitrer** : le démarreur tourne quand le conducteur d'une boîte sans pédale d'embrayage
-  relâche l'accélérateur (§3.3). C'est une règle de jeu introduite pour corriger un blocage ; le propriétaire décide
-  si elle convient ou s'il préfère une commande explicite.
+- **Règle de relance — validée par le propriétaire le 2026-11-04** : le démarreur tourne quand le conducteur d'une
+  boîte sans pédale d'embrayage relâche l'accélérateur (§3.3), sans commande explicite. Ressenti en jeu par un humain :
+  NON TESTÉ.
 - QA-A10 vu par un autre joueur et avec un avatar R6 : NON TESTÉ.
 - GPS : Métropole et Campagne non atteintes sur le code de ce lot ; pilote GPS encore sujet aux blocages.
 - Pilote de course du circuit d'essai : bute sur le portique au 2ᵉ tour (défaut du test, non corrigé).
