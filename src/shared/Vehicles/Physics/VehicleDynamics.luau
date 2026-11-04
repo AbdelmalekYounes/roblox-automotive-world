@@ -321,6 +321,15 @@ function VehicleDynamics.numericResets(): number
     return numericResets
 end
 
+-- Lot 0.9.2 : nombre de sous-pas où la borne de stabilité du convertisseur a agi (QA-A08).
+local converterLimits = 0
+-- Borne : après un sous-pas, l'écart pompe/turbine peut changer de signe (dépassement que le
+-- schéma explicite faisait déjà) mais son amplitude ne peut pas croître (facteur < 2).
+VehicleDynamics.ConverterStabilityFactor = 1.8
+function VehicleDynamics.converterLimits(): number
+    return converterLimits
+end
+
 local function sanitize(state: Types.VehicleRuntimeState, contacts: { Types.WheelContact }): { Types.WheelContact }
     local reset = false
     for _, wheel in state.Wheels do
@@ -566,6 +575,32 @@ function VehicleDynamics.step(
             end
         elseif mode == "Converter" and converter then
             local pump, turbine = Transmission.converterTorques(converter, stallTorque, omegaE, inputOmega)
+            -- Lot 0.9.2 (QA-A08, cause) : le couple hydraulique croît comme le carré des
+            -- vitesses ; intégré explicitement, il pouvait, en un sous-pas, dépasser
+            -- l'écart pompe/turbine qu'il réduit et l'inverser en l'amplifiant (roues
+            -- motrices lancées, véhicule plaqué, moteur qui cale : 10³ → 10⁶⁶ rad/s → NaN).
+            -- Borne de stabilité : le couple ne peut qu'annuler l'écart dans le sous-pas
+            -- (inertie du moteur d'un côté, des roues motrices ramenée par le rapport de
+            -- l'autre). Inactive en fonctionnement normal (le pas explicite y reste stable).
+            local slip = omegaE - inputOmega
+            if pump ~= 0 and overall ~= 0 then
+                local drivenInertia = 0
+                for _, wheel in state.Wheels do
+                    if wheel.DriveShare > 0 then
+                        drivenInertia += tire.WheelInertiaKgM2
+                    end
+                end
+                local ratio = math.max(turbine / pump, 1)
+                local inverseInertia = 1 / engineInertia
+                    + overall * overall * transmission.Efficiency * ratio / math.max(drivenInertia, 1e-3)
+                local limit = VehicleDynamics.ConverterStabilityFactor * math.abs(slip) / (h * inverseInertia)
+                if math.abs(pump) > limit then
+                    local scale = limit / math.abs(pump)
+                    pump *= scale
+                    turbine *= scale
+                    converterLimits += 1
+                end
+            end
             state.EngineOmega = math.max(0, omegaE + h * (torque - pump) / engineInertia)
             shaftTorque = turbine
         end
