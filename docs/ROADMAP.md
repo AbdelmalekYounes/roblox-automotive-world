@@ -202,6 +202,14 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   réelles (1,47 m). Blockout de reproduction fait, à valider (`docs/vehicle-3d/ASTER_02_REPRODUCTION.md`) ; contrôles
   13/15 : ciel de toit et têtes en échec, conséquence de la hauteur réelle (habitacle et VM à reprendre) ; passes HF à
   rejouer après validation.
+- **ASTER-02 suspendu par le propriétaire le 2026-11-04** (« aster on abandonne pour l'instant »). Rien n'est intégré ; le
+  travail est conservé (dessins « Trait » et « reproduction », outils, étalonnage terminé). La branche porte aussi
+  l'essai de la Comète (modèle tiers 720s) et l'étalonnage, repris par le lot suivant.
+
+## VEH3D-01 — intégration de la Comète 3D (branche `feat/veh3d-01-comete`, base : ASTER-02)
+
+- Lot ouvert le 2026-11-04 à la demande du propriétaire, ASTER-02 étant suspendu. Plan :
+  `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. En attente du modèle envoyé sur Roblox par le propriétaire.
 
 ## Critères de passage du socle 0.0.1
 

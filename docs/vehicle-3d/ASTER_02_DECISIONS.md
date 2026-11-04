@@ -155,6 +155,16 @@ n'a été fait.
 | Conséquence | Modèles **repris de jeux vidéo commerciaux ou d'un configurateur de constructeur**. La licence CC BY-NC-SA affichée ne peut pas venir de l'ayant droit, et l'absence de monétisation n'y change rien. **Non retenus** (CLAUDE.md : aucun emprunt de modèle ni actif non inspecté) |
 | McLaren 720s (exception accordée : « Tester la 720s », registre `MODELES_TIERS.md`) | L'auteur déclare l'avoir modélisée lui-même (« Modelled in Blender, textures made in Photoshop »). Seul candidat recevable, sous réserve d'une **exception du propriétaire** à la règle d'emprunt, d'une inspection du fichier (logos, contenu) et du crédit exigé par CC BY |
 
+## 4 quater. Suspension d'ASTER-02 (2026-11-04)
+
+Décision du propriétaire : « non aster on abandonne pour l'instant », en réponse au choix entre clôturer ASTER-02 et
+ouvrir en parallèle le lot d'intégration de la Comète.
+- ASTER-02 est **suspendu**, non clôturé : la PR n'est pas fusionnée et rien n'est intégré au jeu.
+- Le travail reste dans la branche et dans le dépôt d'art : blockout « Trait » validé et passes HF1 à HF4 ; blockout
+  « reproduction » à valider ; étalonnage terminé.
+- Le lot d'intégration de la Comète (VEH3D-01) part de cette branche, qui porte l'essai de la 720s et les outils.
+- Le propriétaire accorde ainsi l'exception à la règle « un lot clôturé avant le suivant ».
+
 ## 5. Rappel des autres points ouverts
 
 - Corps par défaut avant le choix du joueur : masculin, provisoire (à confirmer).
