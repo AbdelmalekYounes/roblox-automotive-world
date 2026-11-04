@@ -8,7 +8,7 @@ branche `feat/aster-phase1`). Références : `SPECIFICATION_MODELES_3D.md` (cont
 Repère : studs (1 st = 0,28 m), repère du véhicule du jeu (origine au centre du châssis, avant vers −Z, haut +Y,
 droite +X, sol à y −1,786). Dans Blender : x → x, y → z, z → −y (1 unité = 1 stud).
 
-## 1. Entrées (dépôt d'art privé, commits `edb57fc` et `254c94f`)
+## 1. Entrées (dépôt d'art privé)
 
 | Fichier | Contenu |
 |---|---|
@@ -17,7 +17,24 @@ droite +X, sol à y −1,786). Dans Blender : x → x, y → z, z → −y (1 un
 | `vehicles/wk_aster/ref-sheets/aster_trait_{profil,face}.{svg,png}` | Esquisses techniques « Trait » sur le gabarit final |
 | `vehicles/wk_aster/ref-sheets/aster_habitacle_coupe.{svg,png}` | Coupe d'habitacle avec têtes, mains et pointes de pied mesurées (10 morphologies) |
 | `vehicles/wk_aster/ref-sheets/mesures_vm_20261104-181108.jsonl` | Mesures brutes de la session VM `aster` |
-| `calibration/temoins_*.fbx`, `temoins.glb` | Témoins d'échelle : **relevé dans Studio à faire par le propriétaire** (§8) |
+| `calibration/temoins_*.fbx`, `temoins.glb` | Témoins d'échelle : **relevé dans Studio à faire par le propriétaire** (§8), procédure dans `calibration/README.md` |
+
+Vérification du dépôt d'art (2026-11-04, préparation d'ASTER-02) :
+- dépôt local et distant au même commit ;
+- binaires suivis par Git LFS, envoi signalé par `git push` ;
+- scène `wk_aster.blend` ouverte dans Blender 4.5.9 sans interface : 23 blocs du gabarit en fil de fer et
+  verrouillés, plancher à −1,30, volant incliné, pavillon à 4,56 ;
+- repères `SeatDriver`, `SeatPassenger`, `CameraCockpit`, `ExitLeft` et `ExitRight` présents ;
+- témoins d'étalonnage réimportés dans Blender (dimensions dans `calibration/README.md`) ;
+- esquisses PNG regardées.
+
+Deux défauts corrigés dans la scène lors de cette vérification :
+- les repères de sortie s'appelaient `ExitLeft.001` et `ExitRight.001`, à cause des blocs homonymes du gabarit ; ces
+  blocs sont désormais préfixés `GAB_` ;
+- `CameraCockpit` est recalé selon la règle du jeu (§3).
+
+Non inspecté : le rendu des fichiers SVG dans un navigateur ; l'ouverture de la scène dans l'interface graphique de
+Blender.
 
 Cotes du gabarit final (mesurées en VM, tâche `20261104-181108`, deux corps humains retenus, pose du jeu) :
 
@@ -62,7 +79,7 @@ MeshPart), vitrage, caoutchouc, plastique, chrome, éclairage ; textures origina
 | Roues (centres de moyeu) | AvG (−2,714 ; −0,661 ; −3,743), AvD (+2,714 ; −0,661 ; −3,743), ArG (−2,750 ; −0,661 ; +5,614), ArD (+2,750 ; −0,661 ; +5,614) ; rayon 1,125, largeur 0,732 | Issus de `VehicleDynamics.wheelLayout` ; tolérance ±0,05 st ; animées localement (`Motor6D.Transform`) |
 | `DriverSeat` | dessus d'assise (−1,40 ; −0,04 ; 2,42) | Objet `Seat` du jeu ; attribut **`AWSeatPose = "Conduite"` obligatoire** (§5) |
 | `PassengerSeat` | (+1,40 ; −0,04 ; 2,42) | `AWSeatPose = "Passager"` obligatoire |
-| `CameraCockpit` | (−1,40 ; 2,14 ; 2,96) | Yeux du conducteur moyen (H3, tâche `20261104-181108`) |
+| `CameraCockpit` | (−1,40 ; 2,24 ; 2,07) | Règle du jeu `CockpitGeometry.eyeY` : haut du volant 10° sous la ligne de visée, avatar masqué (vérifié avec le module du jeu, `ASTER_02_DECISIONS.md` §1) |
 | `CameraHood`, `CameraBumper` | à placer sur le modèle (capot, bouclier) | Comme aujourd'hui |
 | `ExitLeft`, `ExitRight` | (∓4,68 ; −1,69 ; 2,42) | Au sol, hors carrosserie ; nouveau (le placement du passager reste lié à QA-A15) |
 | Volant | pivot au centre (−1,40 ; 1,52 ; 1,10), axe de colonne incliné de 15° | Rotation visuelle locale (proposition) |
@@ -125,8 +142,8 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
 |---|---|---|
 | 1 | Valider le **plancher abaissé** (−1,30 st, bas de caisse à 0,39 st du sol) | **Validé par le propriétaire** (« Je valide », 2026-11-04) |
 | 2 | Relever l'étalonnage Blender → Studio (§6.1) | **À faire par le propriétaire** |
-| 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : accepter, ou pose adaptée à la taille | **À arbitrer** |
+| 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : sans effet sur la vue de conduite | **À arbitrer** — recommandation : accepter (`ASTER_02_DECISIONS.md` §1) |
 | 4 | Corps par défaut avant le choix du joueur (masculin, provisoire) | À confirmer |
-| 5 | Couleurs de peau du joueur conservées (ruptures visibles, captures de la clôture) | À arbitrer |
-| 6 | Hauteur sous pavillon : 4,60 st conservés ou ≈ 4,00 st (cheveux au plus haut : assise + 3,76 en pose standard) | À arbitrer |
-| 7 | D7, largeur : marges positives avec les deux corps (≥ 0,21 st) | À confirmer comme sans objet |
+| 5 | Couleurs de peau du joueur (ruptures visibles, captures de la clôture) | **À arbitrer** — recommandation : unifier sur la couleur de la tête (§3) |
+| 6 | Hauteur sous pavillon : 4,60 st conservés ou réduite | **À arbitrer** — recommandation : 4,20 st, hors tout 1,72 m (§2) |
+| 7 | D7, largeur : marges positives avec les deux corps (≥ 0,21 st) | À confirmer comme sans objet ; budgets de garnitures (§4) |

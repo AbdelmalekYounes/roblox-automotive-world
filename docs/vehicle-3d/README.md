@@ -15,6 +15,7 @@ d'actif, aucune modification de la physique ni des carrosseries provisoires** ; 
 | [PLAN_PRODUCTION_18_VEHICULES.md](PLAN_PRODUCTION_18_VEHICULES.md) | Phases, familles, décisions D1 à D6, risques |
 | [ASTER_PHASE1_CLOTURE.md](ASTER_PHASE1_CLOTURE.md) | Clôture de la phase 1 : essais par vrais clics, file d'application, anomalies, recommandation |
 | [ASTER_02_LANCEMENT.md](ASTER_02_LANCEMENT.md) | Dossier de lancement de la modélisation de l'Aster (non lancée) |
+| [ASTER_02_DECISIONS.md](ASTER_02_DECISIONS.md) | Recommandations chiffrées : pose (H5), hauteur du toit, couleurs du personnage, marges de l'habitacle |
 | [ASTER_PHASE1.md](ASTER_PHASE1.md) | Phase 1 de l'Aster : pose assise du jeu, gabarit mesuré en VM, avatars humains (deux corps au choix), étalonnage |
 
 Décisions prises (2026-11-04) : direction **A « Trait »** pour l'Aster ; D1 habitacle **« échelle Roblox + assise
