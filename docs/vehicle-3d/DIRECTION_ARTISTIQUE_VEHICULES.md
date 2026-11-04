@@ -26,19 +26,22 @@ protégés (`docs/CAHIER_DES_CHARGES_GLOBAL_v1.0.md`, §1). Pour chaque modèle 
 famille** (pas de motif commun à toute la gamme). **Répartition des modèles en quatre marques validée par le
 propriétaire (2026-11-04)** ; pistes de signature et emblèmes : **[proposé]**, à dessiner puis valider.
 
-| Marque (nom à choisir) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
+| Marque (nom proposé) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
 |---|---|---|---|---|
-| Marque 1 | généraliste urbaine | Pixel, Brio, Fil, **Aster**, Rafale | deux traits en « L » aux angles (déjà retenus pour l'Aster « Trait ») | géométrique, sans lettres |
-| Marque 2 | routière et familiale | Nova, Cadence, Lumen, Orée | trait horizontal fin terminé par un point lumineux à l'intérieur, interrompu au centre (jamais de bandeau continu) | géométrique, sans lettres |
-| Marque 3 | aventure | Dune, Vigie, Sentier, Atlas | blocs lumineux carrés à deux étages verticaux, protégés par un cadre | géométrique, sans lettres |
-| Marque 4 | sport et prestige | Brise, Éclat, Mistral, Comète, Zénith | trois traits obliques courts, inclinés vers l'arrière | géométrique, sans lettres |
+| **Mivale** | généraliste urbaine | Pixel, Brio, Fil, **Aster**, Rafale | deux traits en « L » aux angles (déjà retenus pour l'Aster « Trait ») | deux équerres en « L » aux angles opposés, carré central |
+| **Orvane** | routière et familiale | Nova, Cadence, Lumen, Orée | trait horizontal fin terminé par un point lumineux à l'intérieur, interrompu au centre (jamais de bandeau continu) | deux traits horizontaux décalés, chacun terminé par un point |
+| **Rocalt** | aventure | Dune, Vigie, Sentier, Atlas | blocs lumineux carrés à deux étages verticaux, protégés par un cadre | écusson à sommet plat, deux blocs superposés |
+| **Celvar** | sport et prestige | Brise, Éclat, Mistral, Comète, Zénith | trois traits obliques courts, inclinés vers l'arrière | lame hexagonale allongée coupée par une entaille oblique |
 
 Règles :
 
-- **Noms de marque** : choisis par le propriétaire, après une **vérification des droits** (marques déposées) ; aucun nom
-  n'est inventé ni retenu dans ce document. « Automotive World » étant un nom technique provisoire, aucune marque n'en
+- **Noms de marque** : **proposés le 2026-11-04** (Mivale, Orvane, Rocalt, Celvar) après une **vérification
+  préliminaire** sur le web (aucune marque ni véhicule de ces noms trouvé ; détail et noms écartés dans
+  `brands/BRANDS.md` du dépôt d'art) ; **recherche d'antériorité officielle (EUIPO, INPI, USPTO, OMPI ; classes 12, 9,
+  41) à faire avant tout usage commercial**. « Automotive World » étant un nom technique provisoire, aucune marque n'en
   dérive.
-- **Emblèmes** : formes géométriques originales sans lettres, comparées aux emblèmes réels avant validation ; plaques
+- **Emblèmes** : formes géométriques originales sans lettres (SVG dans `brands/<marque>/` du dépôt d'art), à comparer
+  aux emblèmes déposés avant usage commercial ; plaques
   et inscriptions fictives.
 - **Unité entre marques** : seuls des éléments techniques communs (gabarit d'habitacle, pose assise, combinés et
   commandes génériques) ; chaque marque garde ses formes, ses couleurs et ses jantes.
@@ -187,7 +190,7 @@ Voir `ASTER_DESIGN_BRIEF.md` (fiche complète, trois directions, habitacle, budg
 - Intérieur [observé] : sièges baquets à appuie-tête intégrés, garnissage gris à surpiqûres rouges, combiné et écran en
   bandeau, volant sport.
 - Retenir : « Aster sportive » (plate-forme commune, décision de gamme). Transformer : filet rouge, décors,
-  aileron. Inventer : version sportive de la marque 1 (l'Éclat relève de la marque 4).
+  aileron. Inventer : version sportive de Mivale (l'Éclat relève de Celvar).
 - R15 : −0,78 st ; partage l'habitacle de l'Aster (même cible).
 
 ### 3.11 Éclat (`wk_eclat`) — réf. Toyota GR86
@@ -231,7 +234,7 @@ Voir `ASTER_DESIGN_BRIEF.md` (fiche complète, trois directions, habitacle, budg
   poupe large à diffuseur, jantes de grand diamètre ajourées.
 - Intérieur : **non observé** (visible seulement par une porte ouverte, sans détail exploitable).
 - Retenir : supercar électrique sculptée. Transformer : capot, phares, diffuseur. Inventer : intérieur, traitement
-  électrique propre à la marque 4.
+  électrique propre à Celvar.
 - R15 : 2,27 st, −1,39 st : mêmes enjeux que la Comète.
 
 ### 3.15 Dune (`wk_dune`) — réf. Mazda CX-5

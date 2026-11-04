@@ -84,7 +84,7 @@ Conséquences de ce choix [proposé] :
   assise abaissée de 0,3 à 0,5 st, pour garder une silhouette réaliste.
 - **Surfaces tendues** : reflets à soigner (normales, matériaux), complexité 3D moyenne.
 - Langage commun (propriétaire, 2026-11-04) : plusieurs marques fictives, signature par famille ; l'Aster relève de la
-  marque 1 (répartition validée), dont la signature est le « L » aux angles (`DIRECTION_ARTISTIQUE_VEHICULES.md` §1 bis).
+  marque **Mivale** (répartition validée), dont la signature est le « L » aux angles (`DIRECTION_ARTISTIQUE_VEHICULES.md` §1 bis).
 
 ## 5. Proposition d'habitacle (cotes cibles, studs du repère du véhicule)
 

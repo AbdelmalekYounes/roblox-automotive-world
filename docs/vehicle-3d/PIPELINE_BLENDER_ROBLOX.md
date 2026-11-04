@@ -61,8 +61,9 @@ appliquées avant export, un matériau par famille (peinture, verre, pneu, chrom
 - **D6 (propriétaire, 2026-11-04)** : les actifs appartiennent au **même créateur que l'expérience** (compte ou groupe
   qui la possède), pour éviter tout problème de droits d'utilisation ; import et publication par le propriétaire
   uniquement ; identifiants reportés dans `AssetManifest` par une PR relue.
-- **Fichiers sources** (`.blend`, textures, exports) : dépôt GitHub **d'art privé séparé** avec **Git LFS**, à créer
-  par le propriétaire ; arborescence proposée `vehicles/<id>/{blend,textures,export,ref-sheets}` ; le dépôt du jeu ne
+- **Fichiers sources** (`.blend`, textures, exports) : dépôt GitHub **d'art privé séparé** avec **Git LFS**,
+  **créé le 2026-11-04** : [roblox-automotive-world-art](https://github.com/AbdelmalekYounes/roblox-automotive-world-art) (privé) ; arborescence
+  `vehicles/<id>/{blend,textures,export,ref-sheets}` et `brands/<marque>/` ; le dépôt du jeu ne
   contient que les manifestes, les gabarits et les identifiants ; aucune photographie de référence n'y est versionnée.
 - Volant animé localement (comme les roues) : à implémenter avec le modèle pilote.
 
