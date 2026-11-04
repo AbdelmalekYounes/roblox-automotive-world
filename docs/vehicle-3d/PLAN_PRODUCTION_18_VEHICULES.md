@@ -28,7 +28,7 @@ reste **proposé** (`docs/lot-0.8/CATALOGUE_18_VEHICULES.md`, `PendingApproval`)
 | Id | Décision |
 |---|---|
 | D1 | Proportions de l'habitacle : **« échelle Roblox + assise basse » retenue par le propriétaire (2026-11-04)** (spécification §3.3, option 4) ; dépend de D3 pour la pose assise |
-| D2 | Direction de l'Aster : **A « Trait » retenue par le propriétaire (2026-11-04)** ; langage commun : **plusieurs marques fictives, signature par famille** (propriétaire, 2026-11-04) ; répartition, noms (après vérification des droits) et emblèmes à valider (`DIRECTION_ARTISTIQUE_VEHICULES.md` §1 bis) |
+| D2 | Direction de l'Aster : **A « Trait » retenue par le propriétaire (2026-11-04)** ; langage commun : **plusieurs marques fictives, signature par famille** (propriétaire, 2026-11-04) ; **répartition en 4 marques validée** ; noms (après vérification des droits) et emblèmes à valider (`DIRECTION_ARTISTIQUE_VEHICULES.md` §1 bis) |
 | D3 | Animation de conduite : **pose assise propre au jeu retenue par le propriétaire (2026-11-04)** (spécification §3.3) ; réalisation (animation publiée ou pose procédurale) à départager par un essai en VM |
 | D4 | Ouvrants animés : **plus tard, retenu par le propriétaire (2026-11-04)** ; pièces séparées et charnières préparées dans chaque modèle, fermées en jeu, embarquement instantané inchangé |
 | D5 | Critère de performance : **+2 ms de temps d'image avec 24 véhicules visibles, retenu par le propriétaire (2026-11-04)** (spécification §6) ; appareils réels à essayer avant le lancement |

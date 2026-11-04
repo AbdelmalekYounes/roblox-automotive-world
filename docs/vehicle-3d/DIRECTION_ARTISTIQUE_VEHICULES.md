@@ -23,7 +23,8 @@ protégés (`docs/CAHIER_DES_CHARGES_GLOBAL_v1.0.md`, §1). Pour chaque modèle 
 ## 1 bis. Langage commun de la gamme
 
 **Décisions du propriétaire (2026-11-04)** : **plusieurs marques fictives** ; **signature lumineuse propre à chaque
-famille** (pas de motif commun à toute la gamme). Répartition et pistes ci-dessous : **[proposé]**, à valider.
+famille** (pas de motif commun à toute la gamme). **Répartition des modèles en quatre marques validée par le
+propriétaire (2026-11-04)** ; pistes de signature et emblèmes : **[proposé]**, à dessiner puis valider.
 
 | Marque (nom à choisir) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
 |---|---|---|---|---|
