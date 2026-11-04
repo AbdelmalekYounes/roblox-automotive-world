@@ -96,6 +96,17 @@ avatars Roblox sont grands à l'échelle 0,28 m/stud (référence debout : 5,09 
    d'apparence conservée, à n'envisager que pour les extrêmes ;
 4. combinaison 1 + 2 (proposée pour la cible confort).
 
+**Décision du propriétaire (2026-11-04) : option 4, « échelle Roblox + assise basse ».** Conséquences [proposé] :
+
+- pavillon et vitrages dessinés à l'échelle des avatars Roblox (au-delà des proportions réelles), assise abaissée et
+  pose de conduite plus allongée pour limiter la hausse du pavillon ;
+- cible de conception : **≥ 4,30 st** de l'assise au pavillon pour tous les modèles, **5,00 st** visés quand la
+  silhouette le permet (SUV, tout-terrain, pick-up, compactes hautes) ;
+- l'assise basse suppose une **pose assise propre au jeu** (animation ou réglage de la pose du moteur) : elle lie cette
+  décision à **D3**, à trancher avant la maquette volumique ; tant que D3 n'est pas tranchée, la maquette est essayée
+  avec la pose standard du moteur (mesures §3.1) ;
+- aucune limitation du type de corps n'est retenue.
+
 ## 4. Matériaux et textures
 
 - Peinture : couleur de carrosserie personnalisable (`Appearance.BodyRgb` et préparation) → la peinture doit rester

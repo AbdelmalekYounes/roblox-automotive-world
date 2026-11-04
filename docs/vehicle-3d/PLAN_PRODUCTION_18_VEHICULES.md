@@ -27,7 +27,7 @@ reste **proposé** (`docs/lot-0.8/CATALOGUE_18_VEHICULES.md`, `PendingApproval`)
 
 | Id | Décision |
 |---|---|
-| D1 | Proportions de l'habitacle face aux avatars R15 (spécification §3.3 : échelle Roblox, assise basse, limitation du type de corps, combinaison) |
+| D1 | Proportions de l'habitacle : **« échelle Roblox + assise basse » retenue par le propriétaire (2026-11-04)** (spécification §3.3, option 4) ; dépend de D3 pour la pose assise |
 | D2 | Direction de l'Aster : **A « Trait » retenue par le propriétaire (2026-11-04)** ; reste à valider : langage commun de la gamme (signature lumineuse, monogramme fictif) |
 | D3 | Animation de conduite : pose assise propre au jeu ou IK des mains sur le volant |
 | D4 | Ouvrants animés (portières) : maintenant ou plus tard |

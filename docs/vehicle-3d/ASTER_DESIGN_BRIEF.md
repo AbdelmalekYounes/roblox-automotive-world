@@ -79,7 +79,7 @@ Conséquences de ce choix [proposé] :
 - **Dissemblance renforcée** (direction la plus proche de la référence) : revue de profil et de face superposés à la
   référence à chaque porte ; signature en « L » aux angles, calandre fermée à motif de lignes et montant arrière à
   insert vitré obligatoires ; aucun bandeau lumineux continu ni logo central.
-- **Habitacle** : la cible minimale R15 (≥ 4,30 st, décision D1) relève le pavillon d'environ 1,2 st par rapport à la
+- **Habitacle** (D1 tranchée : échelle Roblox + assise basse) : la cible minimale R15 (≥ 4,30 st) relève le pavillon d'environ 1,2 st par rapport à la
   carrosserie provisoire ; à compenser par un vitrage latéral fin, une ligne de caisse haute et, si D3 le permet, une
   assise abaissée de 0,3 à 0,5 st, pour garder une silhouette réaliste.
 - **Surfaces tendues** : reflets à soigner (normales, matériaux), complexité 3D moyenne.
