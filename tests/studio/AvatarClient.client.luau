@@ -196,8 +196,44 @@ local handlers: { [string]: (string, any) -> () } = {}
 handlers.calibrate = function()
     local calibrated = Gui.calibrate(3)
     record("avatar.client.entrees_reelles", calibrated)
-    local keys = Gui.calibrateKeys()
-    record("avatar.client.clavier_etalonne", keys)
+    -- Diagnostic (passages 20261104-162124 et -164354 : touches de l'étalonnage jamais reçues
+    -- depuis le remplacement des têtes classiques) : focus, sélection, état du personnage.
+    local function focusInfo(): string
+        local UserInputService = game:GetService("UserInputService")
+        local GuiService = game:GetService("GuiService")
+        local box = UserInputService:GetFocusedTextBox()
+        local selected = GuiService.SelectedObject
+        local me = Players.LocalPlayer.Character
+        local humanoid = me and me:FindFirstChildOfClass("Humanoid")
+        local root = me and me:FindFirstChild("HumanoidRootPart")
+        local guis = {}
+        for _, item in playerGui:GetChildren() do
+            if item:IsA("ScreenGui") and item.Enabled then
+                table.insert(guis, item.Name)
+            end
+        end
+        return string.format(
+            "champ %s ; sélection %s ; souris %s ; humanoïde %s (vitesse %s, assis %s, état %s) ; racine ancrée %s ; interfaces %s",
+            if box then box:GetFullName() else "aucun",
+            if selected then selected:GetFullName() else "aucune",
+            UserInputService.MouseBehavior.Name,
+            if humanoid then "présent" else "absent",
+            if humanoid then tostring(humanoid.WalkSpeed) else "?",
+            if humanoid then tostring(humanoid.Sit) else "?",
+            if humanoid then humanoid:GetState().Name else "?",
+            if root and root:IsA("BasePart") then tostring(root.Anchored) else "?",
+            table.concat(guis, ",")
+        )
+    end
+    record("avatar.client.info_focus_avant_clavier", true, focusInfo())
+    local keys, keysDetail = Gui.calibrateKeys()
+    record("avatar.client.clavier_etalonne", keys, keysDetail)
+    if not keys then
+        task.wait(5)
+        record("avatar.client.info_focus_second_essai", true, focusInfo())
+        local again, againDetail = Gui.calibrateKeys()
+        record("avatar.client.info_clavier_second_essai", true, tostring(again) .. " : " .. tostring(againDetail))
+    end
     -- Fenêtre d'arrivée (profil neuf) : « Passer l'introduction » par un vrai clic.
     local onboarding = playerGui:FindFirstChild("AWOnboarding")
     local skip = nil
