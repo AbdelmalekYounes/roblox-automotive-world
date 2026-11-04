@@ -3,7 +3,8 @@
 Branche du jeu `feat/aster-02-blockout` (base `feat/aster-phase1`). Branche du dépôt d'art `aster-02-blockout`,
 commits `087d98e` et `31a20cc`. Le 2026-11-04.
 
-Statut : **maquette volumique (blockout) à valider par le propriétaire avant le modèle haute fidélité.**
+Statut : **blockout validé par le propriétaire (« Je valide », 2026-11-04)** ; passage au modèle haute fidélité
+(`ASTER_02_HAUTE_FIDELITE.md`). Rapport d'origine ci-dessous.
 - Le modèle n'est pas importé dans Studio et n'est pas intégré au jeu.
 - Aucun actif n'est publié et rien n'est fusionné.
 - La physique et les carrosseries provisoires sont inchangées.
@@ -84,7 +85,7 @@ géométrie dans Blender. **Ils ne remplacent pas une mesure en VM sur le modèl
 - Rendu des vitrages transparents, qui sont opaques en blockout.
 - Ressemblance avec la référence : revue visuelle à faire par le propriétaire (dissemblance renforcée, direction A).
 
-## 7. Décision demandée
+## 7. Décision
 
-Valider ou corriger la maquette volumique avant de passer au modèle haute fidélité : silhouette, proportions,
-vitrage, signature, intérieur. Aucune modélisation haute fidélité n'est lancée sans cette validation.
+Maquette volumique **validée par le propriétaire le 2026-11-04** : silhouette, proportions, vitrage, signature et
+intérieur. Le modèle haute fidélité part de cette maquette.
