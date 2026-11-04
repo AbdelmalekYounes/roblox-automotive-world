@@ -252,6 +252,21 @@ réel, ni le ressenti, ni le comportement multijoueur.
 | QA-V15 | Focus de la fenêtre d'arrivée | P2 | Ouverture automatique au clavier, à la souris puis à la manette, dans un vrai client (hors Studio) ; vérifier que la cause du gel (sélection imposée, corrigée au lot 0.8) ne touche aucune autre fenêtre ouverte d'elle-même | Aucun gel ; focus seulement à la manette | **NON TESTÉ** (hors Studio) |
 | QA-V14 | Manette | P2 | Téléphone sur Select, invite d'entrée sur X, mode photo par l'application Photo, garage par le téléphone | Aucun conflit de touches | **NON TESTÉ** (humain) |
 
+## 3 septies. Essais reportés du lot VEH3D-01 (Comète 3D, moteur requis)
+
+Contrôlé hors Studio (Lune, 2026-11-04) : gabarit, identifiants, données du kit, repli. Tout ce qui suit dépend du moteur.
+
+| Id | Essai | Attendu | État |
+|---|---|---|---|
+| QA-V01 | Apparition de la Comète | Carrosserie 3D soudée, sans masse, posée sur ses roues ; les 17 autres véhicules gardent leur carrosserie provisoire | **NON TESTÉ** |
+| QA-V02 | Maillages vus par la VM | Les maillages envoyés par le propriétaire se chargent dans la session de test (droits d'usage des actifs) | **NON TESTÉ** |
+| QA-V03 | Roues | Pneus et jantes tournent et braquent avec les roues du jeu ; voie visuelle 3,5 à 4,7 cm en retrait accepté | **NON TESTÉ** |
+| QA-V04 | Embarquement et pose | Invites conducteur et passager ; sièges avec `AWSeatPose` ; têtes, mains et pieds dans l'habitacle (3,38 st d'assise au pavillon) | **NON TESTÉ** |
+| QA-V05 | Caméras | Vues cockpit, capot et bouclier aux repères mesurés ; volant 10° sous la visée | **NON TESTÉ** |
+| QA-V06 | Collisions et dégâts | Chocs avant, arrière et latéraux ; zones de dégâts reconnues ; aucune collision sur les maillages visuels | **NON TESTÉ** |
+| QA-V07 | Vitrage et feux | Vitrage sombre transparent ; phares et feux allumés la nuit (sources invisibles ; maillage des feux non lumineux, feux non séparés dans le `.rbxm` reçu) | **NON TESTÉ** |
+| QA-V08 | Performances D5 | 24 Comète visibles, jour et nuit : temps d'image ≤ référence + 2 ms | **NON TESTÉ** |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

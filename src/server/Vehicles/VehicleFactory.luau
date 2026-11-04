@@ -1,7 +1,9 @@
 --!strict
 -- Fabrique du véhicule d'essai : construit par code une géométrie TEMPORAIRE
 -- et originale (blocs et cylindres primitifs) à partir de la définition.
--- Aucun maillage, modèle ni actif externe n'est utilisé.
+-- Exception (lot VEH3D-01, accord du propriétaire) : un véhicule doté d'un kit de maillages validé
+-- (MeshKits : gabarit présent, maillages inscrits au manifeste) reçoit sa carrosserie 3D à la place ;
+-- sinon, la carrosserie provisoire est construite comme avant. La physique est la même dans les deux cas.
 --
 -- Structure produite :
 --   Model (PrimaryPart = Chassis, étiquette AWVehicle, attributs d'identité)
@@ -26,6 +28,8 @@ local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDynamics = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("VehicleDynamics"))
 local CockpitGeometry = require(VehiclesShared:WaitForChild("CockpitGeometry"))
 local BodyKits = require(script.Parent.BodyKits)
+local MeshKits = require(script.Parent.MeshKits)
+local SeatPose = require(VehiclesShared:WaitForChild("SeatPose"))
 
 local VehicleFactory = {}
 
@@ -245,7 +249,20 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     -- Volant (centre, en studs du repère du châssis) et pavillon (nil : véhicule ouvert),
     -- pour placer les yeux de la vue cockpit au-dessus du volant (QA-F15).
     local wheelY: number, wheelZ: number, roofY: number? = 0, 0, nil
-    if styleName and BodyKits.has(styleName) then
+    -- Kit de maillages (VEH3D-01) : utilisé seulement si le gabarit est présent et ses maillages autorisés.
+    local meshKit, meshTemplate = MeshKits.template(definition.Id)
+    local meshWheels: { [string]: { BasePart } }? = nil
+    if meshKit and meshTemplate then
+        meshWheels = MeshKits.build(meshKit, meshTemplate, root, body)
+        seatOffset = CFrame.new(meshKit.SeatDriver)
+        passengerOffset = CFrame.new(meshKit.SeatPassenger)
+        cabinZ, dashZ, dashTop = meshKit.SeatDriver.Z, meshKit.SeatDriver.Z - 1.6, meshKit.CameraCockpit.Y - 0.5
+        sideHalf = meshKit.SideHalf
+        cameraHoodY, cameraBumperY = meshKit.CameraHood.Y, meshKit.CameraBumper.Y
+        frontEnd = meshKit.CameraBumper.Z + 0.65
+        -- Repères mesurés sur le modèle : posés tels quels après la règle générique (plus bas).
+        wheelY, wheelZ, roofY = 0, 0, nil
+    elseif styleName and BodyKits.has(styleName) then
         local kit = BodyKits.build(
             styleName :: string,
             {
@@ -439,6 +456,21 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     addAttachment(root, "CameraCockpit", Vector3.new(seatOffset.X, eyeY, eyeZ))
     addAttachment(root, "CameraHood", Vector3.new(0, cameraHoodY, frontZ + studs(0.45)))
     addAttachment(root, "CameraBumper", Vector3.new(0, cameraBumperY, frontEnd - 0.65))
+    if meshKit then
+        -- Kit de maillages : caméras mesurées sur le modèle (règle CockpitGeometry appliquée à son vrai volant).
+        local cockpit = root:FindFirstChild("CameraCockpit") :: Attachment
+        local hood = root:FindFirstChild("CameraHood") :: Attachment
+        local bumper = root:FindFirstChild("CameraBumper") :: Attachment
+        cockpit.Position = meshKit.CameraCockpit
+        hood.Position = meshKit.CameraHood
+        bumper.Position = meshKit.CameraBumper
+        -- Pose assise du jeu (SeatPoseController), exigée par le contrat des modèles 3D.
+        seat:SetAttribute(SeatPose.Attribute, "Conduite")
+        local passengerSeat = model:FindFirstChild("PassengerSeat")
+        if passengerSeat then
+            passengerSeat:SetAttribute(SeatPose.Attribute, "Passager")
+        end
+    end
 
     -- Roues : purement visuelles (sans masse, sans collision, ignorées des rayons).
     for index, name in Constants.WheelNames do
@@ -491,6 +523,10 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
         joint.C1 = CFrame.identity
         joint.Parent = wheel
         wheel.Parent = model
+        local parts = meshWheels and meshWheels[name]
+        if parts then
+            MeshKits.attachWheels(wheel, parts)
+        end
     end
 
     -- Invite d'embarquement côté conducteur (gauche). Le serveur revalide tout.

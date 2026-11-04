@@ -188,6 +188,31 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Rapport : `docs/vehicle-3d/ASTER_PHASE1.md`. À arbitrer : corps par défaut, couleurs de peau, D7, hauteur sous pavillon,
   pose adaptée à la taille. Étalonnage de l'import dans Studio à relever par le propriétaire.
 
+## ASTER-02 — modélisation de l'Aster (branche `feat/aster-02-blockout`, base : phase 1 de l'Aster)
+
+- Étalonnage relevé par le propriétaire : glTF 1:1 retenu, FBX écarté ; orientation à confirmer (témoin v2).
+- Blockout extérieur et intérieur dans Blender (surface lofée, direction A « Trait »), contrôles automatiques 15/15,
+  8 rendus de revue : `docs/vehicle-3d/ASTER_02_BLOCKOUT.md`. **À valider** avant le modèle haute fidélité ; aucun import,
+  aucune publication, aucune intégration.
+- Blockout validé par le propriétaire (2026-11-04). Haute fidélité par passes (`docs/vehicle-3d/ASTER_02_HAUTE_FIDELITE.md`) :
+  HF1 à HF3 (extérieur, intérieur, matériaux) faites et acceptées ; HF4 faite, à revoir (LOD0 36 696 triangles au lieu de
+  101 744, LOD1 12 978, LOD2 3 544, 4 collisions, attaches, roues instanciées ; contrôles 33/33 ; LOD0 au-dessus de
+  l'hypothèse de 25 000 : gardé, D5 tranche, décision du propriétaire du 2026-11-04) ; HF5 à faire, sur accord.
+- **Direction changée le 2026-11-04** (décision du propriétaire) : reproduction de la référence sans logo, aux proportions
+  réelles (1,47 m). Blockout de reproduction fait, à valider (`docs/vehicle-3d/ASTER_02_REPRODUCTION.md`) ; contrôles
+  13/15 : ciel de toit et têtes en échec, conséquence de la hauteur réelle (habitacle et VM à reprendre) ; passes HF à
+  rejouer après validation.
+- **ASTER-02 suspendu par le propriétaire le 2026-11-04** (« aster on abandonne pour l'instant »). Rien n'est intégré ; le
+  travail est conservé (dessins « Trait » et « reproduction », outils, étalonnage terminé). La branche porte aussi
+  l'essai de la Comète (modèle tiers 720s) et l'étalonnage, repris par le lot suivant.
+
+## VEH3D-01 — intégration de la Comète 3D (branche `feat/veh3d-01-comete`, base : ASTER-02)
+
+- Lot ouvert le 2026-11-04 à la demande du propriétaire, ASTER-02 étant suspendu. Plan :
+  `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. Maillages envoyés par le propriétaire ; kit de maillages intégré à
+  la fabrique, avec repli sur la carrosserie provisoire (Lune 371/371) ; essais en jeu QA-V01 à V08 **NON TESTÉS** ;
+  écran de crédits à faire.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
