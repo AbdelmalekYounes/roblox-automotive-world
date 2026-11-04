@@ -452,12 +452,27 @@ handlers.standing = function(_id, data)
         end
         return names
     end
+    local function allTracks(): string
+        local names = {}
+        for _, track in if animator then animator:GetPlayingAnimationTracks() else {} do
+            local animation = track.Animation
+            local id = if animation then string.match(animation.AnimationId, "%d+$") or "?" else "?"
+            table.insert(names, string.format("%s#%s %.2f", track.Name, id, track.WeightCurrent))
+        end
+        return if #names == 0 then "aucune" else table.concat(names, ", ")
+    end
     local early = armAngle(model)
-    local earlyTracks = table.concat(movingTracks(), ", ")
+    local earlyTracks = allTracks()
     local earlySpeed = root.AssemblyLinearVelocity.Magnitude
+    local raisedAttr = tostring(model:GetAttribute("AWPhoneRaised"))
     local settleStart = os.clock()
     local settled = waitFor(function()
         return root.AssemblyLinearVelocity.Magnitude < 0.3 and #movingTracks() == 0
+    end, 4)
+    -- Bras revenu au repos (< 15°) : une variante de l'animation d'attente peut le déplacer.
+    local rested = waitFor(function()
+        local angle = armAngle(model)
+        return angle ~= nil and angle < 15
     end, 4)
     task.wait(0.3)
     local before = armAngle(model)
@@ -465,12 +480,14 @@ handlers.standing = function(_id, data)
         "avatar.client." .. morph .. ".info_bras_depart",
         true,
         string.format(
-            "0,6 s après la marche : %.0f° (vitesse %.2f st/s ; pistes : %s) ; arrêté après %.1f s (%s) : %.0f°",
+            "0,6 s après la marche : %.0f° (vitesse %.2f st/s ; AWPhoneRaised %s ; pistes : %s) ; arrêté %s, repos %s après %.1f s : %.0f°",
             early or -1,
             earlySpeed,
-            if earlyTracks == "" then "aucune" else earlyTracks,
-            os.clock() - settleStart,
+            raisedAttr,
+            earlyTracks,
             if settled then "oui" else "non",
+            if rested then "oui" else "non",
+            os.clock() - settleStart,
             before or -1
         )
     )
@@ -773,25 +790,43 @@ handlers.silphone = function(_id, data)
     local opened = waitFor(phoneShown, 5)
     record("silhouette.client.telephone_ouvert", opened)
     local phone = playerGui:FindFirstChild("AWPhone")
-    local function press(label: string): boolean
+    -- Bouton cherché aussi hors de la zone visible (liste défilante du téléphone), amené dans la
+    -- vue par la molette, puis cliqué. Le téléphone redessine la page au clic (bouton détruit) :
+    -- l'accusé « Activated » peut manquer ; l'EFFET du clic est contrôlé par l'étape suivante.
+    local function find(label: string): GuiButton?
+        local wanted = string.lower(label)
+        for _, item in (phone or playerGui):GetDescendants() do
+            if item:IsA("TextButton") and string.find(string.lower(item.Text), wanted, 1, true) then
+                return item
+            end
+        end
+        return nil
+    end
+    local function press(label: string)
         local button: GuiButton? = nil
         waitFor(function()
-            button = Gui.findButton(phone, label)
+            button = find(label)
             return button ~= nil
         end, 5)
+        local revealed = Gui.reveal(button, 15)
         local ok, detail = Gui.click(button, label)
-        record("silhouette.client.telephone_clic_" .. string.lower((string.gsub(label, "%W", ""))), ok, detail)
+        record(
+            "silhouette.client.info_telephone_clic_" .. string.lower((string.gsub(label, "%W", ""))),
+            true,
+            string.format("%s ; dans la vue : %s ; accusé : %s", detail, tostring(revealed), tostring(ok))
+        )
         task.wait(0.8)
-        return ok
     end
     press("Paramètres")
+    record("silhouette.client.telephone_page_parametres", find("Interface") ~= nil)
     press("Interface")
+    record("silhouette.client.telephone_bouton_silhouette_present", find("Silhouette") ~= nil)
     press("Silhouette")
     local applied = waitFor(function()
         return player:GetAttribute("AWAvatarBody") == expect
     end, 25)
     task.wait(1)
-    local button = Gui.findButton(phone, "Silhouette")
+    local button = find("Silhouette")
     local text = if button then (button :: any).Text else "?"
     record("silhouette.client.telephone_silhouette_" .. string.lower(expect), applied, "bouton : " .. tostring(text))
     Gui.key("T")
