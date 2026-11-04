@@ -26,6 +26,32 @@ local DIVERGED_BEFORE = {
     { "wk_mistral", 8, 8 },
 }
 
+-- Contacts d'un véhicule posé sur le sol plat, à la vitesse de contact `forward` (m/s).
+local function flatContacts(Dynamics: any, definition: any, forward: number)
+    local list = {}
+    for i = 1, 4 do
+        list[i] = {
+            Grounded = true,
+            Compression = Dynamics.staticCompression(definition, i <= 2),
+            CompressionVelocity = 0,
+            LongitudinalVelocity = forward,
+            LateralVelocity = 0,
+            SurfaceFriction = 1,
+            Wet = false,
+            Wetness = 0,
+        }
+    end
+    return list
+end
+
+-- Pas de simulation de `seconds` secondes, véhicule plaqué (vitesse de contact nulle).
+local function holdPinned(Dynamics: any, definition: any, state: any, input: any, seconds: number)
+    local motion = { Forward = 0, Lateral = 0, YawRate = 0 }
+    for _ = 1, math.floor(seconds * 60) do
+        Dynamics.step(state, definition, table.clone(input), flatContacts(Dynamics, definition, 0), motion, 1 / 60)
+    end
+end
+
 return function(T: any, H: any)
     local Dynamics = H.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
     local DamageModel = H.require(SHARED .. "Vehicles.Physics.DamageModel")
@@ -101,6 +127,21 @@ return function(T: any, H: any)
         T.truthy(string.find(source, "LastInputTypeChanged", 1, true) ~= nil, "focus posé au passage à la manette")
     end)
 
+    T.test("QA-A10 : bras levé aussi sur le squelette R15 à contraintes d'animation", function()
+        local node = H.game()
+        for segment in string.gmatch("ServerScriptService.AutomotiveWorldServer.Social.InterfaceService", "[^%.]+") do
+            node = node:FindFirstChild(segment)
+        end
+        local source = node.Source
+        T.truthy(string.find(source, 'IsA("Motor6D")', 1, true) ~= nil, "chemin Motor6D conservé (R6, R15 classique)")
+        T.truthy(
+            string.find(source, 'IsA("AnimationConstraint")', 1, true) ~= nil,
+            "épaule à contrainte d'animation reconnue"
+        )
+        T.truthy(string.find(source, "Attachment0", 1, true) ~= nil, "rotation de l'attache côté torse")
+        T.truthy(string.find(source, "shoulder.Rest", 1, true) ~= nil, "position de repos rétablie au rangement")
+    end)
+
     T.test("QA-A08 : borne du convertisseur inactive en conduite normale (physique inchangée)", function()
         local checked = 0
         for _, definition in Definitions.all() do
@@ -123,5 +164,69 @@ return function(T: any, H: any)
             end
         end
         T.truthy(checked >= 5, "modèles à convertisseur contrôlés : " .. checked)
+    end)
+    T.test("Calage : une boîte sans pédale d'embrayage relance quand l'accélérateur est relâché", function()
+        local pedals = { Throttle = 0.6, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+        local released = { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }
+        -- Automatique à convertisseur calée en D (cas de la course GPS, tâche 20261104-021402).
+        local auto = Definitions.get("proto_p01")
+        local state = Dynamics.createState(auto)
+        Dynamics.startEngine(state, auto)
+        state.Gear = 1
+        state.EngineRunning, state.EngineStalled, state.EngineOmega = false, true, 0
+        holdPinned(Dynamics, auto, state, pedals, 1)
+        T.truthy(state.EngineStalled, "accélérateur enfoncé : pas de démarreur")
+        holdPinned(Dynamics, auto, state, released, 1)
+        T.truthy(state.EngineRunning and not state.EngineStalled, "accélérateur relâché : moteur relancé")
+        T.equal(state.Gear, 1, "toujours en D")
+        -- Boîte manuelle : règle inchangée (embrayage enfoncé ou neutre ; la pédale suit la
+        -- commande avec une rampe, puis 0,6 s de démarreur).
+        local manual = Definitions.get("proto_p02")
+        local m = Dynamics.createState(manual)
+        Dynamics.startEngine(m, manual)
+        m.Gear = 1
+        m.EngineRunning, m.EngineStalled, m.EngineOmega = false, true, 0
+        holdPinned(Dynamics, manual, m, released, 1)
+        T.truthy(m.EngineStalled, "manuelle en prise, embrayage relâché : reste calée")
+        holdPinned(Dynamics, manual, m, { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 1 }, 2)
+        T.truthy(m.EngineRunning and not m.EngineStalled, "manuelle, embrayage enfoncé : relancée")
+    end)
+
+    T.test("Calage par rebond contre un obstacle : borne du convertisseur inactive, relance", function()
+        -- Reproduction (tests/lune/tools/stall-impact.luau) : wk_atlas, départ à 40 %
+        -- d'accélérateur pendant 4 s, choc puis rebond à 5 m/s pendant 0,25 s, pilote qui
+        -- accélère encore : le moteur cale, à l'identique avec ou sans la borne.
+        local definition = Definitions.get("wk_atlas")
+        local state = Dynamics.createState(definition)
+        Dynamics.startEngine(state, definition)
+        local forward, dt = 0, 1 / 60
+        local limits = Dynamics.converterLimits()
+        for step = 1, math.floor(4.5 / dt) do
+            local t = step * dt
+            if t <= 4 then
+                local omega, share = 0, 0
+                for _, wheel in state.Wheels do
+                    omega += wheel.AngularVelocity * wheel.DriveShare
+                    share += wheel.DriveShare
+                end
+                forward += (omega / share * definition.Tires.RadiusM - forward) * math.min(1, dt * 3)
+            else
+                forward = if t < 4.25 then -5 else 0
+            end
+            local input =
+                { Throttle = if t <= 4 then 0.4 else 0.6, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+            Dynamics.step(
+                state,
+                definition,
+                input,
+                flatContacts(Dynamics, definition, forward),
+                { Forward = forward, Lateral = 0, YawRate = 0 },
+                dt
+            )
+        end
+        T.truthy(state.EngineStalled, "moteur calé par le rebond")
+        T.equal(Dynamics.converterLimits(), limits, "borne du convertisseur jamais active")
+        holdPinned(Dynamics, definition, state, { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }, 1)
+        T.truthy(state.EngineRunning, "relancé, pédales relâchées")
     end)
 end

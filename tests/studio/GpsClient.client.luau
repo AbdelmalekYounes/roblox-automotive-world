@@ -52,6 +52,9 @@ local RouteGuide = require(Shared:WaitForChild("Navigation"):WaitForChild("Route
 local client = player:WaitForChild("PlayerScripts"):WaitForChild("AutomotiveWorldClient")
 local VehicleController = require(client:WaitForChild("Vehicles"):WaitForChild("VehicleController", 10)) :: any
 local GPSController = require(client:WaitForChild("UI"):WaitForChild("GPSController")) :: any
+-- Même instance que celle du simulateur local : compteur des limitations du convertisseur.
+local VehicleDynamics =
+    require(Shared:WaitForChild("Vehicles"):WaitForChild("Physics"):WaitForChild("VehicleDynamics")) :: any
 local Gui = require(ReplicatedStorage:WaitForChild("AW_TestGui", 30)) :: any
 
 local function character(): Model
@@ -79,17 +82,29 @@ local ignoreObstacles = false
 -- Décalage latéral de la trajectoire par rapport à l'axe de l'itinéraire (m, droite > 0).
 local LANE_OFFSET_M = 1.8
 
+-- Lot 0.9.2 : moteur calé constaté par le pilote (relevé toutes les 0,1 s par la boucle de
+-- trajet) ; le pilote relâche alors les pédales, comme un conducteur qui relance.
+local engineStalled = false
+
 local function obstacleAhead(body: BasePart, lengthM: number): number?
     if ignoreObstacles then
         return nil
     end
     local look = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
-    local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S
-    local hit = Workspace:Raycast(origin, look * lengthM * S, rayParams)
-    if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
-        return hit.Distance / S
+    local right = Vector3.new(-look.Z, 0, look.X)
+    -- Lot 0.9.2 : trois rayons (axe et coins avant, ±0,9 m) ; un seul rayon dans l'axe ne
+    -- voyait pas un poteau fin devant un coin (tâche 20261104-021402 : choc contre un poteau
+    -- de feu à environ 73 km/h, côté gauche).
+    local nearest: number? = nil
+    for _, lateral in { 0, -0.9, 0.9 } do
+        local origin = body.Position + Vector3.new(0, 0.6 * S, 0) + look * 2 * S + right * lateral * S
+        local hit = Workspace:Raycast(origin, look * lengthM * S, rayParams)
+        if hit and hit.Instance.CanCollide and hit.Normal.Y < 0.6 then
+            local distance = hit.Distance / S
+            nearest = if nearest then math.min(nearest :: number, distance) else distance
+        end
     end
-    return nil
+    return nearest
 end
 
 local function autopilot(): any
@@ -98,6 +113,10 @@ local function autopilot(): any
     if body == nil or driving.Hold or driving.Target == nil then
         local moving = speedKmh() > 3
         return { Throttle = 0, Brake = if moving then 1 else 0, Steer = 0, Handbrake = not moving, Clutch = 0 }
+    end
+    if engineStalled then
+        -- Moteur calé : pédales relâchées pendant la relance (démarreur).
+        return { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }
     end
     if driving.Reverse then
         -- Dégagement : frein maintenu à l'arrêt = marche arrière (boîte automatique, A3).
@@ -290,11 +309,39 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
     local nextChecked = false
     local lastSample = 0
     local lastShot = 0
+    local stalledSince: number? = nil
+    local limitsBefore = VehicleDynamics.converterLimits()
     while os.clock() < deadline do
         local state = GPSController.state()
         if state.Status == "Arrived" then
             break
         end
+        -- Lot 0.9.2 : calage relevé avec son contexte (vitesse, rapport, pontage, roues au
+        -- sol, limitations du convertisseur depuis le départ), puis relance mesurée.
+        local snap = VehicleController.getTestSnapshot()
+        if snap.EngineStalled and not engineStalled then
+            stalledSince = os.clock()
+            measures[name .. "_calages"] = (measures[name .. "_calages"] or 0) + 1
+            local bodyNow = (driving.Model :: Model).PrimaryPart :: BasePart
+            trace(
+                string.format(
+                    "%s : moteur calé en (%.0f, %.0f) — %s, %.0f km/h, rapport %d, ponté %s, %d roue(s) au sol, limitations du convertisseur %d",
+                    name,
+                    bodyNow.Position.X / S,
+                    bodyNow.Position.Z / S,
+                    tostring(snap.DefinitionId),
+                    snap.SpeedKmh,
+                    snap.Gear,
+                    tostring(snap.Coupled),
+                    snap.GroundedWheels,
+                    VehicleDynamics.converterLimits() - limitsBefore
+                )
+            )
+        elseif engineStalled and not snap.EngineStalled then
+            measures[name .. "_relances"] = (measures[name .. "_relances"] or 0) + 1
+            trace(string.format("%s : moteur relancé en %.1f s", name, os.clock() - (stalledSince :: number)))
+        end
+        engineStalled = snap.EngineStalled
         local current = state.Plan
         local body = (driving.Model :: Model).PrimaryPart :: BasePart
         local x, z = body.Position.X / S, body.Position.Z / S
@@ -488,6 +535,8 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         task.wait(0.1)
     end
     driving.Hold = true
+    engineStalled = false
+    measures[name .. "_limitations_convertisseur"] = VehicleDynamics.converterLimits() - limitsBefore
     local arrived = GPSController.state().Status == "Arrived"
     local body = (driving.Model :: Model).PrimaryPart :: BasePart
     local gap = math.sqrt((body.Position.X / S - target.X) ^ 2 + (body.Position.Z / S - target.Z) ^ 2)

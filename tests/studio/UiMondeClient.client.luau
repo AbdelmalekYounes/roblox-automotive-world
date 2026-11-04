@@ -257,16 +257,32 @@ local function main()
 
     -- 4. Téléphone en main (touche T), vu de face ; mode photo (touche O).
     task.wait(2)
-    -- Diagnostic du bras levé (InterfaceService : épaule tournée de 60°) : angle relevé
-    -- côté client avant et après l'ouverture.
-    local function shoulderC0(): CFrame?
-        local upper = character():FindFirstChild("RightUpperArm")
-        local motor = upper and upper:FindFirstChild("RightShoulder")
-        if motor == nil then
-            local torso = character():FindFirstChild("Torso")
-            motor = torso and torso:FindFirstChild("Right Shoulder")
+    -- Bras levé (InterfaceService : épaule tournée de 60°). Lot 0.9.2 (QA-A10) : mesure
+    -- GÉOMÉTRIQUE, quel que soit le squelette (Motor6D ou contraintes d'animation) :
+    -- angle entre le bras (haut du bras, vers le bas) et la verticale du personnage.
+    local function armAngle(): number?
+        local upper = character():FindFirstChild("RightUpperArm") or character():FindFirstChild("Right Arm")
+        local root = character():FindFirstChild("HumanoidRootPart")
+        if upper == nil or root == nil or not upper:IsA("BasePart") or not root:IsA("BasePart") then
+            return nil
         end
-        return if motor and motor:IsA("Motor6D") then motor.C0 else nil
+        local down = -(upper :: BasePart).CFrame.UpVector
+        local bodyDown = -(root :: BasePart).CFrame.UpVector
+        return math.deg(math.acos(math.clamp(down:Dot(bodyDown), -1, 1)))
+    end
+    -- Téléphone dans le repère du personnage : (latéral, hauteur, avant) en studs, et
+    -- distance à la main.
+    local function phonePlacement(): (Vector3?, number?)
+        local model = character():FindFirstChild("TelephoneAW")
+        local body = model and (model :: Model).PrimaryPart
+        local root = character():FindFirstChild("HumanoidRootPart") :: BasePart?
+        local hand = character():FindFirstChild("RightHand") or character():FindFirstChild("Right Arm")
+        if body == nil or root == nil or hand == nil then
+            return nil, nil
+        end
+        local localPos = (root :: BasePart).CFrame:PointToObjectSpace((body :: BasePart).Position)
+        return Vector3.new(localPos.X, localPos.Y, -localPos.Z),
+            ((body :: BasePart).Position - (hand :: BasePart).Position).Magnitude
     end
     -- Lot 0.9.2 (QA-A10) : nature des articulations de l'avatar (Motor6D ou contraintes
     -- d'animation du nouveau squelette R15) ; seule la première épaule droite est détaillée.
@@ -282,7 +298,7 @@ local function main()
         end
     end
     record("ui_monde.info_articulations_avatar", true, table.concat(joints, ", "))
-    local before = shoulderC0()
+    local before = armAngle()
     Gui.key("T")
     local phone = waitFor(function()
         local gui = playerGui:FindFirstChild("AWPhone") :: ScreenGui?
@@ -290,19 +306,68 @@ local function main()
     end, 4)
     record("ui_monde.telephone_touche_T", phone)
     task.wait(1.5)
-    local after = shoulderC0()
-    local raised = if before and after
-        then math.deg(math.acos(math.clamp(before.LookVector:Dot(after.LookVector), -1, 1)))
-        else -1
+    local after = armAngle()
+    local raised = if before and after then after - before else -1
     record(
-        "ui_monde.info_bras_leve_angle_epaule",
-        true,
-        string.format("rotation de l'épaule vue par le client : %.0f° (attendu ≈ 60°)", raised)
+        "ui_monde.telephone_bras_leve",
+        raised >= 35,
+        string.format(
+            "bras à %.0f° de la verticale (avant : %.0f°), levé de %.0f° (attendu ≈ 60°)",
+            after or -1,
+            before or -1,
+            raised
+        )
+    )
+    local placement, toHand = phonePlacement()
+    record(
+        "ui_monde.telephone_devant_le_personnage",
+        placement ~= nil and (placement :: Vector3).Z > 0.3 and (placement :: Vector3).Y > -0.5 and (toHand or 99) < 1.5,
+        if placement
+            then string.format(
+                "téléphone à %.1f st devant, %.1f st de hauteur (centre du personnage), %.1f st de côté, %.2f st de la main",
+                placement.Z,
+                placement.Y,
+                placement.X,
+                toHand or -1
+            )
+            else "téléphone introuvable"
     )
     local root = rootPart()
     frame((root.CFrame * CFrame.new(1.5, 1.5, -7)).Position, root.Position + Vector3.new(0, 1, 0))
     task.wait(1)
     Gui.shot("telephone_en_main_face", { version = version })
+    -- En marchant (2 s vers l'avant, commande de déplacement du personnage) : le bras reste
+    -- levé malgré l'animation de marche et le téléphone reste dans la main.
+    local humanoid = character():FindFirstChildOfClass("Humanoid")
+    local walkAngles = {}
+    local walkHand = 0
+    if humanoid then
+        local startPos = rootPart().Position
+        local t0 = os.clock()
+        while os.clock() - t0 < 2 do
+            humanoid:Move(Vector3.new(0, 0, -1), true)
+            task.wait(0.2)
+            table.insert(walkAngles, armAngle() or -1)
+            local _, d = phonePlacement()
+            walkHand = math.max(walkHand, d or 99)
+        end
+        humanoid:Move(Vector3.zero, true)
+        local walked = (rootPart().Position - startPos).Magnitude
+        local minAngle = math.huge
+        for _, a in walkAngles do
+            minAngle = math.min(minAngle, a)
+        end
+        record(
+            "ui_monde.telephone_en_marchant",
+            walked > 3 and minAngle - (before or 0) >= 25 and walkHand < 1.5,
+            string.format(
+                "%.1f st parcourus, bras levé d'au moins %.0f°, téléphone à %.2f st de la main au plus",
+                walked,
+                minAngle - (before or 0),
+                walkHand
+            )
+        )
+    end
     release()
     Gui.key("T")
     task.wait(1)
