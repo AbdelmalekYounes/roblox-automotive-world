@@ -1,8 +1,9 @@
 --!strict
 --[[
     Choix de la silhouette (avatars humains, décision du propriétaire du 2026-11-04) :
-    « Masculin » ou « Féminin ». Seul le corps change ; la tête, le visage, la peau et les
-    vêtements du joueur sont conservés (`Shared.Avatar.AvatarPolicy`).
+    « Masculin » ou « Féminin ». Le corps change ; la peau, les vêtements et les accessoires du
+    joueur sont conservés, sa tête aussi sauf une tête classique « bloc », remplacée par celle du
+    corps (`Shared.Avatar.AvatarPolicy`).
 
     - Petit panneau à la première apparition de la session, tant que le joueur n'a pas
       choisi (attribut serveur `AWAvatarBodyChosen`) ; d'ici là, le serveur applique le corps

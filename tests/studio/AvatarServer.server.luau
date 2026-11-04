@@ -308,6 +308,9 @@ local function applyMorph(player: Player, morph: Morph): (boolean, string)
     for _, field in AvatarPolicy.ReplacedParts do
         (description :: any)[field] = body.Parts[field]
     end
+    -- Même tête que le jeu (tête classique du compte de test → tête du corps).
+    local playerHead, classic = AvatarService.headInfo(player)
+    description.Head = AvatarPolicy.headFor(body.Id, playerHead, classic)
     local ok, err = pcall(function()
         humanoid:ApplyDescriptionAsync(description)
     end)
@@ -1098,6 +1101,22 @@ record(
         and AvatarPolicy.wearsBody(partsNow(), AvatarPolicy.DefaultBody),
     string.format("attribut %s ; Torso %d", tostring(player:GetAttribute("AWAvatarBody")), partsNow().Torso or 0)
 )
+do
+    local playerHead, classic = AvatarService.headInfo(player)
+    local applied = humanoid:GetAppliedDescription().Head
+    local expected = AvatarPolicy.headFor(AvatarPolicy.DefaultBody, playerHead, classic)
+    record(
+        "avatar.corps.tete_classique_remplacee",
+        applied == expected,
+        string.format(
+            "tête du joueur %d, %s ; portée %d, attendue %d",
+            playerHead,
+            if classic then "classique" else "non classique",
+            applied,
+            expected
+        )
+    )
+end
 local headBefore, shirtBefore, pantsBefore = initialDescription.Head, initialDescription.Shirt, initialDescription.Pants
 local chosen = AvatarService.chooseBody(player, "Feminin")
 local afterChoice = humanoid:GetAppliedDescription()
@@ -1106,11 +1125,22 @@ record(
     chosen.Status == "Ok" and AvatarPolicy.wearsBody(partsNow(), "Feminin"),
     string.format("%s / %s ; Torso %d", chosen.Status, tostring(chosen.Reason), partsNow().Torso or 0)
 )
+local playerHead, headClassic = AvatarService.headInfo(player)
+local expectedHead = AvatarPolicy.headFor("Feminin", playerHead, headClassic)
 record(
-    "avatar.corps.tete_et_vetements_conserves",
-    afterChoice.Head == headBefore and afterChoice.Shirt == shirtBefore and afterChoice.Pants == pantsBefore,
-    string.format("Head %d → %d ; Shirt %d → %d", headBefore, afterChoice.Head, shirtBefore, afterChoice.Shirt)
+    "avatar.corps.tete_selon_forme_vetements_conserves",
+    afterChoice.Head == expectedHead and afterChoice.Shirt == shirtBefore and afterChoice.Pants == pantsBefore,
+    string.format(
+        "tête du joueur %d (%s) → %d, attendu %d ; Shirt %d → %d",
+        playerHead,
+        if headClassic then "classique" else "conservée",
+        afterChoice.Head,
+        expectedHead,
+        shirtBefore,
+        afterChoice.Shirt
+    )
 )
+record("avatar.corps.info_tete_initiale", true, string.format("Head initial lu par le test : %d", headBefore))
 record(
     "avatar.corps.choix_memorise_session",
     player:GetAttribute("AWAvatarBodyChosen") == true and player:GetAttribute("AWAvatarBody") == "Feminin"

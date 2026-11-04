@@ -4,7 +4,8 @@
     l'apparence Roblox du joueur (visage, vêtements, accessoires) est conservée autant que
     possible. Révision du 2026-11-04 (propriétaire) : avatars HUMAINS uniquement, « non pas
     semi-Lego » : type de corps imposé à 1 et corps remplacé, pour tous les joueurs, par l'un
-    des deux corps retenus (masculin ou féminin, au choix du joueur) ; la tête est conservée.
+    des deux corps retenus (masculin ou féminin, au choix du joueur) ; la tête est conservée, sauf
+    une tête classique « bloc », remplacée par celle du corps (décision du même jour).
 
     Application :
     - réglage de la place (`StarterPlayer.GameSettingsAvatar = R15`,
@@ -49,13 +50,15 @@ AvatarPolicy.HumanOnly = true
 -- gratuits « Base Body » publiés par Roblox (créateur Roblox, identifiant 1) ; identifiants
 -- relevés le 2026-11-04 sur catalog.roblox.com/v1/bundles/{id}/details (aucun inventé).
 -- Clés de `Parts` : champs de `HumanoidDescription`.
-export type Body = { Id: string, BundleId: number, Source: string, Parts: { [string]: number } }
+-- `Head` : tête du paquet, posée SEULEMENT à la place d'une tête classique « bloc » (voir plus bas).
+export type Body = { Id: string, BundleId: number, Source: string, Parts: { [string]: number }, Head: number }
 
 AvatarPolicy.Bodies = table.freeze({
     Masculin = table.freeze({
         Id = "Masculin",
         BundleId = 995,
         Source = "Base Body - Billie",
+        Head = 11748988354, -- « Billie - Head »
         Parts = table.freeze({
             Torso = 11748986529,
             LeftArm = 11748981874,
@@ -68,6 +71,7 @@ AvatarPolicy.Bodies = table.freeze({
         Id = "Feminin",
         BundleId = 994,
         Source = "Base Body - Jordan",
+        Head = 11740063830, -- « Jordan - Head »
         Parts = table.freeze({
             Torso = 11740060397,
             LeftArm = 11740050465,
@@ -83,8 +87,35 @@ AvatarPolicy.BodyOrder = table.freeze({ "Masculin", "Feminin" })
 -- Corps appliqué tant que le joueur n'a pas choisi (panneau de choix affiché à l'apparition).
 -- PROVISOIRE, à confirmer par le propriétaire (signalé dans le rapport de phase 1).
 AvatarPolicy.DefaultBody = "Masculin"
--- Parties remplacées : jamais la tête (`Head`), pour garder le visage du joueur.
+-- Parties toujours remplacées. La tête (`Head`) ne l'est que si elle est classique (`headFor`).
 AvatarPolicy.ReplacedParts = table.freeze({ "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" })
+
+-- Têtes classiques « bloc » (décision du propriétaire, 2026-11-04 : « Remplacer têtes
+-- classiques ») : remplacées par la tête du corps choisi, ce qui change le visage ; toute autre tête
+-- est conservée. Critère mesuré par le moteur (tâche VM 20261104-161530) : la tête par défaut et 5
+-- têtes classiques de Roblox, publiées comme « têtes dynamiques », sont des cubes (largeur et
+-- profondeur / hauteur de 0,99 à 1,00) ; les 8 têtes réalistes des paquets 988 à 995 sont plus hautes
+-- que larges (0,65 à 0,71 ; profondeur 0,74 à 0,80). Seuil : 0,90 sur les deux rapports. La forme
+-- ne dépend pas de l'échelle de tête (homothétie).
+AvatarPolicy.ClassicHeadMinRatio = 0.9
+
+-- Vrai si la pièce `Head` mesurée (studs) a la forme d'une tête classique « bloc ».
+function AvatarPolicy.isClassicHeadShape(x: number, y: number, z: number): boolean
+    if type(x) ~= "number" or type(y) ~= "number" or type(z) ~= "number" or not (y > 0) then
+        return false
+    end
+    return x / y >= AvatarPolicy.ClassicHeadMinRatio and z / y >= AvatarPolicy.ClassicHeadMinRatio
+end
+
+-- Tête à porter avec le corps `bodyId` : celle du paquet si la tête du joueur est classique
+-- (identifiant 0 : tête par défaut, toujours classique), sinon celle du joueur.
+function AvatarPolicy.headFor(bodyId: string, playerHead: number, classic: boolean): number
+    local body = AvatarPolicy.Bodies[bodyId]
+    if body ~= nil and (classic or playerHead == 0) then
+        return body.Head
+    end
+    return playerHead
+end
 
 -- Corps désigné par un identifiant reçu (client ou réglage) ; nil si inconnu.
 function AvatarPolicy.body(id: any): Body?

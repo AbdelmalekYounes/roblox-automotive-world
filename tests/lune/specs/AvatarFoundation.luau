@@ -47,7 +47,18 @@ return function(T: any, H: any)
         T.equal(AvatarPolicy.Bodies.Feminin.BundleId, 994, "corps féminin : Base Body - Jordan")
         T.equal(AvatarPolicy.Bodies.Masculin.Parts.Torso, 11748986529)
         T.equal(AvatarPolicy.Bodies.Feminin.Parts.Torso, 11740060397)
-        T.truthy(table.find(AvatarPolicy.ReplacedParts, "Head") == nil, "tête (visage) du joueur conservée")
+        T.truthy(table.find(AvatarPolicy.ReplacedParts, "Head") == nil, "tête jamais remplacée d'office")
+        -- Têtes classiques (propriétaire, 2026-11-04) : critère de forme mesuré en VM (20261104-161530).
+        T.truthy(AvatarPolicy.isClassicHeadShape(1.127, 1.133, 1.128), "tête par défaut : classique")
+        T.truthy(AvatarPolicy.isClassicHeadShape(1.198, 1.202, 1.207), "tête classique dynamique (Err...)")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.282, 1.802, 1.383), "tête réaliste Addison : conservée")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.269, 1.943, 1.472), "tête réaliste Billie : conservée")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.279, 1.801, 1.445), "tête réaliste Dawson (profondeur 0,80)")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1, 0, 1), "hauteur nulle : non classée")
+        T.equal(AvatarPolicy.headFor("Masculin", 10638267973, true), 11748988354, "classique → tête Billie")
+        T.equal(AvatarPolicy.headFor("Feminin", 10638267973, true), 11740063830, "classique → tête Jordan")
+        T.equal(AvatarPolicy.headFor("Feminin", 0, false), 11740063830, "tête par défaut toujours remplacée")
+        T.equal(AvatarPolicy.headFor("Masculin", 11702291006, false), 11702291006, "tête réaliste conservée")
         local seen = {}
         for _, id in AvatarPolicy.BodyOrder do
             local body = AvatarPolicy.Bodies[id]

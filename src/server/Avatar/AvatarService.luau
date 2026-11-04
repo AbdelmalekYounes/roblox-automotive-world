@@ -15,7 +15,8 @@
     Corps (décision du propriétaire, 2026-11-04) : avatars humains uniquement ; chaque
     joueur porte l'un des deux corps retenus (`AvatarPolicy.Bodies`), à son choix
     (action « BodyChoose », session seulement), sinon le corps par défaut. La tête et le
-    visage du joueur sont conservés.
+    visage du joueur sont conservés, sauf une tête classique « bloc » (forme mesurée),
+    remplacée par la tête du corps choisi.
 
     Tenues : le client ne désigne qu'une tenue du catalogue (`Shared.Cosmetics`), jamais
     un identifiant d'actif. Changement refusé assis dans un véhicule (le moteur
@@ -52,6 +53,8 @@ type State = {
     Busy: boolean,
     Body: string?, -- corps choisi par le joueur pendant la session (nil : corps par défaut)
     SpawnToken: number, -- préparation du personnage en cours (corps et tenue à l'apparition)
+    PlayerHead: number, -- tête de l'apparence Roblox du joueur (relevée à chaque apparition)
+    HeadClassic: boolean, -- tête du joueur classique « bloc » : remplacée par celle du corps
 }
 
 local states: { [Player]: State } = {}
@@ -63,7 +66,16 @@ local started = false
 local function stateOf(player: Player): State
     local state = states[player]
     if state == nil then
-        state = { Initial = nil, Equipped = nil, PreviewToken = 0, Busy = false, Body = nil, SpawnToken = 0 }
+        state = {
+            Initial = nil,
+            Equipped = nil,
+            PreviewToken = 0,
+            Busy = false,
+            Body = nil,
+            SpawnToken = 0,
+            PlayerHead = 0,
+            HeadClassic = true,
+        }
         states[player] = state
     end
     return state :: State
@@ -377,7 +389,7 @@ local function applyBounded(humanoid: Humanoid, description: HumanoidDescription
     end
     return ok, err
 end
-local function humanDescription(description: HumanoidDescription, bodyId: string): boolean
+local function humanDescription(description: HumanoidDescription, bodyId: string, head: number): boolean
     local changed = false
     local scales: { [string]: string } = {
         BodyType = "BodyTypeScale",
@@ -402,7 +414,37 @@ local function humanDescription(description: HumanoidDescription, bodyId: string
             changed = true
         end
     end
+    if description.Head ~= head then
+        description.Head = head
+        changed = true
+    end
     return changed
+end
+
+-- Forme des têtes déjà mesurées (identifiant → classique ?), pour ne mesurer qu'une fois.
+local classicHeads: { [number]: boolean } = { [0] = true }
+
+-- Relève la tête de l'apparence Roblox du joueur à l'apparition (avant tout remplacement) et sa
+-- forme, mesurée sur la pièce `Head` chargée par le moteur (critère `AvatarPolicy`).
+local function readPlayerHead(player: Player, humanoid: Humanoid)
+    local state = stateOf(player)
+    local headId = humanoid:GetAppliedDescription().Head
+    state.PlayerHead = headId
+    local known = classicHeads[headId]
+    if known ~= nil then
+        state.HeadClassic = known
+        return
+    end
+    local character = humanoid.Parent
+    local head = character and character:FindFirstChild("Head")
+    if head and head:IsA("BasePart") then
+        local classic = AvatarPolicy.isClassicHeadShape(head.Size.X, head.Size.Y, head.Size.Z)
+        classicHeads[headId] = classic
+        state.HeadClassic = classic
+    else
+        -- Pièce absente : tête conservée (aucun remplacement sur une forme non mesurée).
+        state.HeadClassic = false
+    end
 end
 
 local function partsOf(description: HumanoidDescription): { [string]: number }
@@ -417,7 +459,9 @@ function enforceHuman(player: Player, humanoid: Humanoid)
     if not AvatarPolicy.HumanOnly then
         return
     end
-    local bodyId = stateOf(player).Body or AvatarPolicy.DefaultBody
+    local state = stateOf(player)
+    local bodyId = state.Body or AvatarPolicy.DefaultBody
+    local head = AvatarPolicy.headFor(bodyId, state.PlayerHead, state.HeadClassic)
     -- À l'apparition, le moteur peut refuser l'application tant que le personnage n'est pas
     -- installé (« DataModel was not available », VM 2026-11-04, tâche 20261104-145632) :
     -- attente de l'entrée dans Workspace, puis jusqu'à 3 essais espacés de 0,5 s.
@@ -427,7 +471,7 @@ function enforceHuman(player: Player, humanoid: Humanoid)
     end
     for attempt = 1, APPLY_ATTEMPTS do
         local description = humanoid:GetAppliedDescription()
-        if not humanDescription(description, bodyId) then
+        if not humanDescription(description, bodyId, head) then
             break
         end
         local attemptStart = os.clock()
@@ -461,7 +505,8 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         end
         task.wait(0.5)
     end
-    local worn = AvatarPolicy.wearsBody(partsOf(humanoid:GetAppliedDescription()), bodyId)
+    local applied = humanoid:GetAppliedDescription()
+    local worn = AvatarPolicy.wearsBody(partsOf(applied), bodyId) and applied.Head == head
     player:SetAttribute(BODY_ATTRIBUTE, if worn then bodyId else nil)
 end
 
@@ -488,6 +533,12 @@ function AvatarService.chooseBody(player: Player, id: any): Result
     end
     player:SetAttribute(BODY_CHOSEN_ATTRIBUTE, true)
     return { Status = "Ok" }
+end
+
+-- Tête du joueur relevée à l'apparition et forme mesurée (essais).
+function AvatarService.headInfo(player: Player): (number, boolean)
+    local state = stateOf(player)
+    return state.PlayerHead, state.HeadClassic
 end
 
 function AvatarService.humanizedCount(): number
@@ -522,6 +573,7 @@ local function onCharacter(player: Player, character: Model)
     -- tenue équipée appliqués ensuite dans un fil séparé, demandes du joueur refusées entre-temps
     -- (« OutfitBusy »).
     local state = stateOf(player)
+    readPlayerHead(player, humanoid)
     state.Initial = lookOf(humanoid:GetAppliedDescription())
     state.PreviewToken += 1
     player:SetAttribute(PREVIEW_ATTRIBUTE, nil)

@@ -640,8 +640,8 @@ local E: { [string]: Entry } = {
     -- ===================== Silhouette (avatars humains, 2026-11-04) =====================
     ["avatar.body.title"] = { "Choisissez votre silhouette", "Choose your body" },
     ["avatar.body.hint"] = {
-        "Votre tête, votre visage et vos vêtements sont conservés. Modifiable ensuite : Téléphone › Paramètres › Interface.",
-        "Your head, face and clothing are kept. Change it later: Phone › Settings › Interface.",
+        "Vos vêtements et accessoires sont conservés ; une tête classique « bloc » prend la tête de la silhouette. Modifiable ensuite : Téléphone › Paramètres › Interface.",
+        "Your clothing and accessories are kept; a classic block head takes the body's head. Change it later: Phone › Settings › Interface.",
     },
     ["avatar.body.Masculin"] = { "Masculin", "Masculine" },
     ["avatar.body.Feminin"] = { "Féminin", "Feminine" },
