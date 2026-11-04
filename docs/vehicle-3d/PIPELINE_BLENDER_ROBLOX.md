@@ -55,8 +55,17 @@ appliquées avant export, un matériau par famille (peinture, verre, pneu, chrom
     Stud », « Facteur d'échelle : 1 », « Avance du monde : Avant », « World Up : Haut » ;
   - cube 10 × 10 × 10 et roue 0,732 × 2,25 × 2,25 (axe X) exacts ;
   - **FBX écarté** : Studio lit ses unités comme des centimètres (×28, ×100 ou ×0,28 selon l'export).
-- **Orientation à confirmer** : la roue témoin arrive à x −14 au lieu de +14 (demi-tour ou miroir). Témoin v2 avec repère
-  avant (`temoins_orientation_v2.glb`), relevé à faire par le propriétaire.
+- **Orientation** : le témoin v2 a été relevé par le propriétaire dans Studio le 2026-11-04 (positions relatives au
+  cube) :
+  - roue (−14 ; −3,875 ; 0) au lieu de (+14) ;
+  - repère avant à z +8 au lieu de −8 ;
+  - repère haut conforme (+9).
+
+  C'est un **demi-tour de 180° autour de la verticale**, pas un miroir.
+  **Correction retenue : tourner le modèle de 180° autour de l'axe vertical de Blender au moment de l'export**, en
+  gardant les réglages par défaut de l'importeur.
+  **À confirmer** par le témoin v3 (`calibration/temoins_orientation_v3_demi_tour.glb` du dépôt d'art), qui doit donner
+  roue +14 et repère avant −8.
 - Format d'échange : glTF binaire, une exportation par groupe (EXT, INT, ROUES, LOD).
 
 ## 5. Intégration Roblox (proposition, non implémentée)
