@@ -14,8 +14,8 @@ d'actif, aucune modification de la physique ni des carrosseries provisoires** ; 
 | [ASTER_DESIGN_BRIEF.md](ASTER_DESIGN_BRIEF.md) | Véhicule pilote : fiche, trois directions, habitacle, budget, validation |
 | [PLAN_PRODUCTION_18_VEHICULES.md](PLAN_PRODUCTION_18_VEHICULES.md) | Phases, familles, décisions D1 à D6, risques |
 
-Décisions à prendre par le propriétaire : D1 proportions d'habitacle face aux avatars R15 ; D2 direction de l'Aster et
-langage commun ; D3 animation de conduite ; D4 ouvrants animés ; D5 critère de performance ; D6 import, publication et
+Décision prise : direction **A « Trait »** pour l'Aster (2026-11-04). Décisions à prendre : D1 proportions d'habitacle
+face aux avatars R15 ; D2 (suite) langage commun de la gamme ; D3 animation de conduite ; D4 ouvrants animés ; D5 critère de performance ; D6 import, publication et
 rangement des fichiers sources.
 
 Outil de mesure (lecture seule) : `lune run tests/lune/tools/cabin-geometry.luau build/AutomotiveWorld.rbxlx`.

@@ -72,8 +72,18 @@ garnissage, jantes, palette de couleurs.
 | Risque de ressemblance | le plus élevé (proche de la référence) | faible | faible à moyen (vérifier les barres lumineuses existantes) |
 | Complexité 3D | moyenne (surfaces tendues, reflets) | faible à moyenne | faible |
 
-Recommandation : **B « Galet »** pour le pilote (meilleure compatibilité avec les grands avatars, lisible dans un monde
-ouvert, risque de ressemblance faible), **A** si le propriétaire veut une gamme plus réaliste [décision D2].
+Recommandation initiale : B « Galet ». **Décision du propriétaire (2026-11-04) : direction A « Trait »** pour l'Aster.
+
+Conséquences de ce choix [proposé] :
+
+- **Dissemblance renforcée** (direction la plus proche de la référence) : revue de profil et de face superposés à la
+  référence à chaque porte ; signature en « L » aux angles, calandre fermée à motif de lignes et montant arrière à
+  insert vitré obligatoires ; aucun bandeau lumineux continu ni logo central.
+- **Habitacle** : la cible minimale R15 (≥ 4,30 st, décision D1) relève le pavillon d'environ 1,2 st par rapport à la
+  carrosserie provisoire ; à compenser par un vitrage latéral fin, une ligne de caisse haute et, si D3 le permet, une
+  assise abaissée de 0,3 à 0,5 st, pour garder une silhouette réaliste.
+- **Surfaces tendues** : reflets à soigner (normales, matériaux), complexité 3D moyenne.
+- Le langage commun de la gamme (signature lumineuse, monogramme) reste à valider (suite de D2).
 
 ## 5. Proposition d'habitacle (cotes cibles, studs du repère du véhicule)
 
