@@ -6,4 +6,4 @@ crédits, dès qu'un de ces actifs y est intégré. Ce n'est pas encore le cas �
 
 | Actif | Usage | Crédit (texte exigé par la licence) | Modifications |
 |---|---|---|---|
-| Modèle 3D « 2017 Mclaren 720s » | Essai pour la Comète (`wk_comete`), non intégré | This work is based on "2017 Mclaren 720s" (https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) by _Sheep19 (https://sketchfab.com/shobhit190401) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) | Logos et inscriptions retirés (objet et textures), mise à l'échelle, orientation, roues séparées |
+| Modèle 3D « 2017 Mclaren 720s » | Comète (`wk_comete`) : intégrée à la fabrique (lot VEH3D-01), écran de crédits en jeu **à faire** | This work is based on "2017 Mclaren 720s" (https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) by _Sheep19 (https://sketchfab.com/shobhit190401) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) | Logos et inscriptions retirés (objet et textures), mise à l'échelle, orientation, roues séparées |

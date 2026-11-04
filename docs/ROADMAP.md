@@ -209,7 +209,9 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 ## VEH3D-01 — intégration de la Comète 3D (branche `feat/veh3d-01-comete`, base : ASTER-02)
 
 - Lot ouvert le 2026-11-04 à la demande du propriétaire, ASTER-02 étant suspendu. Plan :
-  `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. En attente du modèle envoyé sur Roblox par le propriétaire.
+  `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. Maillages envoyés par le propriétaire ; kit de maillages intégré à
+  la fabrique, avec repli sur la carrosserie provisoire (Lune 371/371) ; essais en jeu QA-V01 à V08 **NON TESTÉS** ;
+  écran de crédits à faire.
 
 ## Critères de passage du socle 0.0.1
 
