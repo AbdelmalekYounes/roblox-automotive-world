@@ -255,17 +255,19 @@ réel, ni le ressenti, ni le comportement multijoueur.
 ## 3 septies. Essais reportés du lot VEH3D-01 (Comète 3D, moteur requis)
 
 Contrôlé hors Studio (Lune, 2026-11-04) : gabarit, identifiants, données du kit, repli. Tout ce qui suit dépend du moteur.
+Identifiants QA-K (kit de maillages) : les QA-V01 à V09 sont ceux des lots 0.8 et 0.9 (§3 sexies et précédents).
+Session VM : `test-vm.cmd -Sessions comete -GuiInput` (`tests/studio/CometeServer.server.luau`, `CometeClient.client.luau`).
 
 | Id | Essai | Attendu | État |
 |---|---|---|---|
-| QA-V01 | Apparition de la Comète | Carrosserie 3D soudée, sans masse, posée sur ses roues ; les 17 autres véhicules gardent leur carrosserie provisoire | **NON TESTÉ** |
-| QA-V02 | Maillages vus par la VM | Les maillages envoyés par le propriétaire se chargent dans la session de test (droits d'usage des actifs) | **NON TESTÉ** |
-| QA-V03 | Roues | Pneus et jantes tournent et braquent avec les roues du jeu ; voie visuelle 3,5 à 4,7 cm en retrait accepté | **NON TESTÉ** |
-| QA-V04 | Embarquement et pose | Invites conducteur et passager ; sièges avec `AWSeatPose` ; têtes, mains et pieds dans l'habitacle (3,38 st d'assise au pavillon) | **NON TESTÉ** |
-| QA-V05 | Caméras | Vues cockpit, capot et bouclier aux repères mesurés ; volant 10° sous la visée | **NON TESTÉ** |
-| QA-V06 | Collisions et dégâts | Chocs avant, arrière et latéraux ; zones de dégâts reconnues ; aucune collision sur les maillages visuels | **NON TESTÉ** |
-| QA-V07 | Vitrage et feux | Vitrage sombre transparent ; phares et feux allumés la nuit (sources invisibles ; maillage des feux non lumineux, feux non séparés dans le `.rbxm` reçu) | **NON TESTÉ** |
-| QA-V08 | Performances D5 | 24 Comète visibles, jour et nuit : temps d'image ≤ référence + 2 ms | **NON TESTÉ** |
+| QA-K01 | Apparition de la Comète | Carrosserie 3D soudée, sans masse, posée sur ses roues ; les 17 autres véhicules gardent leur carrosserie provisoire | **FAIT (VM, `20261105-002227`)** — 28 maillages posés, sans masse ni collision, soudés ; CG à 1,50 st du sol (définition 1,50), assiette 1,000 ; P-01 apparu avec sa carrosserie provisoire (30 primitives, 0 pièce du kit). Les 16 autres modèles : contrôle Lune seulement (kit pour la seule Comète) |
+| QA-K02 | Maillages vus par la VM | Les maillages envoyés par le propriétaire se chargent dans la session de test (droits d'usage des actifs) | **FAIT dans le Studio de la VM (`20261105-002227`)** — 34 contenus distincts chargés (`Success`), 0 échec, 0,4 s, compte de test. Chargement dans l'expérience publiée : NON TESTÉ |
+| QA-K03 | Roues | Pneus et jantes tournent et braquent avec les roues du jeu ; voie visuelle 3,5 à 4,7 cm en retrait accepté | **FAIT (VM, `20261105-002227`)** — pneus et jantes soudés aux 4 roues ; braquage du pneu avant gauche 35,3° (vraie touche A) ; jante 5 766° de rotation sur 16 st (vraie touche W, 41,6 km/h max). Retrait de la voie : constaté sur les captures, non mesuré en jeu |
+| QA-K04 | Embarquement et pose | Invites conducteur et passager ; sièges avec `AWSeatPose` ; têtes, mains et pieds dans l'habitacle (3,38 st d'assise au pavillon) | **PARTIEL (VM, `20261105-002227`)** — invites « Conduire » et « Monter (passager) » présentes ; `AWSeatPose` posé ; assise par `Seat:Sit` (instrumenté) ; avatar par défaut : tête à 2,30 st (haut de la boîte Habitacle 2,53), mains |x| 1,73 / 2,24 (flanc 3,49), pieds au-dessus du sol ; sorties par vraies touches F et Espace. Invite E réelle, autres morphologies, marge sous le pavillon du maillage : NON TESTÉ |
+| QA-K05 | Caméras | Vues cockpit, capot et bouclier aux repères mesurés ; volant 10° sous la visée | **FAIT (VM, `20261105-002227`)** — vues cockpit, capot et bouclier atteintes par la vraie touche V, repères à ±0,01 st, captures. Volant 10° sous la visée : règle vérifiée en Lune, non mesurée en jeu |
+| QA-K06 | Collisions et dégâts | Chocs avant, arrière et latéraux ; zones de dégâts reconnues ; aucune collision sur les maillages visuels | **PARTIEL (VM, `20261105-002227`)** — choc avant contre `MurDeChoc` à 41,6 km/h (zone avant 1,00, moteur 0,38) ; choc arrière en marche arrière à 21,8 km/h (zone arrière 0,41) ; aucun bloc opaque après les chocs (défaut corrigé, voir VEH3D-01 §7) ; R engagée par l'appel de test (Ctrl jamais reçu par le jeu dans Studio). Choc latéral : NON TESTÉ (véhicule vide lancé par le serveur plafonné à 3 m/s par la validation anti-éjection). Dégâts visuels sur les maillages : non représentés (rayures seulement) |
+| QA-K07 | Vitrage et feux | Vitrage sombre transparent ; phares et feux allumés la nuit (sources invisibles ; maillage des feux non lumineux, feux non séparés dans le `.rbxm` reçu) | **FAIT pour les sources (VM, `20261105-002227`)** — 4 / 4 sources allumées la nuit, vitrage 2 / 2 transparent (≥ 0,3). Captures : lueur rouge à l'arrière ; maillage des phares non lumineux (feux non séparés) ; **vitres latérales opaques** (peintes dans la texture du modèle, aucune pièce `glass`) : avatar invisible de l'extérieur, à arbitrer |
+| QA-K08 | Performances D5 | 24 Comète visibles, jour et nuit : temps d'image ≤ référence + 2 ms | **NON CONCLUANT (`20261105-002227`)** — 24 Comète contre 24 P-01 immobiles : moyenne 16,66 / 16,66 ms le jour, 16,91 / 16,66 ms la nuit ; P95 18,56 / 18,68 et 18,81 / 18,51 ms. Studio de la VM plafonné à 60 images/s : écart invisible sous le plafond. Mesure D5 sur un poste réel : NON TESTÉ |
 
 ## 4. Charge, performance et stabilité
 
