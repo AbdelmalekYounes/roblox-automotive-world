@@ -49,6 +49,8 @@ local signalEvent = ReplicatedStorage:WaitForChild("AWTestSignal", 30) :: Remote
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WorldLayout = require(Shared:WaitForChild("World"):WaitForChild("WorldLayout")) :: any
 local RouteGuide = require(Shared:WaitForChild("Navigation"):WaitForChild("RouteGuide")) :: any
+local MapIndex = require(Shared:WaitForChild("Navigation"):WaitForChild("MapIndex")) :: any
+local RoadGraph = require(Shared:WaitForChild("World"):WaitForChild("RoadGraph")) :: any
 local client = player:WaitForChild("PlayerScripts"):WaitForChild("AutomotiveWorldClient")
 local VehicleController = require(client:WaitForChild("Vehicles"):WaitForChild("VehicleController", 10)) :: any
 local GPSController = require(client:WaitForChild("UI"):WaitForChild("GPSController")) :: any
@@ -66,8 +68,15 @@ end
 
 -- ======================== Pilote : suivi d'itinéraire ========================
 
-local driving: { Model: Model?, Target: Vector3?, SpeedKmh: number, Hold: boolean, Reverse: boolean? } =
-    { Model = nil, Target = nil, SpeedKmh = 0, Hold = true, Reverse = nil }
+local driving: {
+    Model: Model?,
+    Target: Vector3?,
+    SpeedKmh: number,
+    Hold: boolean,
+    Reverse: boolean?,
+    ReverseSteer: number,
+} =
+    { Model = nil, Target = nil, SpeedKmh = 0, Hold = true, Reverse = nil, ReverseSteer = 0.6 }
 
 local function speedKmh(): number
     local body = driving.Model and (driving.Model :: Model).PrimaryPart
@@ -120,7 +129,7 @@ local function autopilot(): any
     end
     if driving.Reverse then
         -- Dégagement : frein maintenu à l'arrêt = marche arrière (boîte automatique, A3).
-        return { Throttle = 0, Brake = 1, Steer = 0.6, Handbrake = false, Clutch = 0 }
+        return { Throttle = 0, Brake = 1, Steer = driving.ReverseSteer, Handbrake = false, Clutch = 0 }
     end
     local target = driving.Target :: Vector3
     local forward = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
@@ -259,8 +268,39 @@ local function sampleZone()
     end
 end
 
+-- Lot 0.9.2 : sortie d'itinéraire PAR LA ROUTE. Un point de route à 180-400 m, à plus de
+-- 90 m de l'itinéraire suivi, puis l'itinéraire du jeu (RouteGuide.plan, même graphe que le
+-- GPS) pour s'y rendre : le pilote quitte l'itinéraire en conduisant sur une autre route,
+-- comme un conducteur qui se trompe de rue. (Le cap « vers le côté dégagé » des lots
+-- précédents ne quittait pas l'itinéraire en ville : 2 à 7 m, tâches 20261104-021402 et
+-- 20261104-025158.)
+local function detourRoute(planBefore: any, x: number, z: number): any?
+    local index = GPSController.mapIndex()
+    if index == nil then
+        return nil
+    end
+    local graph = RoadGraph.get()
+    for _, radius in { 180, 280, 400 } do
+        for k = 0, 15 do
+            local a = k * math.pi / 8
+            local _, _, p = MapIndex.nearestEdge(index, x + math.cos(a) * radius, z + math.sin(a) * radius, 60)
+            if p and RouteGuide.track(planBefore, p.X, p.Z, nil).OffRouteM > 90 then
+                local route = RouteGuide.plan(graph, index, x, z, p.X, p.Z, planBefore.Profile)
+                -- Sortie réelle : à 150 m (ou à son terme), le détour s'écarte de l'itinéraire.
+                if route and route.LengthM < radius * 3 then
+                    local px, pz = pointAt(route, math.min(150, route.LengthM))
+                    if RouteGuide.track(planBefore, px, pz, nil).OffRouteM > RouteGuide.OffRouteM + 15 then
+                        return route
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
 -- Un trajet jusqu'à l'arrivée constatée par le GPS. `detour` : sortie volontaire.
-local function leg(index: number, zone: string, target: { X: number, Z: number }, detour: boolean): boolean
+local function leg(index: number, zone: string, target: { X: number, Z: number }, wantDetour: boolean): boolean
     local name = string.format("gps.trajet_%d_%s", index, zone)
     GPSController.setDestination(target.X, target.Z, "Essai " .. zone, "Player")
     local planned = waitFor(function()
@@ -296,11 +336,17 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
     local started = os.clock()
     local deadline = started + plan.TimeS * 3 + 120
     local hint = nil
-    local detourDone = not detour
+    local detourDone = not wantDetour
     local detourTries = 0
+    local detour: any = nil -- itinéraire de sortie en cours
+    local detourHint = nil
+    local detourStart = 0
+    local detourMaxOff = 0
     local recalcSeen = false
     local planBefore = nil
     local stuckSince = nil
+    local lastStuck: Vector3? = nil
+    local repeatCount = 0
     local blockedSince: number? = nil
     local overtakeUntil = 0
     local anchorPos: Vector3? = nil
@@ -373,71 +419,66 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
                 )
             )
         end
-        -- Sortie volontaire : à 35, 55 puis 75 % du trajet (jusqu'à un écart suffisant), cap
-        -- vers le côté dégagé pendant ≈ 8 s. En ville, le freinage devant les façades
-        -- empêchait de quitter l'itinéraire (tâche 20261103-220054 : écart de 2 m).
+        -- Sortie volontaire : à 35 %, puis 55 et 75 % du trajet si aucune route de sortie
+        -- n'a été trouvée, par une autre route (detourRoute) ; recalcul attendu du GPS.
         local detourAt = ({ 0.35, 0.55, 0.75 })[detourTries + 1]
-        if not detourDone and detourAt and progress.AlongM > plan.LengthM * detourAt then
+        if not detourDone and detour == nil and detourAt and progress.AlongM > plan.LengthM * detourAt then
             detourTries += 1
-            planBefore = plan
-            local look = body.CFrame.LookVector
-            local side = Vector3.new(-look.Z, 0, look.X).Unit
-            local probe = RaycastParams.new()
-            probe.FilterType = Enum.RaycastFilterType.Exclude
-            probe.FilterDescendantsInstances = { driving.Model :: Model, character() }
-            if Workspace:Raycast(body.Position, side * 60 * S, probe) then
-                side = -side
+            local route = detourRoute(plan, x, z)
+            if route then
+                planBefore = plan
+                detour = route
+                detourHint = nil
+                detourStart = os.clock()
+                detourMaxOff = 0
+                trace(string.format("%s : sortie d'itinéraire par la route (%.0f m de détour)", name, route.LengthM))
+            elseif detourTries >= 3 then
+                detourDone = true
+                record(name .. ".recalcul_apres_sortie", false, "aucune route de sortie trouvée (3 essais)")
             end
-            driving.Target = body.Position + side * 120 * S + look * 40 * S
-            driving.SpeedKmh = 35
-            driving.Hold = false
-            ignoreObstacles = true
-            local off = os.clock()
-            local maxOff = 0
-            while os.clock() - off < 12 do
-                local p = RouteGuide.track(planBefore, body.Position.X / S, body.Position.Z / S, nil)
-                maxOff = math.max(maxOff, p.OffRouteM)
-                if maxOff > RouteGuide.OffRouteM + 10 and os.clock() - off > 6 then
-                    break
+        end
+        if detour then
+            local off = RouteGuide.track(planBefore, x, z, nil).OffRouteM
+            detourMaxOff = math.max(detourMaxOff, off)
+            local recomputed = recalcSeen
+            local finished = RouteGuide.track(detour, x, z, detourHint).RemainingM < 15
+            if recomputed or finished or os.clock() - detourStart > 120 then
+                if not recomputed then
+                    recomputed = waitFor(function()
+                        return GPSController.state().Plan ~= nil and GPSController.state().Plan ~= planBefore
+                    end, 12)
                 end
-                task.wait(0.1)
-            end
-            ignoreObstacles = false
-            if maxOff <= RouteGuide.OffRouteM and detourTries < 3 then
-                trace(
+                record(
+                    name .. ".recalcul_apres_sortie",
+                    recomputed,
                     string.format(
-                        "%s : sortie %d insuffisante (%.0f m), nouvel essai plus loin",
-                        name,
-                        detourTries,
-                        maxOff
+                        "sortie par la route : écart maximal %.0f m (seuil %d m pendant %d s), recalcul après %.0f s",
+                        detourMaxOff,
+                        RouteGuide.OffRouteM,
+                        RouteGuide.OffRouteHoldS,
+                        os.clock() - detourStart
                     )
                 )
+                Gui.shot("gps_recalcul_" .. zone, { zone = zone, ecart = math.floor(detourMaxOff) })
+                detour = nil
+                detourDone = true
                 continue
             end
-            detourDone = true
-            local recomputed = waitFor(function()
-                return GPSController.state().Plan ~= nil and GPSController.state().Plan ~= planBefore
-            end, 12)
-            record(
-                name .. ".recalcul_apres_sortie",
-                recomputed,
-                string.format(
-                    "écart maximal %.0f m (seuil %d m pendant %d s)",
-                    maxOff,
-                    RouteGuide.OffRouteM,
-                    RouteGuide.OffRouteHoldS
-                )
-            )
-            Gui.shot("gps_recalcul_" .. zone, { zone = zone, ecart = math.floor(maxOff) })
-            continue
+        end
+        -- Route suivie : le détour pendant la sortie, sinon l'itinéraire du GPS.
+        local follow = detour or plan
+        local followProgress = progress
+        if detour then
+            followProgress = RouteGuide.track(detour, x, z, detourHint)
+            detourHint = followProgress.Hint
         end
         local v = speedKmh()
         local look = math.clamp(v * 0.3, 10, 32)
-        local tx, tz = pointAt(plan, progress.AlongM + look)
+        local tx, tz = pointAt(follow, followProgress.AlongM + look)
         -- Lot 0.9.2 : voie de droite (l'itinéraire suit l'axe de la route : au milieu, le
         -- pilote rencontrait le trafic venant en face) ; décalage à gauche pour dépasser un
         -- obstacle immobile.
-        local ax, az = pointAt(plan, progress.AlongM + look + 6)
+        local ax, az = pointAt(follow, followProgress.AlongM + look + 6)
         local dx, dz = ax - tx, az - tz
         local length = math.sqrt(dx * dx + dz * dz)
         if length > 1e-3 then
@@ -446,10 +487,10 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
             tx += -dz / length * lateral
             tz += dx / length * lateral
         end
-        local turn = turnAhead(plan, progress.AlongM, math.clamp(v * 0.9, 30, 90))
+        local turn = turnAhead(follow, followProgress.AlongM, math.clamp(v * 0.9, 30, 90))
         -- Conduite prudente (tâche 20261103-203235 : chocs répétés, moteur et direction
         -- endommagés, véhicule immobilisé) : 75 km/h au plus, virages nettement ralentis.
-        local cap = math.min(plannedSpeedKmh(plan, progress.AlongM) * 0.8, 75)
+        local cap = math.min(plannedSpeedKmh(follow, followProgress.AlongM) * 0.8, 75)
         if turn > 60 then
             cap = math.min(cap, 16)
         elseif turn > 35 then
@@ -459,7 +500,7 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         elseif turn > 8 then
             cap = math.min(cap, 55)
         end
-        if progress.OffRouteM > 12 then
+        if followProgress.OffRouteM > 12 then
             cap = math.min(cap, 25)
         end
         driving.Target = Vector3.new(tx * S, body.Position.Y, tz * S)
@@ -506,14 +547,48 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         if v < 2 then
             stuckSince = stuckSince or os.clock()
             if os.clock() - (stuckSince :: number) > 6 then
-                trace(string.format("%s : blocage en (%.0f, %.0f), dégagement", name, x, z))
+                -- Lot 0.9.2 : contexte du blocage (obstacle devant, écart de cap vers la cible,
+                -- état du moteur) ; blocage répété au même endroit (moins de 20 m) : marche
+                -- arrière plus longue, braquage alterné (tâche 20261104-025158 : véhicule
+                -- tournant 90 s au même carrefour, braquage toujours du même côté).
+                rayParams.FilterDescendantsInstances = { driving.Model :: Model, character() }
+                local ahead = obstacleAhead(body, 12)
+                local targetNow = driving.Target
+                local headingError = 0
+                if targetNow then
+                    local flat = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
+                    local toTarget = Vector3.new(targetNow.X - body.Position.X, 0, targetNow.Z - body.Position.Z)
+                    if toTarget.Magnitude > 1e-3 then
+                        headingError = math.deg(math.acos(math.clamp(flat:Dot(toTarget.Unit), -1, 1)))
+                            * math.sign(flat:Cross(toTarget).Y)
+                    end
+                end
+                local repeated = lastStuck ~= nil and (body.Position - (lastStuck :: Vector3)).Magnitude / S < 20
+                lastStuck = body.Position
+                repeatCount = if repeated then repeatCount + 1 else 0
+                trace(
+                    string.format(
+                        "%s : blocage en (%.0f, %.0f), dégagement %s — obstacle devant %s, écart de cap %.0f°, moteur %s",
+                        name,
+                        x,
+                        z,
+                        if repeated then "répété (" .. repeatCount .. ")" else "",
+                        if ahead then string.format("%.1f m", ahead) else "aucun",
+                        headingError,
+                        if engineStalled then "calé" else "en marche"
+                    )
+                )
                 measures[name .. "_degagements"] = (measures[name .. "_degagements"] or 0) + 1
                 if body.CFrame.UpVector.Y < 0.5 then
                     VehicleController.invokeActionForTest("AWVehicleUnflip")
                     task.wait(2)
                 end
+                -- En marche arrière, braquer du côté de la cible fait pivoter l'avant vers
+                -- l'extérieur ; l'alternance évite de reproduire le même mouvement.
+                local side = if headingError ~= 0 then -math.sign(headingError) else 1
+                driving.ReverseSteer = 0.6 * side * (if repeatCount % 2 == 1 then -1 else 1)
                 driving.Reverse = true
-                task.wait(2.5)
+                task.wait(if repeated then 4 else 2.5)
                 driving.Reverse = nil
                 stuckSince = nil
             end
@@ -548,7 +623,7 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
             os.clock() - started,
             gap,
             WorldLayout.zoneOf(body.Position.X / S, body.Position.Z / S),
-            if detour then tostring(recalcSeen) else "—",
+            if wantDetour then tostring(recalcSeen) else "—",
             if abandoned then ", ABANDONNÉ (immobilisé)" else ""
         )
     )

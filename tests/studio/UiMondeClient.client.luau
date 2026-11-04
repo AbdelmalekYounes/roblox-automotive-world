@@ -336,22 +336,24 @@ local function main()
     frame((root.CFrame * CFrame.new(1.5, 1.5, -7)).Position, root.Position + Vector3.new(0, 1, 0))
     task.wait(1)
     Gui.shot("telephone_en_main_face", { version = version })
-    -- En marchant (2 s vers l'avant, commande de déplacement du personnage) : le bras reste
-    -- levé malgré l'animation de marche et le téléphone reste dans la main.
+    -- En marchant (2 s vers l'avant, VRAIE touche W maintenue ; Humanoid:Move était réécrit
+    -- à chaque image par le module de contrôle de Roblox : tâche 20261104-025158, 0 st) : le
+    -- bras reste levé malgré l'animation de marche et le téléphone reste dans la main.
     local humanoid = character():FindFirstChildOfClass("Humanoid")
     local walkAngles = {}
     local walkHand = 0
     if humanoid then
+        release()
         local startPos = rootPart().Position
+        Gui.keyDown("W")
         local t0 = os.clock()
-        while os.clock() - t0 < 2 do
-            humanoid:Move(Vector3.new(0, 0, -1), true)
+        while os.clock() - t0 < 2.5 do
             task.wait(0.2)
             table.insert(walkAngles, armAngle() or -1)
             local _, d = phonePlacement()
             walkHand = math.max(walkHand, d or 99)
         end
-        humanoid:Move(Vector3.zero, true)
+        Gui.keyUp("W")
         local walked = (rootPart().Position - startPos).Magnitude
         local minAngle = math.huge
         for _, a in walkAngles do

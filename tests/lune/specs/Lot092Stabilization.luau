@@ -128,18 +128,22 @@ return function(T: any, H: any)
     end)
 
     T.test("QA-A10 : bras levé aussi sur le squelette R15 à contraintes d'animation", function()
-        local node = H.game()
-        for segment in string.gmatch("ServerScriptService.AutomotiveWorldServer.Social.InterfaceService", "[^%.]+") do
-            node = node:FindFirstChild(segment)
+        local function source(path: string): string
+            local node = H.game()
+            for segment in string.gmatch(path, "[^%.]+") do
+                node = node:FindFirstChild(segment)
+            end
+            return node.Source
         end
-        local source = node.Source
-        T.truthy(string.find(source, 'IsA("Motor6D")', 1, true) ~= nil, "chemin Motor6D conservé (R6, R15 classique)")
-        T.truthy(
-            string.find(source, 'IsA("AnimationConstraint")', 1, true) ~= nil,
-            "épaule à contrainte d'animation reconnue"
-        )
-        T.truthy(string.find(source, "Attachment0", 1, true) ~= nil, "rotation de l'attache côté torse")
-        T.truthy(string.find(source, "shoulder.Rest", 1, true) ~= nil, "position de repos rétablie au rangement")
+        local server = source("ServerScriptService.AutomotiveWorldServer.Social.InterfaceService")
+        T.truthy(string.find(server, 'IsA("Motor6D")', 1, true) ~= nil, "chemin Motor6D conservé (R6, R15 classique)")
+        T.truthy(string.find(server, '"AWPhoneRaised"', 1, true) ~= nil, "attribut du bras levé publié")
+        T.truthy(string.find(server, "Attachment0", 1, true) == nil, "attaches du squelette non modifiées")
+        local client = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneController")
+        T.truthy(string.find(client, '"AWPhoneRaised"', 1, true) ~= nil, "attribut lu par le client")
+        T.truthy(string.find(client, 'IsA("AnimationConstraint")', 1, true) ~= nil, "épaule à contrainte reconnue")
+        T.truthy(string.find(client, "PreSimulation", 1, true) ~= nil, "appliqué après l'animation")
+        T.truthy(string.find(client, "shoulder.Transform =", 1, true) ~= nil, "rotation multipliée dans Transform")
     end)
 
     T.test("QA-A08 : borne du convertisseur inactive en conduite normale (physique inchangée)", function()

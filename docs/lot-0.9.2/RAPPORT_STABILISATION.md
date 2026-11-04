@@ -76,3 +76,34 @@ le fait pivoter).
   du lot 0.6). Ce n'est pas un défaut de conduite.
 - Correction du test (`9715443`) : pendant l'élan, le véhicule tient la ligne de son plot (correction de direction
   douce), comme un conducteur ; la mesure du virage est inchangée.
+
+## 3. Moteur calé définitivement sur boîte automatique : défaut de jeu établi et corrigé
+
+### 3.1 Constat (tâche VM `20261104-021402`, session `gps2`, code `9715443`)
+
+À 2,7 km du départ vers Motorsport, le véhicule du pilote GPS (P-01, automatique à convertisseur) percute un
+poteau de feu (serveur : `Choc confirmé … zone Left, Δv 24.9 m/s, niveau 3, mécanique true, obstacle FeuPoteau`)
+puis reste immobile 90 s malgré 10 dégagements ; le HUD affiche « Direction endommagée • Moteur calé » (captures
+`006` et `007`). Les deux trajets restants partent de ce point et sont abandonnés.
+
+### 3.2 La borne du convertisseur (§1.4) n'y est pour rien
+
+Banc `tests/lune/tools/stall-impact.luau` : 7 modèles à convertisseur × 2 accélérations × 2 durées d'élan × 2 états
+du moteur × (choc sec, freinage au choc, rebond de 5 m/s), chaque essai rejoué **avec la borne et avec une copie du
+module sans borne** : 224 essais, **0 différence** de calage, **0 activation** de la borne pendant les chocs.
+Le calage est reproduit par le rebond en arrière contre l'obstacle (turbine entraînée à l'envers alors que le moteur
+tire en D) sur `wk_atlas` ; pour P-01, le mécanisme exact du calage en jeu **n'est pas reproduit** hors moteur
+(aucun calage au banc, même avec un rebond de 12 m/s) : le pilote GPS journalise désormais chaque calage avec son
+contexte (vitesse, rapport, pontage, roues au sol, limitations de la borne).
+
+### 3.3 Cause du blocage : aucune relance possible sans pédale d'embrayage
+
+La relance d'un moteur calé exigeait l'embrayage enfoncé ou le neutre (`VehicleDynamics.updateEngineState`). Sur une
+boîte sans pédale d'embrayage (automatique, double embrayage, séquentielle, CVT), le sélecteur ne repasse jamais au
+neutre en jeu : **un moteur calé le restait jusqu'à la sortie du véhicule** (banc : calé après pédales relâchées sur
+le code `2f304b7`). Défaut de jeu, indépendant du pilote d'essai.
+
+Correction (`5805636`) : sans pédale d'embrayage, le démarreur tourne quand le conducteur relâche l'accélérateur
+(équivalent du passage par N/P et de la clé, sans nouvelle commande). Boîte manuelle inchangée. Tests Lune : relance
+de P-01 calée en D accélérateur relâché, aucune relance accélérateur enfoncé, P-02 manuelle inchangée ; calage par
+rebond de `wk_atlas` sans activation de la borne puis relance.
