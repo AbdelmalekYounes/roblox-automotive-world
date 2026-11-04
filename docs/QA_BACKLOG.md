@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-04, lot 0.9.2 (branche `feat/final-stabilization-0.9.2` ; QA-A08 à A12, U02, U10 ; rapport `docs/lot-0.9.2/RAPPORT_STABILISATION.md`). Classement complet (type, criticité,
+Dernière mise à jour : 2026-11-04, phase 1 de l'Aster (branche `feat/aster-phase1` ; QA-A17 à A20 ; rapport `docs/vehicle-3d/ASTER_PHASE1.md`). Mise à jour précédente : lot 0.9.2 (QA-A08 à A12, U02, U10 ; `docs/lot-0.9.2/RAPPORT_STABILISATION.md`).
 probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALIES_ET_CORRECTIONS.md` §4.
 
 ## 1. Anomalies ouvertes
@@ -38,6 +38,10 @@ probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALI
 | QA-A14 | AVATAR-01 | Habitacles / avatars R15 | P2 | Avant-bras à travers la portière (30 assises de référence sur 37, jusqu'à 0,31 st) ; jambes dans la planche de bord ou le volant (> 0,5 st) dans 6 modèles bas | `20261104-111326`, session `avatar` | **Ouverte** — à arbitrer avec QA-A13 |
 | QA-A15 | AVATAR-01 | Sortie passager | P1 | Le passager sort par le saut du moteur, sans placement par le jeu : sur le toit ou couché au sol, 0 sortie correcte sur 32, dès la morphologie de référence | `20261104-104818`, `-111326`, vraie touche Espace | **Ouverte** — défaut antérieur au lot ; correction proposée (placement comme le conducteur), non faite |
 | QA-A16 | AVATAR-01 | Sortie conducteur | P2 | Personnage retrouvé couché après la sortie (4 sur 40 : `wk_pixel`, `wk_dune`, surtout petites morphologies) ; recouvrement avec le véhicule (1 sur 40) | `20261104-111326`, vraie touche F | **Ouverte** — cause non établie |
+| QA-A17 | Aster phase 1 | Habitacles provisoires / corps humains | P3 | Avec le corps humain masculin (995), les pieds des grandes morphologies (M4, M7 ; M5 sur `wk_sentier`) dépassent du plancher de 0,01 à 0,24 st dans 6 carrosseries provisoires (`wk_atlas`, `wk_brio`, `wk_dune`, `wk_fil`, `wk_pixel`, `wk_sentier`) | `20261104-154409`, session `avatar` (comparé à `20261104-111326`) | **Ouverte** — carrosseries provisoires ; les modèles 3D suivront le gabarit (`docs/vehicle-3d/ASTER_PHASE1.md` §5.3) |
+| QA-A18 | Aster phase 1 | Sortie conducteur / corps humains | P2 | 10 sorties du conducteur en échec en plus avec le corps humain (`wk_brise`, `wk_dune`, `wk_pixel`) : personnage couché ou en recouvrement avec le véhicule | `20261104-154409` (comparé à `20261104-111326`), vraie touche F | **Ouverte** — même famille que QA-A15/A16, en attente de la décision du propriétaire |
+| QA-A19 | Aster phase 1 | Apparence / corps humains | P2 | Tête classique « bloc » du joueur conservée sur le corps réaliste (décision « corps seul »), couleurs du joueur conservées : rendu encore partiellement « semi-Lego » | Capture 001 de `20261104-154409` (compte de test) | **À arbitrer** — remplacer ou non les têtes classiques, harmoniser ou non la peau (`ASTER_PHASE1.md` §7) |
+| QA-A20 | Aster phase 1 | Téléphone en main | P3 | `telephone_bras_leve` en échec intermittent : bras de départ à 31–32° au lieu de 6° (M4/M7, puis M2/M5 ; aucun dans `20261104-145632`) | `20261104-151955`, `20261104-154409`, session `avatar` | **Ouverte** — cause non établie |
 
 ### 1 bis. Défauts trouvés par la campagne du 2026-11-03 et corrigés
 
