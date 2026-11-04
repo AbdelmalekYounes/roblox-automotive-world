@@ -20,6 +20,31 @@ protégés (`docs/CAHIER_DES_CHARGES_GLOBAL_v1.0.md`, §1). Pour chaque modèle 
 - **Interdit** : logos, noms et typographies des constructeurs, plaques réelles, textures issues des photographies.
 - Revue de **dissemblance** à chaque porte de validation : vue de profil et de face superposées à la référence.
 
+## 1 bis. Langage commun de la gamme
+
+**Décisions du propriétaire (2026-11-04)** : **plusieurs marques fictives** ; **signature lumineuse propre à chaque
+famille** (pas de motif commun à toute la gamme). Répartition et pistes ci-dessous : **[proposé]**, à valider.
+
+| Marque (nom à choisir) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
+|---|---|---|---|---|
+| Marque 1 | généraliste urbaine | Pixel, Brio, Fil, **Aster**, Rafale | deux traits en « L » aux angles (déjà retenus pour l'Aster « Trait ») | géométrique, sans lettres |
+| Marque 2 | routière et familiale | Nova, Cadence, Lumen, Orée | trait horizontal fin terminé par un point lumineux à l'intérieur, interrompu au centre (jamais de bandeau continu) | géométrique, sans lettres |
+| Marque 3 | aventure | Dune, Vigie, Sentier, Atlas | blocs lumineux carrés à deux étages verticaux, protégés par un cadre | géométrique, sans lettres |
+| Marque 4 | sport et prestige | Brise, Éclat, Mistral, Comète, Zénith | trois traits obliques courts, inclinés vers l'arrière | géométrique, sans lettres |
+
+Règles :
+
+- **Noms de marque** : choisis par le propriétaire, après une **vérification des droits** (marques déposées) ; aucun nom
+  n'est inventé ni retenu dans ce document. « Automotive World » étant un nom technique provisoire, aucune marque n'en
+  dérive.
+- **Emblèmes** : formes géométriques originales sans lettres, comparées aux emblèmes réels avant validation ; plaques
+  et inscriptions fictives.
+- **Unité entre marques** : seuls des éléments techniques communs (gabarit d'habitacle, pose assise, combinés et
+  commandes génériques) ; chaque marque garde ses formes, ses couleurs et ses jantes.
+- **Électriques** (Pixel, Fil, Orée, Zénith) : pas d'identité « électrique » transversale ; chaque marque traite
+  l'électrique dans son propre langage (repère discret, à proposer).
+- Dans les fiches ci-dessous, « AW » désigne **la marque fictive du modèle** selon ce tableau.
+
 ## 2. Habitacles provisoires et avatars R15 (point de départ chiffré)
 
 Assise → pavillon des carrosseries provisoires [jeu, `lune run tests/lune/tools/cabin-geometry.luau`, 2026-11-04] et
@@ -161,7 +186,7 @@ Voir `ASTER_DESIGN_BRIEF.md` (fiche complète, trois directions, habitacle, budg
 - Intérieur [observé] : sièges baquets à appuie-tête intégrés, garnissage gris à surpiqûres rouges, combiné et écran en
   bandeau, volant sport.
 - Retenir : « Aster sportive » (plate-forme commune, décision de gamme). Transformer : filet rouge, décors,
-  aileron. Inventer : identité sportive AW partagée avec l'Éclat.
+  aileron. Inventer : version sportive de la marque 1 (l'Éclat relève de la marque 4).
 - R15 : −0,78 st ; partage l'habitacle de l'Aster (même cible).
 
 ### 3.11 Éclat (`wk_eclat`) — réf. Toyota GR86
@@ -204,8 +229,8 @@ Voir `ASTER_DESIGN_BRIEF.md` (fiche complète, trois directions, habitacle, budg
 - Extérieur [observé] : supercar basse au capot sculpté de prises d'air, phares fins, flancs creusés, portes en élytre,
   poupe large à diffuseur, jantes de grand diamètre ajourées.
 - Intérieur : **non observé** (visible seulement par une porte ouverte, sans détail exploitable).
-- Retenir : supercar électrique sculptée. Transformer : capot, phares, diffuseur. Inventer : intérieur, identité
-  « électrique » AW partagée avec l'Orée.
+- Retenir : supercar électrique sculptée. Transformer : capot, phares, diffuseur. Inventer : intérieur, traitement
+  électrique propre à la marque 4.
 - R15 : 2,27 st, −1,39 st : mêmes enjeux que la Comète.
 
 ### 3.15 Dune (`wk_dune`) — réf. Mazda CX-5

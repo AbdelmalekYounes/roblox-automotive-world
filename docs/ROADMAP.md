@@ -170,8 +170,8 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Aucune géométrie définitive, aucun actif importé ou publié, physique et carrosseries provisoires inchangées.
 - Documents : `docs/vehicle-3d/`. Direction A « Trait » retenue pour l'Aster et habitacle « échelle Roblox + assise basse »
   (D1), pose assise propre au jeu (D3), ouvrants animés reportés (D4), critère de performance +2 ms (D5), publication par le
-  propriétaire sous le créateur de l'expérience et sources dans un dépôt d'art privé (D6) le 2026-11-04 ; langage commun
-  de la gamme en attente.
+  propriétaire sous le créateur de l'expérience et sources dans un dépôt d'art privé (D6), plusieurs marques fictives et
+  signature par famille le 2026-11-04 ; répartition, noms et emblèmes des marques à valider.
 
 ## Critères de passage du socle 0.0.1
 

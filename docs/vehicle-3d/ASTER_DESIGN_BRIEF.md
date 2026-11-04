@@ -55,7 +55,7 @@ des jantes et des feux arrière : remplacés par des dessins propres.
 
 ### À inventer [proposé]
 
-Signature lumineuse d'Automotive World (commune à la gamme, décision D2), monogramme fictif, détails de surface,
+Signature lumineuse de sa famille (« L » aux angles), emblème de sa marque fictive (sans lettres), détails de surface,
 garnissage, jantes, palette de couleurs.
 
 ## 4. Trois directions de design originales
@@ -83,7 +83,8 @@ Conséquences de ce choix [proposé] :
   carrosserie provisoire ; à compenser par un vitrage latéral fin, une ligne de caisse haute et, si D3 le permet, une
   assise abaissée de 0,3 à 0,5 st, pour garder une silhouette réaliste.
 - **Surfaces tendues** : reflets à soigner (normales, matériaux), complexité 3D moyenne.
-- Le langage commun de la gamme (signature lumineuse, monogramme) reste à valider (suite de D2).
+- Langage commun (propriétaire, 2026-11-04) : plusieurs marques fictives, signature par famille ; l'Aster relève de la
+  marque 1 (proposition), dont la signature est le « L » aux angles (`DIRECTION_ARTISTIQUE_VEHICULES.md` §1 bis).
 
 ## 5. Proposition d'habitacle (cotes cibles, studs du repère du véhicule)
 
