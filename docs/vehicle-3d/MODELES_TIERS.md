@@ -27,7 +27,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
-| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; **préparé le 2026-11-04, à revoir** (§2) ; non intégré |
+| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; **attaches, collisions et LOD faits le 2026-11-04, à revoir** (§3) ; non intégré |
 
 ## Modèles examinés et refusés
 
@@ -95,9 +95,79 @@ par `tests/lune/tools/vehicle-geometry.luau` (lecture seule).
 Côté du volant : **à gauche**. Rendus de l'habitacle sans la carrosserie, vus de dessus et depuis l'arrière (Blender,
 2026-11-04). C'est conforme au jeu, qui place le conducteur à x −1,61.
 
-Non fait, non vérifié :
-- sièges, attaches (`SeatDriver`, caméras, sorties), collisions ;
-- LOD ;
+Non fait à ce stade : sièges, attaches, collisions et LOD, traités au §3.
+
+Non vérifié :
 - habitacle avec les avatars (VM) ;
 - import Studio ;
 - crédit affiché dans le jeu (`docs/CREDITS_ACTIFS.md`, à l'intégration).
+
+## 3. Attaches, collisions et LOD de la Comète (2026-11-04, accord du propriétaire : « Oui, continue »)
+
+Commande :
+
+```
+blender --background --factory-startup --disable-autoexec vehicles/wk_comete/blend/wk_comete_720s.blend --python tools/blender/comete_720s_finish.py -- vehicles/wk_comete/ref-sheets/wk_comete_geometrie.json vehicles/wk_comete/renders_720s
+```
+
+Résultats dans `renders_720s/finition.json`. Rendus : `aster02_render_hf4.py -- <dossier> -1.5 comete_720s`.
+
+**Repères mesurés sur le modèle** par rayons, à chaque exécution (repère du jeu, studs) :
+
+| Repère | Position | Carrosserie provisoire |
+|---|---|---|
+| `SeatDriver` / `SeatPassenger` (dessus d'assise) | (∓1,20 ; −0,64 ; −1,45) | (∓1,611 ; 0,51 ; 0,03) |
+| `CameraCockpit` | (−1,20 ; 1,80 ; −1,80) | règle de la fabrique |
+| `CameraHood` | (0 ; 2,02 ; −5,80), 0,80 st au-dessus du capot, 0,30 st devant le pied de pare-brise (z −5,50) | (0 ; 1,514 ; −3,986) |
+| `CameraBumper` | (0 ; 0,51 ; −10,08), 0,65 st devant le nez (z −9,43) | (0 ; 0,514 ; −8,775) |
+| `ExitLeft` / `ExitRight` | (∓4,69 ; −1,5 ; −1,45), 0,8 st au-delà des rétroviseurs | — |
+
+Les sièges du modèle sont plus bas, plus en avant et plus près de l'axe que ceux de la carrosserie provisoire.
+**À l'intégration, le jeu devra prendre les repères du modèle.**
+
+`CameraCockpit` suit la règle du jeu `CockpitGeometry.eyeY`. Le haut du volant, mesuré à y 1,58 et z −3,06, passe 10,0°
+sous la visée ; la caméra est 0,94 st sous le pavillon.
+
+Hauteur de l'assise au dessous du pavillon : 3,38 st (0,95 m), avatars non mesurés.
+
+**Collisions** : 4 boîtes aux noms des zones de dégâts. Leurs hauteurs partent de celles de la carrosserie provisoire.
+- La coque est cherchée entre les roues : une boîte sur toute la longueur était bridée par le nez bas et pointu.
+- Chaque bouclier comble l'extrémité jusqu'à la coque.
+- Dépassement hors de la caisse visible : 0,25 st au plus, mesuré par rayons sortants, hors passages de roues.
+
+| Boîte | Taille ; centre | Provisoire |
+|---|---|---|
+| `COL_Coque` | 6,62 × 0,60 × 13,14 ; (0 ; 0,41 ; −1,02) | 6,94 × 0,60 × 15,05 ; (0 ; 0,41 ; 0) |
+| `COL_BouclierAvant` | 4,11 × 1,76 × 1,34 ; (0 ; −0,26 ; −8,16) : 0,60 st du nez non couverts | 6,84 × 1,76 × 0,70 ; (0 ; −0,26 ; −7,78) |
+| `COL_BouclierArriere` | 4,42 × 1,16 × 1,11 ; (0 ; 0,04 ; 6,00) | 6,84 × 1,76 × 0,70 ; (0 ; −0,26 ; 7,78) |
+| `COL_Habitacle` | 3,37 × 1,81 × 4,20 ; (0 ; 1,62 ; −0,90) | 6,44 × 2,00 × 2,60 ; (0 ; 1,71 ; 0,33) |
+
+**Le modèle n'est pas centré comme la définition.** Son nez est à z −9,43 et son arrière à +7,01, alors que la
+définition va de −8,125 à +8,125 : les roues de la physique sont placées plus en avant que sur le vrai véhicule.
+Les collisions suivent le modèle ; les collisions basses du châssis restent celles de la définition.
+
+**LOD**, réglés à l'image :
+
+| Niveau | Triangles |
+|---|---|
+| LOD0 | 6 907 |
+| LOD1 | 4 364 (63 %) |
+| LOD2 | 2 257 (33 %) |
+
+- Premier essai à 3 307 (48 %) et 956 (14 %) triangles : la caisse se déchirait, avec des pointes au LOD1 et des flancs
+  troués au LOD2, alors que l'encombrement restait conforme. Les seuils de 50 % et 15 % sont donc abandonnés pour ce
+  modèle déjà léger.
+- LOD1 : roues intactes.
+- LOD2 :
+  - vitrage opaque, sans habitacle ;
+  - un cylindre à 12 côtés par roue, au rayon du pneu ;
+  - quelques défauts de surface sur les flancs, et des roues sombres sans jante, visibles de près seulement.
+
+**Contrôles** : 11 sur 11, plus 4 relevés informatifs (`finition.json`).
+
+Non vérifié :
+- habitacle avec les avatars (VM) : têtes, jambes, mains sur le volant ;
+- peinture teintable : la teinte est dans la texture du modèle, et non dans un matériau uni comme sur l'Aster ;
+- bascule des LOD ;
+- import Studio (témoin d'orientation v2) ;
+- performances D5.
