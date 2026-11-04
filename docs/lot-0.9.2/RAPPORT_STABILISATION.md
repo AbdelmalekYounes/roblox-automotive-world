@@ -76,6 +76,12 @@ le fait pivoter).
   du lot 0.6). Ce n'est pas un défaut de conduite.
 - Correction du test (`9715443`) : pendant l'élan, le véhicule tient la ligne de son plot (correction de direction
   douce), comme un conducteur ; la mesure du virage est inchangée.
+- Vérification (tâche `20261104-031015`, `a089a03`, 3 × `multijoueur` + 3 × `latence`) : ligne tenue (écart
+  0,05 à 0,08 m) ; le joueur 2 réussit ses virages dans les 6 sessions, mais le **joueur 1** échoue 2 fois : la
+  trace montre le virage à droite commencé à z ≈ −200 m qui l'envoie sur le poteau **gauche** du même portique
+  (−7,6 ; −204 m ; serveur : `PortiqueArriveePoteau`, Δv 12,8 m/s). Même erreur de scénario, de l'autre côté.
+- Seconde correction du test (`6479c2e`) : le virage commence 8 m après les poteaux d'installation situés devant
+  (moins de 15 m de la ligne), vitesse maintenue vers 40 km/h jusque-là.
 
 ## 3. Moteur calé définitivement sur boîte automatique : défaut de jeu établi et corrigé
 
