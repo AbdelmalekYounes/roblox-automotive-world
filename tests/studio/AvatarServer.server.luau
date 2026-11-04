@@ -759,6 +759,11 @@ local results: { [string]: { [string]: { [string]: Seated } } } = {} -- véhicul
 local exits: { [string]: { string } } = {}
 
 local function seatAndMeasure(model: Model, modelId: string, morph: Morph, seatName: string, capture: boolean)
+    -- Modèle sans cette place (P-01 : aucune place passager) : rien à mesurer (tâche
+    -- 20261104-111326 : comptée à tort « non assis »).
+    if model:FindFirstChild(seatName) == nil then
+        return nil
+    end
     local seat = sit(player, model, seatName)
     local key = if seatName == "DriverSeat" then "conducteur" else "passager"
     results[modelId] = results[modelId] or {}
