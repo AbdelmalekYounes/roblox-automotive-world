@@ -415,6 +415,30 @@ record(
     string.format("depuis %.0f km/h : %.1f m en %.2f s", brakeSpeed, brakeDistance, measures.freinage_duree_s)
 )
 
+-- Lot 0.9.2 (QA-A09) : trace de la trajectoire de la marche arrière à la fin des virages
+-- (position, cap, vitesse, rapport toutes les 0,25 s), pour localiser les chocs.
+local tracing = true
+task.spawn(function()
+    local t0 = os.clock()
+    while tracing do
+        local look = root.CFrame.LookVector
+        local snap = snapshot()
+        print(
+            string.format(
+                "[AW_Test] trajectoire %s %.2f s : (%.1f, %.1f) m, cap %.0f°, %.1f km/h, rapport %d",
+                model.Name,
+                os.clock() - t0,
+                root.Position.X * METERS_PER_STUD,
+                root.Position.Z * METERS_PER_STUD,
+                math.deg(math.atan2(look.X, -look.Z)),
+                snap.SpeedKmh,
+                snap.Gear
+            )
+        )
+        task.wait(0.25)
+    end
+end)
+
 -- C7 : marche arrière (maintien de « freiner » à l'arrêt).
 task.wait(2.5)
 local reverse = snapshot()
@@ -454,6 +478,7 @@ measures.virage_droite_deg = rightTurn
 measures.virage_gauche_deg = leftTurn
 record("client.virage_droite", rightTurn > 15, string.format("%.1f° en 2 s", rightTurn))
 record("client.virage_gauche", leftTurn < -15, string.format("%.1f° en 2 s", leftTurn))
+tracing = false
 setCommand(0, 1, 0)
 waitFor(function()
     return snapshot().SpeedKmh < 1
