@@ -36,6 +36,7 @@ if
     or sessionName == "aster"
     or sessionName == "silhouette"
     or sessionName == "silhouette2"
+    or sessionName == "comete"
 then
     return
 end

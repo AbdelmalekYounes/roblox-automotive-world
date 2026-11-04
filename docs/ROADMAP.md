@@ -210,7 +210,7 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 
 - Lot ouvert le 2026-11-04 à la demande du propriétaire, ASTER-02 étant suspendu. Plan :
   `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. Maillages envoyés par le propriétaire ; kit de maillages intégré à
-  la fabrique, avec repli sur la carrosserie provisoire (Lune 371/371) ; essais en jeu QA-V01 à V08 **NON TESTÉS** ;
+  la fabrique, avec repli sur la carrosserie provisoire (Lune 371/371) ; essais en jeu dans la VM le 2026-11-05 (`20261105-002227`, 59 réussis, 1 échec : touche Ctrl non reçue dans Studio) : QA-K01, K02, K03, K05, K07 faits ; K04, K06 partiels ; K08 non concluant ; défaut des boucliers opaques après un choc corrigé ;
   écran de crédits à faire.
 
 ## Critères de passage du socle 0.0.1

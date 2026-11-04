@@ -152,6 +152,8 @@ function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instanc
         part.CanTouch = false
         part.CastShadow = false
         part.Anchored = false
+        -- Lue par DamageService : boîte sans visuel, jamais copiée en panneau déformé.
+        part:SetAttribute("AWCollisionOnly", true)
         weld(root, part)
         part.Parent = body
     end

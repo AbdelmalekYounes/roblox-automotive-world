@@ -47,6 +47,8 @@ local KNOWN_SESSIONS = {
     -- Clôture de la phase 1 : choix de silhouette par vrais clics, puis réplication à 2 joueurs.
     silhouette = { Name = "silhouette", Players = 1 },
     silhouette2 = { Name = "silhouette2", Players = 2 },
+    -- Lot VEH3D-01 : Comète 3D (kit de maillages), essais QA-K01 à QA-K08 (vraies entrées).
+    comete = { Name = "comete", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -72,6 +74,8 @@ local EXTRA = {
     { "AW_TestAsterTemplate", "AsterTemplate.luau", "module" },
     { "AW_TestAvatarServer", "AvatarServer.server.luau", false },
     { "AW_TestAvatarClient", "AvatarClient.client.luau", true },
+    { "AW_TestCometeServer", "CometeServer.server.luau", false },
+    { "AW_TestCometeClient", "CometeClient.client.luau", true },
 }
 
 local output = process.args[1]

@@ -221,7 +221,9 @@ end
 -- visuelle inclinée et enfoncée prend sa place. La collision ne change pas.
 local function deformPanel(entry: Entry, name: string, angle: number, inset: number, drop: number)
     local panel = bodyPart(entry, name)
-    if panel == nil then
+    -- Lot VEH3D-01 : boîte de collision invisible d'un kit de maillages (aucun panneau à montrer) ; la copier
+    -- ferait apparaître un bloc opaque devant le modèle 3D. Le choc reste compté, rayures comprises.
+    if panel == nil or panel:GetAttribute("AWCollisionOnly") == true then
         return
     end
     local localCFrame = entry.Root.CFrame:ToObjectSpace(panel.CFrame)

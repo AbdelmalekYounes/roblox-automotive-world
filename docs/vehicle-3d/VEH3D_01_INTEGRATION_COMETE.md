@@ -90,7 +90,7 @@ suite : il sera groupé avec les autres changements du modèle.
 - ajoute 4 sources de lumière invisibles (`AWLight`) ;
 - range l'habitacle, les freins et les essuie-glaces dans `Details`.
 
-**Contrôles** (`scriptserify.ps1`, 2026-11-04) : toutes les étapes OK. Lune : 371 sur 371, dont les 6 nouveaux tests
+**Contrôles** (`scripts\verify.ps1`, 2026-11-04) : toutes les étapes OK. Lune : 371 sur 371, dont les 6 nouveaux tests
 `Veh3d01Comete` :
 - gabarit : 28 maillages, aucun script ;
 - identifiants du manifeste égaux à ceux du gabarit ;
@@ -99,15 +99,63 @@ suite : il sera groupé avec les autres changements du modèle.
 - vitrage, feux et détails repérés ;
 - kit pour la seule Comète, avec repli.
 
-## 6. Non fait, non vérifié
+## 6. Non fait, non vérifié (mis à jour le 2026-11-05)
 
-- **Aucun essai en jeu** : les essais QA-V01 à QA-V08 (`docs/QA_BACKLOG.md` §3 septies) sont **NON TESTÉS**. Ils sont
-  à lancer sur le signal du propriétaire.
-- Les maillages envoyés depuis le compte du propriétaire peuvent ne pas se charger dans la VM, faute de droits
-  d'usage (QA-V02).
+- Essais en jeu : voir §7. Restent **NON TESTÉS** : choc latéral, invite E par une vraie touche, autres
+  morphologies d'avatar, mesure D5 sur un poste réel (la VM est plafonnée à 60 images/s), chargement des maillages
+  dans l'expérience publiée (le Studio de la VM les charge), essai humain.
 - Écran de crédits en jeu : **non fait**. Le crédit est obligatoire dès que le jeu est partagé ; texte prêt dans
   `docs/CREDITS_ACTIFS.md`.
 - Feux non séparés dans le gabarit reçu : les sources de lumière éclairent, mais le maillage des feux ne s'illumine pas.
+- **Vitres latérales opaques** (constaté sur les captures du 2026-11-05) : seuls le pare-brise et la lunette sont des
+  pièces `glass` ; les vitres latérales sont peintes dans la texture du modèle. L'avatar n'est pas visible de
+  l'extérieur. À arbitrer (séparer les vitres dans Blender et refaire un envoi, ou accepter).
 - La teinte de carrosserie du jeu ne s'applique pas : la couleur est dans la texture.
-- Les dégâts visuels ne s'affichent pas sur les maillages : les zones de dégâts sont des boîtes invisibles.
+- Les dégâts visuels ne s'affichent pas sur les maillages : les zones de dégâts sont des boîtes invisibles (seules les
+  rayures, pièces de décor, apparaissent).
 - LOD1 et LOD2 non intégrés.
+
+## 7. Essais dans la VM (2026-11-05)
+
+Session `comete` (`tests/studio/CometeServer.server.luau`, `CometeClient.client.luau`), place de développement,
+1 joueur, vraies entrées dans la VM : `test-vm.cmd -Sessions comete -GuiInput -TimeoutSec 1800`.
+
+**Tâche de référence `20261105-002227`** (2026-11-05 vers 00 h 25, commit de base `73b23eb` + modifications non
+encore commitées à ce moment) : **59 contrôles réussis, 1 échec** (`comete.k06.ctrl_recu_par_le_jeu`), 14 captures
+nommées, 157 s. Rapport : `aw-vm-exchange\jobs\20261105-002227\report\report.md` (hors dépôt).
+
+| Essai | Résultat |
+|---|---|
+| QA-K01 apparition | 28 maillages, sans masse ni collision, soudés ; CG à 1,50 st du sol ; P-01 inchangé |
+| QA-K02 chargement | 34 contenus chargés, 0 échec (Studio de la VM, compte de test) |
+| QA-K03 roues | braquage 35,3° (touche A), jante 5 766° (touche W, 41,6 km/h) |
+| QA-K04 sièges | invites, `AWSeatPose`, pose conducteur et passager dans l'habitacle (avatar par défaut), sorties F et Espace |
+| QA-K05 caméras | cockpit, capot, bouclier atteints par la touche V |
+| QA-K06 dégâts | avant 41,6 km/h (zone 1,00) ; arrière 21,8 km/h (zone 0,41) ; latéral non couvert |
+| QA-K07 nuit | 4 / 4 sources allumées, vitrage 2 / 2 transparent |
+| QA-K08 performances | non concluant : 60 images/s des deux côtés |
+
+**Défaut trouvé à la lecture du code et corrigé avant tout essai en jeu** (le bloc n'a donc jamais été observé) : au niveau de dégâts 2, le jeu
+copiait le panneau `BouclierAvant` ou `BouclierArriere` pour le montrer enfoncé. Sur la Comète, ce panneau est la boîte
+de collision invisible, et la copie était opaque : un bloc gris de 4,1 × 1,8 × 1,3 st serait apparu devant le nez. Les
+boîtes du kit portent maintenant `AWCollisionOnly` et `DamageService` ne les copie plus. Après les deux chocs
+(niveaux 3 et 2), en jeu : 6 éléments dans `Degats`, aucun bloc opaque.
+
+**Passages précédents, même jour** (mise au point de la session, non retenus comme résultats) :
+
+| Tâche | Cause de l'écart | Correction |
+|---|---|---|
+| `20261105-000204` | les suites de base (`ServerSuite`, `ClientSuite`) tournaient aussi et fermaient la session | session exclue de ces suites |
+| `20261105-000811` | fenêtre d'arrivée « Choisir votre véhicule » ouverte : la conduite est capturée par l'interface (comportement voulu, lot 0.7) ; chocs lancés par le serveur plafonnés par la validation anti-éjection | fermeture par la vraie touche Retour ; choc arrière en marche arrière conduite |
+| `20261105-001422`, `-001843` | rapport R jamais engagé : la touche Ctrl n'arrive pas au jeu dans Studio | relevé des touches reçues, repli instrumenté et signalé |
+
+**Limites de l'environnement** : touche Ctrl jamais reçue par le jeu dans Studio (ni code virtuel ni code de
+balayage), comme la touche O (lot 0.9.1) ; la VM rend à 60 images/s au plus.
+
+**Instrumenté** (signalé dans les en-têtes des scripts) : véhicules temporaires protégés, placement par `PivotTo`
+(véhicule vide), assise par `Seat:Sit`, heure imposée, caméra placée pour les captures, rétrogradage vers R par
+l'appel de test `invokeActionForTest` (même gestionnaire que la touche), parc D5 construit par la fabrique et ancré.
+
+**Captures** (`report\gui\named\`, hors dépôt) : trois-quarts avant et arrière, profil, dessus, roue, conducteur par
+la vitre, trois vues de conduite, après les chocs, nuit avant et arrière, P-01. Ce sont des rendus du modèle tiers :
+elles restent hors du dépôt.
