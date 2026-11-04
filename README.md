@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.9.1 (campagne QA interactive autonome)
+# Automotive World — Lot 0.9.2 (stabilisation finale)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -22,8 +22,11 @@
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
 > Lot 0.9.1 : interfaces parcourues par de **vrais clics et vraies touches dans la VM** (pont d'entrées, jamais sur le
 > poste principal), huit métiers et trajets GPS par un pilote, social à deux clients, drift noté par le serveur,
-> captures inspectées ; neuf défauts corrigés (QA-F13 à F20, QA-A08 neutralisée).
-> **Statut** : lot 0.9.1 sur `feat/autonomous-interactive-qa-0.9.1` (PR brouillon #10, base : lot 0.9 ; PR #1 à #9 non
+> captures inspectées ; neuf défauts corrigés (QA-F13 à F20, QA-A08 neutralisée). Lot 0.9.2 : stabilisation finale —
+> cause de QA-A08 corrigée (convertisseur de couple), moteur calé relancé sur boîte automatique, bras du téléphone
+> levé, focus à la manette seulement, QA-A09 expliquée (scénario de test), campagne finale classée
+> ([rapport](docs/lot-0.9.2/RAPPORT_STABILISATION.md)).
+> **Statut** : lot 0.9.2 sur `feat/final-stabilization-0.9.2` (PR brouillon #11, base : lot 0.9.1 ; PR #1 à #10 non
 > fusionnées). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
 > [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
 > humains : [checklist](docs/lot-0.9/CHECKLIST_TESTS_HUMAINS.md) ; DataStore, charge et appareils réels : **NON
@@ -216,6 +219,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.7` | Rapport du lot 0.7, architecture de l'interface, du GPS et du social |
 | `docs/lot-0.8` | Rapport du lot 0.8, architecture, catalogue des 18 modèles, ressources et licences, direction artistique |
 | `docs/lot-0.9` | Validation globale, anomalies et corrections, performances, sécurité, checklist humaine, dépendances externes ; lot 0.9.1 : tests interactifs autonomes, couverture QA par fonction |
+| `docs/lot-0.9.2` | Rapport de stabilisation finale (QA-A08 à A12, GPS, interfaces, campagne finale classée) |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

@@ -59,7 +59,7 @@ Protection défensive du lot 0.9.1 **conservée** (neutralisation comptée et an
 | Portefeuille (`Wallet`) | — | crédit NaN / ∞ refusé, solde intact, profil valide |
 
 Non vérifié : reproduction **dans le moteur** de l'incident exact (conditions de patinage et de collision non
-rejouables à l'identique) ; contrôle en jeu : aucune neutralisation relevée dans les campagnes VM du lot (§6).
+rejouables à l'identique) ; contrôle en jeu : aucune neutralisation relevée dans les campagnes VM du lot (§7).
 
 ## 2. QA-A09 — virage du joueur 2 après la marche arrière : erreur du scénario de test
 
@@ -82,8 +82,12 @@ le fait pivoter).
   (−7,6 ; −204 m ; serveur : `PortiqueArriveePoteau`, Δv 12,8 m/s). Même erreur de scénario, de l'autre côté.
 - Seconde correction du test (`6479c2e`) : le virage commence 8 m après les poteaux d'installation situés devant
   (moins de 15 m de la ligne), vitesse maintenue vers 40 km/h jusque-là.
+- Vérification (tâche `20261104-035727`, `6479c2e`, 2026-11-04 03:57, 3 × `multijoueur` + 3 × `latence`) :
+  **24 virages réussis sur 24** (6 sessions × 2 joueurs × 2 virages), poteaux dépassés avant le virage dans les
+  12 cas (`elan_poteaux_depasses`). Campagne finale (`20261104-040910`) : `multijoueur` et `latence` sans échec.
+- Aucune modification du jeu pour QA-A09.
 
-## 3. Moteur calé définitivement sur boîte automatique : défaut de jeu établi et corrigé
+## 3. Moteur calé définitivement sur boîte automatique (QA-A12) : défaut de jeu établi et corrigé
 
 ### 3.1 Constat (tâche VM `20261104-021402`, session `gps2`, code `9715443`)
 
@@ -131,7 +135,7 @@ agi à aucun moment des deux trajets (`limitations_convertisseur` = 0 et 0). Le 
   — bras inchangé (8° → 8°). La documentation de Roblox indique que C0 est en lecture seule sur ces articulations et
   qu'il ne faut pas modifier les attaches du squelette ; elle recommande de multiplier le décalage dans `Transform`
   après l'animation (`RunService.PreSimulation`), côté client, l'état étant partagé par attribut.
-- **Correction** (`360f903`) : le serveur publie l'attribut `AWPhoneRaised` du personnage (chemin Motor6D conservé
+- **Correction** (`000045c`, vérifiée avec `360f903`) : le serveur publie l'attribut `AWPhoneRaised` du personnage (chemin Motor6D conservé
   pour R6 et R15 classique) ; chaque client (`PhoneController`) applique 60° à l'épaule de chaque joueur concerné,
   progressivement (0,25 s), sans cumul quand l'animation n'est pas réévaluée ; attaches non modifiées. Direction
   artistique inchangée (aucune interface modifiée).
@@ -143,8 +147,10 @@ agi à aucun moment des deux trajets (`limitations_convertisseur` = 0 et 0). Le 
 | `ui_monde.telephone_devant_le_personnage` | téléphone 1,8 st devant, 0,3 st au-dessus du centre du personnage, 0,29 st de la main (avant correction : 0,7 st devant, 1,1 st **sous** le centre) |
 | `ui_monde.telephone_en_marchant` | vraie touche W 2,5 s : 13,6 st parcourus, bras levé d'au moins 31° pendant la marche, téléphone toujours dans la main (≤ 0,29 st) |
 
-  Capture `054_telephone_en_main_face`. Non vérifié : vue par un **autre joueur** (une seule session cliente en
-  monde ouvert) — le mécanisme est le même pour tous les personnages (attribut lu par chaque client).
+  Capture `054_telephone_en_main_face`. Campagne finale (`20261104-050215`, `c352f26`) : levé de 46°, téléphone
+  à 0,29 st de la main, 12,2 st parcourus en marchant, bras levé d'au moins 33°. Non vérifié : vue par un **autre
+  joueur** (une seule session cliente en monde ouvert) — le mécanisme est le même pour tous les personnages
+  (attribut lu par chaque client) ; avatar R6 : non essayé dans ce lot.
 
 ## 5. GPS — destinations des 7 zones par conduite réelle
 
@@ -165,7 +171,102 @@ seule fois au départ, puis conduit) :
 | `20261104-031929` | `360f903` | **arrivé** (414 s, 24 m) | **arrivé** (1 582 s, 24 m) | **écart 51 m, recalcul après 22 s** |
 
 Arrivées **constatées par le GPS du jeu** (statut « Arrivé »). Zones traversées pendant `gps2` : Banlieues,
-Métropole, Montagnes, Motorsport. Les cinq autres destinations sont couvertes par la session `gps` (campagne finale,
-§7). Conduite du pilote encore imparfaite : 39 chocs confirmés par le serveur pendant les deux trajets (surtout des
-glissières, trois fois le même poteau de feu), 29 dégagements ; ce sont des limites du pilote d'essai, pas des
-défauts du jeu (chocs constatés, dégâts appliqués, aucune erreur).
+Métropole, Montagnes, Motorsport. Conduite du pilote encore imparfaite : 39 chocs confirmés par le serveur pendant
+les deux trajets (surtout des glissières, trois fois le même poteau de feu), 29 dégagements ; ce sont des limites du
+pilote d'essai, pas des défauts du jeu (chocs constatés, dégâts appliqués, aucune erreur).
+
+Session `gps` à 7 destinations, campagne finale (`20261104-050215`, `c352f26`, 2026-11-04 05:02–06:00, 3 007 s) :
+
+| Trajet | Résultat |
+|---|---|
+| 1 Banlieues | **arrivé** (271 s, 25 m) |
+| 2 Métropole | abandon : pilote coincé en (−2 587, 94) m, 21 dégagements (moteur en marche), immobilisé 90 s |
+| 3 Littoral | **arrivé** (385 s, 23 m) |
+| 4 Docks | **arrivé** (437 s, 23 m) |
+| 5 Montagnes | sortie d'itinéraire 55 m, **recalcul après 23 s** ; puis abandon à 832 m de l'arrivée : pilote coincé en (2 151, −2 506) m |
+| 6 Campagne | abandon : part du point où le trajet 5 s'est arrêté (aucun repositionnement, par choix), même blocage |
+| 7 Motorsport | **arrivé** (840 s, 23 m) |
+
+0 calage, 0 limitation du convertisseur, 0 neutralisation de valeur non finie pendant les 7 trajets.
+
+**Bilan des 7 zones sur le code du lot 0.9.2** : arrivée constatée par le GPS pour **5 zones** — Banlieues, Littoral,
+Docks, Montagnes (`031929`), Motorsport (`025158`, `031929`, `050215`). **Métropole et Campagne : non atteintes
+sur le code de ce lot** (arrivées constatées seulement au lot 0.9.1, tâche `20261103-220054`, code `82731da`). Six
+zones traversées en conduite dans la même session (`050215`), toutes sauf Campagne. Les 7 zones n'ont jamais été
+atteintes dans une même tâche. Les abandons sont des limites du pilote d'essai (blocages sans erreur du jeu), non
+corrigées dans ce lot.
+
+## 6. Interfaces : focus, Entrée, retour, photo
+
+- **Défaut constaté au lot 0.9.1 en vrais clics** : au clavier et à la souris, le contour de navigation restait sur
+  l'onglet d'ouverture et la touche Entrée l'activait (onglet changé sans demande).
+- **Correction** (`9b8b052`, `UIManager`) : la règle du parcours d'arrivée (lot 0.8, QA-F09) s'applique à tous les
+  panneaux : focus posé seulement à la manette, ou au passage à la manette pendant qu'une fenêtre est ouverte.
+  Direction artistique inchangée. Test Lune : « Interfaces : focus de navigation posé seulement à la manette ».
+- **Vérification en vrais clics et vraies touches** (`20261104-035727` et campagne finale `20261104-042820`) :
+  `ui.garage.aucun_focus_clavier_souris`, `ui.garage.entree_sans_changement_d_onglet`,
+  `ui.garage.entree_sans_effet_serveur` (solde inchangé), `ui.concession.entree_ne_confirme_pas` (confirmation
+  toujours affichée, aucun achat), `ui.carte.fermee_par_touche_retour`, `ui.photo.app_photo_du_telephone`,
+  `ui.conduite.embarquement_touche_E` : réussis dans les deux tâches.
+- Défaut **du test** trouvé et corrigé (`c352f26`) : dans la phase photo de la session `ui`, une variable locale
+  masquait celle de la phase ; le mode photo restait ouvert et bloquait l'embarquement par E (échec de
+  `embarquement_touche_E` dans `035727`, réussi dans les 7 tâches précédentes et dans `042820`).
+- Non vérifié : comportement à la **manette** (aucune manette émulée dans la VM) ; touche O (limite de Studio, §7).
+
+## 7. Campagne finale de non-régression
+
+Trois tâches VM, 2026-11-04, sessions dans l'ordre (`ui` en tête : voir `docs/VM_TESTS.md`) :
+
+| Tâche | Code | Place | Sessions | Résultat |
+|---|---|---|---|---|
+| `20261104-040910` (04:09–04:27) | `013ff21` (jeu identique à `c352f26`) | Dev | `solo`, `multijoueur`, `latence`, `scenarios`, `collision`, `collision_latence`, `lot02`, `lot04` | 527 réussis, 5 échecs, 1 limite connue |
+| `20261104-042820` (04:28–05:01) | `c352f26` | Dev | `ui`, `ui_marche`, `lot05`, `lot06`, `lot08`, `metiers`, `drift`, `social` | 445 réussis, 4 échecs |
+| `20261104-050215` (05:02–06:00) | `c352f26` | OpenWorld | `monde`, `perf`, `ui_monde`, `gps` | 225 réussis, 7 échecs |
+| **Total** | | | 20 sessions | **1 197 réussis, 16 échecs, 1 limite connue** |
+
+Domaines couverts : conduite et propriété réseau, multijoueur et latence (100 ms), collisions, économie et marché
+(`lot05`), courses (`lot06`), 8 métiers (`metiers.bilan_huit_metiers` : 8 / 8 terminés et payés), interfaces en vrais
+clics, GPS et monde ouvert, performances, drift, social. Aucune erreur d'exécution du jeu ; aucune neutralisation de
+valeur non finie dans les trois journaux.
+
+Classement de chaque échec :
+
+| Contrôle | Tâche | Classement | Explication |
+|---|---|---|---|
+| `client.essai1_pilote_percute_reste_droit` (`UpVector.Y −0,353`) | `040910`, `collision_latence` | **Défaut probable du jeu, cause non établie** (nouveau : QA-A11) | Véhicule conduit percuté à 18,7 km/h, retourné à plus de 110°. Seul indice : la copie locale du percuteur vue par le percuté a pénétré de 1,40 st (`copie_percuteur_ecart_min_st` = −1,40, contre +0,54 et +0,59 aux deux autres essais). 2 échecs sur 96 de ce contrôle dans tout l'historique (l'autre au lot 0.2, corrigé). Code des collisions non modifié dans ce lot. Non corrigé |
+| `scenario.propriete_reseau_sans_anomalie` × 2 | `040910`, `scenarios` et `collision_latence` | Anomalie connue QA-A01 (jeu ou moteur, non tranché) | « Réattribution (1) », corrigée à la vérification suivante, sans effet mesuré |
+| `serveur.attribut_simulation_conforme_au_proprietaire` | `040910`, `lot02` | Anomalie connue QA-A03 | 1 écart sur 7 074 contrôles |
+| `scenario.collision_poussee_pilote_comparable_au_gare` | `040910`, `collision_latence` | Anomalie connue QA-A07 (variabilité), critère du test | Conduit 7,58 st contre 2,5 × la médiane du garé (5,6 st) ; déjà en échec dans 4 tâches antérieures |
+| `lot06.j1.entrainement_circuit` | `042820` | **Défaut du test** (pilote) | Après le 1ᵉʳ tour (51,7 s), le pilote coupe le virage vers la ligne de départ et bute à 0 km/h en (−65, −216) m contre le poteau ouest du portique (x ≈ −67,6 m, z = −215 m), sans dégagement, jusqu'au délai. Même point exact au lot 0.9.1 (`20261104-001121`) |
+| `lot06.j1.entrainement_rally`, `_drift` | `042820` | Défaut du test (conséquence) | `RaceDriveToJoin` après l'expiration du circuit |
+| `ui.photo.ouverture_touche_O` | `042820` | **Limite de l'environnement** | Touche O jamais reçue par le jeu dans Studio (connue depuis le lot 0.9.1) ; le mode photo s'ouvre par le téléphone |
+| `monde.trafic_corps_pres_du_joueur`, `monde.trafic_proprietaire_serveur` | `050215` | **Défaut du test** (échantillon unique) | 140 agents ; 0 corps physique à moins de 260 m au seul instant mesuré, contre 1 à 5 dans les 10 tâches antérieures ; code du trafic non modifié depuis le lot 0.9.1 |
+| `gps.trajet_2/5/6…arrivee_constatee_par_le_gps`, `gps.sept_zones_traversees`, `gps.arrivees` | `050215` | **Défaut du test** (limites du pilote) | Blocages du pilote, moteur en marche, sans erreur du jeu (§5) |
+| Limite connue : `client.propriete_refusee_personnage_releve` | `040910` | Limite connue QA-A05 | Véhicule ancré par le test |
+
+Aucun échec n'est classé « dépendance externe ». Aucun échec n'a été réessayé pour obtenir un meilleur taux.
+
+## 8. Problèmes ouverts
+
+- **QA-A11 (nouveau, P2)** : véhicule conduit percuté qui se retourne sous latence (une occurrence) ; cause non
+  établie ; à reproduire avant toute correction.
+- **Mécanisme exact du calage de P-01** en jeu : non reproduit hors moteur (§3.2) ; la relance corrige le blocage.
+- **Règle de relance à arbitrer** : le démarreur tourne quand le conducteur d'une boîte sans pédale d'embrayage
+  relâche l'accélérateur (§3.3). C'est une règle de jeu introduite pour corriger un blocage ; le propriétaire décide
+  si elle convient ou s'il préfère une commande explicite.
+- QA-A10 vu par un autre joueur et avec un avatar R6 : NON TESTÉ.
+- GPS : Métropole et Campagne non atteintes sur le code de ce lot ; pilote GPS encore sujet aux blocages.
+- Pilote de course du circuit d'essai : bute sur le portique au 2ᵉ tour (défaut du test, non corrigé).
+- Contrôle du trafic : relevé instantané unique (défaut du test, non corrigé).
+- Anomalies anciennes toujours ouvertes : QA-A01, QA-A03, QA-A06, QA-A07 ; limites QA-A04, QA-A05.
+- Non faits : manette, touche O dans un vrai client Roblox, DataStore réel, appareils réels, essais humains.
+
+## 9. Livraison
+
+- Corrections du jeu : `ebe4714` (QA-A08), `9b8b052` (focus), `5805636` (relance du moteur calé), `d98f60c` puis
+  `000045c` (QA-A10). Corrections des tests : `aeee110`, `d8c2c8e`, `9715443`, `a089a03`, `360f903`, `6479c2e`,
+  `c352f26`.
+- Tests de régression : `tests/lune/specs/Lot092Stabilization.luau` (8 tests) ; outils `tests/lune/tools/nan-hunt.luau`
+  et `tests/lune/tools/stall-impact.luau`.
+- Vérification hors Studio : `scripts\verify.ps1` (résultat dans la PR #11).
+- PR brouillon [#11](https://github.com/AbdelmalekYounes/roblox-automotive-world/pull/11), non fusionnée.

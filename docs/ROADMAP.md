@@ -137,6 +137,19 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Rapports : `docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md`, `docs/lot-0.9/COUVERTURE_QA.md`. **La V1.0 n'est pas
   commencée.**
 
+## État du lot 0.9.2 (branche `feat/final-stabilization-0.9.2`, PR brouillon #11, base : lot 0.9.1)
+
+- Stabilisation finale avant la V1.0, essais Studio dans la VM uniquement, sans publication ni DataStore réel.
+- Corrigé : **QA-A08** (cause : couple du convertisseur sans borne de stabilité, `ebe4714`) ; **QA-A12** moteur calé
+  sans relance sur boîte automatique (`5805636`, règle à arbitrer) ; **QA-A10** bras du téléphone sur le squelette R15
+  à contraintes (`000045c`) ; focus de navigation seulement à la manette (`9b8b052`).
+- **QA-A09** expliquée : erreur du scénario de test (poteaux du portique du drag), tests corrigés, 24 virages sur 24.
+- GPS : Montagnes et Motorsport atteints en conduite réelle, recalcul après sortie d'itinéraire ; 5 zones sur 7
+  atteintes sur le code du lot (Métropole et Campagne : pilote coincé ou non atteint).
+- Campagne finale (3 tâches VM, 20 sessions) : 1 197 réussis, 16 échecs classés (1 défaut probable du jeu, QA-A11 ;
+  4 anomalies connues ; 10 défauts du test ; 1 limite de Studio), 1 limite connue.
+- Rapport : `docs/lot-0.9.2/RAPPORT_STABILISATION.md`. **La V1.0 n'est pas commencée.**
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
