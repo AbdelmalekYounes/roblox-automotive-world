@@ -26,7 +26,8 @@ local Workspace = game:GetService("Workspace")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "comete" then
+-- « comete_vitres » : même début, puis comparatif de réglages du vitrage (captures), sans conduite.
+if session ~= "comete" and session ~= "comete_vitres" then
     return
 end
 
@@ -354,6 +355,95 @@ shot(player, model, "comete_trois_quarts_arriere", Vector3.new(15, 5, 21), Vecto
 shot(player, model, "comete_profil_gauche", Vector3.new(-26, 2.5, 0), Vector3.new(0, 0.3, 0))
 shot(player, model, "comete_dessus", Vector3.new(0, 30, 7), Vector3.new(0, 0, 0))
 shot(player, model, "comete_roue_avant_gauche", Vector3.new(-9.5, 0.6, -7.5), Vector3.new(-3.1, -0.3, -5.6))
+
+-- ======================== Comparatif du vitrage (session « comete_vitres ») ========================
+-- Vitres latérales vues noires de l'extérieur (tâche 20261105-002227) alors qu'elles sont bien des pièces de verre :
+-- réglages comparés, conducteur assis, mêmes cadrages. Réglage appliqué par le test (instrumenté) ; le jeu garde le sien.
+if session == "comete_vitres" then
+    local glassParts: { MeshPart } = {}
+    local appearances = {}
+    for _, item in model:GetDescendants() do
+        if item:IsA("MeshPart") and string.find(string.lower(item.Name), KIT.GlassPattern, 1, true) then
+            table.insert(glassParts, item)
+            local appearance = item:FindFirstChildOfClass("SurfaceAppearance")
+            table.insert(
+                appearances,
+                item.Name
+                    .. (
+                        if appearance
+                            then " avec SurfaceAppearance (" .. appearance.AlphaMode.Name .. ")"
+                            else " sans SurfaceAppearance"
+                    )
+            )
+        end
+    end
+    record("comete.vitres.pieces", #glassParts >= 1, table.concat(appearances, " ; "))
+    record("comete.vitres.conducteur_assis", sit(player, model, "DriverSeat"))
+    type Variant = { Name: string, Material: Enum.Material, Color: Color3, Transparency: number }
+    local VARIANTS: { Variant } = {
+        {
+            Name = "A_actuel_verre_sombre_045",
+            Material = Enum.Material.Glass,
+            Color = Color3.fromRGB(28, 32, 38),
+            Transparency = 0.45,
+        },
+        {
+            Name = "B_verre_sombre_070",
+            Material = Enum.Material.Glass,
+            Color = Color3.fromRGB(28, 32, 38),
+            Transparency = 0.7,
+        },
+        {
+            Name = "C_verre_clair_060",
+            Material = Enum.Material.Glass,
+            Color = Color3.fromRGB(120, 135, 145),
+            Transparency = 0.6,
+        },
+        {
+            Name = "D_lisse_clair_060",
+            Material = Enum.Material.SmoothPlastic,
+            Color = Color3.fromRGB(120, 135, 145),
+            Transparency = 0.6,
+        },
+        {
+            Name = "E_lisse_fume_075",
+            Material = Enum.Material.SmoothPlastic,
+            Color = Color3.fromRGB(60, 70, 80),
+            Transparency = 0.75,
+        },
+    }
+    for _, variant in VARIANTS do
+        for _, part in glassParts do
+            part.Material = variant.Material
+            part.Color = variant.Color
+            part.Transparency = variant.Transparency
+        end
+        task.wait(0.8)
+        shot(
+            player,
+            model,
+            "vitres_" .. variant.Name .. "_profil",
+            Vector3.new(-9, 2.4, -1.4),
+            Vector3.new(-1.2, 0.8, -1.45)
+        )
+        shot(
+            player,
+            model,
+            "vitres_" .. variant.Name .. "_trois_quarts",
+            Vector3.new(-11, 3.2, -12),
+            Vector3.new(-1, 0.9, -1.5)
+        )
+    end
+    record("comete.vitres.variantes_capturees", true, #VARIANTS .. " réglages, 2 cadrages chacun")
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("comete.serveur.rapport_client", next(reports) ~= nil)
+    record("comete.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
+    return
+end
 
 -- ======================== K04, K05, K03, K06 : conduite ========================
 

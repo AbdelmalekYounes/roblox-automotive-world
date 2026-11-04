@@ -52,6 +52,7 @@ clavier/manette est remplacée** par un point d'accès réservé à Studio (`Veh
 | `silhouette` | clôture de la phase 1 : choix de silhouette par **vrais clics** (panneau d'apparition, téléphone), vêtements, têtes classiques et non classiques, réapparition, couleurs de peau, changements successifs avec expirations forcées |
 | `silhouette2` | 2 clients : corps du joueur 1 mesuré par le joueur 2 et comparé au serveur à chaque changement (changements appelés par le serveur de test) |
 | `comete` | lot VEH3D-01 : Comète 3D (kit de maillages), essais QA-K01 à QA-K08 : structure, chargement des maillages, roues, sièges, caméras (touche V), conduite et chocs avant/arrière contre `MurDeChoc`, nuit, temps d'image de 24 Comète ; à lancer avec `-GuiInput` |
+| `comete_vitres` | lot VEH3D-01 : même début que `comete`, puis 5 réglages du vitrage capturés conducteur assis (profil, trois-quarts) ; à lancer avec `-GuiInput` |
 
 Non couvert par ces sessions : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir
 `docs/lot-0.1/RAPPORT_TESTS.md`). Lot 0.9.1 : les sessions `ui` et `ui_monde` utilisent de **vraies** entrées

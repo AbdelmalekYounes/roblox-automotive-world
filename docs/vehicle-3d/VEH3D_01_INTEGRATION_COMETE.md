@@ -107,9 +107,23 @@ suite : il sera groupé avec les autres changements du modèle.
 - Écran de crédits en jeu : **non fait**. Le crédit est obligatoire dès que le jeu est partagé ; texte prêt dans
   `docs/CREDITS_ACTIFS.md`.
 - Feux non séparés dans le gabarit reçu : les sources de lumière éclairent, mais le maillage des feux ne s'illumine pas.
-- **Vitres latérales opaques** (constaté sur les captures du 2026-11-05) : seuls le pare-brise et la lunette sont des
-  pièces `glass` ; les vitres latérales sont peintes dans la texture du modèle. L'avatar n'est pas visible de
-  l'extérieur. À arbitrer (séparer les vitres dans Blender et refaire un envoi, ou accepter).
+- **Vitres latérales noires vues de l'extérieur** (captures du 2026-11-05) : l'avatar n'est pas visible. Ce ne sont
+  **pas** des vitres peintes, contrairement à ce qu'indiquait la première version de ce rapport (déduction non vérifiée,
+  corrigée) : `COMETE_Vitrage_glass` contient les vitres latérales (9 faces par côté) et des rayons lancés dans Blender
+  les traversent sans rien toucher derrière. C'est le réglage du jeu (matériau Glass, teinte 28/32/38, transparence
+  0,45) qui les rend noires sur un habitacle sombre. Comparatif dans la VM, conducteur assis (session `comete_vitres`,
+  tâche `20261105-003353`, 29 contrôles réussis) :
+
+  | Réglage | Matériau | Teinte | Transparence | Conducteur vu de profil |
+  |---|---|---|---|---|
+  | A (actuel) | Glass | 28/32/38 | 0,45 | non (vitre noire) |
+  | B | Glass | 28/32/38 | 0,70 | à peine |
+  | C | Glass | 120/135/145 | 0,60 | oui de trois-quarts, reflet du ciel marqué |
+  | D | SmoothPlastic | 120/135/145 | 0,60 | oui, net |
+  | E | SmoothPlastic | 60/70/80 | 0,75 | oui, net |
+
+  Réglage à choisir par le propriétaire ; D et E s'écartent du plan (§3 : « matériau Verre »). Aucun nouvel envoi des
+  maillages n'est nécessaire pour ce point.
 - La teinte de carrosserie du jeu ne s'applique pas : la couleur est dans la texture.
 - Les dégâts visuels ne s'affichent pas sur les maillages : les zones de dégâts sont des boîtes invisibles (seules les
   rayures, pièces de décor, apparaissent).
