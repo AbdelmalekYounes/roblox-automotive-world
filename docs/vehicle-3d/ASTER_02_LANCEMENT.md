@@ -125,7 +125,8 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
    réglage d'export qui donne un cube de 10 × 10 × 10 est consigné dans `PIPELINE_BLENDER_ROBLOX.md` §4.
 2. Modélisation dans `wk_aster.blend`, autour du gabarit verrouillé. Revue des captures Blender par le propriétaire
    avant tout export.
-3. Export au réglage étalonné (FBX ou glTF), un fichier par collection exportée.
+3. Export au réglage étalonné : glTF binaire, « Unité d'échelle : Stud », facteur 1 ; orientation selon le témoin v2. Un
+   fichier par collection exportée.
 4. Import dans une place **locale** de Studio. L'envoi des maillages sur Roblox crée des actifs : c'est le
    **propriétaire qui les publie**, sous le créateur de l'expérience (D6). L'assistant ne publie rien.
 5. Montage selon §4, attaches et attributs du §3, collisions simples, `Massless`.
@@ -144,7 +145,7 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
 | # | Point | État |
 |---|---|---|
 | 1 | Valider le **plancher abaissé** (−1,30 st, bas de caisse à 0,39 st du sol) | **Validé par le propriétaire** (« Je valide », 2026-11-04) |
-| 2 | Relever l'étalonnage Blender → Studio (§6.1) | **À faire par le propriétaire** |
+| 2 | Relever l'étalonnage Blender → Studio (§6.1) | **Échelle relevée** par le propriétaire (2026-11-04) : glTF 1:1 retenu, FBX écarté ; **orientation à confirmer** (témoin v2), nécessaire avant le premier import, pas avant la modélisation |
 | 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : sans effet sur la vue de conduite | **Décidé** : accepter (2026-11-04) |
 | 4 | Corps par défaut avant le choix du joueur (masculin, provisoire) | À confirmer |
 | 5 | Couleurs de peau du joueur | **Décidé** : unifier sur la tête (2026-11-04) ; appliqué et vérifié en VM |

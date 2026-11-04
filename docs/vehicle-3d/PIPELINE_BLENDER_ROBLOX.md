@@ -49,7 +49,15 @@ appliquées avant export, un matériau par famille (peinture, verre, pneu, chrom
 - Étalonnage **par essai** avant tout modèle : un cube témoin de 10 st et un cylindre de roue de rayon connu sont
   exportés, importés dans Studio (3D Importer) et mesurés ; le facteur d'échelle et l'orientation retenus sont consignés
   ici. (Les réglages d'export ne sont pas supposés : ils sont mesurés.)
-- Format d'échange proposé : FBX ou glTF, une exportation par groupe (EXT, INT, ROUES, LOD).
+- **Résultat de l'étalonnage** (relevé par le propriétaire dans Studio, 2026-11-04 ; détail dans `calibration/README.md`
+  du dépôt d'art) :
+  - **glTF binaire (`.glb`) retenu** : export Blender par défaut (1 unité = 1 stud) ; import avec « Unité d'échelle :
+    Stud », « Facteur d'échelle : 1 », « Avance du monde : Avant », « World Up : Haut » ;
+  - cube 10 × 10 × 10 et roue 0,732 × 2,25 × 2,25 (axe X) exacts ;
+  - **FBX écarté** : Studio lit ses unités comme des centimètres (×28, ×100 ou ×0,28 selon l'export).
+- **Orientation à confirmer** : la roue témoin arrive à x −14 au lieu de +14 (demi-tour ou miroir). Témoin v2 avec repère
+  avant (`temoins_orientation_v2.glb`), relevé à faire par le propriétaire.
+- Format d'échange : glTF binaire, une exportation par groupe (EXT, INT, ROUES, LOD).
 
 ## 5. Intégration Roblox (proposition, non implémentée)
 
