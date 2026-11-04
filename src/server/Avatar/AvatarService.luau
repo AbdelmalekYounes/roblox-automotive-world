@@ -34,6 +34,8 @@ local CosmeticsFolder = Shared:WaitForChild("Cosmetics")
 local OutfitCatalog = require(CosmeticsFolder:WaitForChild("OutfitCatalog"))
 local OutfitRules = require(CosmeticsFolder:WaitForChild("OutfitRules"))
 local RateLimiter = require(script.Parent.Parent.Security.RateLimiter)
+local ApplyQueue = require(script.Parent.ApplyQueue)
+local RunService = game:GetService("RunService")
 
 local AvatarService = {}
 
@@ -140,31 +142,60 @@ local function accessoryList(look: OutfitRules.Look, current: HumanoidDescriptio
     return list
 end
 
+-- Toutes les écritures de l'apparence passent par une file par personnage (`ApplyQueue`) :
+-- une application à la fois, dans l'ordre ; une application expirée garde son tour jusqu'à sa fin
+-- réelle, si bien qu'elle ne peut plus écraser un choix plus récent. Abandon au-delà de 30 s, avec
+-- réconciliation si elle se termine après coup (`reconcile`, défini plus bas).
+local APPLY_TIMEOUT_S = 10 -- attente maximale d'un appelant
+local APPLY_ABANDON_S = 30 -- au-delà, l'application en cours est abandonnée
+local reconcile: (key: any, ticket: number) -> ()
+local applyQueue = ApplyQueue.new({
+    TimeoutS = APPLY_TIMEOUT_S,
+    AbandonS = APPLY_ABANDON_S,
+    OnStale = function(key: any, ticket: number)
+        reconcile(key, ticket)
+    end,
+})
+
 -- Applique une apparence ; en cas d'échec du moteur ou d'actif ignoré, l'apparence
--- précédente est rétablie. Seule écriture de l'apparence dans le jeu.
+-- précédente est rétablie. L'apparence de départ est lue à son tour dans la file (état le plus
+-- récent), jamais avant.
 local function applyLook(humanoid: Humanoid, look: OutfitRules.Look): Result
-    local before = humanoid:GetAppliedDescription()
-    local wanted = before:Clone()
-    wanted.Shirt = look.Shirt
-    wanted.Pants = look.Pants
-    wanted.GraphicTShirt = look.GraphicTShirt
-    local okList = pcall(function()
-        wanted:SetAccessories(accessoryList(look, before), true)
+    local before: HumanoidDescription? = nil
+    local listOk = true
+    local outcome = applyQueue:run(humanoid, function()
+        local current = humanoid:GetAppliedDescription()
+        before = current
+        local wanted = current:Clone()
+        wanted.Shirt = look.Shirt
+        wanted.Pants = look.Pants
+        wanted.GraphicTShirt = look.GraphicTShirt
+        listOk = pcall(function()
+            wanted:SetAccessories(accessoryList(look, current), true)
+        end)
+        if listOk then
+            humanoid:ApplyDescriptionAsync(wanted)
+        end
     end)
-    if not okList then
+    if not listOk then
         return { Status = "Rejected", Reason = "OutfitAssetInvalid" }
     end
-    local ok = pcall(function()
-        humanoid:ApplyDescriptionAsync(wanted)
-    end)
-    local missing = if ok then OutfitRules.missing(look, lookOf(humanoid:GetAppliedDescription())) else { "?" }
-    if ok and #missing == 0 then
+    if outcome == "Timeout" then
+        return { Status = "Rejected", Reason = "AppearanceTimeout" }
+    end
+    local missing = if outcome == "Ok"
+        then OutfitRules.missing(look, lookOf(humanoid:GetAppliedDescription()))
+        else { "?" }
+    if outcome == "Ok" and #missing == 0 then
         return { Status = "Ok" }
     end
-    -- Rétablissement de l'apparence précédente (meilleur effort, journalisé).
-    local restored = pcall(function()
-        humanoid:ApplyDescriptionAsync(before)
-    end)
+    -- Rétablissement de l'apparence précédente (meilleur effort, journalisé), lui aussi dans la file.
+    local previous = before
+    local restored = previous ~= nil
+        and applyQueue:run(humanoid, function()
+                humanoid:ApplyDescriptionAsync(previous :: HumanoidDescription)
+            end)
+            == "Ok"
     warn(
         string.format(
             "[AutomotiveWorld] Tenue refusée par le moteur (%s) ; apparence précédente %s",
@@ -370,25 +401,6 @@ end
 -- laisse l'apparence d'origine (journalisé). L'attribut `AWAvatarBody` indique le corps porté.
 local humanized = 0
 local APPLY_ATTEMPTS = 3
-local APPLY_TIMEOUT_S = 10 -- au-delà, l'essai est abandonné (l'application peut ne jamais rendre)
-
--- `ApplyDescriptionAsync` borné dans le temps : exécuté dans un fil séparé, attendu au plus
--- APPLY_TIMEOUT_S. Passage VM 20261104-151955 : après un premier refus à l'apparition, un appel
--- n'a jamais rendu la main et bloquait la préparation du personnage.
-local function applyBounded(humanoid: Humanoid, description: HumanoidDescription): (boolean, string)
-    local done, ok, err = false, false, "délai dépassé"
-    task.spawn(function()
-        local success, message = pcall(function()
-            humanoid:ApplyDescriptionAsync(description)
-        end)
-        done, ok, err = true, success, if success then "" else tostring(message)
-    end)
-    local deadline = os.clock() + APPLY_TIMEOUT_S
-    while not done and os.clock() < deadline do
-        task.wait(0.1)
-    end
-    return ok, err
-end
 local function humanDescription(description: HumanoidDescription, bodyId: string, head: number): boolean
     local changed = false
     local scales: { [string]: string } = {
@@ -460,8 +472,6 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         return
     end
     local state = stateOf(player)
-    local bodyId = state.Body or AvatarPolicy.DefaultBody
-    local head = AvatarPolicy.headFor(bodyId, state.PlayerHead, state.HeadClassic)
     -- À l'apparition, le moteur peut refuser l'application tant que le personnage n'est pas
     -- installé (« DataModel was not available », VM 2026-11-04, tâche 20261104-145632) :
     -- attente de l'entrée dans Workspace, puis jusqu'à 3 essais espacés de 0,5 s.
@@ -470,13 +480,27 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         task.wait(0.1)
     end
     for attempt = 1, APPLY_ATTEMPTS do
-        local description = humanoid:GetAppliedDescription()
-        if not humanDescription(description, bodyId, head) then
+        -- Corps et tête lus À SON TOUR dans la file : toujours le dernier choix du joueur.
+        local attemptStart = os.clock()
+        local changed = false
+        local outcome, err = applyQueue:run(humanoid, function()
+            local bodyNow = state.Body or AvatarPolicy.DefaultBody
+            local headNow = AvatarPolicy.headFor(bodyNow, state.PlayerHead, state.HeadClassic)
+            local description = humanoid:GetAppliedDescription()
+            changed = humanDescription(description, bodyNow, headNow)
+            if changed then
+                humanoid:ApplyDescriptionAsync(description)
+            end
+            -- Attribut tenu à jour à la fin RÉELLE de chaque application (même expirée pour
+            -- l'appelant) : il décrit toujours la dernière apparence appliquée.
+            local applied = humanoid:GetAppliedDescription()
+            local worn = AvatarPolicy.wearsBody(partsOf(applied), bodyNow) and applied.Head == headNow
+            player:SetAttribute(BODY_ATTRIBUTE, if worn then bodyNow else nil)
+        end)
+        if outcome == "Ok" and not changed then
             break
         end
-        local attemptStart = os.clock()
-        local ok, err = applyBounded(humanoid, description)
-        if ok then
+        if outcome == "Ok" then
             humanized += 1
             if attempt > 1 then
                 print(
@@ -505,6 +529,8 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         end
         task.wait(0.5)
     end
+    local bodyId = state.Body or AvatarPolicy.DefaultBody
+    local head = AvatarPolicy.headFor(bodyId, state.PlayerHead, state.HeadClassic)
     local applied = humanoid:GetAppliedDescription()
     local worn = AvatarPolicy.wearsBody(partsOf(applied), bodyId) and applied.Head == head
     player:SetAttribute(BODY_ATTRIBUTE, if worn then bodyId else nil)
@@ -527,12 +553,52 @@ function AvatarService.chooseBody(player: Player, id: any): Result
     s.Busy = true
     enforceHuman(player, h)
     s.Busy = false
+    if s.Body ~= body.Id then
+        -- Un choix plus récent a pris la place (file ordonnée) : rien à signaler au joueur.
+        return { Status = "Ok", Superseded = true } :: any
+    end
     if player:GetAttribute(BODY_ATTRIBUTE) ~= body.Id then
         s.Body = previous
         return { Status = "Rejected", Reason = "AvatarBodyInvalid" }
     end
     player:SetAttribute(BODY_CHOSEN_ATTRIBUTE, true)
     return { Status = "Ok" }
+end
+
+-- Application abandonnée terminée après coup : l'état voulu (corps, tête, tenue) est rétabli
+-- dans la file, depuis l'état le plus récent du joueur.
+function reconcile(key: any, _ticket: number)
+    if typeof(key) ~= "Instance" or not key:IsA("Humanoid") then
+        return
+    end
+    local humanoid = key :: Humanoid
+    local player = Players:GetPlayerFromCharacter(humanoid.Parent)
+    if player == nil or humanoid.Parent == nil or humanoid.Health <= 0 then
+        return
+    end
+    warn(string.format("[AutomotiveWorld] Application d'apparence tardive pour %s : réconciliation", player.Name))
+    enforceHuman(player, humanoid)
+    local state = stateOf(player)
+    if state.Initial then
+        local target = if state.Equipped
+            then OutfitRules.wear(state.Initial :: OutfitRules.Look, state.Equipped :: OutfitCatalog.Outfit)
+            else state.Initial :: OutfitRules.Look
+        applyLook(humanoid, target)
+    end
+end
+
+-- Essais en Studio seulement : délais réduits pour provoquer de vraies expirations.
+function AvatarService.setApplyTimeoutsForTests(timeoutS: number, abandonS: number)
+    assert(RunService:IsStudio(), "réservé aux essais en Studio")
+    applyQueue.Options.TimeoutS = timeoutS
+    applyQueue.Options.AbandonS = abandonS
+end
+
+-- Applications terminées après abandon (réconciliées) et opérations en file (essais).
+function AvatarService.applyStats(player: Player): (number, number)
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    return applyQueue.Stale, if humanoid then applyQueue:pending(humanoid) else 0
 end
 
 -- Tête du joueur relevée à l'apparition et forme mesurée (essais).

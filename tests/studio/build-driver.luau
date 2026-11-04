@@ -44,6 +44,9 @@ local KNOWN_SESSIONS = {
     avatar2 = { Name = "avatar2", Players = 2 },
     -- Phase 1 de l'Aster : maquette en blocs d'après le gabarit, pose assise du jeu.
     aster = { Name = "aster", Players = 1 },
+    -- Clôture de la phase 1 : choix de silhouette par vrais clics, puis réplication à 2 joueurs.
+    silhouette = { Name = "silhouette", Players = 1 },
+    silhouette2 = { Name = "silhouette2", Players = 2 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.

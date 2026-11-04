@@ -78,6 +78,8 @@ if
     or currentSession == "avatar"
     or currentSession == "avatar2"
     or currentSession == "aster"
+    or currentSession == "silhouette"
+    or currentSession == "silhouette2"
 then
     return
 end

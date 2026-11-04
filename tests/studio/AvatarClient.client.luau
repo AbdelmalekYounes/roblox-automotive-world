@@ -21,7 +21,13 @@ while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - se
     task.wait()
 end
 local session = ReplicatedStorage:GetAttribute("AWTestSession")
-if session ~= "avatar" and session ~= "avatar2" and session ~= "aster" then
+if
+    session ~= "avatar"
+    and session ~= "avatar2"
+    and session ~= "aster"
+    and session ~= "silhouette"
+    and session ~= "silhouette2"
+then
     return
 end
 
@@ -146,6 +152,90 @@ if session == "avatar2" then
     return
 end
 
+-- ======================== Session « silhouette2 » ========================
+-- Le client du joueur 2 mesure les pièces du corps du joueur 1 à chaque changement et les compare
+-- aux tailles vues par le serveur (attribut `AWSil2Sizes`) : réplication du corps et de la tête.
+
+if session == "silhouette2" then
+    waitFor(function()
+        return #Players:GetPlayers() >= 2
+    end, 90)
+    local all = Players:GetPlayers()
+    table.sort(all, function(a, b)
+        return a.UserId < b.UserId
+    end)
+    local holder = all[1]
+    if holder == player then
+        record("silhouette2.porteur.role", true, "joueur 1 (changements appelés par le serveur de test)")
+        waitFor(function()
+            return ReplicatedStorage:GetAttribute("AWSil2Phase") == "fin"
+        end, 400)
+        reportEvent:FireServer({ vehicle = "silhouette2", steps = steps, measures = measures })
+        return
+    end
+    local PARTS = { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftUpperLeg" }
+    local function parse(text: string): { [string]: Vector3 }
+        local out = {}
+        for name, x, y, z in string.gmatch(text, "(%w+)=([%d%.]+),([%d%.]+),([%d%.]+)") do
+            out[name] = Vector3.new(tonumber(x) :: number, tonumber(y) :: number, tonumber(z) :: number)
+        end
+        return out
+    end
+    local seen: { [string]: boolean } = {}
+    local previous: { [string]: Vector3 }? = nil
+    local deadline = os.clock() + 400
+    while os.clock() < deadline do
+        local phase = ReplicatedStorage:GetAttribute("AWSil2Phase")
+        if phase == "fin" then
+            break
+        end
+        if type(phase) == "string" and not seen[phase] then
+            seen[phase] = true
+            task.wait(2) -- réplication
+            local expected = parse(tostring(ReplicatedStorage:GetAttribute("AWSil2Sizes")))
+            local model = holder.Character
+            local worst, missing = 0, 0
+            local mine: { [string]: Vector3 } = {}
+            for _, name in PARTS do
+                local part = model and model:FindFirstChild(name)
+                local want = expected[name]
+                if part and part:IsA("BasePart") and want then
+                    mine[name] = part.Size
+                    worst = math.max(worst, (part.Size - want).Magnitude)
+                else
+                    missing += 1
+                end
+            end
+            local changed = "—"
+            if previous then
+                local delta = 0
+                for name, size in mine do
+                    local old = (previous :: { [string]: Vector3 })[name]
+                    if old then
+                        delta = math.max(delta, (size - old).Magnitude)
+                    end
+                end
+                changed = string.format("%.3f st", delta)
+            end
+            previous = mine
+            record(
+                "silhouette2.observateur." .. phase .. "_corps_vu_comme_le_serveur",
+                missing == 0 and worst < 0.02,
+                string.format(
+                    "corps %s ; écart max %.3f st ; pièces absentes %d ; variation depuis la phase précédente %s",
+                    tostring(ReplicatedStorage:GetAttribute("AWSil2Body")),
+                    worst,
+                    missing,
+                    changed
+                )
+            )
+        end
+        task.wait(0.2)
+    end
+    reportEvent:FireServer({ vehicle = "silhouette2", steps = steps, measures = measures })
+    return
+end
+
 -- ======================== Session « avatar » ========================
 
 local signal = function(id: string)
@@ -226,13 +316,10 @@ handlers.calibrate = function()
         )
     end
     record("avatar.client.info_focus_avant_clavier", true, focusInfo())
-    local keys, keysDetail = Gui.calibrateKeys()
+    local keys, keysDetail = Gui.calibrateKeys(3)
     record("avatar.client.clavier_etalonne", keys, keysDetail)
     if not keys then
-        task.wait(5)
-        record("avatar.client.info_focus_second_essai", true, focusInfo())
-        local again, againDetail = Gui.calibrateKeys()
-        record("avatar.client.info_clavier_second_essai", true, tostring(again) .. " : " .. tostring(againDetail))
+        record("avatar.client.info_focus_apres_echec", true, focusInfo())
     end
     -- Fenêtre d'arrivée (profil neuf) : « Passer l'introduction » par un vrai clic.
     local onboarding = playerGui:FindFirstChild("AWOnboarding")
@@ -352,7 +439,41 @@ handlers.standing = function(_id, data)
     end
     record("avatar.client." .. morph .. ".marche", walked > 3, string.format("%.1f st en 1,5 s", walked))
     record("avatar.client." .. morph .. ".animation_de_marche", animated, table.concat(tracks, ", "))
+    -- QA-A20 (clôture de la phase 1) : angle de départ relevé deux fois. (1) Comme avant, 0,6 s
+    -- après la marche, avec les pistes d'animation en cours ; (2) personnage arrêté, sans piste de
+    -- marche ni de course. Le contrôle utilise (2) ; (1) sert à établir la cause des échecs.
+    local function movingTracks(): { string }
+        local names = {}
+        for _, track in if animator then animator:GetPlayingAnimationTracks() else {} do
+            local lower = string.lower(track.Name)
+            if string.find(lower, "walk", 1, true) or string.find(lower, "run", 1, true) then
+                table.insert(names, string.format("%s %.2f", track.Name, track.WeightCurrent))
+            end
+        end
+        return names
+    end
+    local early = armAngle(model)
+    local earlyTracks = table.concat(movingTracks(), ", ")
+    local earlySpeed = root.AssemblyLinearVelocity.Magnitude
+    local settleStart = os.clock()
+    local settled = waitFor(function()
+        return root.AssemblyLinearVelocity.Magnitude < 0.3 and #movingTracks() == 0
+    end, 4)
+    task.wait(0.3)
     local before = armAngle(model)
+    record(
+        "avatar.client." .. morph .. ".info_bras_depart",
+        true,
+        string.format(
+            "0,6 s après la marche : %.0f° (vitesse %.2f st/s ; pistes : %s) ; arrêté après %.1f s (%s) : %.0f°",
+            early or -1,
+            earlySpeed,
+            if earlyTracks == "" then "aucune" else earlyTracks,
+            os.clock() - settleStart,
+            if settled then "oui" else "non",
+            before or -1
+        )
+    )
     Gui.key("T")
     local shown = waitFor(phoneShown, 4)
     task.wait(1.4)
@@ -619,6 +740,67 @@ handlers.asterpov = function(_id, data)
     withView(CFrame.lookAt(eye, eye + frame.LookVector * 10 - Vector3.new(0, 1.2, 0)), function()
         Gui.shot(tostring(data.Name), { pose = "jeu" })
     end)
+end
+
+-- Session « silhouette » : vrais clics dans le panneau d'apparition et dans le téléphone.
+handlers.silpanel = function(_id, data)
+    local key = tostring(data.Key)
+    local panel: Instance? = nil
+    local shown = waitFor(function()
+        panel = playerGui:FindFirstChild("AWBodyChoice")
+        return panel ~= nil
+    end, 15)
+    record("silhouette.client.panneau_affiche_a_l_apparition", shown)
+    local button = Gui.findButton(panel, tostring(data.Label))
+    local ok, detail = Gui.click(button, "Silhouette " .. tostring(data.Label))
+    record("silhouette.client.clic_" .. key, ok, detail)
+    local closed = waitFor(function()
+        return playerGui:FindFirstChild("AWBodyChoice") == nil
+    end, 20)
+    record("silhouette.client.panneau_ferme_apres_choix", closed)
+end
+
+handlers.silphone = function(_id, data)
+    local expect = tostring(data.Expect)
+    Gui.key("T")
+    local opened = waitFor(phoneShown, 5)
+    record("silhouette.client.telephone_ouvert", opened)
+    local phone = playerGui:FindFirstChild("AWPhone")
+    local function press(label: string): boolean
+        local button: GuiButton? = nil
+        waitFor(function()
+            button = Gui.findButton(phone, label)
+            return button ~= nil
+        end, 5)
+        local ok, detail = Gui.click(button, label)
+        record("silhouette.client.telephone_clic_" .. string.lower((string.gsub(label, "%W", ""))), ok, detail)
+        task.wait(0.8)
+        return ok
+    end
+    press("Paramètres")
+    press("Interface")
+    press("Silhouette")
+    local applied = waitFor(function()
+        return player:GetAttribute("AWAvatarBody") == expect
+    end, 25)
+    task.wait(1)
+    local button = Gui.findButton(phone, "Silhouette")
+    local text = if button then (button :: any).Text else "?"
+    record("silhouette.client.telephone_silhouette_" .. string.lower(expect), applied, "bouton : " .. tostring(text))
+    Gui.key("T")
+    waitFor(function()
+        return not phoneShown()
+    end, 4)
+    task.wait(0.5)
+end
+
+handlers.silcheck = function(_id, data)
+    task.wait(2)
+    record(
+        "silhouette.client.panneau_absent_" .. tostring(data.Key),
+        playerGui:FindFirstChild("AWBodyChoice") == nil,
+        "choix déjà fait dans la session"
+    )
 end
 
 local finished = false

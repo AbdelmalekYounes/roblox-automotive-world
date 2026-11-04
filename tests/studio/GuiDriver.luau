@@ -416,35 +416,84 @@ end
 -- Étalonnage clavier : touches sans action dans le jeu (Q, Z, Y), envoyées par code
 -- virtuel puis par code de balayage ; on garde le mode dont les KeyCode reçus sont
 -- les bons. Renvoie (réussi, détail).
-function Gui.calibrateKeys(): (boolean, string)
+-- Étalonnage du clavier (QA-A22, clôture de la phase 1 de l'Aster) : jusqu'à `rounds` essais.
+-- Avant chaque nouvel essai, un vrai clic sur un bouton transparent couvrant la vue rend le focus
+-- clavier à la fenêtre du jeu (le clic n'atteint pas le monde 3D). Chaque essai est journalisé.
+-- La disposition du clavier de la VM peut varier (AZERTY : le mode « vk » donne A, W pour Q, Z ;
+-- le mode « scan » est indépendant de la disposition).
+local function refocus(): boolean
+    local holder = Instance.new("ScreenGui")
+    holder.Name = "AW_TestFocus"
+    holder.IgnoreGuiInset = true
+    holder.ResetOnSpawn = false
+    holder.DisplayOrder = 100000
+    local cover = Instance.new("TextButton")
+    cover.Name = "Focus"
+    cover.Text = ""
+    cover.BackgroundTransparency = 1
+    cover.Size = UDim2.fromScale(0.5, 0.4)
+    cover.Position = UDim2.fromScale(0.25, 0.45)
+    cover.Parent = holder
+    holder.Parent = playerGui()
+    frames(3)
+    local ok = Gui.click(cover, "focus clavier", 5)
+    holder:Destroy()
+    return ok
+end
+
+function Gui.calibrateKeys(rounds: number?): (boolean, string)
     local probe = { "Q", "Z", "Y" }
-    local results = {}
-    for _, mode in { "vk", "scan" } do
-        local stop = Gui.recordKeys()
-        for _, key in probe do
-            if mode == "scan" then
-                send("skey", scanOf(key), 60)
-            else
-                send("key", vkOf(key), 60)
+    local log: { string } = {}
+    for round = 1, rounds or 3 do
+        local focused = "non"
+        if round > 1 then
+            focused = if refocus() then "clic reçu" else "clic NON reçu"
+            task.wait(0.5)
+        end
+        local results = {}
+        for _, mode in { "vk", "scan" } do
+            local stop = Gui.recordKeys()
+            for _, key in probe do
+                if mode == "scan" then
+                    send("skey", scanOf(key), 60)
+                else
+                    send("key", vkOf(key), 60)
+                end
+                task.wait(0.25)
             end
-            task.wait(0.25)
+            task.wait(1.5)
+            local seen = stop()
+            results[mode] = table.concat(seen, ",")
+            if results[mode] == table.concat(probe, ",") then
+                keyMode = mode
+                table.insert(
+                    log,
+                    string.format(
+                        "essai %d (refocus %s) : mode %s retenu (vk : %s ; scan : %s)",
+                        round,
+                        focused,
+                        mode,
+                        results.vk or "?",
+                        results.scan or "non essayé"
+                    )
+                )
+                local detail = table.concat(log, " | ")
+                note("calibKeys", { ok = true, detail = detail })
+                return true, detail
+            end
         end
-        task.wait(1.5)
-        local seen = stop()
-        results[mode] = table.concat(seen, ",")
-        if results[mode] == table.concat(probe, ",") then
-            keyMode = mode
-            local detail = string.format(
-                "mode %s retenu (vk : %s ; scan : %s)",
-                mode,
-                results.vk or "?",
-                results.scan or "non essayé"
+        table.insert(
+            log,
+            string.format(
+                "essai %d (refocus %s) : aucun mode exact (vk : %s ; scan : %s)",
+                round,
+                focused,
+                results.vk or "",
+                results.scan or ""
             )
-            note("calibKeys", { ok = true, detail = detail })
-            return true, detail
-        end
+        )
     end
-    local detail = string.format("aucun mode exact (vk : %s ; scan : %s)", results.vk or "", results.scan or "")
+    local detail = table.concat(log, " | ")
     note("calibKeys", { ok = false, detail = detail })
     return false, detail
 end

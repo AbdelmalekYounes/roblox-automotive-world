@@ -694,6 +694,10 @@ local E: { [string]: Entry } = {
     OutfitAppearanceLoading = { "Apparence en cours de chargement.", "Appearance still loading." },
     OutfitBusy = { "Changement de tenue en cours.", "Outfit change in progress." },
     AvatarBodyUnknown = { "Silhouette inconnue.", "Unknown body." },
+    AppearanceTimeout = {
+        "Changement d'apparence trop long : il sera appliqué dès que possible.",
+        "Appearance change is taking too long: it will apply as soon as possible.",
+    },
     AvatarBodyInvalid = {
         "Silhouette non appliquée : apparence précédente conservée.",
         "Body not applied: previous appearance kept.",

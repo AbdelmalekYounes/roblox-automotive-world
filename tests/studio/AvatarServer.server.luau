@@ -25,7 +25,13 @@ local Workspace = game:GetService("Workspace")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "avatar" and session ~= "avatar2" and session ~= "aster" then
+if
+    session ~= "avatar"
+    and session ~= "avatar2"
+    and session ~= "aster"
+    and session ~= "silhouette"
+    and session ~= "silhouette2"
+then
     return
 end
 
@@ -67,7 +73,7 @@ local askEvent = Instance.new("RemoteEvent")
 askEvent.Name = "AWAvatarAsk"
 askEvent.Parent = ReplicatedStorage
 ReplicatedStorage:SetAttribute("AWTestSession", session)
-ReplicatedStorage:SetAttribute("AWTestPlayers", if session == "avatar2" then 2 else 1)
+ReplicatedStorage:SetAttribute("AWTestPlayers", if session == "avatar2" or session == "silhouette2" then 2 else 1)
 
 local Server = ServerScriptService:WaitForChild("AutomotiveWorldServer")
 local MissionService = require(Server:WaitForChild("Economy"):WaitForChild("MissionService"))
@@ -763,6 +769,340 @@ for _, source in { "H1", "H2", "H4" } do
             table.insert(HUMAN_MORPHS, copy)
         end
     end
+end
+
+-- ======================== Sessions « silhouette » et « silhouette2 » ========================
+-- Clôture de la phase 1 de l'Aster (2026-11-04). « silhouette » (1 joueur, vraies entrées dans
+-- la VM) : choix par vrai clic dans le panneau d'apparition, changement par vrais clics dans le
+-- téléphone, vêtements conservés, tête classique remplacée, tête non classique conservée,
+-- réapparition, couleurs de peau différentes (captures, aucune correction), puis changements
+-- successifs avec expirations forcées (régression de la file d'application).
+-- « silhouette2 » (2 joueurs) : changements du joueur 1 (appelés par le serveur de test,
+-- instrumenté) mesurés par le client du joueur 2 et comparés aux tailles vues par le serveur.
+-- Instrumenté (signalé) : réapparitions et apparences de départ imposées par le serveur de
+-- test (`LoadCharacter`, `LoadCharacterWithHumanoidDescription`) ; caméra des captures.
+
+local SIL_PARTS = { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftUpperLeg" }
+local function partSizes(character: Model?): string
+    local out = {}
+    for _, name in SIL_PARTS do
+        local part = character and character:FindFirstChild(name)
+        if part and part:IsA("BasePart") then
+            table.insert(out, string.format("%s=%.3f,%.3f,%.3f", name, part.Size.X, part.Size.Y, part.Size.Z))
+        else
+            table.insert(out, name .. "=?")
+        end
+    end
+    return table.concat(out, ";")
+end
+
+local function wornNow(player: Player): (string, number, { [string]: number })
+    local humanoid = humanoidOf(player)
+    local parts: { [string]: number } = {}
+    if humanoid == nil then
+        return "?", -1, parts
+    end
+    local description = humanoid:GetAppliedDescription()
+    for _, field in AvatarPolicy.ReplacedParts do
+        parts[field] = (description :: any)[field]
+    end
+    local body = "autre"
+    for _, id in AvatarPolicy.BodyOrder do
+        if AvatarPolicy.wearsBody(parts, id) then
+            body = id
+        end
+    end
+    return body, description.Head, parts
+end
+
+local function waitAppearance(player: Player, previous: Model?): Model?
+    waitFor(function()
+        return player.Character ~= nil and player.Character ~= previous
+    end, 30)
+    local character = player.Character
+    waitFor(function()
+        return player:HasAppearanceLoaded()
+    end, 30)
+    -- Corps appliqué dans un fil séparé après l'apparition (AvatarService).
+    waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") ~= nil and pending == 0
+    end, 30)
+    task.wait(1)
+    return character
+end
+
+local function frontView(player: Player, angle: number): CFrame
+    local character = characterOf(player)
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if root == nil or not root:IsA("BasePart") then
+        return CFrame.new()
+    end
+    local offset = CFrame.Angles(0, math.rad(angle), 0) * CFrame.new(0, 0.8, -8)
+    return CFrame.lookAt((root.CFrame * offset).Position, root.Position + Vector3.new(0, 0.3, 0))
+end
+
+if session == "silhouette" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 1
+    end, 60)
+    record("silhouette.serveur.joueur_connecte", joined, #Players:GetPlayers())
+    local player = Players:GetPlayers()[1]
+    waitAppearance(player, nil)
+    local playerHead, classic = AvatarService.headInfo(player)
+    local body0, head0 = wornNow(player)
+    record(
+        "silhouette.serveur.defaut_applique",
+        body0 == AvatarPolicy.DefaultBody and head0 == AvatarPolicy.headFor(body0, playerHead, classic),
+        string.format(
+            "corps %s, tête %d (tête du joueur %d, %s)",
+            body0,
+            head0,
+            playerHead,
+            if classic then "classique" else "non classique"
+        )
+    )
+    record("silhouette.serveur.choix_non_fait", player:GetAttribute("AWAvatarBodyChosen") ~= true)
+    local look0 = AvatarService.currentLook(player)
+
+    local function checkBody(prefix: string, expected: string, expectedHead: number)
+        local body, head = wornNow(player)
+        local look = AvatarService.currentLook(player)
+        record(
+            prefix .. "_applique",
+            body == expected and head == expectedHead,
+            string.format("corps %s (attendu %s), tête %d (attendue %d)", body, expected, head, expectedHead)
+        )
+        record(
+            prefix .. "_vetements_conserves",
+            look ~= nil and look0 ~= nil and OutfitRules.equal(look, look0),
+            if look and look0
+                then string.format(
+                    "haut %d → %d, bas %d → %d, %d → %d accessoire(s)",
+                    look0.Shirt,
+                    look.Shirt,
+                    look0.Pants,
+                    look.Pants,
+                    #look0.Accessories,
+                    #look.Accessories
+                )
+                else "?"
+        )
+    end
+
+    -- 1. Vrais clics : étalonnage, panneau d'apparition (« Féminin »).
+    record("silhouette.serveur.client_pret", ask(player, "calibrate", {}, 90))
+    ask(player, "silpanel", { Label = "Féminin", Key = "feminin" }, 60)
+    local chosen = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") == "Feminin" and pending == 0
+    end, 30)
+    record("silhouette.serveur.clic_feminin_recu", chosen, tostring(player:GetAttribute("AWAvatarBody")))
+    checkBody("silhouette.serveur.feminin", "Feminin", AvatarPolicy.headFor("Feminin", playerHead, classic))
+    task.wait(1)
+    shot(player, "silhouette_feminin_face", frontView(player, 0), { silhouette = "Feminin (994 Jordan)" })
+    shot(player, "silhouette_feminin_trois_quarts", frontView(player, 35), { silhouette = "Feminin (994 Jordan)" })
+
+    -- 2. Vrais clics dans le téléphone : Paramètres › Interface › Silhouette (→ Masculin).
+    ask(player, "silphone", { Expect = "Masculin" }, 90)
+    local switched = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") == "Masculin" and pending == 0
+    end, 30)
+    record("silhouette.serveur.telephone_masculin_recu", switched, tostring(player:GetAttribute("AWAvatarBody")))
+    checkBody("silhouette.serveur.masculin", "Masculin", AvatarPolicy.headFor("Masculin", playerHead, classic))
+    task.wait(1)
+    shot(player, "silhouette_masculin_face", frontView(player, 0), { silhouette = "Masculin (995 Billie)" })
+    shot(player, "silhouette_masculin_trois_quarts", frontView(player, 35), { silhouette = "Masculin (995 Billie)" })
+
+    -- 3. Réapparition : le choix de la session est conservé, le panneau ne revient pas.
+    local before = player.Character
+    player:LoadCharacter()
+    waitAppearance(player, before)
+    checkBody("silhouette.serveur.reapparition", "Masculin", AvatarPolicy.headFor("Masculin", playerHead, classic))
+    ask(player, "silcheck", { Key = "reapparition" }, 20)
+
+    -- 4. Tête NON classique (tête réaliste du paquet 988, pour la forme) : conservée, même après
+    -- un changement de silhouette.
+    local REALISTIC_HEAD = 11702291006 -- « Addison - Head » (paquet 988)
+    local humanoid = humanoidOf(player)
+    if humanoid then
+        local description = humanoid:GetAppliedDescription()
+        description.Head = REALISTIC_HEAD
+        before = player.Character
+        player:LoadCharacterWithHumanoidDescription(description)
+        waitAppearance(player, before)
+        local readHead, readClassic = AvatarService.headInfo(player)
+        local body, head = wornNow(player)
+        record(
+            "silhouette.serveur.tete_non_classique_conservee",
+            readHead == REALISTIC_HEAD and not readClassic and head == REALISTIC_HEAD and body == "Masculin",
+            string.format(
+                "tête lue %d (%s), portée %d, corps %s",
+                readHead,
+                if readClassic then "classique" else "non classique",
+                head,
+                body
+            )
+        )
+        local result = AvatarService.chooseBody(player, "Feminin")
+        local body2, head2 = wornNow(player)
+        record(
+            "silhouette.serveur.tete_non_classique_apres_changement",
+            result.Status == "Ok" and body2 == "Feminin" and head2 == REALISTIC_HEAD,
+            string.format("%s ; corps %s, tête %d", result.Status, body2, head2)
+        )
+        task.wait(1)
+        shot(player, "tete_non_classique_conservee", frontView(player, 0), { tete = "Addison (988), non classique" })
+    end
+
+    -- 5. Couleurs de peau différentes (tête, tronc, bras, jambes) : rendu présenté, aucune correction.
+    local COLORS = {
+        HeadColor = Color3.fromRGB(255, 224, 196),
+        TorsoColor = Color3.fromRGB(176, 120, 86),
+        LeftArmColor = Color3.fromRGB(96, 64, 44),
+        RightArmColor = Color3.fromRGB(96, 64, 44),
+        LeftLegColor = Color3.fromRGB(236, 190, 150),
+        RightLegColor = Color3.fromRGB(236, 190, 150),
+    }
+    humanoid = humanoidOf(player)
+    if humanoid then
+        local description = humanoid:GetAppliedDescription()
+        description.Head = 10638267973 -- tête classique « Stevie Standard » (compte de test)
+        for field, color in COLORS do
+            (description :: any)[field] = color
+        end
+        before = player.Character
+        player:LoadCharacterWithHumanoidDescription(description)
+        waitAppearance(player, before)
+        for _, id in AvatarPolicy.BodyOrder do
+            local result = AvatarService.chooseBody(player, id)
+            task.wait(1.5)
+            local applied = humanoidOf(player)
+            local d = applied and applied:GetAppliedDescription()
+            local kept = d ~= nil
+            if d then
+                for field, color in COLORS do
+                    local value = (d :: any)[field] :: Color3
+                    if (value.R - color.R) ^ 2 + (value.G - color.G) ^ 2 + (value.B - color.B) ^ 2 > 1e-4 then
+                        kept = false
+                    end
+                end
+            end
+            record(
+                "silhouette.serveur.couleurs_conservees_" .. string.lower(id),
+                result.Status == "Ok" and kept,
+                "tête (255,224,196), tronc (176,120,86), bras (96,64,44), jambes (236,190,150) ; aucune correction"
+            )
+            shot(player, "couleurs_melangees_" .. string.lower(id), frontView(player, 20), { silhouette = id })
+        end
+    end
+
+    -- 6. Régression : changements successifs avec expirations forcées (file d'application).
+    AvatarService.setApplyTimeoutsForTests(0.05, 20)
+    local sequence = { "Masculin", "Feminin", "Masculin", "Feminin", "Masculin" }
+    local accepted = {}
+    for _, id in sequence do
+        local result = AvatarService.chooseBody(player, id)
+        table.insert(
+            accepted,
+            id .. ":" .. tostring(result.Status) .. (if result.Reason then "/" .. result.Reason else "")
+        )
+        task.wait(0.05)
+    end
+    AvatarService.setApplyTimeoutsForTests(10, 30)
+    local settled = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return pending == 0
+    end, 40)
+    task.wait(1)
+    local finalBody, finalHead = wornNow(player)
+    local expected = sequence[#sequence]
+    local overwritten = false
+    for _ = 1, 25 do
+        task.wait(0.2)
+        if wornNow(player) ~= expected then
+            overwritten = true
+        end
+    end
+    local stale = AvatarService.applyStats(player)
+    record(
+        "silhouette.serveur.regression_dernier_choix_applique",
+        settled and finalBody == expected,
+        string.format(
+            "demandes %s ; corps final %s (attendu %s), tête %d",
+            table.concat(accepted, ", "),
+            finalBody,
+            expected,
+            finalHead
+        )
+    )
+    record(
+        "silhouette.serveur.regression_aucun_ecrasement_ulterieur",
+        not overwritten,
+        "5 s observées après la file vide"
+    )
+    record(
+        "silhouette.serveur.regression_attribut_coherent",
+        player:GetAttribute("AWAvatarBody") == finalBody,
+        tostring(player:GetAttribute("AWAvatarBody"))
+    )
+    record("silhouette.serveur.info_fins_tardives", true, tostring(stale))
+
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("silhouette.serveur.rapport_client", next(reports) ~= nil)
+    record("silhouette.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    record("silhouette.serveur.info_avertissements", true, #warnings .. " : " .. table.concat(warnings, " || "))
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
+    return
+end
+
+if session == "silhouette2" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 2
+    end, 90)
+    record("silhouette2.serveur.joueurs_connectes", joined, #Players:GetPlayers())
+    local all = Players:GetPlayers()
+    table.sort(all, function(a, b)
+        return a.UserId < b.UserId
+    end)
+    local holder = all[1]
+    for _, p in all do
+        waitAppearance(p, nil)
+    end
+    local function publish(phase: string)
+        task.wait(1.5)
+        ReplicatedStorage:SetAttribute("AWSil2Sizes", partSizes(characterOf(holder)))
+        ReplicatedStorage:SetAttribute("AWSil2Body", (wornNow(holder)))
+        ReplicatedStorage:SetAttribute("AWSil2Phase", phase)
+        task.wait(8) -- mesure de l'observateur
+    end
+    publish("defaut")
+    for _, id in { "Feminin", "Masculin" } do
+        local result = AvatarService.chooseBody(holder, id)
+        record("silhouette2.serveur.changement_" .. string.lower(id), result.Status == "Ok", tostring(result.Status))
+        publish(string.lower(id))
+    end
+    local before = holder.Character
+    holder:LoadCharacter()
+    waitAppearance(holder, before)
+    record("silhouette2.serveur.reapparition_corps_conserve", (wornNow(holder)) == "Masculin", (wornNow(holder)))
+    publish("reapparition")
+    ReplicatedStorage:SetAttribute("AWSil2Phase", "fin")
+    local gotReports = waitFor(function()
+        local count = 0
+        for _ in reports do
+            count += 1
+        end
+        return count >= 2
+    end, 120)
+    record("silhouette2.serveur.rapports_clients", gotReports)
+    record("silhouette2.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    StudioTestService:EndTest({ session = session, players = #Players:GetPlayers(), server = steps, clients = reports })
+    return
 end
 
 if session == "aster" then
