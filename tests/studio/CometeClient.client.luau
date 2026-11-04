@@ -21,7 +21,8 @@ local sessionStart = os.clock()
 while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - sessionStart < 15 do
     task.wait()
 end
-if ReplicatedStorage:GetAttribute("AWTestSession") ~= "comete" then
+local cometeSession = ReplicatedStorage:GetAttribute("AWTestSession")
+if cometeSession ~= "comete" and cometeSession ~= "comete_vitres" then
     return
 end
 
