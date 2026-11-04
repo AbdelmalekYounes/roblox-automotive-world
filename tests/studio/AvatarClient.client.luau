@@ -21,7 +21,7 @@ while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - se
     task.wait()
 end
 local session = ReplicatedStorage:GetAttribute("AWTestSession")
-if session ~= "avatar" and session ~= "avatar2" then
+if session ~= "avatar" and session ~= "avatar2" and session ~= "aster" then
     return
 end
 
@@ -429,6 +429,147 @@ handlers.exit = function(_id, data)
     end, 4)
 end
 
+-- ======================== Session « aster » : mesures côté client ========================
+-- La pose du jeu est appliquée par ce client (Transform) : seules ses propres mesures la voient.
+
+local asterRows: { { [string]: any } } = {}
+
+local function corners(part: BasePart, frame: CFrame): (Vector3, Vector3)
+    local half = part.Size / 2
+    local minV, maxV = Vector3.one * math.huge, -Vector3.one * math.huge
+    for _, sx in { -1, 1 } do
+        for _, sy in { -1, 1 } do
+            for _, sz in { -1, 1 } do
+                local c = frame:PointToObjectSpace((part.CFrame * CFrame.new(half * Vector3.new(sx, sy, sz))).Position)
+                minV = minV:Min(c)
+                maxV = maxV:Max(c)
+            end
+        end
+    end
+    return minV, maxV
+end
+
+local function overlap(aMin: Vector3, aMax: Vector3, bMin: Vector3, bMax: Vector3): number
+    local d = Vector3.new(
+        math.min(aMax.X, bMax.X) - math.max(aMin.X, bMin.X),
+        math.min(aMax.Y, bMax.Y) - math.max(aMin.Y, bMin.Y),
+        math.min(aMax.Z, bMax.Z) - math.max(aMin.Z, bMin.Z)
+    )
+    if d.X <= 0 or d.Y <= 0 or d.Z <= 0 then
+        return 0
+    end
+    return math.min(d.X, d.Y, d.Z)
+end
+
+local LEG_PARTS = {
+    LeftUpperLeg = true,
+    LeftLowerLeg = true,
+    LeftFoot = true,
+    RightUpperLeg = true,
+    RightLowerLeg = true,
+    RightFoot = true,
+}
+
+handlers.astermeasure = function(_id, data)
+    local model = Workspace:FindFirstChild("MaquetteAster") :: Model?
+    local me = character()
+    if model == nil then
+        record("aster.client.maquette_presente", false)
+        return
+    end
+    task.wait(0.3)
+    local frame = model:GetPivot()
+    local seat = model:FindFirstChild(tostring(data.Seat)) :: BasePart
+    local seatTop = frame:PointToObjectSpace((seat.CFrame * CFrame.new(0, seat.Size.Y / 2, 0)).Position).Y
+    local seatX = frame:PointToObjectSpace(seat.Position).X
+    local row: { [string]: any } = { Morph = data.Morph, Pose = data.Pose, Seat = data.Seat, SeatTop = seatTop }
+    local bodyTop, allTop, sideMax = -math.huge, -math.huge, 0
+    local legs = {}
+    for _, part in me:GetDescendants() do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local minV, maxV = corners(part, frame)
+            allTop = math.max(allTop, maxV.Y)
+            local accessory = part:FindFirstAncestorOfClass("Accessory")
+            if accessory == nil then
+                bodyTop = math.max(bodyTop, maxV.Y)
+            end
+            if accessory == nil or accessory:GetAttribute("AWTestProp") == nil then
+                -- Écart latéral mesuré depuis l'axe du siège occupé, vers la portière.
+                sideMax = math.max(sideMax, math.abs(minV.X - seatX), math.abs(maxV.X - seatX))
+            end
+            if LEG_PARTS[part.Name] then
+                table.insert(legs, { minV, maxV, part.Name })
+            end
+            if part.Name == "LeftFoot" or part.Name == "RightFoot" then
+                row[part.Name .. "MinZ"] = minV.Z
+                row[part.Name .. "MinY"] = minV.Y
+            elseif part.Name == "LeftHand" or part.Name == "RightHand" or part.Name == "Head" then
+                local center = frame:PointToObjectSpace(part.Position)
+                row[part.Name] = { center.X, center.Y, center.Z }
+            elseif part.Name == "LowerTorso" then
+                row.PelvisBottom = minV.Y
+            elseif part.Name == "LeftLowerLeg" then
+                row.KneeTop = maxV.Y
+            end
+        end
+    end
+    local roof = model:FindFirstChild("Toit") :: BasePart
+    local roofMin = corners(roof, frame)
+    local door =
+        model:FindFirstChild(if data.Seat == "SiegeConducteur" then "PortiereGauche" else "PortiereDroite") :: BasePart
+    local dMin, dMax = corners(door, frame)
+    local doorInner = if data.Seat == "SiegeConducteur" then dMax.X else dMin.X
+    row.HeadAboveSeat = bodyTop - seatTop
+    row.HairAboveSeat = allTop - seatTop
+    row.RoofMarginBody = roofMin.Y - bodyTop
+    row.RoofMargin = roofMin.Y - allTop
+    row.DoorRoom = math.abs(doorInner - seatX)
+    row.SideReach = sideMax
+    row.SideMargin = row.DoorRoom - sideMax
+    local worst, pair = 0, ""
+    for _, name in { "PlancheDeBord", "Volant", "Pedalier" } do
+        local item = model:FindFirstChild(name) :: BasePart?
+        if item then
+            local bMin, bMax = corners(item, frame)
+            for _, leg in legs do
+                local depth = overlap(leg[1], leg[2], bMin, bMax)
+                if depth > worst then
+                    worst, pair = depth, leg[3] .. "/" .. name
+                end
+            end
+        end
+    end
+    row.InteriorOverlap = worst
+    row.InteriorPair = pair
+    local wheel = model:FindFirstChild("Volant") :: BasePart?
+    if wheel and row.LeftHand and row.RightHand then
+        local center = frame:PointToObjectSpace(wheel.Position)
+        local radius = wheel.Size.Y / 2
+        local function rim(hand: { number }): number
+            local d = Vector3.new(hand[1], hand[2], hand[3]) - center
+            local radial = Vector3.new(0, d.Y, d.Z).Magnitude -- volant dans le plan YZ (axe X)
+            return math.sqrt(d.X ^ 2 + (radial - radius) ^ 2)
+        end
+        row.HandsToRim = math.max(rim(row.LeftHand), rim(row.RightHand))
+    end
+    table.insert(asterRows, row)
+    print("@@AWASTER@@ " .. game:GetService("HttpService"):JSONEncode(row))
+end
+
+-- Vue du conducteur depuis sa tête (pose du jeu), vers l'avant de la maquette.
+handlers.asterpov = function(_id, data)
+    local model = Workspace:FindFirstChild("MaquetteAster") :: Model?
+    local head = character():FindFirstChild("Head") :: BasePart?
+    if model == nil or head == nil then
+        return
+    end
+    local frame = model:GetPivot()
+    local eye = head.Position + Vector3.new(0, 0.15, 0)
+    withView(CFrame.lookAt(eye, eye + frame.LookVector * 10 - Vector3.new(0, 1.2, 0)), function()
+        Gui.shot(tostring(data.Name), { pose = "jeu" })
+    end)
+end
+
 local finished = false
 handlers.finish = function()
     finished = true
@@ -461,6 +602,33 @@ end
 -- Rapport compact (ligne de résultat tronquée par Studio au-delà de 100 000 caractères) :
 -- captures comptées ; noms et contextes dans le dossier des captures.
 local shots = Gui.report().shots
-record("avatar.client.captures", #shots > 0, #shots)
+record(tostring(session) .. ".client.captures", #shots > 0, #shots)
+if session == "aster" then
+    -- Synthèse compacte : pose du jeu contre pose standard, par place (détail dans @@AWASTER@@).
+    for _, pose in { "standard", "jeu" } do
+        for _, seatName in { "SiegeConducteur", "SiegePassager" } do
+            local roofFail, sideFail, legFail, n = {}, {}, {}, 0
+            for _, row in asterRows do
+                if row.Pose == pose and row.Seat == seatName then
+                    n += 1
+                    if row.RoofMarginBody < 0 then
+                        table.insert(roofFail, string.format("%s %.2f", row.Morph, row.RoofMarginBody))
+                    end
+                    if row.SideMargin < 0 then
+                        table.insert(sideFail, string.format("%s %.2f", row.Morph, row.SideMargin))
+                    end
+                    if row.InteriorOverlap > 0.1 then
+                        table.insert(legFail, string.format("%s %.2f", row.Morph, row.InteriorOverlap))
+                    end
+                end
+            end
+            local prefix = string.format("aster.%s.%s.", pose, seatName)
+            record(prefix .. "mesures", n == 8, n .. " morphologie(s)")
+            record(prefix .. "tete_sous_le_pavillon", #roofFail == 0, table.concat(roofFail, " / "))
+            record(prefix .. "bras_dans_l_habitacle", #sideFail == 0, table.concat(sideFail, " / "))
+            record(prefix .. "jambes_libres", #legFail == 0, table.concat(legFail, " / "))
+        end
+    end
+end
 measures.captures = #shots
 reportEvent:FireServer({ vehicle = "avatar", steps = steps, measures = measures })

@@ -33,6 +33,7 @@ if
     or sessionName == "social"
     or sessionName == "avatar"
     or sessionName == "avatar2"
+    or sessionName == "aster"
 then
     return
 end

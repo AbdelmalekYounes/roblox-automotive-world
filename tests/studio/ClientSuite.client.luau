@@ -77,6 +77,7 @@ if
     or currentSession == "social"
     or currentSession == "avatar"
     or currentSession == "avatar2"
+    or currentSession == "aster"
 then
     return
 end

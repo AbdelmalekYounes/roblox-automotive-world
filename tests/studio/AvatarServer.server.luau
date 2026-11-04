@@ -25,7 +25,7 @@ local Workspace = game:GetService("Workspace")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "avatar" and session ~= "avatar2" then
+if session ~= "avatar" and session ~= "avatar2" and session ~= "aster" then
     return
 end
 
@@ -631,6 +631,169 @@ if session == "avatar2" then
         #robloxErrors .. " : " .. table.concat(robloxErrors, " || ")
     )
     StudioTestService:EndTest({ session = session, players = #Players:GetPlayers(), server = steps, clients = reports })
+    return
+end
+
+-- ======================== Session « aster » (phase 1 de l'Aster) ========================
+-- Maquette en blocs de l'Aster construite d'après le gabarit (`AW_TestAsterTemplate`, module
+-- pur partagé avec l'outil d'export), ancrée, posée au sol de la zone d'essai. Pour chaque
+-- morphologie : pose standard du moteur puis pose du jeu (attribut AWSeatPose), places
+-- conducteur et passager. La pose du jeu étant appliquée par chaque CLIENT (Transform), les
+-- mesures sont faites par le client (journal « @@AWASTER@@ »).
+
+-- Volant et pédalier : nil au premier passage (mesure de la pose), puis cotes relevées.
+local ASTER_PARAMS: { [string]: any }? = nil
+
+if session == "aster" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 1
+    end, 60)
+    record("aster.serveur.joueur_connecte", joined, #Players:GetPlayers())
+    local player = Players:GetPlayers()[1]
+    if player and not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    waitFor(function()
+        return player ~= nil and player:HasAppearanceLoaded()
+    end, 20)
+    local Template = require(ReplicatedStorage:WaitForChild("AW_TestAsterTemplate", 20)) :: any
+    local Vehicles = Shared:WaitForChild("Vehicles")
+    local Definitions = require(Vehicles:WaitForChild("VehicleDefinitions")) :: any
+    local Dynamics = require(Vehicles:WaitForChild("Physics"):WaitForChild("VehicleDynamics")) :: any
+    local Constants = require(Vehicles:WaitForChild("VehicleConstants")) :: any
+    local SeatPose = require(Vehicles:WaitForChild("SeatPose")) :: any
+    local definition = Definitions.get("wk_aster")
+    local params = if ASTER_PARAMS
+        then (function()
+            local merged = table.clone(Template.Defaults)
+            for key, value in ASTER_PARAMS :: any do
+                merged[key] = value
+            end
+            return merged
+        end)()
+        else nil
+    local template = Template.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
+    local model = Instance.new("Model")
+    model.Name = "MaquetteAster"
+    local COLORS = {
+        caisse = Color3.fromRGB(205, 210, 218),
+        vitrage = Color3.fromRGB(150, 190, 220),
+        habitacle = Color3.fromRGB(45, 48, 54),
+        siege = Color3.fromRGB(80, 40, 40),
+        roue = Color3.fromRGB(25, 25, 28),
+        repere = Color3.fromRGB(255, 200, 0),
+    }
+    for _, item in template.Boxes do
+        local part: BasePart = if item.Seat then Instance.new("Seat") else Instance.new("Part")
+        part.Name = item.Name
+        part.Anchored = true
+        part.Size = Vector3.new(item.Size[1], item.Size[2], item.Size[3])
+        part.CFrame = CFrame.new(item.Center[1], item.Center[2], item.Center[3])
+        if item.Cylinder then
+            (part :: Part).Shape = Enum.PartType.Cylinder
+        end
+        part.Color = COLORS[item.Role] or Color3.new(1, 1, 1)
+        part.Material = if item.Role == "vitrage" then Enum.Material.Glass else Enum.Material.SmoothPlastic
+        part.Transparency = if item.Role == "vitrage" then 0.6 elseif item.Role == "repere" then 0.5 else 0
+        part.CanCollide = item.Role == "caisse" or item.Role == "habitacle" and item.Name ~= "Volant"
+        part.CanTouch = false
+        if item.Seat then
+            part:SetAttribute("AWAsterSeat", item.Seat)
+        end
+        part.Parent = model
+        if item.Name == "Plancher" then
+            model.PrimaryPart = part
+        end
+    end
+    -- Sol de la maquette au sol de la zone d'essai (y = 0), à l'écart du parc.
+    local origin = CFrame.new(40, -template.Ground, -30)
+    for _, part in model:GetChildren() do
+        if part:IsA("BasePart") then
+            part.CFrame = origin * part.CFrame
+        end
+    end
+    model:SetAttribute("AWAsterOrigin", true)
+    model.WorldPivot = origin
+    model.Parent = Workspace
+    record(
+        "aster.serveur.maquette",
+        true,
+        string.format(
+            "%d blocs ; assise %.2f st, dessous du pavillon %.2f st (%.2f st au-dessus de l'assise), hauteur hors tout %.2f m%s",
+            #template.Boxes,
+            template.SeatTop,
+            template.RoofUnder,
+            template.RoofUnder - template.SeatTop,
+            template.HeightAboveGroundM,
+            if ASTER_PARAMS then " ; volant et pédalier placés" else " ; sans volant ni pédalier (mesure de la pose)"
+        )
+    )
+    local calibrated = ask(player, "calibrate", {}, 40)
+    record("aster.serveur.client_pret", calibrated)
+    local strip0 = CFrame.new(40, 4, 0)
+    local measured, expected = 0, 0
+    for _, morph in MORPHS do
+        standUp(player)
+        local character0 = characterOf(player)
+        if character0 then
+            character0:PivotTo(strip0)
+        end
+        task.wait(0.4)
+        local applied = applyMorph(player, morph)
+        if not applied then
+            record("aster.morphologie." .. morph.Id, false, "non appliquée")
+            continue
+        end
+        for _, pose in { "standard", "jeu" } do
+            for _, seatName in { "SiegeConducteur", "SiegePassager" } do
+                expected += 1
+                local seatPart = model:FindFirstChild(seatName) :: Seat
+                seatPart:SetAttribute(
+                    SeatPose.Attribute,
+                    if pose == "jeu" then seatPart:GetAttribute("AWAsterSeat") else nil
+                )
+                local seat = sit(player, model, seatName)
+                if seat == nil then
+                    continue
+                end
+                task.wait(0.8) -- mise en place de la pose (0,3 s) et stabilisation
+                local key = string.format("%s:%s:%s", morph.Id, pose, seatName)
+                if ask(player, "astermeasure:" .. key, { Morph = morph.Id, Pose = pose, Seat = seatName }, 10) then
+                    measured += 1
+                end
+                if (morph.Id == "M1" or morph.Id == "M4" or morph.Id == "M7") and seatName == "SiegeConducteur" then
+                    shot(player, string.format("aster_%s_%s_profil", morph.Id, pose), sideView(model, seat, -1), {
+                        morphologie = morph.Label,
+                        pose = pose,
+                    })
+                    if pose == "jeu" then
+                        ask(
+                            player,
+                            "asterpov:" .. key,
+                            { Name = string.format("aster_%s_vue_conducteur", morph.Id) },
+                            10
+                        )
+                    end
+                end
+                standUp(player)
+                seatPart:SetAttribute(SeatPose.Attribute, nil)
+            end
+        end
+    end
+    standUp(player)
+    record("aster.serveur.mesures", measured == expected, string.format("%d / %d", measured, expected))
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("aster.serveur.rapport_client", next(reports) ~= nil)
+    record("aster.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    record(
+        "aster.serveur.info_erreurs_internes_roblox",
+        true,
+        #robloxErrors .. " : " .. table.concat(robloxErrors, " || ")
+    )
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
     return
 end
 
