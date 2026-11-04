@@ -64,8 +64,9 @@ appliquées avant export, un matériau par famille (peinture, verre, pneu, chrom
   C'est un **demi-tour de 180° autour de la verticale**, pas un miroir.
   **Correction retenue : tourner le modèle de 180° autour de l'axe vertical de Blender au moment de l'export**, en
   gardant les réglages par défaut de l'importeur.
-  **À confirmer** par le témoin v3 (`calibration/temoins_orientation_v3_demi_tour.glb` du dépôt d'art), qui doit donner
-  roue +14 et repère avant −8.
+  **Confirmé** par le témoin v3 (`calibration/temoins_orientation_v3_demi_tour.glb` du dépôt d'art), relevé par le
+  propriétaire le 2026-11-04 : roue (+14 ; −3,875 ; 0), repère avant (0 ; −4,5 ; −8), repère haut (0 ; +9 ; 0), tailles
+  exactes. **Étalonnage terminé.**
 - Format d'échange : glTF binaire, une exportation par groupe (EXT, INT, ROUES, LOD).
 
 ## 5. Intégration Roblox (proposition, non implémentée)
