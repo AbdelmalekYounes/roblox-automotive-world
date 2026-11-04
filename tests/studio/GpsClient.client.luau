@@ -76,6 +76,9 @@ end
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 local ignoreObstacles = false
+-- Décalage latéral de la trajectoire par rapport à l'axe de l'itinéraire (m, droite > 0).
+local LANE_OFFSET_M = 1.8
+
 local function obstacleAhead(body: BasePart, lengthM: number): number?
     if ignoreObstacles then
         return nil
@@ -279,6 +282,8 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
     local recalcSeen = false
     local planBefore = nil
     local stuckSince = nil
+    local blockedSince: number? = nil
+    local overtakeUntil = 0
     local anchorPos: Vector3? = nil
     local anchorSince = os.clock()
     local abandoned = false
@@ -382,6 +387,18 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
         local v = speedKmh()
         local look = math.clamp(v * 0.3, 10, 32)
         local tx, tz = pointAt(plan, progress.AlongM + look)
+        -- Lot 0.9.2 : voie de droite (l'itinéraire suit l'axe de la route : au milieu, le
+        -- pilote rencontrait le trafic venant en face) ; décalage à gauche pour dépasser un
+        -- obstacle immobile.
+        local ax, az = pointAt(plan, progress.AlongM + look + 6)
+        local dx, dz = ax - tx, az - tz
+        local length = math.sqrt(dx * dx + dz * dz)
+        if length > 1e-3 then
+            local lateral = if os.clock() < overtakeUntil then -2.2 else LANE_OFFSET_M
+            -- Vers la droite d'une direction (dx, dz) : (-dz, dx) (nord → est).
+            tx += -dz / length * lateral
+            tz += dx / length * lateral
+        end
         local turn = turnAhead(plan, progress.AlongM, math.clamp(v * 0.9, 30, 90))
         -- Conduite prudente (tâche 20261103-203235 : chocs répétés, moteur et direction
         -- endommagés, véhicule immobilisé) : 75 km/h au plus, virages nettement ralentis.
@@ -399,8 +416,35 @@ local function leg(index: number, zone: string, target: { X: number, Z: number }
             cap = math.min(cap, 25)
         end
         driving.Target = Vector3.new(tx * S, body.Position.Y, tz * S)
-        driving.SpeedKmh = cap
+        -- Pendant un dépassement : pas de freinage sur l'obstacle contourné, allure réduite.
+        local overtaking = os.clock() < overtakeUntil
+        ignoreObstacles = overtaking
+        driving.SpeedKmh = if overtaking then math.min(cap, 18) else cap
         driving.Hold = false
+        -- Obstacle immobile devant (trafic arrêté, véhicule en panne) depuis 3 s : dépassement
+        -- par la gauche pendant 6 s si le côté gauche est dégagé.
+        rayParams.FilterDescendantsInstances = { driving.Model :: Model, character() }
+        local blocked = not overtaking and obstacleAhead(body, 14) ~= nil and v < 5
+        if blocked then
+            blockedSince = blockedSince or os.clock()
+            if os.clock() - (blockedSince :: number) > 3 and os.clock() >= overtakeUntil then
+                local lookFlat = Vector3.new(body.CFrame.LookVector.X, 0, body.CFrame.LookVector.Z).Unit
+                local left = Vector3.new(lookFlat.Z, 0, -lookFlat.X)
+                local clear = Workspace:Raycast(
+                    body.Position + Vector3.new(0, 0.6 * S, 0),
+                    (left * 4 + lookFlat * 10) * S,
+                    rayParams
+                ) == nil
+                if clear then
+                    overtakeUntil = os.clock() + 6
+                    measures[name .. "_depassements"] = (measures[name .. "_depassements"] or 0) + 1
+                    trace(string.format("%s : obstacle immobile, dépassement par la gauche", name))
+                end
+                blockedSince = nil
+            end
+        else
+            blockedSince = nil
+        end
         -- Immobilisé au même endroit (moins de 15 m en 90 s) : trajet abandonné et compté
         -- comme échoué, pour éprouver les zones suivantes.
         if anchorPos == nil or (body.Position - (anchorPos :: Vector3)).Magnitude / S > 15 then
