@@ -219,15 +219,15 @@ Captures nommées de la vue du jeu (pleine résolution), relues une à une ; cha
 |---|---|---|
 | Arrivée | `195821` 007, `200648` 007 | Confirmation hors de vue (QA-F13) → visible après correction |
 | HUD, mini-carte | `200648` 053–056, `220054` gps_* | Lisibles ; tableau réduit en vue cockpit, comme prévu |
-| Cockpit | `200648` 055, `220054` 081 | Volant devant la route (QA-F15) → sous la ligne de visée après correction |
-| Téléphone | `200648` 038–048, `220054` 091 | Boutons en carrés vides (QA-F14) → « + » et « × » ; **téléphone tenu bras baissé** (QA-U10, diagnostic en cours) |
+| Cockpit | `200648` 055, `220054` 081, `20261104-012609` 022 | Volant devant la route (QA-F15) → sous l'horizon, route visible au-dessus (code final) |
+| Téléphone | `200648` 038–048, `220054` 091, `20261104-012609` 032 | Boutons en carrés vides (QA-F14) → « + » et « × » ; **téléphone tenu bras baissé** (QA-A10, ouverte) |
 | Carte, GPS | `200648` 049–052, `220054` 083–084 | Carte et destination lisibles |
 | Garages, concessions, stations | `220054` 067–074 | Bâtiments présents, accès lisibles |
 | Carrosseries | `220054` 075–078 | Prototype d'essai lisible |
-| Décor des 7 zones | `220054` 060–066 | **Fenêtre d'arrivée restée devant une partie du décor** (test : corrigé, introduction passée par clic) |
+| Décor des 7 zones | `220054` 060–066, `20261104-012609` 001–007 | Fenêtre d'arrivée devant le décor dans `220054` (test) ; dégagé dans `012609` (introduction passée par vrai clic) |
 | Nuit, pluie | `220054` 085–090 | Nuit très sombre hors des halos des lampadaires (12 sources au plus en qualité moyenne) : **jugement laissé au propriétaire** |
 | Panneaux de course | `213328` drift_* (non enregistrées : défaut de l'outil, corrigé) ; `200648` 031–037 | Panneau lisible |
-| Mode photo | `224247` photo_* | Panneau et filtre |
+| Mode photo | `224247` 056–057, `20261104-012609` 033–034 | Panneau et filtre ; les autres interfaces restent visibles tant que « Masquer l'interface » n'est pas demandé (comportement prévu) |
 | Chargement de mission | Écran `213328` 0158 | **Passager au-dessus du toit** (QA-F19, corrigé) |
 | Fenêtre de Studio | `203235` (toutes) | Fenêtre de migration d'éclairage (QA-F17, corrigé) |
 
@@ -266,8 +266,10 @@ pour un état vide (faux succès §4 ¹).
 
 Inchangées par ce lot (voir `DEPENDANCES_VALIDATION_EXTERNE.md`) : expérience de test isolée pour les DataStores et
 les services inter-serveurs, essais humains (checklist), performances sur appareils réels, arbitrages du propriétaire.
-Ajouts du lot : origine du NaN (QA-A08), bras du téléphone (QA-U10), touche O dans le client Roblox, nuit très
-sombre (jugement), focus de navigation laissé sur un onglet (ergonomie).
+Ajouts du lot : origine du NaN (QA-A08), virage du client 2 après la marche arrière (QA-A09, présent au lot 0.9),
+bras du téléphone (QA-A10), touche O dans le client Roblox, nuit très sombre (jugement), focus de navigation laissé
+sur un onglet (ergonomie), métiers et GPS dans le monde ouvert par un humain (le pilote automatique se bloque contre
+le trafic et les installations).
 
 ## 14. Non-régression
 
@@ -289,6 +291,8 @@ sombre (jugement), focus de navigation laissé sur un onglet (ergonomie).
   | `metiers.Precision`, `metiers.Convoy`, `metiers.bilan_huit_metiers` | Délais du pilote (6 / 8 dans cette tâche) | Non (pilote) |
 
   Aucune erreur d'exécution du jeu ; aucune valeur non finie (QA-A08) relevée. Tâche `20261103-231150` invalide (§4).
-- VM, code final `9b0eebd`, monde ouvert (`monde`, `perf`, `ui_monde`) : §14 bis. `gps` n'est pas rejoué : mesuré sur
+- VM, code final `9b0eebd`, monde ouvert (`monde`, `perf`, `ui_monde`) — `20261104-012609` (2026-11-04 01:26) :
+  **108 réussis, 0 échec** ; habillage reçu (686 pièces), autoroute 133,2 km/h jamais sous la route, 12 lampadaires de
+  nuit, temps d'image P95 18,8–18,9 ms (VM, indicatif) ; captures `ui_monde` complètes. `gps` n'est pas rejoué : mesuré sur
   `82731da` et `da9cfa2` ; depuis, seule la neutralisation QA-A08 touche la conduite (sans effet en l'absence de valeur
   non finie).

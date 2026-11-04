@@ -19,7 +19,7 @@ Tâches : `20261103-hhmmss`, abrégées en `hhmmss` ; rapports dans `E:\ROBLOX D
 |---|---|---|---|---|---|---|
 | Conduite (6 boîtes, aides, mouillé, énergie) | `Lot02*`, `PhysicsUnit`, `DrivingScenarios` | `lot02`, `solo`, `scenarios` (`185530`) | Accélérateur W, frein S, frein à main, sortie F (`224247`) | HUD `200648` 053–056 | Appareils réels (QA-P) | Ressenti (QA-H) |
 | Robustesse numérique de la simulation | `Lot091Interactive` (QA-A08) | Occurrence observée `224247` (QA-A08, ouverte) | — | — | — | — |
-| Caméras, vue cockpit | `Lot091Interactive` (QA-F15) | `lot08` : angle du volant ≥ 10° sur 27 véhicules (`213328`) | Touche V (`200648`, `220054`) | `200648` 053–055, `220054` 079–082 | — | Confort de vue |
+| Caméras, vue cockpit | `Lot091Interactive` (QA-F15) | `lot08` : angle du volant ≥ 10° sur 27 véhicules (`213328`, `20261104-001121`) | Touche V (`200648`, `220054`, `012609`) | `200648` 053–055 ; `012609` 020–023 | — | Confort de vue |
 | Collisions, propriété réseau | `CollisionExchangeSpec`, `NetworkOwnershipSpec` | `collision`, `collision_latence` (`185530`) | — | — | Charge réelle | — |
 | Arrivée (onboarding) | `Lot08Content`, `Lot091Interactive` (QA-F13) | `lot08` (`185530`) | Parcours complet, annulation, confirmation (`200648`, `224247`) | `200648` 001–011 | Comptes réels (QA-V08) | Clarté du parcours |
 | Garage, collection | `Lot04Progression` | `lot04` (`185530`) | 6 onglets, sélection, saisie de texte (`200648`) | `200648` 012–020 | DataStore réel (QA-D) | Ergonomie |
@@ -33,7 +33,7 @@ Tâches : `20261103-hhmmss`, abrégées en `hhmmss` ; rapports dans `E:\ROBLOX D
 | Drift noté | `Lot06Racing` | `drift` : **score 310 serveur** (`213328`) | — | — | — | Ressenti |
 | Prêt après verrouillage | `Lot06Racing` | `drift` : `RaceAlreadyLocked`, engagement intact (`203223`, `213328`) | — | — | — | — |
 | Classements | `Lot06Racing` | `lot06` | Tableau drift (`200648`) | `200648` 036–037 | OrderedDataStore (QA-R04) | — |
-| Smartphone | `Lot07Interface`, `Lot091Interactive` (QA-F14) | Téléphone en main côté serveur (`200648`) | Toutes les applications ouvertes et refermées (`200648`) | `200648` 038–048 ; `220054` 091 | Vu par un autre joueur (QA-U10) | Pose du bras (QA-U10) |
+| Smartphone | `Lot07Interface`, `Lot091Interactive` (QA-F14) | Téléphone en main côté serveur (`200648`) | Toutes les applications ouvertes et refermées (`200648`) | `200648` 038–048 ; `220054` 091 ; `012609` 032 (bras baissé, QA-A10) | Vu par un autre joueur (QA-U10) | Pose du bras |
 | Carte | `Lot07Interface` | — | Touche M, zoom, choix d'un lieu (`203223`) | `200648` 049–051 ; `220054` 083–084 | — | Lisibilité (QA-U11) |
 | GPS | `Lot07Interface`, `Lot091Interactive` (QA-F20) | `gps` : 5 arrivées / 7 en conduite réelle (`220054`) ; `gps2` : `225749` | Destination par clic, effacement X (`203223`) | `220054` gps_* | — | Justesse ressentie des indications |
 | Social, groupes, partage | `Lot07Interface` | `social` à deux clients, confidentialité (`203223`) | Application Social ouverte (`200648`) | `200648` 044 | Communications Roblox (QA-U07) | — |
@@ -41,7 +41,7 @@ Tâches : `20261103-hhmmss`, abrégées en `hhmmss` ; rapports dans `E:\ROBLOX D
 | Conduite et menus | `Lot07Interface`, `Lot091Interactive` (QA-F18) | — | Refus en roulant, mode rapide, véhicule immobile menu ouvert (`224247`) | `200648` 055–056 | — | — |
 | Mode photo | `Lot08Content` | `lot08` (à pied, `185530`) | Par le téléphone ; touche O jamais reçue dans Studio (`224247`) | `224247` photo_* | Client Roblox (touche O) | Rendu des filtres |
 | HUD | `Lot07Interface` | `solo` | Touche H (`203223`) | `200648` 053 | Résolutions réelles (QA-U04) | Lisibilité |
-| Monde ouvert, 7 zones | `Lot03World`, `Lot03Systems` | `monde` (`193356`) | — | `220054` 060–066 | — | Esthétique |
+| Monde ouvert, 7 zones | `Lot03World`, `Lot03Systems` | `monde` (`193356`, `20261104-012609`) | — | `012609` 001–007 | — | Esthétique |
 | Bâtiments, garages, concessions | `Lot03World` | `monde` | — | `220054` 067–074 | — | Esthétique |
 | Carrosseries | `Lot08Content` | `lot08` : banc 18 / 18 (`185530`) | — | `220054` 075–078 | — | Esthétique |
 | Nuit, éclairage | `Lot08Content`, `Lot091Interactive` (QA-F17) | `perf` : 12 sources de nuit (`175506`) | — | `220054` 085–089 | Appareils réels | **Nuit très sombre** (jugement) |
