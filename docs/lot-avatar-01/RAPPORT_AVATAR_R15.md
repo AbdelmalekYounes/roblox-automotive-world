@@ -205,7 +205,7 @@ vêtements **3D superposés : NON TESTÉ** (aucun actif autorisé disponible, au
 
 - Lune : `tests/lune/specs/AvatarFoundation.luau` (7 tests : politique, réglage des deux places, catalogue, emplacements
   et textes FR/EN, identifiants, essayage / retrait / restauration, autorité du serveur) ; total **355 / 0**.
-- `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` : 9 étapes OK (§7).
+- `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau`  (2026-11-04, worktree du lot, `82e7bd5`) : 9 étapes OK, Lune 355 / 0.
 - VM : sessions `avatar` et `avatar2` (`tests/studio/AvatarServer.server.luau`, `AvatarClient.client.luau`), journal
   machine `@@AWAVATAR@@` pour les tableaux.
 
@@ -227,6 +227,6 @@ téléphone n'est changé par ce lot).
 
 ## 7. Livraison
 
-- Commits : `e616ef5` (R15, tenues, tests Lune), `dccf857` (sessions VM), `f05a22a` (corrections des tests VM), puis ce
-  rapport (SHA final : PR #12).
+- Commits : `e616ef5` (R15, tenues, tests Lune), `dccf857` (sessions VM), `f05a22a` (corrections des tests VM), `82e7bd5`
+  (rapport, documents) ; dernier SHA : voir la PR #12.
 - PR brouillon [#12](https://github.com/AbdelmalekYounes/roblox-automotive-world/pull/12), non fusionnée.
