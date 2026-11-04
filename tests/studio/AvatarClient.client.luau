@@ -704,6 +704,13 @@ handlers.astermeasure = function(_id, data)
     end
     row.InteriorOverlap = worst
     row.InteriorPair = pair
+    -- Clôture de la phase 1 : pieds au-dessus du dessus du plancher (absent du contrôle des jambes).
+    local floorPart = model:FindFirstChild("Plancher") :: BasePart?
+    if floorPart then
+        local _, floorMax = corners(floorPart, frame)
+        local lowest = math.min(row.LeftFootMinY or math.huge, row.RightFootMinY or math.huge)
+        row.FeetAboveFloor = lowest - floorMax.Y
+    end
     local wheel = model:FindFirstChild("Volant") :: BasePart?
     if wheel and row.LeftHand and row.RightHand then
         local radius = wheel.Size.Y / 2
@@ -840,7 +847,7 @@ if session == "aster" then
     -- Synthèse compacte : pose du jeu contre pose standard, par place (détail dans @@AWASTER@@).
     for _, pose in { "standard", "jeu" } do
         for _, seatName in { "SiegeConducteur", "SiegePassager" } do
-            local roofFail, sideFail, legFail, rimFail, viewFail, n = {}, {}, {}, {}, {}, 0
+            local roofFail, sideFail, legFail, rimFail, viewFail, floorFail, n = {}, {}, {}, {}, {}, {}, 0
             for _, row in asterRows do
                 if row.Pose == pose and row.Seat == seatName then
                     n += 1
@@ -856,6 +863,9 @@ if session == "aster" then
                     if row.HandsToRim and row.HandsToRim > 0.35 then
                         table.insert(rimFail, string.format("%s %.2f", row.Morph, row.HandsToRim))
                     end
+                    if row.FeetAboveFloor and row.FeetAboveFloor < -0.05 then
+                        table.insert(floorFail, string.format("%s %.2f", row.Morph, row.FeetAboveFloor))
+                    end
                     if row.EyeAboveWheel and row.EyeAboveWheel < 0 then
                         table.insert(viewFail, string.format("%s %.2f", row.Morph, row.EyeAboveWheel))
                     end
@@ -870,6 +880,7 @@ if session == "aster" then
             record(prefix .. "tete_sous_le_pavillon", #roofFail == 0, table.concat(roofFail, " / "))
             record(prefix .. "bras_dans_l_habitacle", #sideFail == 0, table.concat(sideFail, " / "))
             record(prefix .. "jambes_libres", #legFail == 0, table.concat(legFail, " / "))
+            record(prefix .. "pieds_au_dessus_du_plancher", #floorFail == 0, table.concat(floorFail, " / "))
             if pose == "jeu" and seatName == "SiegeConducteur" then
                 record(prefix .. "mains_sur_la_jante", #rimFail == 0, table.concat(rimFail, " / "))
                 record(prefix .. "vue_au_dessus_du_volant", #viewFail == 0, table.concat(viewFail, " / "))

@@ -33,6 +33,10 @@ export type Params = {
     Wheel: { Center: { number }, Radius: number, TiltDeg: number }?, -- volant (mesuré en VM)
     PedalZ: number?, -- pédalier (mesuré en VM)
     DashZ: number?, -- planche de bord (centre), devant le volant
+    -- Dessus du plancher (studs). Par défaut 0,25 st sous l'assise : trop haut pour des corps
+    -- réalistes (tâche VM 20261104-162124 : pieds 0,67 à 0,94 st sous ce dessus en pose du jeu).
+    -- Renseigné, il abaisse le plancher et le bas de caisse (garde au sol conservée ≥ 0,35 st).
+    FloorTopSt: number?,
 }
 
 AsterTemplate.Defaults = table.freeze({
@@ -67,7 +71,7 @@ function AsterTemplate.build(
     local seatTop = PROVISIONAL_SEAT_TOP - p.SeatDropSt
     local seatZ = PROVISIONAL_SEAT_Z
     local roofUnder = seatTop + p.HeadroomSt
-    local floor = seatTop - 0.25
+    local floor = p.FloorTopSt or (seatTop - 0.25)
     local belt = seatTop + 1.6 -- ligne de caisse haute (direction « Trait »)
     local shieldZ = front + L * 0.40 -- haut du pare-brise
     local roofEndZ = front + L * 0.84 -- fin du pavillon (hayon presque vertical)
@@ -79,7 +83,20 @@ function AsterTemplate.build(
     end
     -- Caisse : bas de caisse, flancs (portières) et coque avant/arrière.
     local sill = ground + 0.16 * S + 0.4
-    add(box("Plancher", "habitacle", { 0, floor - 0.1, seatZ - 0.5 }, { W - 0.6, 0.2, roofEndZ - hoodZ }))
+    if p.FloorTopSt then
+        -- Bas de caisse au niveau du dessous du plancher abaissé : pieds jamais visibles dessous.
+        sill = math.min(sill, floor - 0.1)
+    end
+    -- Plancher abaissé : tôle de 0,1 st (garde au sol 0,39 st avec FloorTopSt = −1,30).
+    local floorThickness = if p.FloorTopSt then 0.1 else 0.2
+    add(
+        box(
+            "Plancher",
+            "habitacle",
+            { 0, floor - floorThickness / 2, seatZ - 0.5 },
+            { W - 0.6, floorThickness, roofEndZ - hoodZ }
+        )
+    )
     add(
         box(
             "CaisseAvant",

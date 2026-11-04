@@ -675,6 +675,9 @@ local ASTER_PARAMS: { [string]: any }? = {
     Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 },
     PedalZ = -1.4, -- pointes de pied de −1,21 à 0,34 st (F1 la plus en avant)
     DashZ = 0.0,
+    -- Clôture de la phase 1 : plancher abaissé (pieds mesurés jusqu'à y −1,23 st en pose du jeu,
+    -- tâche 20261104-162124) ; garde au sol 0,39 st (0,11 m) sous le plancher.
+    FloorTopSt = -1.30,
 }
 
 -- Morphologies HUMAINES (type de corps imposé à 1) : la session « aster » ne mesure plus les
