@@ -19,6 +19,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
@@ -880,8 +881,67 @@ local function captureRebind(input: InputObject)
     render()
 end
 
+-- ======================== Bras levé (squelette à contraintes) ========================
+
+-- Lot 0.9.2 (QA-A10) : sur le squelette R15 à contraintes d'animation, l'épaule n'a plus de
+-- Motor6D (C0 en lecture seule, attaches à ne pas modifier). Le serveur publie l'attribut
+-- `AWPhoneRaised` du personnage (InterfaceService) ; chaque client multiplie la rotation de
+-- l'épaule dans Transform après l'animation (PreSimulation), méthode indiquée par Roblox :
+-- les animations de marche continuent de s'appliquer. Même angle que le Motor6D (60°).
+local PHONE_RAISED_ATTRIBUTE = "AWPhoneRaised"
+local RAISE_DEG = 60
+local RAISE_DURATION_S = 0.25
+-- Par épaule : avancement du geste (0 à 1), dernier Transform écrit et décalage appliqué.
+type RaisedArm = { Alpha: number, Written: CFrame, Offset: CFrame }
+local raised: { [AnimationConstraint]: RaisedArm } = {}
+
+local function sameFrame(a: CFrame, b: CFrame): boolean
+    return (a.Position - b.Position).Magnitude < 1e-5
+        and a.LookVector:Dot(b.LookVector) > 1 - 1e-7
+        and a.UpVector:Dot(b.UpVector) > 1 - 1e-7
+end
+
+local function updateRaisedArms(dt: number)
+    for _, other in Players:GetPlayers() do
+        local character = other.Character
+        local upper = character and character:FindFirstChild("RightUpperArm")
+        local joint = upper and upper:FindFirstChild("RightShoulder")
+        if joint == nil or not joint:IsA("AnimationConstraint") then
+            continue
+        end
+        local shoulder = joint :: AnimationConstraint
+        local wanted = (character :: Model):GetAttribute(PHONE_RAISED_ATTRIBUTE) == true
+        local entry = raised[shoulder]
+        if entry == nil and not wanted then
+            continue
+        end
+        local current: RaisedArm = entry or { Alpha = 0, Written = shoulder.Transform, Offset = CFrame.identity }
+        -- Animation non réévaluée ce pas-ci (Transform inchangé depuis notre écriture) :
+        -- retirer l'ancien décalage avant d'appliquer le nouveau, sans cumul.
+        local base = shoulder.Transform
+        if entry and sameFrame(base, entry.Written) then
+            base = entry.Offset:Inverse() * base
+        end
+        current.Alpha = math.clamp(current.Alpha + (if wanted then dt else -dt) / RAISE_DURATION_S, 0, 1)
+        current.Offset = CFrame.Angles(math.rad(RAISE_DEG * current.Alpha), 0, 0)
+        current.Written = current.Offset * base
+        shoulder.Transform = current.Written
+        if current.Alpha > 0 or wanted then
+            raised[shoulder] = current
+        else
+            raised[shoulder] = nil
+        end
+    end
+    for shoulder in raised do
+        if shoulder.Parent == nil then
+            raised[shoulder] = nil
+        end
+    end
+end
+
 function PhoneController.start()
     build()
+    RunService.PreSimulation:Connect(updateRaisedArms)
     UIManager.register({
         Name = "Phone",
         Kind = "Modal",
