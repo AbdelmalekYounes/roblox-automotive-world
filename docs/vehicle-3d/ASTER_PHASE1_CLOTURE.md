@@ -78,8 +78,8 @@ Dossier de lancement : `ASTER_02_LANCEMENT.md`. Il comprend :
 
 **GO conditionnel pour ASTER-02 (modélisation dans Blender)**, après deux actions du propriétaire :
 
-1. valider le plancher abaissé ;
-2. relever l'étalonnage Blender → Studio.
+1. valider le plancher abaissé — **fait** (« Je valide », 2026-11-04) ;
+2. relever l'étalonnage Blender → Studio — **reste à faire**.
 
 Le système d'avatars est validé pour servir de base aux mesures : vrais clics, réplication, régression.
 

@@ -123,7 +123,7 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
 
 | # | Point | État |
 |---|---|---|
-| 1 | Valider le **plancher abaissé** (−1,30 st, bas de caisse à 0,39 st du sol) | Changement de géométrie de la clôture, **à valider** |
+| 1 | Valider le **plancher abaissé** (−1,30 st, bas de caisse à 0,39 st du sol) | **Validé par le propriétaire** (« Je valide », 2026-11-04) |
 | 2 | Relever l'étalonnage Blender → Studio (§6.1) | **À faire par le propriétaire** |
 | 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : accepter, ou pose adaptée à la taille | **À arbitrer** |
 | 4 | Corps par défaut avant le choix du joueur (masculin, provisoire) | À confirmer |
