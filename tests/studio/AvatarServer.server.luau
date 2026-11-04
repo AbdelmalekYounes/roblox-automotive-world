@@ -774,6 +774,70 @@ if session == "aster" then
     waitFor(function()
         return player ~= nil and player:HasAppearanceLoaded()
     end, 20)
+    -- Forme des têtes (décision du propriétaire, 2026-11-04 : remplacer les têtes classiques) :
+    -- dimensions de la pièce `Head` mesurées par le moteur, têtes réalistes des paquets 988 à 995
+    -- contre têtes classiques « bloc » publiées par Roblox (identifiants relevés au catalogue le
+    -- 2026-11-04). Sert à fixer le critère de remplacement ; aucun contrôle de réussite.
+    do
+        local HEADS = {
+            { "classique_defaut", 0 },
+            { "classique_stevie_standard", 10638267973 },
+            { "classique_freckles", 11244608373 },
+            { "classique_squigglin_out", 11308682721 },
+            { "classique_err", 11308884165 },
+            { "classique_check_it", 11308945948 },
+            { "realiste_addison_988", 11702291006 },
+            { "realiste_harper_989", 11702751287 },
+            { "realiste_robin_990", 11709148634 },
+            { "realiste_dawson_991", 11709871094 },
+            { "realiste_rene_992", 11714044513 },
+            { "realiste_andi_993", 11715265417 },
+            { "realiste_jordan_994", 11740063830 },
+            { "realiste_billie_995", 11748988354 },
+        }
+        local humanoid0 = humanoidOf(player)
+        local original = humanoid0 and humanoid0:GetAppliedDescription()
+        for _, entry in HEADS do
+            local humanoid = humanoidOf(player)
+            local character = characterOf(player)
+            if humanoid == nil or character == nil or original == nil then
+                break
+            end
+            local description = original:Clone()
+            description.Head = entry[2]
+            description.HeadScale = 1
+            local ok, err = pcall(function()
+                humanoid:ApplyDescriptionAsync(description)
+            end)
+            task.wait(1)
+            local head = character:FindFirstChild("Head")
+            if ok and head and head:IsA("BasePart") then
+                local size = head.Size
+                record(
+                    "aster.tete." .. entry[1],
+                    true,
+                    string.format(
+                        "Head %d : %.3f × %.3f × %.3f st ; largeur/hauteur %.3f ; profondeur/hauteur %.3f",
+                        entry[2],
+                        size.X,
+                        size.Y,
+                        size.Z,
+                        size.X / size.Y,
+                        size.Z / size.Y
+                    )
+                )
+            else
+                record("aster.tete." .. entry[1], false, tostring(err))
+            end
+        end
+        local humanoid = humanoidOf(player)
+        if humanoid and original then
+            pcall(function()
+                humanoid:ApplyDescriptionAsync(original)
+            end)
+            task.wait(1)
+        end
+    end
     local Template = require(ReplicatedStorage:WaitForChild("AW_TestAsterTemplate", 20)) :: any
     local Vehicles = Shared:WaitForChild("Vehicles")
     local Definitions = require(Vehicles:WaitForChild("VehicleDefinitions")) :: any
