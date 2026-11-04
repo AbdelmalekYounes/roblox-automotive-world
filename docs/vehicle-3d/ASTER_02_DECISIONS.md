@@ -139,6 +139,22 @@ reproduire le véhicule sans le logo Volkswagen ». Réponses aux deux questions
 | Toit (décision du §2 remplacée) | Hors tout ramené à la hauteur de la définition, 1,47 m, soit le dessus du pavillon à y 3,46. Il reste environ 3,3 st entre l'assise et le dessous du pavillon, au lieu de 4,20 : **les marges de tête mesurées en VM (§2) ne tiennent plus**. Assise, pose et contrôles VM sont à reprendre ; aucune solution n'est choisie à ce stade |
 | Physique | Inchangée : la définition (4,25 × 1,78 × 1,47 m, empattement 2,62 m) est déjà proche des cotes réelles de la référence |
 
+## 4 ter. Modèles 3D tiers proposés par le propriétaire (2026-11-04)
+
+**Décision du propriétaire : le jeu ne sera jamais monétisé** (« Jamais monétisé » : ni Robux, ni passes, ni achats).
+La clause « pas d'usage commercial » (NC) des licences Creative Commons n'est donc plus un obstacle en soi.
+
+Neuf collections Sketchfab ont été relevées par l'API publique (lecture seule, 2026-11-04) : six collections « cars
+for Roblox », soit 127 modèles distincts, et trois collections de ddiaz-design, soit 138 modèles. Aucun téléchargement
+n'a été fait.
+
+| Constat | Détail |
+|---|---|
+| Correspondances avec les 18 références | Comète : « 2017 Mclaren 720s » (s0h1o9b), CC BY, 6 917 faces. Aster / Rafale : « 2024 Volkswagen Golf GTI », « 2025 Volkswagen Golf R » (ddiaz-design). Brise : « 2015 / 2019 Mazda MX-5 ». Éclat : « 2022 Toyota GR86 - EU ». Rien pour les 13 autres |
+| Origine déclarée par l'auteur des modèles ddiaz-design | Golf GTI 2024 : « Based on a Volkswagen 3d model », étiquette `configurator`. Golf R 2025 : « Based on a Volkswagen 3d model », crédit à un serveur Discord « GameModels Community ». GR86 : « Based on a Racing Master 3d model ». MX-5 2015 : « Based on a Need For Speed Heat 3d model » |
+| Conséquence | Modèles **repris de jeux vidéo commerciaux ou d'un configurateur de constructeur**. La licence CC BY-NC-SA affichée ne peut pas venir de l'ayant droit, et l'absence de monétisation n'y change rien. **Non retenus** (CLAUDE.md : aucun emprunt de modèle ni actif non inspecté) |
+| McLaren 720s | L'auteur déclare l'avoir modélisée lui-même (« Modelled in Blender, textures made in Photoshop »). Seul candidat recevable, sous réserve d'une **exception du propriétaire** à la règle d'emprunt, d'une inspection du fichier (logos, contenu) et du crédit exigé par CC BY |
+
 ## 5. Rappel des autres points ouverts
 
 - Corps par défaut avant le choix du joueur : masculin, provisoire (à confirmer).
