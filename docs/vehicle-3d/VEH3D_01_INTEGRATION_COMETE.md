@@ -41,7 +41,7 @@ Le crédit CC BY devient obligatoire dès que le jeu est partagé ou publié (§
 | Sièges | `DriverSeat` et `PassengerSeat` aux repères mesurés sur le modèle, avec `AWSeatPose` |
 | Caméras, sorties | `CameraCockpit`, `CameraHood`, `CameraBumper`, `ExitLeft`, `ExitRight` aux repères mesurés |
 | Collisions | 4 boîtes aux noms actuels (`Coque`, `BouclierAvant`, `BouclierArriere`, `Habitacle`), aux tailles mesurées. Les zones de dégâts restent fonctionnelles |
-| Vitrage | Pièces `*_glass*` : matériau Verre, teinte sombre, transparence ≥ 0,3 (correction du défaut constaté à l'import) |
+| Vitrage | Pièces `*_glass*` : matériau Verre, transparence ≥ 0,3 (correction du défaut constaté à l'import) ; réglage C choisi le 2026-11-05 : teinte 120/135/145, transparence 0,6 (§6) |
 | Feux | `COMETE_Feu_Av` et `COMETE_Feu_Ar` portent `AWLight`, posé par la fabrique si l'importeur ne reprend pas la propriété glTF |
 | Peinture | Teinte du modèle (dans sa texture) : la couleur de carrosserie du jeu ne s'applique pas à ce modèle. Limite documentée, à arbitrer |
 | Crédits | Écran de crédits en jeu (textes FR et EN par clé) affichant le crédit CC BY de `docs/CREDITS_ACTIFS.md` |
@@ -85,7 +85,7 @@ suite : il sera groupé avec les autres changements du modèle.
 - utilise le gabarit seulement s'il est présent et si **chaque** maillage est inscrit au manifeste ;
 - recale le gabarit sur la pièce de référence ;
 - rend les pièces sans masse et sans collision visuelle, puis les soude au châssis ;
-- pose le vitrage en verre sombre, transparence 0,45 ;
+- pose le vitrage en verre (teinte 120/135/145, transparence 0,6 : réglage C du 2026-11-05 ; d'abord 28/32/38 et 0,45) ;
 - crée 4 boîtes de collision invisibles aux noms des zones de dégâts ;
 - ajoute 4 sources de lumière invisibles (`AWLight`) ;
 - range l'habitacle, les freins et les essuie-glaces dans `Details`.
@@ -122,8 +122,9 @@ suite : il sera groupé avec les autres changements du modèle.
   | D | SmoothPlastic | 120/135/145 | 0,60 | oui, net |
   | E | SmoothPlastic | 60/70/80 | 0,75 | oui, net |
 
-  Réglage à choisir par le propriétaire ; D et E s'écartent du plan (§3 : « matériau Verre »). Aucun nouvel envoi des
-  maillages n'est nécessaire pour ce point.
+  **Décision du propriétaire (2026-11-05) : réglage C** (matériau Verre conservé, conforme au plan). Appliqué dans
+  `MeshKits` ; `scripts\verify.ps1` OK. Rendu dans la session complète `comete` avec ce réglage : **NON TESTÉ** (VM arrêtée
+  au moment de l'essai, son démarrage demande le propriétaire). Aucun nouvel envoi des maillages n'est nécessaire.
 - La teinte de carrosserie du jeu ne s'applique pas : la couleur est dans la texture.
 - Les dégâts visuels ne s'affichent pas sur les maillages : les zones de dégâts sont des boîtes invisibles (seules les
   rayures, pièces de décor, apparaissent).
