@@ -181,6 +181,9 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Avatars humains uniquement (décision du propriétaire, 2026-11-04) : tous les joueurs reçoivent le corps 995 (masculin)
   ou 994 (féminin) à leur choix, vêtements conservés, tête classique « bloc » remplacée par celle du corps (contrôles
   réussis, tâche `20261104-170413`).
+- Clôture (2026-11-04) : choix de silhouette validé par vrais clics et à deux joueurs, file ordonnée des applications
+  d'apparence, plancher du gabarit abaissé (QA-A23) ; dossier de lancement `docs/vehicle-3d/ASTER_02_LANCEMENT.md`
+  (ASTER-02 non lancé : GO conditionnel). Rapport de clôture : `docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md`.
 - Rapport : `docs/vehicle-3d/ASTER_PHASE1.md`. À arbitrer : corps par défaut, couleurs de peau, D7, hauteur sous pavillon,
   pose adaptée à la taille. Étalonnage de l'import dans Studio à relever par le propriétaire.
 

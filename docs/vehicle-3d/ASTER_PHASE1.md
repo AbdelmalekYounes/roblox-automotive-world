@@ -1,5 +1,7 @@
 # Aster — rapport de la phase 1 (pose assise, gabarit, avatars humains)
 
+> **Clôture (2026-11-04)** : voir `ASTER_PHASE1_CLOTURE.md`. Correction : le contrôle « jambes libres » de ce rapport ne couvrait que la planche de bord, le volant et le pédalier ; les pieds passaient sous le plancher (QA-A23), corrigé à la clôture par un plancher abaissé à −1,30 st. Les tableaux ci-dessous restent ceux des passages cités.
+
 Branche `feat/aster-phase1` (base `feat/vehicle-3d-references`), commits `8a4144a` → `3c3db30`, 2026-11-04.
 Dépôt d'art privé : `AbdelmalekYounes/roblox-automotive-world-art`, commits `37de4d8` et `80ede43`.
 
