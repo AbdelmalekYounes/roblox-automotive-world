@@ -273,6 +273,8 @@ le trafic et les installations).
 
 ## 14. Non-régression
 
+- Hors Studio, 2026-11-04 01:35, tête de branche `7d0ef7c` (code identique à `9b0eebd`, outil hôte `10450e1`, docs) :
+  mêmes résultats que ci-dessous (Lune 340 / 0, pytest 14, luau-lsp 0 erreur, toutes étapes OK).
 - Hors Studio, 2026-11-03 23:01, commit `9b0eebd` : `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` —
   Rojo (deux places), Selene, StyLua, pilote Studio, **Lune 340 / 0**, carte déterministe, pytest 14, luau-lsp strict
   0 erreur.
