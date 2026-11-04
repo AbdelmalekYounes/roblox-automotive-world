@@ -188,6 +188,13 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Rapport : `docs/vehicle-3d/ASTER_PHASE1.md`. À arbitrer : corps par défaut, couleurs de peau, D7, hauteur sous pavillon,
   pose adaptée à la taille. Étalonnage de l'import dans Studio à relever par le propriétaire.
 
+## ASTER-02 — modélisation de l'Aster (branche `feat/aster-02-blockout`, base : phase 1 de l'Aster)
+
+- Étalonnage relevé par le propriétaire : glTF 1:1 retenu, FBX écarté ; orientation à confirmer (témoin v2).
+- Blockout extérieur et intérieur dans Blender (surface lofée, direction A « Trait »), contrôles automatiques 15/15,
+  8 rendus de revue : `docs/vehicle-3d/ASTER_02_BLOCKOUT.md`. **À valider** avant le modèle haute fidélité ; aucun import,
+  aucune publication, aucune intégration.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
