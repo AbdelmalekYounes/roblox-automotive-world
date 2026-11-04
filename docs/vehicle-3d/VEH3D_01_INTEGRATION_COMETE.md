@@ -123,8 +123,9 @@ suite : il sera groupé avec les autres changements du modèle.
   | E | SmoothPlastic | 60/70/80 | 0,75 | oui, net |
 
   **Décision du propriétaire (2026-11-05) : réglage C** (matériau Verre conservé, conforme au plan). Appliqué dans
-  `MeshKits` ; `scripts\verify.ps1` OK. Rendu dans la session complète `comete` avec ce réglage : **NON TESTÉ** (VM arrêtée
-  au moment de l'essai, son démarrage demande le propriétaire). Aucun nouvel envoi des maillages n'est nécessaire.
+  `MeshKits` ; `scripts\verify.ps1` OK. Session complète `comete` avec ce réglage (tâche `20261105-005339`,
+  commit `a61a11c`) : 59 réussis, 1 échec (touche Ctrl, inchangé) ; captures : tête du conducteur visible par la vitre
+  latérale, habitacle visible de trois-quarts, vue cockpit dégagée. Aucun nouvel envoi des maillages n'est nécessaire.
 - La teinte de carrosserie du jeu ne s'applique pas : la couleur est dans la texture.
 - Les dégâts visuels ne s'affichent pas sur les maillages : les zones de dégâts sont des boîtes invisibles (seules les
   rayures, pièces de décor, apparaissent).
