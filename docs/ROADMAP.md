@@ -162,6 +162,14 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   placement** (QA-A15), conducteur parfois couché après la sortie (QA-A16) : à arbitrer.
 - Rapport : `docs/lot-avatar-01/RAPPORT_AVATAR_R15.md`. Production graphique des tenues non engagée.
 
+## Préparation des véhicules 3D (branche `feat/vehicle-3d-references`, base : lot AVATAR-01)
+
+- Références de direction artistique des 18 modèles (121 images libres de Wikimedia Commons, stockées hors dépôt,
+  manifestes versionnés), 18 fiches de design, spécification des modèles 3D, pipeline Blender → Roblox, plan de
+  production, dossier du véhicule pilote **Aster** (trois directions).
+- Aucune géométrie définitive, aucun actif importé ou publié, physique et carrosseries provisoires inchangées.
+- Documents : `docs/vehicle-3d/`. Décisions D1 à D6 en attente du propriétaire.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.
