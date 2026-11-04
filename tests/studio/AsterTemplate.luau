@@ -22,6 +22,7 @@ export type Box = {
     Center: { number },
     Size: { number },
     Cylinder: boolean?, -- cylindre d'axe X (roues, volant)
+    Rotation: { number }?, -- degrés (X, Y, Z) appliqués au centre (volant tourné vers le conducteur)
     Seat: string?, -- "Conduite" ou "Passager" (siège réel du jeu, attribut AWSeatPose)
 }
 
@@ -141,8 +142,10 @@ function AsterTemplate.build(
         )
     end
     if p.Wheel then
+        -- Disque face au conducteur : axe du cylindre (X) tourné vers l'arrière (Z), incliné.
         local wheel = box("Volant", "habitacle", p.Wheel.Center, { 0.15, p.Wheel.Radius * 2, p.Wheel.Radius * 2 })
         wheel.Cylinder = true
+        wheel.Rotation = { p.Wheel.TiltDeg, 90, 0 }
         add(wheel)
     end
     if p.PedalZ then

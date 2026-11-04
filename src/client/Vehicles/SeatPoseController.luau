@@ -88,11 +88,11 @@ local function update(dt: number)
             if wanted then
                 current.Pose = pose
             end
-            local pitch, down = 0, 0
+            local pitch, yaw, down = 0, 0, 0
             if target then
-                pitch, down = SeatPose.offset(target, current.Alpha)
+                pitch, yaw, down = SeatPose.offset(target, current.Alpha)
             end
-            current.Offset = CFrame.new(0, -down, 0) * CFrame.Angles(pitch, 0, 0)
+            current.Offset = CFrame.new(0, -down, 0) * CFrame.Angles(pitch, yaw, 0)
             current.Written = current.Offset * base
             joint.Transform = current.Written
             if current.Alpha > 0 or wanted then

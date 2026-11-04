@@ -12,8 +12,9 @@
     le comportement actuel est donc inchangé. Les futurs modèles 3D (habitacles aux cotes de
     la pose) le porteront.
 
-    Angles en degrés autour de l'axe latéral de l'articulation (positif : buste vers
-    l'arrière, membre vers l'avant), translation en studs dans le repère de l'articulation.
+    Angles en degrés : tangage autour de l'axe latéral de l'articulation (positif : buste vers
+    l'arrière, membre vers l'avant), lacet autour de l'axe vertical (bras rentrés vers le
+    volant) ; translation en studs dans le repère de l'articulation.
     Purement visuel : aucune masse, aucune collision, aucune réplication par image.
     Module pur, gelé.
 ]]
@@ -23,7 +24,7 @@ local SeatPose = {}
 SeatPose.Attribute = "AWSeatPose"
 SeatPose.BlendS = 0.3 -- mise en place et retrait progressifs
 
-export type JointOffset = { Pitch: number, Down: number? }
+export type JointOffset = { Pitch: number, Yaw: number?, Down: number? }
 export type Pose = { [string]: JointOffset }
 
 local LEGS: Pose = {
@@ -35,11 +36,14 @@ local LEGS: Pose = {
 }
 
 local function withArms(base: Pose): Pose
+    -- Bras vers le volant, rentrés vers l'axe du siège. Mesure VM du 2026-11-04 (tâche
+    -- 20261104-134156) : avec 55° d'épaule et 25° de coude, les mains montaient à hauteur de
+    -- tête et restaient à ±1,5 st de l'axe ; angles réduits et bras ramenés vers l'intérieur.
     local pose = table.clone(base)
-    pose.LeftShoulder = { Pitch = 55 } -- bras vers le volant
-    pose.RightShoulder = { Pitch = 55 }
-    pose.LeftElbow = { Pitch = 25 }
-    pose.RightElbow = { Pitch = 25 }
+    pose.LeftShoulder = { Pitch = 32, Yaw = -22 }
+    pose.RightShoulder = { Pitch = 32, Yaw = 22 }
+    pose.LeftElbow = { Pitch = 15 }
+    pose.RightElbow = { Pitch = 15 }
     return pose
 end
 
@@ -59,10 +63,11 @@ function SeatPose.poseFor(value: any): Pose?
     return SeatPose.Poses[value]
 end
 
--- Décalage d'une articulation au taux d'avancement `alpha` (0 à 1) : (angle en radians, descente en studs).
-function SeatPose.offset(entry: JointOffset, alpha: number): (number, number)
+-- Décalage d'une articulation au taux d'avancement `alpha` (0 à 1) : (tangage et lacet en
+-- radians, descente en studs).
+function SeatPose.offset(entry: JointOffset, alpha: number): (number, number, number)
     local a = math.clamp(alpha, 0, 1)
-    return math.rad(entry.Pitch * a), (entry.Down or 0) * a
+    return math.rad(entry.Pitch * a), math.rad((entry.Yaw or 0) * a), (entry.Down or 0) * a
 end
 
 return table.freeze(SeatPose)

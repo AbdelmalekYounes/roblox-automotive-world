@@ -543,12 +543,14 @@ handlers.astermeasure = function(_id, data)
     row.InteriorPair = pair
     local wheel = model:FindFirstChild("Volant") :: BasePart?
     if wheel and row.LeftHand and row.RightHand then
-        local center = frame:PointToObjectSpace(wheel.Position)
         local radius = wheel.Size.Y / 2
+        local axis = wheel.CFrame.RightVector -- axe du cylindre (X de la pièce)
         local function rim(hand: { number }): number
-            local d = Vector3.new(hand[1], hand[2], hand[3]) - center
-            local radial = Vector3.new(0, d.Y, d.Z).Magnitude -- volant dans le plan YZ (axe X)
-            return math.sqrt(d.X ^ 2 + (radial - radius) ^ 2)
+            local world = frame:PointToWorldSpace(Vector3.new(hand[1], hand[2], hand[3]))
+            local d = world - wheel.Position
+            local axial = d:Dot(axis)
+            local radial = (d - axis * axial).Magnitude
+            return math.sqrt(axial ^ 2 + (radial - radius) ^ 2)
         end
         row.HandsToRim = math.max(rim(row.LeftHand), rim(row.RightHand))
     end

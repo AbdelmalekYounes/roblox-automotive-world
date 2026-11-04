@@ -642,7 +642,13 @@ end
 -- mesures sont faites par le client (journal « @@AWASTER@@ »).
 
 -- Volant et pédalier : nil au premier passage (mesure de la pose), puis cotes relevées.
-local ASTER_PARAMS: { [string]: any }? = nil
+-- Second passage (2026-11-04) : volant au droit de l'axe du siège, à la hauteur et à la
+-- distance visées pour la pose v2 ; pédalier au bout des pieds de la référence (tâche
+-- 20261104-134156 : pieds à z = −1,79 st, mains de la pose v1 à z ≈ 0).
+local ASTER_PARAMS: { [string]: any }? = {
+    Wheel = { Center = { -1.4, 2.16, 0.1 }, Radius = 0.55, TiltDeg = 20 },
+    PedalZ = -1.9,
+}
 
 if session == "aster" then
     local joined = waitFor(function()
@@ -689,6 +695,11 @@ if session == "aster" then
         part.Anchored = true
         part.Size = Vector3.new(item.Size[1], item.Size[2], item.Size[3])
         part.CFrame = CFrame.new(item.Center[1], item.Center[2], item.Center[3])
+        if item.Rotation then
+            part.CFrame = part.CFrame
+                * CFrame.Angles(0, math.rad(item.Rotation[2]), 0)
+                * CFrame.Angles(math.rad(item.Rotation[1]), 0, math.rad(item.Rotation[3]))
+        end
         if item.Cylinder then
             (part :: Part).Shape = Enum.PartType.Cylinder
         end
