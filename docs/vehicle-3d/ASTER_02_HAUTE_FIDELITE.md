@@ -16,7 +16,7 @@ Statut :
 | **HF1** | Extérieur : carrosserie plus fine, découpée en panneaux séparés suivant le contrat d'ASTER-02 §2 (capot, hayon, 4 portières, boucliers avant et arrière), joints visibles, poignées affleurantes, plaques fictives, rétroviseurs sur pied, optiques, pneus toriques, jantes à 5 branches, disques | **Faite**, à revoir (§1) |
 | **HF2** | Intérieur : planche de bord sculptée, combiné, console, volant à branches, sièges galbés, contre-portes, ciel de toit, dans les budgets `ENVELOPPES` | **Faite**, acceptée (§2) |
 | **HF3** | Matériaux, UV, textures originales (≤ 3 de 1024 px), peinture teintable par le jeu, vitrage transparent | **Faite**, acceptée (§3) |
-| **HF4** | Niveaux de détail LOD1 et LOD2, boîtes de collision, réduction des triangles (§1.3), attaches | **Faite**, à revoir (§4) ; **un écart à arbitrer** (§4.6) |
+| **HF4** | Niveaux de détail LOD1 et LOD2, boîtes de collision, réduction des triangles (§1.3), attaches | **Faite**, à revoir (§4) ; écart du LOD0 arbitré : option (a) (§4.6) |
 | HF5 | Export glTF (réglage étalonné), import par le propriétaire (après le témoin d'orientation v2), essais VM : habitacle, sorties, cockpit, performances D5 | À faire, sur accord |
 
 ## 1. Passe HF1 — extérieur
@@ -381,7 +381,7 @@ Défauts corrigés pendant la passe :
 
 La bascule entre niveaux (`RenderFidelity` ou dossier `Details` avec `DetailLod`) reste à décider à l'intégration.
 
-### 4.6 Écart à arbitrer : LOD0 au-dessus de l'hypothèse de départ
+### 4.6 Écart arbitré : LOD0 au-dessus de l'hypothèse de départ
 
 La spécification (§6) donne comme **hypothèse** de départ un LOD0 de 15 000 à 25 000 triangles. Le critère
 d'acceptation est D5 (temps d'image ≤ référence + 2 ms avec 24 Aster sur la VM), non mesuré à ce stade.
@@ -392,6 +392,11 @@ Décision du propriétaire :
 - **(b)** viser 25 000 au prix de la qualité de surface ;
 - **(c)** retirer l'épaisseur des panneaux. La caisse perdrait près de la moitié de ses triangles, mais il faudrait
   que l'option « double face » des MeshPart fonctionne à l'import, ce qui n'est pas vérifié.
+
+**Décision du propriétaire (2026-11-04) : option (a)**, « Garder, D5 tranche ».
+- Le LOD0 reste à 36 696 triangles.
+- Son acceptation dépend de la mesure D5 en HF5 : 24 Aster, jour et nuit, temps d'image ≤ référence + 2 ms.
+- Si D5 échoue, les options (b) et (c) reviennent en arbitrage.
 
 ### 4.7 Contrôles (`aster02_checks.py`) : 33 sur 33, plus 3 relevés informatifs
 
