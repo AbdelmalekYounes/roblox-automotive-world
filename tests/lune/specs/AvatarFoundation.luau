@@ -41,9 +41,33 @@ return function(T: any, H: any)
         T.truthy(not (AvatarPolicy.scalesWithinRanges({ BodyType = 0 })), "corps « en blocs » hors plage")
         T.equal(AvatarPolicy.clampScale("BodyType", 0), 1, "proportions humaines imposées")
         T.equal(AvatarPolicy.clampScale("Height", 0 / 0), 0.9, "valeur non finie ramenée au minimum")
-        T.truthy(AvatarPolicy.isBlockyBody({ Head = 0, Torso = 0 }), "corps par défaut reconnu")
-        T.truthy(not AvatarPolicy.isBlockyBody({ Torso = 123 }), "corps choisi par le joueur conservé")
-        T.equal(next(AvatarPolicy.HumanBody), nil, "aucun identifiant de corps inventé (choix du propriétaire)")
+        -- Deux corps retenus par le propriétaire (2026-11-04) : 995 Billie et 994 Jordan, corps seul.
+        T.equal(table.concat(AvatarPolicy.BodyOrder, ","), "Masculin,Feminin", "choix proposé au joueur")
+        T.equal(AvatarPolicy.Bodies.Masculin.BundleId, 995, "corps masculin : Base Body - Billie")
+        T.equal(AvatarPolicy.Bodies.Feminin.BundleId, 994, "corps féminin : Base Body - Jordan")
+        T.equal(AvatarPolicy.Bodies.Masculin.Parts.Torso, 11748986529)
+        T.equal(AvatarPolicy.Bodies.Feminin.Parts.Torso, 11740060397)
+        T.truthy(table.find(AvatarPolicy.ReplacedParts, "Head") == nil, "tête (visage) du joueur conservée")
+        local seen = {}
+        for _, id in AvatarPolicy.BodyOrder do
+            local body = AvatarPolicy.Bodies[id]
+            T.equal(body.Parts.Head, nil, id .. " : aucune tête imposée")
+            for _, field in AvatarPolicy.ReplacedParts do
+                local assetId = body.Parts[field]
+                T.truthy(type(assetId) == "number" and assetId > 0, id .. "." .. field .. " renseigné")
+                T.truthy(seen[assetId] == nil, "identifiant unique " .. tostring(assetId))
+                seen[assetId] = true
+            end
+        end
+        T.truthy(AvatarPolicy.body(AvatarPolicy.DefaultBody) ~= nil, "corps par défaut connu")
+        T.equal(AvatarPolicy.body("Robot"), nil, "corps inconnu refusé")
+        T.equal(AvatarPolicy.body(42), nil, "identifiant non textuel refusé")
+        local worn = table.clone(AvatarPolicy.Bodies.Feminin.Parts) :: { [string]: number }
+        worn.Head = 999 -- tête du joueur, sans effet sur la vérification
+        T.truthy(AvatarPolicy.wearsBody(worn, "Feminin"), "corps porté reconnu")
+        T.truthy(not AvatarPolicy.wearsBody(worn, "Masculin"), "autre corps non reconnu")
+        worn.LeftLeg = 0
+        T.truthy(not AvatarPolicy.wearsBody(worn, "Feminin"), "partie manquante détectée")
         local ok, outside = AvatarPolicy.scalesWithinRanges({ Height = 1.2, Width = 0 / 0 })
         T.truthy(not ok, "hors plage refusé")
         T.equal(table.concat(outside, ","), "Height,Width", "hauteur excessive et NaN signalés")

@@ -75,6 +75,7 @@ local VehicleService = require(Server:WaitForChild("Vehicles"):WaitForChild("Veh
 local AvatarService = require(Server:WaitForChild("Avatar"):WaitForChild("AvatarService"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local OutfitRules = require(Shared:WaitForChild("Cosmetics"):WaitForChild("OutfitRules")) :: any
+local AvatarPolicy = require(Shared:WaitForChild("Avatar"):WaitForChild("AvatarPolicy")) :: any
 local WorkingCatalog =
     require(Shared:WaitForChild("Vehicles"):WaitForChild("Definitions"):WaitForChild("WorkingCatalog")) :: any
 
@@ -124,6 +125,7 @@ type Morph = {
     BodyType: number,
     Proportion: number,
     Props: { Prop },
+    Body: string?, -- corps imposé (AvatarPolicy.Bodies) ; nil : corps par défaut
 }
 
 -- Accessoires d'essai (pièces simples, sans actif) : volumes extrêmes plausibles.
@@ -302,6 +304,10 @@ local function applyMorph(player: Player, morph: Morph): (boolean, string)
     description.HeadScale = morph.Head
     description.BodyTypeScale = morph.BodyType
     description.ProportionScale = morph.Proportion
+    local body = AvatarPolicy.Bodies[morph.Body or AvatarPolicy.DefaultBody]
+    for _, field in AvatarPolicy.ReplacedParts do
+        (description :: any)[field] = body.Parts[field]
+    end
     local ok, err = pcall(function()
         humanoid:ApplyDescriptionAsync(description)
     end)
@@ -651,9 +657,12 @@ end
 -- humains grand et élancé ; planche de bord avancée ; pavillon à 4,60 st de l'assise.
 local ASTER_PARAMS: { [string]: any }? = {
     HeadroomSt = 4.60,
-    Wheel = { Center = { -1.38, 2.8, -0.78 }, Radius = 0.8, TiltDeg = 20 },
-    PedalZ = -2.6,
-    DashZ = -1.75,
+    -- Passage 4 : volant ajusté aux mains mesurées dans le repère du gabarit (passage 3,
+    -- tâche 20261104-135355, pose du jeu, 7 morphologies : écart max. 0,26 st à la jante),
+    -- pédalier devant les pointes de pied (−0,90 à −0,21 st), planche de bord devant le volant.
+    Wheel = { Center = { -1.4, 2.46, 1.16 }, Radius = 0.85, TiltDeg = 15 },
+    PedalZ = -1.1,
+    DashZ = 0.1,
 }
 
 -- Morphologies HUMAINES (type de corps imposé à 1) : la session « aster » ne mesure plus les
@@ -737,6 +746,18 @@ local HUMAN_MORPHS: { Morph } = {
         Props = BULKY,
     },
 }
+-- Corps féminin (994 Jordan) : extrêmes de taille et de largeur (copies de H1, H2, H4).
+for _, source in { "H1", "H2", "H4" } do
+    for _, morph in table.clone(HUMAN_MORPHS) do
+        if morph.Id == source then
+            local copy = table.clone(morph)
+            copy.Id = "F" .. string.sub(source, 2)
+            copy.Label = morph.Label .. " (corps féminin)"
+            copy.Body = "Feminin"
+            table.insert(HUMAN_MORPHS, copy)
+        end
+    end
+end
 
 if session == "aster" then
     local joined = waitFor(function()
@@ -785,8 +806,8 @@ if session == "aster" then
         part.CFrame = CFrame.new(item.Center[1], item.Center[2], item.Center[3])
         if item.Rotation then
             part.CFrame = part.CFrame
-                * CFrame.Angles(0, math.rad(item.Rotation[2]), 0)
                 * CFrame.Angles(math.rad(item.Rotation[1]), 0, math.rad(item.Rotation[3]))
+                * CFrame.Angles(0, math.rad(item.Rotation[2]), 0)
         end
         if item.Cylinder then
             (part :: Part).Shape = Enum.PartType.Cylinder
@@ -811,7 +832,10 @@ if session == "aster" then
             part.CFrame = origin * part.CFrame
         end
     end
-    model:SetAttribute("AWAsterOrigin", true)
+    -- Repère du gabarit transmis tel quel : le pivot d'un modèle à PrimaryPart suit le plancher
+    -- côté client (mesures des passages 1 à 3 du 2026-11-04 dans le repère du plancher, décalé
+    -- de 0 ; −0,39 ; +1,92 st), d'où un volant placé 2 st trop en avant.
+    model:SetAttribute("AWAsterOrigin", origin)
     model.WorldPivot = origin
     model.Parent = Workspace
     record(
@@ -857,10 +881,20 @@ if session == "aster" then
                 end
                 task.wait(0.8) -- mise en place de la pose (0,3 s) et stabilisation
                 local key = string.format("%s:%s:%s", morph.Id, pose, seatName)
-                if ask(player, "astermeasure:" .. key, { Morph = morph.Id, Pose = pose, Seat = seatName }, 10) then
+                if
+                    ask(
+                        player,
+                        "astermeasure:" .. key,
+                        { Morph = morph.Id, Pose = pose, Seat = seatName, Morphs = #HUMAN_MORPHS },
+                        10
+                    )
+                then
                     measured += 1
                 end
-                if (morph.Id == "H1" or morph.Id == "H4" or morph.Id == "H6") and seatName == "SiegeConducteur" then
+                if
+                    (morph.Id == "H1" or morph.Id == "H4" or morph.Id == "H6" or morph.Id == "F4")
+                    and seatName == "SiegeConducteur"
+                then
                     shot(player, string.format("aster_%s_%s_profil", morph.Id, pose), sideView(model, seat, -1), {
                         morphologie = morph.Label,
                         pose = pose,
@@ -975,6 +1009,52 @@ record(
 )
 local initialLook = AvatarService.initialLook(player)
 record("avatar.tenue.apparence_initiale_memorisee", initialLook ~= nil)
+
+-- 0 bis. Corps humains (décision du propriétaire, 2026-11-04) : corps par défaut appliqué à
+-- tous, choix du joueur, tête et vêtements conservés, corps inconnu refusé.
+local function partsNow(): { [string]: number }
+    local d = humanoid:GetAppliedDescription()
+    local parts = {}
+    for _, field in AvatarPolicy.ReplacedParts do
+        parts[field] = (d :: any)[field]
+    end
+    return parts
+end
+record(
+    "avatar.corps.defaut_applique",
+    player:GetAttribute("AWAvatarBody") == AvatarPolicy.DefaultBody
+        and AvatarPolicy.wearsBody(partsNow(), AvatarPolicy.DefaultBody),
+    string.format("attribut %s ; Torso %d", tostring(player:GetAttribute("AWAvatarBody")), partsNow().Torso or 0)
+)
+local headBefore, shirtBefore, pantsBefore = initialDescription.Head, initialDescription.Shirt, initialDescription.Pants
+local chosen = AvatarService.chooseBody(player, "Feminin")
+local afterChoice = humanoid:GetAppliedDescription()
+record(
+    "avatar.corps.choix_feminin_applique",
+    chosen.Status == "Ok" and AvatarPolicy.wearsBody(partsNow(), "Feminin"),
+    string.format("%s / %s ; Torso %d", chosen.Status, tostring(chosen.Reason), partsNow().Torso or 0)
+)
+record(
+    "avatar.corps.tete_et_vetements_conserves",
+    afterChoice.Head == headBefore and afterChoice.Shirt == shirtBefore and afterChoice.Pants == pantsBefore,
+    string.format("Head %d → %d ; Shirt %d → %d", headBefore, afterChoice.Head, shirtBefore, afterChoice.Shirt)
+)
+record(
+    "avatar.corps.choix_memorise_session",
+    player:GetAttribute("AWAvatarBodyChosen") == true and player:GetAttribute("AWAvatarBody") == "Feminin"
+)
+local unknown = AvatarService.chooseBody(player, "Robot")
+record(
+    "avatar.corps.corps_inconnu_refuse",
+    unknown.Status == "Rejected" and unknown.Reason == "AvatarBodyUnknown",
+    tostring(unknown.Reason)
+)
+local back = AvatarService.chooseBody(player, "Masculin")
+record(
+    "avatar.corps.retour_masculin",
+    back.Status == "Ok" and AvatarPolicy.wearsBody(partsNow(), "Masculin"),
+    tostring(back.Status)
+)
 
 -- Essais du client (étalonnage des vraies entrées).
 local calibrated = ask(player, "calibrate", {}, 40)

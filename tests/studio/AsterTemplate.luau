@@ -143,10 +143,12 @@ function AsterTemplate.build(
         )
     end
     if p.Wheel then
-        -- Disque face au conducteur : axe du cylindre (X) tourné vers l'arrière (Z), incliné.
+        -- Disque face au conducteur : axe du cylindre (X) tourné vers l'arrière (Z), puis incliné
+        -- autour de l'axe latéral (haut du volant vers le conducteur). Composition des rotations :
+        -- `AsterTemplate.rotate`.
         local wheel = box("Volant", "habitacle", p.Wheel.Center, { 0.15, p.Wheel.Radius * 2, p.Wheel.Radius * 2 })
         wheel.Cylinder = true
-        wheel.Rotation = { p.Wheel.TiltDeg, 90, 0 }
+        wheel.Rotation = { -p.Wheel.TiltDeg, 90, 0 }
         add(wheel)
     end
     if p.PedalZ then
@@ -180,6 +182,21 @@ function AsterTemplate.build(
         HeightAboveGroundM = (roofUnder + 0.2 - ground) * metersPerStud,
         Boxes = boxes,
     }
+end
+
+-- Rotation d'un bloc (degrés X, Y, Z) appliquée à un vecteur de son repère local : même
+-- composition que la maquette VM, `CFrame.Angles(x, 0, z) * CFrame.Angles(0, y, 0)`, soit
+-- v' = Rx(Rz(Ry(v))). Sert à l'export OBJ (sommets tournés comme dans Studio).
+function AsterTemplate.rotate(rotation: { number }, v: { number }): { number }
+    local rx, ry, rz = math.rad(rotation[1]), math.rad(rotation[2]), math.rad(rotation[3])
+    local x, y, z = v[1], v[2], v[3]
+    -- Ry
+    x, z = x * math.cos(ry) + z * math.sin(ry), -x * math.sin(ry) + z * math.cos(ry)
+    -- Rz
+    x, y = x * math.cos(rz) - y * math.sin(rz), x * math.sin(rz) + y * math.cos(rz)
+    -- Rx
+    y, z = y * math.cos(rx) - z * math.sin(rx), y * math.sin(rx) + z * math.cos(rx)
+    return { x, y, z }
 end
 
 return AsterTemplate

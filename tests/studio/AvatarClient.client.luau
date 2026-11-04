@@ -433,6 +433,7 @@ end
 -- La pose du jeu est appliquée par ce client (Transform) : seules ses propres mesures la voient.
 
 local asterRows: { { [string]: any } } = {}
+local asterExpected = 0 -- morphologies annoncées par le serveur
 
 local function corners(part: BasePart, frame: CFrame): (Vector3, Vector3)
     local half = part.Size / 2
@@ -471,6 +472,9 @@ local LEG_PARTS = {
 }
 
 handlers.astermeasure = function(_id, data)
+    if type(data.Morphs) == "number" then
+        asterExpected = data.Morphs
+    end
     local model = Workspace:FindFirstChild("MaquetteAster") :: Model?
     local me = character()
     if model == nil then
@@ -478,7 +482,9 @@ handlers.astermeasure = function(_id, data)
         return
     end
     task.wait(0.3)
-    local frame = model:GetPivot()
+    -- Repère du gabarit (attribut du serveur), pas le pivot : celui-ci suit le plancher.
+    local origin = model:GetAttribute("AWAsterOrigin")
+    local frame = if typeof(origin) == "CFrame" then origin else model:GetPivot()
     local seat = model:FindFirstChild(tostring(data.Seat)) :: BasePart
     local seatTop = frame:PointToObjectSpace((seat.CFrame * CFrame.new(0, seat.Size.Y / 2, 0)).Position).Y
     local seatX = frame:PointToObjectSpace(seat.Position).X
@@ -553,6 +559,11 @@ handlers.astermeasure = function(_id, data)
             return math.sqrt(axial ^ 2 + (radial - radius) ^ 2)
         end
         row.HandsToRim = math.max(rim(row.LeftHand), rim(row.RightHand))
+        -- Vue dégagée : yeux (centre de la tête + 0,15 st) au-dessus du haut du volant.
+        local _, wheelMax = corners(wheel, frame)
+        if row.Head then
+            row.EyeAboveWheel = row.Head[2] + 0.15 - wheelMax.Y
+        end
     end
     table.insert(asterRows, row)
     print("@@AWASTER@@ " .. game:GetService("HttpService"):JSONEncode(row))
@@ -565,7 +576,9 @@ handlers.asterpov = function(_id, data)
     if model == nil or head == nil then
         return
     end
-    local frame = model:GetPivot()
+    -- Repère du gabarit (attribut du serveur), pas le pivot : celui-ci suit le plancher.
+    local origin = model:GetAttribute("AWAsterOrigin")
+    local frame = if typeof(origin) == "CFrame" then origin else model:GetPivot()
     local eye = head.Position + Vector3.new(0, 0.15, 0)
     withView(CFrame.lookAt(eye, eye + frame.LookVector * 10 - Vector3.new(0, 1.2, 0)), function()
         Gui.shot(tostring(data.Name), { pose = "jeu" })
@@ -609,7 +622,7 @@ if session == "aster" then
     -- Synthèse compacte : pose du jeu contre pose standard, par place (détail dans @@AWASTER@@).
     for _, pose in { "standard", "jeu" } do
         for _, seatName in { "SiegeConducteur", "SiegePassager" } do
-            local roofFail, sideFail, legFail, rimFail, n = {}, {}, {}, {}, 0
+            local roofFail, sideFail, legFail, rimFail, viewFail, n = {}, {}, {}, {}, {}, 0
             for _, row in asterRows do
                 if row.Pose == pose and row.Seat == seatName then
                     n += 1
@@ -625,15 +638,23 @@ if session == "aster" then
                     if row.HandsToRim and row.HandsToRim > 0.35 then
                         table.insert(rimFail, string.format("%s %.2f", row.Morph, row.HandsToRim))
                     end
+                    if row.EyeAboveWheel and row.EyeAboveWheel < 0 then
+                        table.insert(viewFail, string.format("%s %.2f", row.Morph, row.EyeAboveWheel))
+                    end
                 end
             end
             local prefix = string.format("aster.%s.%s.", pose, seatName)
-            record(prefix .. "mesures", n == 7, n .. " morphologie(s)")
+            record(
+                prefix .. "mesures",
+                n > 0 and n == asterExpected,
+                string.format("%d / %d morphologie(s)", n, asterExpected)
+            )
             record(prefix .. "tete_sous_le_pavillon", #roofFail == 0, table.concat(roofFail, " / "))
             record(prefix .. "bras_dans_l_habitacle", #sideFail == 0, table.concat(sideFail, " / "))
             record(prefix .. "jambes_libres", #legFail == 0, table.concat(legFail, " / "))
             if pose == "jeu" and seatName == "SiegeConducteur" then
                 record(prefix .. "mains_sur_la_jante", #rimFail == 0, table.concat(rimFail, " / "))
+                record(prefix .. "vue_au_dessus_du_volant", #viewFail == 0, table.concat(viewFail, " / "))
             end
         end
     end

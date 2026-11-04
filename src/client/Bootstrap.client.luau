@@ -93,6 +93,8 @@ EconomyPanel.start()
 RacePanel.start()
 -- Lot 0.8 : parcours d'arrivée (passable) et exercices de formation.
 task.spawn(OnboardingController.start)
+-- Avatars humains (2026-11-04) : choix de la silhouette à la première apparition.
+require(UI:WaitForChild("BodyChoice")).start()
 PhotoMode.setRacingCheck(RacePanel.racing)
 PhotoMode.start()
 

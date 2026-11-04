@@ -14,7 +14,14 @@ local Constants = Harness.require("ReplicatedStorage.Shared.Vehicles.VehicleCons
 local AsterTemplate = require("../../studio/AsterTemplate")
 
 local out = process.args[2] or "build/aster-template"
-local params = if process.args[3] then serde.decode("json", fs.readFile(process.args[3])) else nil
+-- Paramètres partiels complétés par les valeurs par défaut du gabarit (comme la session VM).
+local params = nil
+if process.args[3] then
+    params = table.clone(AsterTemplate.Defaults) :: any
+    for key, value in serde.decode("json", fs.readFile(process.args[3])) do
+        params[key] = value
+    end
+end
 local definition = Definitions.get("wk_aster")
 local template = AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
 
@@ -35,13 +42,19 @@ local function emit(name: string, vertices: { { number } }, faces: { { number } 
     vertexCount += #vertices
 end
 
-local function cuboid(name: string, c: { number }, s: { number })
+-- Sommet : décalage local (tourné comme le bloc dans Studio) ajouté au centre.
+local function place(c: { number }, offset: { number }, rot: { number }?): { number }
+    local o = if rot then AsterTemplate.rotate(rot, offset) else offset
+    return { c[1] + o[1], c[2] + o[2], c[3] + o[3] }
+end
+
+local function cuboid(name: string, c: { number }, s: { number }, rot: { number }?)
     local hx, hy, hz = s[1] / 2, s[2] / 2, s[3] / 2
     local v = {}
     for _, dx in { -1, 1 } do
         for _, dy in { -1, 1 } do
             for _, dz in { -1, 1 } do
-                table.insert(v, { c[1] + dx * hx, c[2] + dy * hy, c[3] + dz * hz })
+                table.insert(v, place(c, { dx * hx, dy * hy, dz * hz }, rot))
             end
         end
     end
@@ -49,13 +62,13 @@ local function cuboid(name: string, c: { number }, s: { number })
 end
 
 -- Cylindre d'axe X (16 côtés).
-local function cylinder(name: string, c: { number }, s: { number })
+local function cylinder(name: string, c: { number }, s: { number }, rot: { number }?)
     local n, r, hx = 16, s[2] / 2, s[1] / 2
     local v = {}
     for _, dx in { -hx, hx } do
         for i = 0, n - 1 do
             local a = i / n * 2 * math.pi
-            table.insert(v, { c[1] + dx, c[2] + r * math.cos(a), c[3] + r * math.sin(a) })
+            table.insert(v, place(c, { dx, r * math.cos(a), r * math.sin(a) }, rot))
         end
     end
     local faces = {}
@@ -75,9 +88,9 @@ end
 
 for _, item in template.Boxes do
     if item.Cylinder then
-        cylinder(item.Name, item.Center, item.Size)
+        cylinder(item.Name, item.Center, item.Size, item.Rotation)
     else
-        cuboid(item.Name, item.Center, item.Size)
+        cuboid(item.Name, item.Center, item.Size, item.Rotation)
     end
 end
 

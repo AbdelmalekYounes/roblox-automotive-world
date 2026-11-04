@@ -88,4 +88,28 @@ return function(T: any, H: any)
         end
         T.equal(seats, 2, "deux sièges marqués")
     end)
+
+    T.test("Gabarit de l'Aster : volant incliné vers le conducteur, rotation de la maquette", function()
+        -- Composition de la maquette VM : CFrame.Angles(x, 0, z) * CFrame.Angles(0, y, 0).
+        local axis = AsterTemplate.rotate({ -15, 90, 0 }, { 1, 0, 0 })
+        T.near(axis[1], 0, 1e-9, "axe du volant sans composante latérale")
+        T.near(axis[2], -math.sin(math.rad(15)), 1e-9, "axe incliné de 15°")
+        T.near(axis[3], -math.cos(math.rad(15)), 1e-9, "axe vers l'avant (haut du volant vers le conducteur)")
+        local same = AsterTemplate.rotate({ 0, 0, 0 }, { 0.3, -0.2, 0.5 })
+        T.near(same[1], 0.3, 1e-12)
+        T.near(same[3], 0.5, 1e-12)
+        local definition = Definitions.get("wk_aster")
+        local params = table.clone(AsterTemplate.Defaults) :: any
+        params.Wheel = { Center = { -1.4, 2.46, 1.16 }, Radius = 0.85, TiltDeg = 15 }
+        params.PedalZ = -1.1
+        local template =
+            AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
+        for _, item in template.Boxes do
+            if item.Name == "Volant" then
+                T.equal(item.Rotation[1], -15, "inclinaison appliquée autour de l'axe latéral")
+                T.equal(item.Rotation[2], 90, "disque face au conducteur")
+                T.equal(item.Center[3], 1.16, "centre du volant au paramètre")
+            end
+        end
+    end)
 end

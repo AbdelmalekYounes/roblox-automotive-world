@@ -1,9 +1,10 @@
 --!strict
 --[[
     Politique d'avatar (lot AVATAR-01). Décision du propriétaire : R15 exclusivement ;
-    l'apparence Roblox du joueur (corps, visage, vêtements, accessoires) est conservée
-    autant que possible ; pas d'avatar « Blocky » imposé ; proportions limitées
-    seulement si les essais de compatibilité le justifient.
+    l'apparence Roblox du joueur (visage, vêtements, accessoires) est conservée autant que
+    possible. Révision du 2026-11-04 (propriétaire) : avatars HUMAINS uniquement, « non pas
+    semi-Lego » : type de corps imposé à 1 et corps remplacé, pour tous les joueurs, par l'un
+    des deux corps retenus (masculin ou féminin, au choix du joueur) ; la tête est conservée.
 
     Application :
     - réglage de la place (`StarterPlayer.GameSettingsAvatar = R15`,
@@ -41,17 +42,66 @@ AvatarPolicy.ScaleRanges = table.freeze({
 AvatarPolicy.LimitedByTests = false
 AvatarPolicy.HumanOnly = true
 
--- Corps humain de remplacement des corps « en blocs » (parties du corps par défaut, identifiant
--- 0) : identifiants des parties d'un corps humain choisi par le propriétaire. VIDE tant que le
--- choix n'est pas fait : aucun identifiant n'est inventé ; seules les proportions humaines
--- sont alors imposées. Clés : champs de `HumanoidDescription`.
-AvatarPolicy.HumanBody = table.freeze({} :: { [string]: number })
-AvatarPolicy.BodyPartFields = table.freeze({ "Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" })
+-- Corps humains imposés (décision du propriétaire, 2026-11-04) : **tous** les joueurs reçoivent
+-- l'un des deux corps, au choix du joueur (« Masculin » ou « Feminin ») ; seules les parties du
+-- corps sont remplacées : la TÊTE, le visage, la couleur de peau, les vêtements et les
+-- accessoires du joueur sont conservés. Corps retenus par le propriétaire parmi les paquets
+-- gratuits « Base Body » publiés par Roblox (créateur Roblox, identifiant 1) ; identifiants
+-- relevés le 2026-11-04 sur catalog.roblox.com/v1/bundles/{id}/details (aucun inventé).
+-- Clés de `Parts` : champs de `HumanoidDescription`.
+export type Body = { Id: string, BundleId: number, Source: string, Parts: { [string]: number } }
 
--- Corps « en blocs » : toutes les parties du corps à 0 (corps par défaut de Roblox).
-function AvatarPolicy.isBlockyBody(parts: { [string]: number }): boolean
-    for _, field in AvatarPolicy.BodyPartFields do
-        if (parts[field] or 0) ~= 0 then
+AvatarPolicy.Bodies = table.freeze({
+    Masculin = table.freeze({
+        Id = "Masculin",
+        BundleId = 995,
+        Source = "Base Body - Billie",
+        Parts = table.freeze({
+            Torso = 11748986529,
+            LeftArm = 11748981874,
+            RightArm = 11748984354,
+            LeftLeg = 11748983268,
+            RightLeg = 11748985458,
+        }),
+    }),
+    Feminin = table.freeze({
+        Id = "Feminin",
+        BundleId = 994,
+        Source = "Base Body - Jordan",
+        Parts = table.freeze({
+            Torso = 11740060397,
+            LeftArm = 11740050465,
+            RightArm = 11740055375,
+            LeftLeg = 11740052832,
+            RightLeg = 11740057815,
+        }),
+    }),
+} :: { [string]: Body })
+
+-- Ordre d'affichage du choix.
+AvatarPolicy.BodyOrder = table.freeze({ "Masculin", "Feminin" })
+-- Corps appliqué tant que le joueur n'a pas choisi (panneau de choix affiché à l'apparition).
+-- PROVISOIRE, à confirmer par le propriétaire (signalé dans le rapport de phase 1).
+AvatarPolicy.DefaultBody = "Masculin"
+-- Parties remplacées : jamais la tête (`Head`), pour garder le visage du joueur.
+AvatarPolicy.ReplacedParts = table.freeze({ "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg" })
+
+-- Corps désigné par un identifiant reçu (client ou réglage) ; nil si inconnu.
+function AvatarPolicy.body(id: any): Body?
+    if type(id) ~= "string" then
+        return nil
+    end
+    return AvatarPolicy.Bodies[id]
+end
+
+-- Vrai si les parties lues (`HumanoidDescription`) sont exactement celles du corps.
+function AvatarPolicy.wearsBody(parts: { [string]: number }, bodyId: string): boolean
+    local body = AvatarPolicy.Bodies[bodyId]
+    if body == nil then
+        return false
+    end
+    for _, field in AvatarPolicy.ReplacedParts do
+        if parts[field] ~= body.Parts[field] then
             return false
         end
     end

@@ -12,6 +12,11 @@
     (avant toute tenue), conservée pour la restauration. Une tenue équipée est réappliquée
     après une réapparition. Rien n'est sauvegardé (aucune persistance dans ce lot).
 
+    Corps (décision du propriétaire, 2026-11-04) : avatars humains uniquement ; chaque
+    joueur porte l'un des deux corps retenus (`AvatarPolicy.Bodies`), à son choix
+    (action « BodyChoose », session seulement), sinon le corps par défaut. La tête et le
+    visage du joueur sont conservés.
+
     Tenues : le client ne désigne qu'une tenue du catalogue (`Shared.Cosmetics`), jamais
     un identifiant d'actif. Changement refusé assis dans un véhicule (le moteur
     reconstruit des pièces du personnage : effets possibles sur l'ensemble du véhicule).
@@ -35,6 +40,8 @@ local FOLDER = "AWAvatar"
 local RIG_ATTRIBUTE = "AWAvatarRig"
 local PREVIEW_ATTRIBUTE = "AWOutfitPreview"
 local PREVIEW_S = 30 -- durée d'un essayage, puis retour automatique
+local BODY_ATTRIBUTE = "AWAvatarBody" -- corps porté (joueur ; répliqué, lu par le client)
+local BODY_CHOSEN_ATTRIBUTE = "AWAvatarBodyChosen" -- vrai après un choix explicite (session)
 
 export type Result = { Status: string, Reason: string? }
 
@@ -43,6 +50,7 @@ type State = {
     Equipped: OutfitCatalog.Outfit?, -- tenue équipée (réappliquée après réapparition)
     PreviewToken: number,
     Busy: boolean,
+    Body: string?, -- corps choisi par le joueur pendant la session (nil : corps par défaut)
 }
 
 local states: { [Player]: State } = {}
@@ -54,7 +62,7 @@ local started = false
 local function stateOf(player: Player): State
     local state = states[player]
     if state == nil then
-        state = { Initial = nil, Equipped = nil, PreviewToken = 0, Busy = false }
+        state = { Initial = nil, Equipped = nil, PreviewToken = 0, Busy = false, Body = nil }
         states[player] = state
     end
     return state :: State
@@ -334,6 +342,8 @@ local function handle(player: Player, action: any, payload: any): any
         return AvatarService.removeSlot(player, data.Slot)
     elseif action == "OutfitRestore" then
         return AvatarService.restore(player)
+    elseif action == "BodyChoose" then
+        return AvatarService.chooseBody(player, data.Body)
     end
     return { Status = "Rejected", Reason = "ActionUnknown" }
 end
@@ -341,15 +351,12 @@ end
 -- ======================== Cycle de vie ========================
 
 -- Avatars humains uniquement (décision du propriétaire, 2026-11-04) : type de corps ramené aux
--- proportions humaines ; corps « en blocs » remplacé par le corps humain choisi (s'il est
--- configuré). Visage, peau, vêtements et accessoires du joueur sont conservés. Un échec du
--- moteur laisse l'apparence d'origine (journalisé).
+-- proportions humaines et parties du corps remplacées par l'un des deux corps retenus
+-- (`AvatarPolicy.Bodies`, choix du joueur, sinon corps par défaut), pour TOUS les joueurs.
+-- Tête, visage, peau, vêtements et accessoires du joueur sont conservés. Un échec du moteur
+-- laisse l'apparence d'origine (journalisé). L'attribut `AWAvatarBody` indique le corps porté.
 local humanized = 0
-function enforceHuman(player: Player, humanoid: Humanoid)
-    if not AvatarPolicy.HumanOnly then
-        return
-    end
-    local description = humanoid:GetAppliedDescription()
+local function humanDescription(description: HumanoidDescription, bodyId: string): boolean
     local changed = false
     local scales: { [string]: string } = {
         BodyType = "BodyTypeScale",
@@ -366,27 +373,68 @@ function enforceHuman(player: Player, humanoid: Humanoid)
             changed = true
         end
     end
+    local body = AvatarPolicy.Bodies[bodyId]
+    for _, field in AvatarPolicy.ReplacedParts do
+        local assetId = body.Parts[field]
+        if (description :: any)[field] ~= assetId then
+            (description :: any)[field] = assetId
+            changed = true
+        end
+    end
+    return changed
+end
+
+local function partsOf(description: HumanoidDescription): { [string]: number }
     local parts: { [string]: number } = {}
-    for _, field in AvatarPolicy.BodyPartFields do
+    for _, field in AvatarPolicy.ReplacedParts do
         parts[field] = (description :: any)[field]
     end
-    if AvatarPolicy.isBlockyBody(parts) and next(AvatarPolicy.HumanBody) ~= nil then
-        for field, assetId in AvatarPolicy.HumanBody do
-            (description :: any)[field] = assetId
-        end
-        changed = true
-    end
-    if not changed then
+    return parts
+end
+
+function enforceHuman(player: Player, humanoid: Humanoid)
+    if not AvatarPolicy.HumanOnly then
         return
     end
-    local ok, err = pcall(function()
-        humanoid:ApplyDescriptionAsync(description)
-    end)
-    if ok then
-        humanized += 1
-    else
-        warn(string.format("[AutomotiveWorld] Avatar humain non appliqué à %s : %s", player.Name, tostring(err)))
+    local bodyId = stateOf(player).Body or AvatarPolicy.DefaultBody
+    local description = humanoid:GetAppliedDescription()
+    if humanDescription(description, bodyId) then
+        local ok, err = pcall(function()
+            humanoid:ApplyDescriptionAsync(description)
+        end)
+        if ok then
+            humanized += 1
+        else
+            warn(string.format("[AutomotiveWorld] Avatar humain non appliqué à %s : %s", player.Name, tostring(err)))
+        end
     end
+    local worn = AvatarPolicy.wearsBody(partsOf(humanoid:GetAppliedDescription()), bodyId)
+    player:SetAttribute(BODY_ATTRIBUTE, if worn then bodyId else nil)
+end
+
+-- Choix du corps par le joueur (session seulement : aucune persistance avant le lot prévu).
+-- Mêmes refus qu'un changement de tenue (assis, apparence en chargement, opération en cours).
+function AvatarService.chooseBody(player: Player, id: any): Result
+    local body = AvatarPolicy.body(id)
+    if body == nil then
+        return { Status = "Rejected", Reason = "AvatarBodyUnknown" }
+    end
+    local humanoid, state, refusal = guard(player)
+    if refusal then
+        return refusal
+    end
+    local h, s = humanoid :: Humanoid, state :: State
+    local previous = s.Body
+    s.Body = body.Id
+    s.Busy = true
+    enforceHuman(player, h)
+    s.Busy = false
+    if player:GetAttribute(BODY_ATTRIBUTE) ~= body.Id then
+        s.Body = previous
+        return { Status = "Rejected", Reason = "AvatarBodyInvalid" }
+    end
+    player:SetAttribute(BODY_CHOSEN_ATTRIBUTE, true)
+    return { Status = "Ok" }
 end
 
 function AvatarService.humanizedCount(): number

@@ -637,6 +637,15 @@ local E: { [string]: Entry } = {
     ["action.HudLevel"] = { "Niveau du HUD", "HUD level" },
     ["action.ClearRoute"] = { "Effacer l'itinéraire", "Clear route" },
     ["action.Back"] = { "Retour", "Back" },
+    -- ===================== Silhouette (avatars humains, 2026-11-04) =====================
+    ["avatar.body.title"] = { "Choisissez votre silhouette", "Choose your body" },
+    ["avatar.body.hint"] = {
+        "Votre tête, votre visage et vos vêtements sont conservés. Modifiable ensuite : Téléphone › Paramètres › Interface.",
+        "Your head, face and clothing are kept. Change it later: Phone › Settings › Interface.",
+    },
+    ["avatar.body.Masculin"] = { "Masculin", "Masculine" },
+    ["avatar.body.Feminin"] = { "Féminin", "Feminine" },
+    ["settings.avatarBody"] = { "Silhouette : {body}", "Body: {body}" },
     -- ===================== Tenues de personnage (lot AVATAR-01) =====================
     ["outfit.category.CircuitPremium"] = { "Pilote circuit premium", "Premium circuit driver" },
     ["outfit.category.StreetRacing"] = { "Pilote street racing", "Street racing driver" },
@@ -684,6 +693,11 @@ local E: { [string]: Entry } = {
     OutfitNoCharacter = { "Personnage indisponible.", "Character unavailable." },
     OutfitAppearanceLoading = { "Apparence en cours de chargement.", "Appearance still loading." },
     OutfitBusy = { "Changement de tenue en cours.", "Outfit change in progress." },
+    AvatarBodyUnknown = { "Silhouette inconnue.", "Unknown body." },
+    AvatarBodyInvalid = {
+        "Silhouette non appliquée : apparence précédente conservée.",
+        "Body not applied: previous appearance kept.",
+    },
     OutfitSlotUnknown = { "Emplacement de tenue inconnu.", "Unknown outfit slot." },
 }
 
