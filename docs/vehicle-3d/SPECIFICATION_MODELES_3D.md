@@ -153,11 +153,14 @@ Le budget n'est **pas** fixé en nombre de polygones a priori : il découle d'es
 | Nombre de pièces et de textures uniques | comptage dans la place construite (Lune) | par modèle |
 | Données répliquées | statistiques réseau de Studio | 24 véhicules en mouvement |
 
-Critère d'acceptation proposé [décision D5] : avec 24 véhicules 3D visibles, temps d'image client **≤ référence actuelle
-(primitives) + 2 ms** sur la VM, et aucune régression du réseau (les pièces soudées sans masse ne répliquent pas de
+**Critère d'acceptation retenu par le propriétaire (D5, 2026-11-04)** : avec 24 véhicules 3D visibles, de jour et de
+nuit, temps d'image client (moyen et 1 % le plus lent) **≤ référence actuelle (primitives) + 2 ms** sur la VM (session
+`perf`, monde ouvert), mémoire graphique relevée, et aucune régression du réseau (les pièces soudées sans masse ne répliquent pas de
 mouvement propre). Point de départ des essais [hypothèse] : LOD0 ≈ 15 000 à 25 000 triangles par véhicule, ≤ 3 textures
 uniques de 1024 px ; à ajuster selon les mesures. Les limites d'import de Roblox (triangles par MeshPart, taille des
-textures) sont à vérifier à la date de l'import.
+textures) sont à vérifier à la date de l'import. La VM ne représente pas les appareils réels (mobiles notamment) :
+ce critère encadre la production ; les essais sur appareils réels restent **NON TESTÉS** et complètent la validation
+avant le lancement.
 
 ## 7. Réseau et diffusion
 

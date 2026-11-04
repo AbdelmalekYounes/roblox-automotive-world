@@ -15,7 +15,8 @@ d'actif, aucune modification de la physique ni des carrosseries provisoires** ; 
 | [PLAN_PRODUCTION_18_VEHICULES.md](PLAN_PRODUCTION_18_VEHICULES.md) | Phases, familles, décisions D1 à D6, risques |
 
 Décisions prises (2026-11-04) : direction **A « Trait »** pour l'Aster ; D1 habitacle **« échelle Roblox + assise
-basse »** ; D3 **pose assise propre au jeu** ; D4 **ouvrants animés plus tard**. Décisions à prendre : D2 (suite) langage commun de la gamme ; D5 critère de performance ; D6 import, publication et
+basse »** ; D3 **pose assise propre au jeu** ; D4 **ouvrants animés plus tard** ; D5 **+2 ms avec 24 véhicules visibles**. Décisions à prendre : D2 (suite) langage
+commun de la gamme ; D6 import, publication et
 rangement des fichiers sources.
 
 Outil de mesure (lecture seule) : `lune run tests/lune/tools/cabin-geometry.luau build/AutomotiveWorld.rbxlx`.
