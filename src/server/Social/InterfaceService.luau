@@ -12,8 +12,10 @@
       parcours, carte) et points PERSONNELS du demandeur seulement (ses
       propriétés, l'objectif de sa mission). Jamais ceux d'un autre joueur.
     - Téléphone : modèle provisoire original (pièces simples) dans la main du
-      personnage, bras levé par un réglage du Motor6D (aucune animation
-      externe) ; l'écran visible des autres reste GÉNÉRIQUE (heure) : le
+      personnage, bras levé par un réglage de l'épaule (aucune animation
+      externe) : décalage C0 du Motor6D (R6, R15 classique) ou, sur le
+      nouveau squelette R15 à contraintes d'animation (lot 0.9.2, QA-A10),
+      repère de l'attache côté torse ; l'écran visible des autres reste GÉNÉRIQUE (heure) : le
       contenu des applications n'est affiché que chez son utilisateur.
 ]]
 
@@ -46,7 +48,10 @@ local push: RemoteEvent
 local limiters: { [Player]: RateLimiter.Bucket } = {}
 local lastSave: { [Player]: number } = {}
 local publicPoints: { PointsOfInterest.Point } = {}
-local phones: { [Player]: { Model: Model, Shoulder: Motor6D?, Rest: CFrame? } } = {}
+-- Épaule levée : instance réglée (Motor6D ou Attachment), propriété (C0 ou CFrame) et
+-- valeur de repos rétablie au rangement.
+type RaisedShoulder = { Target: Instance, Property: string, Rest: CFrame }
+local phones: { [Player]: { Model: Model, Shoulder: RaisedShoulder? } } = {}
 
 local function rejected(key: string): any
     return { Status = "Rejected", Error = key }
@@ -161,8 +166,9 @@ local function putAway(player: Player)
         return
     end
     phones[player] = nil
-    if phone.Shoulder and phone.Rest and phone.Shoulder.Parent then
-        TweenService:Create(phone.Shoulder, TweenInfo.new(0.2), { C0 = phone.Rest }):Play()
+    local shoulder = phone.Shoulder
+    if shoulder and shoulder.Target.Parent then
+        TweenService:Create(shoulder.Target, TweenInfo.new(0.2), { [shoulder.Property] = shoulder.Rest }):Play()
     end
     phone.Model:Destroy()
 end
@@ -190,8 +196,13 @@ local function takeOut(player: Player): boolean
     weld.Part1 = body
     weld.Parent = body
     model.Parent = owner
-    -- Bras levé : rotation de l'épaule (R15 ou R6), revenue au rangement.
-    local shoulder: Motor6D? = nil
+    -- Bras levé : rotation de l'épaule de 60° vers l'avant, revenue au rangement.
+    -- R6 et R15 classique : décalage C0 du Motor6D (les animations agissent sur
+    -- Transform, pas sur C0). Nouveau squelette R15 (lot 0.9.2, QA-A10 : tâche VM
+    -- 20261104-021402, épaule « AnimationConstraint » sans Motor6D, bras resté le long
+    -- du corps) : même rotation appliquée au repère de l'attache côté torse
+    -- (Attachment0), que les animations ne modifient pas non plus.
+    local shoulder: RaisedShoulder? = nil
     local upper = owner:FindFirstChild("RightUpperArm")
     local candidate = if upper then upper:FindFirstChild("RightShoulder") else nil
     if candidate == nil then
@@ -199,13 +210,19 @@ local function takeOut(player: Player): boolean
         candidate = if torso then torso:FindFirstChild("Right Shoulder") else nil
     end
     if candidate and candidate:IsA("Motor6D") then
-        shoulder = candidate
+        shoulder = { Target = candidate :: Instance, Property = "C0", Rest = candidate.C0 }
+    elseif candidate and candidate:IsA("AnimationConstraint") and candidate.Attachment0 then
+        local attachment = candidate.Attachment0 :: Attachment
+        shoulder = { Target = attachment :: Instance, Property = "CFrame", Rest = attachment.CFrame }
     end
-    local rest = if shoulder then shoulder.C0 else nil
-    if shoulder and rest then
-        TweenService:Create(shoulder, TweenInfo.new(0.25), { C0 = rest * CFrame.Angles(math.rad(60), 0, 0) }):Play()
+    if shoulder then
+        TweenService:Create(
+            shoulder.Target,
+            TweenInfo.new(0.25),
+            { [shoulder.Property] = shoulder.Rest * CFrame.Angles(math.rad(60), 0, 0) }
+        ):Play()
     end
-    phones[player] = { Model = model, Shoulder = shoulder, Rest = rest }
+    phones[player] = { Model = model, Shoulder = shoulder }
     return true
 end
 
