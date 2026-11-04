@@ -123,10 +123,12 @@ function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instanc
             item.CFrame = root.CFrame * local_
             visualOnly(item)
             if string.find(string.lower(item.Name), kit.GlassPattern, 1, true) then
-                -- Import glTF : transparence non reprise (MODELES_TIERS.md §5) ; vitrage sombre, ≥ 0,3.
+                -- Import glTF : transparence non reprise (MODELES_TIERS.md §5). Réglage C choisi par le propriétaire
+                -- le 2026-11-05 (comparatif VM, tâche 20261105-003353) : verre clair, 0,6 ; l'ancien verre sombre
+                -- (28/32/38, 0,45) rendait les vitres latérales noires et l'avatar invisible de l'extérieur.
                 item.Material = Enum.Material.Glass
-                item.Color = Color3.fromRGB(28, 32, 38)
-                item.Transparency = 0.45
+                item.Color = Color3.fromRGB(120, 135, 145)
+                item.Transparency = 0.6
             end
             local wheel = wheelNames[item.Name]
             if wheel then
