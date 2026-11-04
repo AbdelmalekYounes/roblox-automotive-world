@@ -87,8 +87,15 @@ par `tests/lune/tools/vehicle-geometry.luau` (lecture seule).
 | Pièces | `COMETE_<rôle>_<matériau>` ; collections EXT, INT, ROUES |
 | Rendus | `vehicles/wk_comete/renders_720s/` : 3/4 avant et arrière, profil, face, arrière, dessus, habitacle, roue ; repères rouges aux centres de roues de la physique |
 
+**Décision du propriétaire (2026-11-04) : « Garder l'échelle »**.
+- L'échelle uniforme est conservée, le modèle n'est pas déformé.
+- À l'intégration, les roues visuelles du modèle s'afficheront à leur propre position, 3,5 à 4,7 cm plus à l'intérieur
+  que les points de contact de la physique, sans changer la physique.
+
+Côté du volant : **à gauche**. Rendus de l'habitacle sans la carrosserie, vus de dessus et depuis l'arrière (Blender,
+2026-11-04). C'est conforme au jeu, qui place le conducteur à x −1,61.
+
 Non fait, non vérifié :
-- côté du volant (le jeu place le conducteur à gauche) ;
 - sièges, attaches (`SeatDriver`, caméras, sorties), collisions ;
 - LOD ;
 - habitacle avec les avatars (VM) ;
