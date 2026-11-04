@@ -27,7 +27,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
-| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; **inspecté le 2026-11-04** (§1) ; préparation en attente de sa décision |
+| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; **préparé le 2026-11-04, à revoir** (§2) ; non intégré |
 
 ## Modèles examinés et refusés
 
@@ -68,3 +68,29 @@ Préparation proposée, **sur accord du propriétaire** :
 6. contrôles et captures pour revue.
 
 Aucun import Studio ni publication.
+
+## 2. Préparation de la McLaren 720s (2026-11-04, accord du propriétaire : « Oui, prépare »)
+
+Dépôt d'art : `vehicles/wk_comete/` (voir son README pour les commandes et le crédit). Géométrie cible relevée dans le jeu
+par `tests/lune/tools/vehicle-geometry.luau` (lecture seule).
+
+| Étape | Résultat |
+|---|---|
+| Logos et inscriptions | Objet `badges` supprimé. Textures nettoyées par `clean_720s_textures.py`, avec les originaux intacts hors dépôt. Dans l'atlas de carrosserie : 3 631 pixels modifiés (mots-symboles, « 720S », virgule, lettrage des étriers, logo des caches de moyeu). Dans la carte de normales : 10 027 pixels mis à plat. Textures d'intérieur inchangées (aucun logo identifiable à 512 px). Rendus contrôlés à l'œil |
+| Animations | 3 supprimées |
+| Orientation et échelle | Avant du modèle (−X) tourné vers l'avant du jeu. Échelle **uniforme** de 5,354 st par unité, soit × 1,499 si le fichier est en mètres, tirée de l'empattement du jeu (2,70 m) |
+| Roues | Essieux séparés en 4 roues (`COMETE_Pneu_*`, `COMETE_Jante_*`, pivot au moyeu) |
+| Écart des roues avec la physique | Longitudinal : 0 (calage). Hauteur des moyeux : avant 0, arrière +0,025 st. **Voies plus étroites que la physique** : avant ±2,98 st contre ±3,107 (0,126 st, 3,5 cm par côté), arrière ±2,98 contre ±3,143 (0,169 st, 4,7 cm par côté) |
+| Pneus | Rayon 1,19 st à l'avant et 1,217 st à l'arrière (pneus décalés du modèle), contre 1,214 st pour la physique. Point bas à y −1,478 pour un sol à −1,5 : 6 mm de jour |
+| Encombrement (hors rétroviseurs) | 16,44 × 7,01 × 4,31 st, contre 16,25 × 7,14 × 4,21 st pour la définition (+5 cm, −4 cm, +3 cm) |
+| Triangles | 6 907 : extérieur 4 179, intérieur 2 168, roues 560 |
+| Pièces | `COMETE_<rôle>_<matériau>` ; collections EXT, INT, ROUES |
+| Rendus | `vehicles/wk_comete/renders_720s/` : 3/4 avant et arrière, profil, face, arrière, dessus, habitacle, roue ; repères rouges aux centres de roues de la physique |
+
+Non fait, non vérifié :
+- côté du volant (le jeu place le conducteur à gauche) ;
+- sièges, attaches (`SeatDriver`, caméras, sorties), collisions ;
+- LOD ;
+- habitacle avec les avatars (VM) ;
+- import Studio ;
+- crédit affiché dans le jeu (`docs/CREDITS_ACTIFS.md`, à l'intégration).
