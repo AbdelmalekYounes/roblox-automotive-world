@@ -79,6 +79,9 @@ l'attente de la VM.
 | `224247` | `790388e` | Dev | `ui`, `metiers`, `ui_marche` | 262 / 2 376 ² | QA-F16 et QA-F18 vérifiés ; métiers 7 / 8 ; QA-A08 (2 372 erreurs « clamp ») |
 | `225749` | `da9cfa2` | Monde ouvert | `gps2` | 38 / 4 | Itinéraire de montagne calculé (QA-F20 vérifié dans le jeu) ; aucune arrivée (pilote immobilisé) |
 | `231150` | `9b0eebd` | **invalide** | 16 sessions Dev | (598 / 63) | **Tâche invalide** : deux dépôts dans la même seconde ont partagé ce dossier ; les sessions Dev ont tourné sur la place monde ouvert (zone d'essai absente). Défaut de l'outil hôte, corrigé (`10450e1`) ; résultats **non retenus** |
+| `20261104-001121` | `9b0eebd` | Dev | 16 sessions (non-régression) | **968 / 11** (+1 limite) | Voir §14 |
+| `20261104-011029` | `9b0eebd` | Dev | `multijoueur`, `latence` × 2 | 253 / 3 | QA-A09 répété |
+| `20261104-011801` | `855b93b` (lot 0.9) | Dev | `multijoueur`, `latence` × 2 | 252 / 4 | **A/B** : QA-A09 présent sur le code du lot 0.9 |
 
 ¹ Le « 0 échec » de `210055` contient **un faux succès du test** (`ui.marche.annonce_retiree_serveur`) : la lecture de
 l'état était refusée par le limiteur du serveur et passait pour « aucune annonce ». La capture 006 et le message du pied
@@ -271,5 +274,21 @@ sombre (jugement), focus de navigation laissé sur un onglet (ergonomie).
 - Hors Studio, 2026-11-03 23:01, commit `9b0eebd` : `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` —
   Rojo (deux places), Selene, StyLua, pilote Studio, **Lune 340 / 0**, carte déterministe, pytest 14, luau-lsp strict
   0 erreur.
-- VM, code final `9b0eebd` : sessions historiques et des lots 0.4 à 0.9.1 sur la place de développement, `monde`,
-  `perf`, `ui_monde`, `gps` sur le monde ouvert : résultats au §14 bis, complétés en fin de lot.
+- VM, code final `9b0eebd`, place de développement, **16 sessions** (`solo`, `multijoueur`, `latence`, `scenarios`,
+  `collision`, `collision_latence`, `lot02`, `lot04`, `lot05`, `lot06`, `lot08`, `ui`, `metiers`, `drift`, `social`,
+  `ui_marche`) — `20261104-001121` (2026-11-04 00:11–01:09) : **968 réussis, 11 échecs, 1 limite connue**
+  (référence du lot 0.9 : 649 / 3 / 1 sur 11 sessions). Les 11 échecs :
+
+  | Échec | Cause | Régression ? |
+  |---|---|---|
+  | `client.virage_droite` / `_gauche` (client 2, `latence`) | QA-A09 : reproduit **à l'identique sur le code du lot 0.9** (`20261104-011801`, `855b93b` : 2 sessions sur 4) ; répété sur le code final (`20261104-011029` : 2 sur 4) | **Non** |
+  | `scenario.propriete_reseau_sans_anomalie` | QA-A01, « réattribution (1) » (déjà au lot 0.9) | Non |
+  | `lot06.j1.pret_au_depart` | `RaceAlreadyLocked` : demande arrivée après le verrouillage (refus légitime, déjà au lot 0.9) | Non |
+  | `lot06.j1.entrainement_circuit`, `_rally` | Pilote du test calé 3 min sur le circuit (aucune valeur non finie relevée), puis rallye non rejoint (`RaceDriveToJoin`) | Non (pilote) |
+  | `ui.photo.ouverture_touche_O`, `ui.photo.app_photo_du_telephone` | Touche O jamais reçue dans Studio (limite) ; bouton du téléphone redessiné avant le clic (le mode photo s'ouvre ensuite par vrai clic) | Non |
+  | `metiers.Precision`, `metiers.Convoy`, `metiers.bilan_huit_metiers` | Délais du pilote (6 / 8 dans cette tâche) | Non (pilote) |
+
+  Aucune erreur d'exécution du jeu ; aucune valeur non finie (QA-A08) relevée. Tâche `20261103-231150` invalide (§4).
+- VM, code final `9b0eebd`, monde ouvert (`monde`, `perf`, `ui_monde`) : §14 bis. `gps` n'est pas rejoué : mesuré sur
+  `82731da` et `da9cfa2` ; depuis, seule la neutralisation QA-A08 touche la conduite (sans effet en l'absence de valeur
+  non finie).

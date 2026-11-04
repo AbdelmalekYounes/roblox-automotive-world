@@ -30,6 +30,7 @@ probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALI
 | QA-A06 | 0.1 | Démarrage | P3 | Une fois (`180955`), véhicules pas encore immobiles 4 s après le démarrage (1,04 st/s) | Non reproduit ensuite | **Ouverte**, non reproduite |
 | QA-A07 | 0.1 | Collisions | P3 | Variabilité du percuté conduit : un glissement de 9,06 st (`193233`) | Session `collision` | **Ouverte** |
 | QA-A08 | 0.2 | Simulation du véhicule | P1 | Valeur non finie (NaN) dans l'état d'une roue ou d'un contact : 2 372 erreurs « clamp » en 43 s (`TireModel.stopClamp`), simulation figée | `20261103-224247`, session `metiers` : véhicule personnel endommagé (trains avant), plaqué contre un obstacle, marche avant et arrière alternées. Une occurrence | **Ouverte (lot 0.9.1)** — effet neutralisé (`9b0eebd` : état remis à zéro, compté et annoncé ; test Lune) ; **cause première non établie** |
+| QA-A09 | 0.1 | Conduite à deux clients | P2 | Client 2 : essai de virage après la marche arrière raté (0,0° ou −106° à −148° en 2 s : véhicule encore en marche arrière ou immobile) | Sessions `multijoueur` et `latence`, client 2 seulement : 2 sur 4 (`20261104-001121`, `-011029`) avec le code du lot 0.9.1, **et 2 sur 4 avec le code du lot 0.9** (`20261104-011801`, `855b93b`) : **pas une régression**. Absent des campagnes du lot 0.9 | **Ouverte (lot 0.9.1)** — cause non établie (transition marche arrière → avant du test, ou état de la VM) |
 
 ### 1 bis. Défauts trouvés par la campagne du 2026-11-03 et corrigés
 
