@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-04, phase 1 de l'Aster (branche `feat/aster-phase1` ; QA-A17 à A20 ; rapport `docs/vehicle-3d/ASTER_PHASE1.md`). Mise à jour précédente : lot 0.9.2 (QA-A08 à A12, U02, U10 ; `docs/lot-0.9.2/RAPPORT_STABILISATION.md`).
+Dernière mise à jour : 2026-11-04, phase 1 de l'Aster (branche `feat/aster-phase1` ; QA-A17 à A22 ; rapport `docs/vehicle-3d/ASTER_PHASE1.md`). Mise à jour précédente : lot 0.9.2 (QA-A08 à A12, U02, U10 ; `docs/lot-0.9.2/RAPPORT_STABILISATION.md`).
 probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALIES_ET_CORRECTIONS.md` §4.
 
 ## 1. Anomalies ouvertes
@@ -40,8 +40,10 @@ probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALI
 | QA-A16 | AVATAR-01 | Sortie conducteur | P2 | Personnage retrouvé couché après la sortie (4 sur 40 : `wk_pixel`, `wk_dune`, surtout petites morphologies) ; recouvrement avec le véhicule (1 sur 40) | `20261104-111326`, vraie touche F | **Ouverte** — cause non établie |
 | QA-A17 | Aster phase 1 | Habitacles provisoires / corps humains | P3 | Avec le corps humain masculin (995), les pieds des grandes morphologies (M4, M7 ; M5 sur `wk_sentier`) dépassent du plancher de 0,01 à 0,24 st dans 6 carrosseries provisoires (`wk_atlas`, `wk_brio`, `wk_dune`, `wk_fil`, `wk_pixel`, `wk_sentier`) | `20261104-154409`, session `avatar` (comparé à `20261104-111326`) | **Ouverte** — carrosseries provisoires ; les modèles 3D suivront le gabarit (`docs/vehicle-3d/ASTER_PHASE1.md` §5.3) |
 | QA-A18 | Aster phase 1 | Sortie conducteur / corps humains | P2 | 10 sorties du conducteur en échec en plus avec le corps humain (`wk_brise`, `wk_dune`, `wk_pixel`) : personnage couché ou en recouvrement avec le véhicule | `20261104-154409` (comparé à `20261104-111326`), vraie touche F | **Ouverte** — même famille que QA-A15/A16, en attente de la décision du propriétaire |
-| QA-A19 | Aster phase 1 | Apparence / corps humains | P2 | Tête classique « bloc » du joueur conservée sur le corps réaliste (décision « corps seul »), couleurs du joueur conservées : rendu encore partiellement « semi-Lego » | Capture 001 de `20261104-154409` (compte de test) | **À arbitrer** — remplacer ou non les têtes classiques, harmoniser ou non la peau (`ASTER_PHASE1.md` §7) |
+| QA-A19 | Aster phase 1 | Apparence / corps humains | P2 | Tête classique « bloc » du joueur conservée sur le corps réaliste : rendu partiellement « semi-Lego » | Capture 001 de `20261104-154409` | **Corrigée** — décision du propriétaire « Remplacer têtes classiques » ; critère de forme (`AvatarPolicy.isClassicHeadShape`), contrôles réussis en `20261104-170413` ; couleurs de peau conservées, à arbitrer (`ASTER_PHASE1.md` §7) |
 | QA-A20 | Aster phase 1 | Téléphone en main | P3 | `telephone_bras_leve` en échec intermittent : bras de départ à 31–32° au lieu de 6° (M4/M7, puis M2/M5 ; aucun dans `20261104-145632`) | `20261104-151955`, `20261104-154409`, session `avatar` | **Ouverte** — cause non établie |
+| QA-A21 | Aster phase 1 | Habitacles provisoires / têtes réalistes | P3 | Tête réaliste (classique remplacée) au-dessus du dessous du pavillon dans `wk_dune` (M1, M3, M6, M8 : −0,01 à −0,25 st) et `wk_sentier` (M8 : −0,01 st), deux places | `20261104-170413`, session `avatar` (comparé à `20261104-154409`) | **Ouverte** — carrosseries provisoires (QA-A13) |
+| QA-A22 | Aster phase 1 | Tests VM / clavier | P3 | Touches de l'étalonnage non reçues dans la session `avatar` (toutes les marches en échec) ; mode « vk » donnant A, W, Y pour Q, Z, Y en `20261104-170413` (disposition AZERTY) | `20261104-162124`, `20261104-164354` ; non reproduit en `20261104-170413` | **Ouverte** — cause probable : disposition du clavier de la VM variable, non prouvée ; aucun réglage modifié |
 
 ### 1 bis. Défauts trouvés par la campagne du 2026-11-03 et corrigés
 

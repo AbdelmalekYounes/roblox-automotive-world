@@ -1,6 +1,6 @@
 # Aster — rapport de la phase 1 (pose assise, gabarit, avatars humains)
 
-Branche `feat/aster-phase1` (base `feat/vehicle-3d-references`), commits `8a4144a` → `df5c0b9`, 2026-11-04.
+Branche `feat/aster-phase1` (base `feat/vehicle-3d-references`), commits `8a4144a` → `3c3db30`, 2026-11-04.
 Dépôt d'art privé : `AbdelmalekYounes/roblox-automotive-world-art`, commits `37de4d8` et `80ede43`.
 
 Rapport factuel : seuls figurent les essais exécutés, avec leur commande et leur identifiant de tâche. Ce qui n'a
@@ -17,6 +17,7 @@ Aucun DataStore n'est utilisé. La physique des véhicules n'est pas modifiée.
 | Corps | Un corps masculin et un corps féminin, en ne modifiant que le corps : **995 Billie** (masculin) et **994 Jordan** (féminin) |
 | Attribution | **Choix du joueur** |
 | Portée | **Tous les joueurs** reçoivent l'un des deux corps |
+| Têtes classiques | « Remplacer têtes classiques » : une tête « bloc » prend la tête du paquet (visage changé) ; les autres têtes sont conservées |
 
 ## 2. Réalisé
 
@@ -61,7 +62,14 @@ Aucun DataStore n'est utilisé. La physique des véhicules n'est pas modifiée.
   - deux corps `Bodies.Masculin` (paquet 995) et `Bodies.Feminin` (paquet 994). Les identifiants des 5 pièces
     ont été relevés le 2026-11-04 sur `catalog.roblox.com/v1/bundles/{id}/details` : paquets gratuits,
     créateur Roblox ;
-  - remplacement limité au torse, aux bras et aux jambes : la **tête n'est jamais remplacée** ;
+  - remplacement du torse, des bras et des jambes ;
+  - **têtes classiques « bloc » remplacées** par la tête du paquet de la silhouette choisie (« Billie - Head »
+    11748988354, « Jordan - Head » 11740063830), ce qui change le visage. Toute autre tête est conservée.
+    Critère de forme mesuré par le moteur, sans liste d'identifiants : Roblox publie de nombreuses têtes « bloc »
+    comme têtes dynamiques, dont celle du compte de test (« Stevie Standard », type 79). Est classique une tête
+    dont la largeur et la profondeur valent au moins 0,90 fois la hauteur (`isClassicHeadShape`, mesures au
+    §5.4). La tête par défaut (identifiant 0) est toujours remplacée. La forme est mesurée une fois par tête,
+    à l'apparition, avant tout remplacement ;
   - corps par défaut `Masculin`, **provisoire** (§7).
 - `AvatarService` :
   - le corps est appliqué à chaque apparition, pour tous les joueurs. L'apparence initiale est mémorisée
@@ -87,7 +95,7 @@ l'Aster (dimensions Blender : 10 × 10 × 10 et 0,732 × 2,25 × 2,25). La proc�
 
 | Commande | Résultat |
 |---|---|
-| `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` (2026-11-04, après `df5c0b9`) | Rojo, Selene (0 erreur, 0 avertissement), pilote Studio, StyLua, **Lune 359/359**, carte, Rojo monde ouvert, pytest 14/14, **luau-lsp strict : 0 erreur** — toutes les étapes OK |
+| `scripts\verify.ps1 -RobloxTypes .tooling\globalTypes.d.luau` (2026-11-04, après `3c3db30`) | Rojo, Selene (0 erreur, 0 avertissement), pilote Studio, StyLua, **Lune 359/359**, carte, Rojo monde ouvert, pytest 14/14, **luau-lsp strict : 0 erreur** — toutes les étapes OK |
 | `tools\vm\host-run.ps1 -NoVmControl -Place Dev -Sessions <sessions> -GuiInput …` | Passages VM du §4 |
 | `lune run tests/lune/tools/aster-template.luau build/AutomotiveWorld.rbxlx <sortie> <params.json>` | Gabarit final : 23 blocs, assise −0,04 st, pavillon 4,56 st, 1,83 m hors tout |
 | `blender --background --factory-startup --python tools/blender/setup_aster_scene.py` (Blender 4.5.9 LTS) | `AW_BLENDER_OK`, témoins 10 × 10 × 10 et 0,732 × 2,25 × 2,25 |
@@ -102,10 +110,18 @@ l'Aster (dimensions Blender : 10 × 10 × 10 et 0,732 × 2,25 × 2,25). La proc�
 | `20261104-145632` | `284ce4b` | avatar, aster | 301 / 130 | Choix du corps validé, corps par défaut non appliqué (§6.2) ; repère corrigé |
 | `20261104-151955` | `316e462` | avatar, aster | 296 / 137 | **Aster : tous les contrôles réussis** ; avatar : préparation bloquée (§6.2) |
 | `20261104-154409` | `df5c0b9` | avatar | 273 / 130 | **Corps humains : tous les contrôles réussis** |
+| `20261104-161530` | `9cfc493` | aster | 43 / 0 | Forme de 14 têtes mesurée (§5.4) |
+| `20261104-162124` | `83cb6de` | avatar, aster | 297 / 148 | Têtes classiques remplacées (contrôles réussis) ; Aster : vue au-dessus du volant −0,03 st pour H5 ; clavier non étalonné dans la session `avatar` (§5.3) |
+| `20261104-164354` | `83cb6de` | avatar | 256 / 145 | Même défaut de clavier ; contrôles des têtes réussis |
+| `20261104-170413` | `3c3db30` | avatar | 273 / 130 | **Corps et têtes : tous les contrôles réussis** ; clavier étalonné (diagnostic) |
 
 ## 5. Résultats
 
-### 5.1 Gabarit de l'Aster — tâche `20261104-151955` (commit `316e462`, paramètres finaux)
+### 5.1 Gabarit de l'Aster — paramètres finaux
+
+Deux passages : `20261104-151955` (commit `316e462`) avec la tête classique du compte de test, puis
+`20261104-162124` (commit `83cb6de`) avec la tête remplacée par celle du paquet, conformément à la règle du §2.3.
+Le tableau donne le second passage, le premier entre parenthèses quand il diffère.
 
 Les mesures sont faites côté client, dans le repère du gabarit. Il y a 10 morphologies : H1 à H7 sur le corps
 masculin, et F1, F2, F4 sur le corps féminin (mêmes échelles que H1, H2 et H4). Chacune est mesurée sur les deux
@@ -113,26 +129,34 @@ places et dans les deux poses, soit 40 mesures sur 40.
 
 | Pose, place | Tête au-dessus de l'assise | Marge corps–pavillon | Marge latérale | Chevauchement des jambes | Mains–jante | Yeux au-dessus du volant |
 |---|---|---|---|---|---|---|
-| Standard, conducteur | 3,01 à 3,68 st | 0,92 à 1,59 | 0,21 à 0,74 | 0 | — | — |
-| Standard, passager | 3,01 à 3,68 | 0,92 à 1,59 | 0,21 à 0,74 | 0 | — | — |
-| **Jeu, conducteur** | 2,62 à 3,29 | 1,31 à 1,98 | 0,41 à 0,74 | 0 | **0,15 à 0,34 st** (seuil 0,35) | **0,01 à 0,67 st** |
-| Jeu, passager | 2,62 à 3,29 | 1,31 à 1,98 | 0,21 à 0,74 | 0 | — | — |
+| Standard, conducteur | 2,99 à 3,57 st (3,01 à 3,68) | 1,03 à 1,61 (0,92 à 1,59) | 0,21 à 0,75 | 0 | — | — |
+| **Jeu, conducteur** | 2,60 à 3,18 (2,62 à 3,29) | 1,42 à 2,00 (1,31 à 1,98) | 0,41 à 0,86 | 0 | **0,15 à 0,34 st** (seuil 0,35) | **−0,03 à 0,58 st** (0,01 à 0,67) |
 
-- Tous les contrôles `aster.*` sont réussis : tête sous le pavillon, bras dans l'habitacle, jambes libres, mains
-  sur la jante, vue au-dessus du volant.
-- **Accessoires** : avec les cheveux, la marge la plus faible est de 0,90 st en pose du jeu et de 0,57 st en pose
-  standard. Seul le chapeau haut d'essai (H6, volontairement extrême) dépasse, de −0,91 st en pose du jeu.
-- La pose du jeu abaisse la tête de 0,39 st par rapport à la pose standard.
-- **La vue au-dessus du volant n'a aucune marge** pour la plus petite morphologie (H5 : 0,01 st). Un volant fixe
-  unique ne peut satisfaire à la fois les mains des grands avatars et la vue des petits.
+Passager : mêmes hauteurs et marges, marge latérale de 0,21 st au moins.
 
-### 5.2 Corps humains — tâche `20261104-154409` (commit `df5c0b9`)
+- Second passage : 17 contrôles `aster.*` réussis sur 18. **Échec : vue au-dessus du volant, H5 −0,03 st.** Tous
+  les contrôles étaient réussis au premier passage.
+- **Accessoires** : en pose du jeu, les cheveux montent au plus à 3,39 st au-dessus de l'assise (marge 1,21 st au
+  moins) ; en pose standard, 3,76 st (marge 0,84 st). Seul le chapeau haut d'essai (H6, volontairement extrême)
+  dépasse.
+- La pose du jeu abaisse la tête d'environ 0,4 st par rapport à la pose standard.
+- **Limite d'un volant fixe.** Les yeux sont estimés au centre de la tête + 0,15 st. Recalculé sur ces mesures,
+  regagner 0,05 st de vue pour H5 éloigne les mains de 0,40 st de la jante, au-delà du seuil de 0,35 st. Un volant
+  fixe unique ne peut satisfaire à la fois les mains des grands avatars et la vue des petits. Volant et seuils sont
+  laissés tels quels ; voir §7.4.
+- Le repère `CameraCockpit` (d'après le premier passage) reste à moins de 0,1 st du centre de tête de H3 mesuré au
+  second passage (−1,40 ; 2,14 ; 3,06).
+
+### 5.2 Corps et têtes — tâche `20261104-170413` (commit `3c3db30`)
+
+Les mêmes contrôles de corps étaient déjà réussis dans la tâche `20261104-154409`, avant la règle des têtes.
 
 | Contrôle | Détail mesuré |
 |---|---|
 | `avatar.corps.defaut_applique` ✅ | Attribut `Masculin` ; torse 11748986529 |
+| `avatar.corps.tete_classique_remplacee` ✅ | Tête du joueur 10638267973, classique ; portée 11748988354 (Billie) |
 | `avatar.corps.choix_feminin_applique` ✅ | Ok ; torse 11740060397 |
-| `avatar.corps.tete_et_vetements_conserves` ✅ | Tête 10638267973 → 10638267973 ; haut 144076358 → 144076358 |
+| `avatar.corps.tete_selon_forme_vetements_conserves` ✅ | Tête → 11740063830 (Jordan) ; haut 144076358 → 144076358 |
 | `avatar.corps.choix_memorise_session` ✅ | |
 | `avatar.corps.corps_inconnu_refuse` ✅ | `AvatarBodyUnknown` |
 | `avatar.corps.retour_masculin` ✅ | Ok |
@@ -160,7 +184,34 @@ Comparaison des contrôles en échec : tâche `20261104-154409` (corps masculin)
     `20261104-151955`, aucun dans la tâche `20261104-145632`. Le bras part parfois de 31–32° au lieu de 6°.
     La cause n'est pas établie.
 
-Ces échecs sont inscrits au registre QA (QA-A17 à A20).
+Avec les têtes remplacées (tâche `20261104-170413` contre `20261104-154409`) :
+
+- le nombre d'échecs est identique (130) ;
+- **nouvel échec stable** : la tête réaliste, plus haute, touche le pavillon dans `wk_dune` (M1, M3, M6, M8 :
+  −0,01 à −0,25 st) et `wk_sentier` (M8 : −0,01 st), sur les deux places ;
+- les sorties du conducteur et le bras du téléphone continuent de varier d'un passage à l'autre.
+
+**Clavier de la VM.** Dans les tâches `20261104-162124` et `20261104-164354`, les touches de l'étalonnage n'ont
+pas été reçues dans la session `avatar`, d'où l'échec de toutes les marches. Dans le même passage, la session
+`aster` était étalonnée. La tâche `20261104-170413` (diagnostic ajouté) est étalonnée : aucun champ de texte ni
+aucune sélection n'avait le focus. Elle montre que le mode « vk » y produisait A, W, Y pour Q, Z, Y, ce qui
+indique une disposition AZERTY ; le mode « scan » a été retenu. **Cause probable : disposition du clavier de la VM
+variable d'un passage à l'autre. Non prouvée** pour les deux passages en échec, dont le détail n'était pas
+journalisé. Aucun réglage de la VM n'a été modifié.
+
+Ces échecs sont inscrits au registre QA (QA-A17 à A22).
+
+### 5.4 Forme des têtes — tâche `20261104-161530` (commit `9cfc493`)
+
+Pièce `Head` mesurée par le moteur (échelle de tête 1) :
+
+| Têtes | Taille (studs) | Largeur / hauteur | Profondeur / hauteur |
+|---|---|---|---|
+| Défaut (0) | 1,127 × 1,133 × 1,128 | 0,994 | 0,996 |
+| 5 classiques Roblox (Stevie Standard, Freckles, Squigglin Out, Err..., Check It) | 1,198 × 1,202 × 1,199 à 1,207 | 0,996 | 0,997 à 1,004 |
+| 8 réalistes des paquets 988 à 995 | 1,268 à 1,282 × 1,799 à 1,943 × 1,383 à 1,490 | 0,653 à 0,711 | 0,737 à 0,802 |
+
+Seuil retenu : 0,90 sur les deux rapports.
 
 ## 6. Défauts trouvés et corrigés pendant la phase
 
@@ -194,22 +245,20 @@ Deux autres défauts corrigés :
 ## 7. Points à arbitrer par le propriétaire
 
 1. **Corps par défaut avant le choix du joueur** : `Masculin`, à titre provisoire.
-2. **Tête classique sur corps réaliste.** La capture 001 de la tâche `20261104-154409` montre le compte de test :
-   tête « bloc » classique avec son visage, sur le corps 995, et couleurs du joueur conservées (bras gris, jambes
-   bleues). Conformément à la décision « corps seul », la tête n'est pas remplacée. Le rendu reste donc en partie
-   « semi-Lego » pour les joueurs qui ont une tête classique. Possibilités : ne rien changer ; remplacer seulement
-   les têtes classiques par la tête du paquet, ce qui change le visage ; ou harmoniser les couleurs de peau.
-   **Décision nécessaire, rien n'a été fait.**
+2. **Couleurs de peau.** Les têtes classiques sont désormais remplacées, sur décision du propriétaire. Les couleurs
+   du joueur restent conservées : sur le compte de test, bras gris et jambes bleues (capture 001 de la tâche
+   `20261104-170413`). Faut-il les harmoniser ? **Non fait.** Les têtes stylisées non cubiques (animaux, objets…)
+   sont conservées par le critère de forme.
 3. **D7, largeur de l'habitacle.** Avec les deux corps retenus, la marge latérale est **positive** sur les deux
    places : au moins 0,21 st dans la largeur physique de 1,78 m. Le problème mesuré au passage 3 avec le corps du
    compte de test (épaules au-delà de la portière) ne se pose plus. Il reste à confirmer qu'aucune décision D7
    n'est nécessaire.
-4. **Hauteur sous pavillon (proposition).** Les cheveux montent au plus à 3,70 st au-dessus de l'assise en pose du
-   jeu, et à 4,03 st en pose standard. Les 4,60 st du gabarit pourraient descendre à environ 4,20 st, ce qui
-   rapprocherait la maquette (1,83 m hors tout) de la silhouette visée. **Non fait.**
-5. **Pose adaptée à la taille (proposition).** Placer les mains sur la jante selon la taille de l'avatar, en
+4. **Pose adaptée à la taille (proposition).** Placer les mains sur la jante selon la taille de l'avatar, en
    corrigeant l'épaule et le coude, rendrait la vue et la prise du volant valables pour toutes les morphologies.
-   Aujourd'hui, la marge de vue est nulle pour la plus petite. **Non fait.**
+   Aujourd'hui, la plus petite voit 0,03 st sous le haut du volant (§5.1). **Non fait.**
+5. **Hauteur sous pavillon (proposition).** Avec les têtes remplacées, les cheveux montent au plus à 3,39 st
+   au-dessus de l'assise en pose du jeu, et à 3,76 st en pose standard. Les 4,60 st du gabarit pourraient descendre
+   à environ 4,00 st, ce qui rapprocherait la maquette (1,83 m hors tout) de la silhouette visée. **Non fait.**
 6. **QA-A15** (sortie du passager) reste en attente, à la demande du propriétaire (« Attends »).
 
 ## 8. Non vérifié
@@ -218,10 +267,12 @@ Deux autres défauts corrigés :
   aucun essai, VM ou humain. Le panneau est seulement vu affiché.
 - **Changement de corps en jeu** : non vérifié avec un vrai joueur, ni à deux joueurs (réplication vue par un autre
   client).
-- **Rendu des corps** : seul le compte de test est vu, en captures. Aucun essai avec d'autres avatars (têtes
-  dynamiques, vêtements 3D superposés) ni sur appareil réel.
+- **Rendu des corps et des têtes** : seul le compte de test est vu, en captures. Aucun essai avec d'autres avatars
+  (autres têtes dynamiques réalistes ou stylisées, vêtements 3D superposés) ni sur appareil réel. Le critère de
+  forme n'est mesuré que sur les 14 têtes du §5.4.
 - **Étalonnage Blender → Studio** : import non réalisé ; le propriétaire doit relever `Size` (§2.4).
 - **Esquisses « Trait »** du dépôt d'art : non mises à jour selon le gabarit final.
 - **Pose du jeu sur les véhicules réels** : non activée, puisqu'aucun siège ne porte `AWSeatPose`.
 - **Bras du téléphone** : échec intermittent, cause non établie (QA-A20).
+- **Clavier de la VM** : cause des deux échecs d'étalonnage non prouvée (QA-A22).
 - **Performances** : rien n'a été mesuré dans cette phase.
