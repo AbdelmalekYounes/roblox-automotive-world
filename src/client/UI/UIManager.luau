@@ -19,6 +19,7 @@
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -59,7 +60,18 @@ local function refreshCapture()
     UIState.setCaptured(UIStack.capturesDriving(stack) and UIState.mode() ~= "Moving")
 end
 
+-- Lot 0.9.2 : focus de navigation seulement à la manette (règle du parcours d'arrivée,
+-- lot 0.8). Au clavier et à la souris, le contour restait sur l'onglet d'ouverture et la
+-- touche Entrée l'activait (onglet changé sans demande : essai VM du lot 0.9.1).
+local function gamepadActive(): boolean
+    return string.sub(UserInputService:GetLastInputType().Name, 1, 7) == "Gamepad"
+end
+
 local function focusOf(screen: Screen)
+    if not gamepadActive() then
+        GuiService.SelectedObject = nil
+        return
+    end
     local focus = screen.Focus
     local target = if focus then focus() else nil
     GuiService.SelectedObject = target
@@ -203,6 +215,14 @@ function UIManager.start()
         return
     end
     started = true
+    -- Passage à la manette pendant qu'une fenêtre est ouverte (à l'arrêt) : focus posé.
+    UserInputService.LastInputTypeChanged:Connect(function()
+        local top = UIStack.top(stack)
+        local screen = if top then screens[top.Name] else nil
+        if screen and gamepadActive() and GuiService.SelectedObject == nil and UIState.mode() ~= "Moving" then
+            focusOf(screen)
+        end
+    end)
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         timer += dt

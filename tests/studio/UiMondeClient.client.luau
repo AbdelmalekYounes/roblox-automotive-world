@@ -268,6 +268,20 @@ local function main()
         end
         return if motor and motor:IsA("Motor6D") then motor.C0 else nil
     end
+    -- Lot 0.9.2 (QA-A10) : nature des articulations de l'avatar (Motor6D ou contraintes
+    -- d'animation du nouveau squelette R15) ; seule la première épaule droite est détaillée.
+    local joints = {}
+    for _, item in character():GetDescendants() do
+        if item:IsA("Motor6D") or item:IsA("AnimationConstraint") or item:IsA("BallSocketConstraint") then
+            if string.find(item.Name, "Shoulder", 1, true) or #joints < 3 then
+                table.insert(
+                    joints,
+                    item.ClassName .. ":" .. item.Name .. "@" .. tostring(item.Parent and item.Parent.Name)
+                )
+            end
+        end
+    end
+    record("ui_monde.info_articulations_avatar", true, table.concat(joints, ", "))
     local before = shoulderC0()
     Gui.key("T")
     local phone = waitFor(function()

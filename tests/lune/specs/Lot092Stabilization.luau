@@ -88,6 +88,19 @@ return function(T: any, H: any)
         T.truthy((ProfileSchema.validate(profile)), "profil valide")
     end)
 
+    T.test("Interfaces : focus de navigation posé seulement à la manette", function()
+        local node = H.game()
+        for segment in string.gmatch("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.UIManager", "[^%.]+") do
+            node = node:FindFirstChild(segment)
+        end
+        local source = node.Source
+        local focusAt = string.find(source, "local function focusOf", 1, true)
+        T.truthy(focusAt ~= nil, "focusOf présent")
+        local body = string.sub(source, focusAt :: number, (focusAt :: number) + 400)
+        T.truthy(string.find(body, "gamepadActive()", 1, true) ~= nil, "focus conditionné à la manette")
+        T.truthy(string.find(source, "LastInputTypeChanged", 1, true) ~= nil, "focus posé au passage à la manette")
+    end)
+
     T.test("QA-A08 : borne du convertisseur inactive en conduite normale (physique inchangée)", function()
         local checked = 0
         for _, definition in Definitions.all() do
