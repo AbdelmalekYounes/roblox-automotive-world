@@ -467,14 +467,33 @@ end
 -- Élan à 40 km/h en tenant la ligne du plot (QA-A09, lot 0.9.2) : sans correction, une
 -- dérive d'environ 2 m menait le véhicule du joueur 2 sur le poteau du portique d'arrivée
 -- du drag d'essai (x = 7,6 m, z = −204 m ; trajectoire tracée, tâche 20261104-020328).
+-- Tâche 20261104-031015 : ligne tenue (écart 0,05 m), mais le virage, commencé juste avant
+-- le portique, menait le joueur 1 sur le poteau GAUCHE (x = −7,6 m). Le virage commence donc
+-- 8 m après les poteaux d'installation (« …Poteau ») situés devant, à moins de 15 m de la ligne.
+local clearZ: number? = nil
+for _, part in Workspace:GetDescendants() do
+    if part:IsA("BasePart") and string.sub(part.Name, -6) == "Poteau" then
+        local lateralM = math.abs(part.Position.X - root.Position.X) * METERS_PER_STUD
+        local aheadM = (root.Position.Z - part.Position.Z) * METERS_PER_STUD
+        if lateralM < 15 and aheadM > 0 and aheadM < 80 then
+            local beyond = part.Position.Z - 8 / METERS_PER_STUD
+            clearZ = if clearZ then math.min(clearZ :: number, beyond) else beyond
+        end
+    end
+end
 local elanStart = os.clock()
-while snapshot().SpeedKmh < 40 and os.clock() - elanStart < 10 do
+while
+    (snapshot().SpeedKmh < 40 or (clearZ ~= nil and root.Position.Z > clearZ :: number))
+    and os.clock() - elanStart < 14
+do
     local lateral = (laneX - root.Position.X) * METERS_PER_STUD
     local hold = math.clamp(lateral * 0.15 - heading() * 1.2, -0.35, 0.35)
-    setCommand(0.6, 0, hold)
+    -- Vitesse maintenue vers 40 km/h jusqu'au-delà des poteaux (virage mesuré comme avant).
+    setCommand(if snapshot().SpeedKmh < 40 then 0.6 else 0.1, 0, hold)
     task.wait(0.05)
 end
 measures.elan_ecart_ligne_m = math.floor((root.Position.X - laneX) * METERS_PER_STUD * 100) / 100
+measures.elan_poteaux_depasses = if clearZ == nil then -1 elseif root.Position.Z <= clearZ :: number then 1 else 0
 local h0 = heading()
 setCommand(0.3, 0, 0.6)
 task.wait(2)
