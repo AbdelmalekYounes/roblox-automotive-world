@@ -32,6 +32,7 @@ export type Params = {
     SeatX: number, -- demi-écart des sièges
     Wheel: { Center: { number }, Radius: number, TiltDeg: number }?, -- volant (mesuré en VM)
     PedalZ: number?, -- pédalier (mesuré en VM)
+    DashZ: number?, -- planche de bord (centre), devant le volant
 }
 
 AsterTemplate.Defaults = table.freeze({
@@ -125,7 +126,7 @@ function AsterTemplate.build(
     )
     add(box("Hayon", "vitrage", { 0, (belt + roofUnder) / 2, roofEndZ }, { W - 0.5, roofUnder - belt, 0.1 }))
     -- Habitacle : planche de bord au droit des genoux, sièges.
-    local dashZ = if p.PedalZ then p.PedalZ + 1.1 else seatZ - 3.4
+    local dashZ = p.DashZ or (if p.PedalZ then p.PedalZ + 1.1 else seatZ - 3.4)
     add(box("PlancheDeBord", "habitacle", { 0, belt - 0.35, dashZ }, { W - 0.6, 0.7, 1.0 }))
     for _, side in { -1, 1 } do
         local seatName = if side < 0 then "SiegeConducteur" else "SiegePassager"

@@ -609,7 +609,7 @@ if session == "aster" then
     -- Synthèse compacte : pose du jeu contre pose standard, par place (détail dans @@AWASTER@@).
     for _, pose in { "standard", "jeu" } do
         for _, seatName in { "SiegeConducteur", "SiegePassager" } do
-            local roofFail, sideFail, legFail, n = {}, {}, {}, 0
+            local roofFail, sideFail, legFail, rimFail, n = {}, {}, {}, {}, 0
             for _, row in asterRows do
                 if row.Pose == pose and row.Seat == seatName then
                     n += 1
@@ -622,13 +622,19 @@ if session == "aster" then
                     if row.InteriorOverlap > 0.1 then
                         table.insert(legFail, string.format("%s %.2f", row.Morph, row.InteriorOverlap))
                     end
+                    if row.HandsToRim and row.HandsToRim > 0.35 then
+                        table.insert(rimFail, string.format("%s %.2f", row.Morph, row.HandsToRim))
+                    end
                 end
             end
             local prefix = string.format("aster.%s.%s.", pose, seatName)
-            record(prefix .. "mesures", n == 8, n .. " morphologie(s)")
+            record(prefix .. "mesures", n == 7, n .. " morphologie(s)")
             record(prefix .. "tete_sous_le_pavillon", #roofFail == 0, table.concat(roofFail, " / "))
             record(prefix .. "bras_dans_l_habitacle", #sideFail == 0, table.concat(sideFail, " / "))
             record(prefix .. "jambes_libres", #legFail == 0, table.concat(legFail, " / "))
+            if pose == "jeu" and seatName == "SiegeConducteur" then
+                record(prefix .. "mains_sur_la_jante", #rimFail == 0, table.concat(rimFail, " / "))
+            end
         end
     end
 end

@@ -22,7 +22,8 @@
       "$properties": {
         "GameSettingsAvatar": "R15",
         "LoadCharacterAppearance": true,
-        "AllowCustomAnimations": true
+        "AllowCustomAnimations": true,
+        "GameSettingsScaleRangeBodyType": { "NumberRange": [1, 1] }
       },
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",

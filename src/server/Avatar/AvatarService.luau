@@ -48,6 +48,7 @@ type State = {
 local states: { [Player]: State } = {}
 local limiters: { [Player]: RateLimiter.Bucket } = {}
 local nonR15 = 0
+local enforceHuman: (Player, Humanoid) -> ()
 local started = false
 
 local function stateOf(player: Player): State
@@ -339,6 +340,59 @@ end
 
 -- ======================== Cycle de vie ========================
 
+-- Avatars humains uniquement (décision du propriétaire, 2026-11-04) : type de corps ramené aux
+-- proportions humaines ; corps « en blocs » remplacé par le corps humain choisi (s'il est
+-- configuré). Visage, peau, vêtements et accessoires du joueur sont conservés. Un échec du
+-- moteur laisse l'apparence d'origine (journalisé).
+local humanized = 0
+function enforceHuman(player: Player, humanoid: Humanoid)
+    if not AvatarPolicy.HumanOnly then
+        return
+    end
+    local description = humanoid:GetAppliedDescription()
+    local changed = false
+    local scales: { [string]: string } = {
+        BodyType = "BodyTypeScale",
+        Height = "HeightScale",
+        Width = "WidthScale",
+        Head = "HeadScale",
+        Proportion = "ProportionScale",
+    }
+    for name, field in scales do
+        local value = (description :: any)[field]
+        local clamped = AvatarPolicy.clampScale(name, value)
+        if clamped ~= value then
+            (description :: any)[field] = clamped
+            changed = true
+        end
+    end
+    local parts: { [string]: number } = {}
+    for _, field in AvatarPolicy.BodyPartFields do
+        parts[field] = (description :: any)[field]
+    end
+    if AvatarPolicy.isBlockyBody(parts) and next(AvatarPolicy.HumanBody) ~= nil then
+        for field, assetId in AvatarPolicy.HumanBody do
+            (description :: any)[field] = assetId
+        end
+        changed = true
+    end
+    if not changed then
+        return
+    end
+    local ok, err = pcall(function()
+        humanoid:ApplyDescriptionAsync(description)
+    end)
+    if ok then
+        humanized += 1
+    else
+        warn(string.format("[AutomotiveWorld] Avatar humain non appliqué à %s : %s", player.Name, tostring(err)))
+    end
+end
+
+function AvatarService.humanizedCount(): number
+    return humanized
+end
+
 local function onCharacter(player: Player, character: Model)
     local humanoid = character:WaitForChild("Humanoid", 10)
     if humanoid == nil or not humanoid:IsA("Humanoid") then
@@ -362,6 +416,7 @@ local function onCharacter(player: Player, character: Model)
     if player.Character ~= character or humanoid.Parent == nil then
         return
     end
+    enforceHuman(player, humanoid)
     local state = stateOf(player)
     state.Initial = lookOf(humanoid:GetAppliedDescription())
     state.PreviewToken += 1

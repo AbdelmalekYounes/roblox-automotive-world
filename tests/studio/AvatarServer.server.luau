@@ -645,9 +645,97 @@ end
 -- Second passage (2026-11-04) : volant au droit de l'axe du siège, à la hauteur et à la
 -- distance visées pour la pose v2 ; pédalier au bout des pieds de la référence (tâche
 -- 20261104-134156 : pieds à z = −1,79 st, mains de la pose v1 à z ≈ 0).
+-- Troisième passage (avatars humains uniquement, décision du propriétaire du 2026-11-04) :
+-- mains des corps humains mesurées (tâche 20261104-134756, pose v2) à ±1,05 st de l'axe,
+-- y 2,5 à 3,1 st, z −0,7 à −0,9 st → volant de 0,8 st de rayon centré entre les corps
+-- humains grand et élancé ; planche de bord avancée ; pavillon à 4,60 st de l'assise.
 local ASTER_PARAMS: { [string]: any }? = {
-    Wheel = { Center = { -1.4, 2.16, 0.1 }, Radius = 0.55, TiltDeg = 20 },
-    PedalZ = -1.9,
+    HeadroomSt = 4.60,
+    Wheel = { Center = { -1.38, 2.8, -0.78 }, Radius = 0.8, TiltDeg = 20 },
+    PedalZ = -2.6,
+    DashZ = -1.75,
+}
+
+-- Morphologies HUMAINES (type de corps imposé à 1) : la session « aster » ne mesure plus les
+-- corps aux proportions « en blocs », exclus par la décision du propriétaire.
+local HUMAN_MORPHS: { Morph } = {
+    {
+        Id = "H1",
+        Label = "humain grand",
+        Height = 1.05,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0,
+        Props = {},
+    },
+    {
+        Id = "H2",
+        Label = "humain petit et mince",
+        Height = 0.9,
+        Width = 0.7,
+        Depth = 0.7,
+        Head = 0.95,
+        BodyType = 1,
+        Proportion = 0,
+        Props = {},
+    },
+    {
+        Id = "H3",
+        Label = "humain moyen",
+        Height = 1,
+        Width = 0.85,
+        Depth = 0.85,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0.5,
+        Props = {},
+    },
+    {
+        Id = "H4",
+        Label = "humain grand élancé",
+        Height = 1.05,
+        Width = 0.7,
+        Depth = 0.7,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 1,
+        Props = {},
+    },
+    {
+        Id = "H5",
+        Label = "humain petit et large",
+        Height = 0.9,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 1,
+        Props = {},
+    },
+    {
+        Id = "H6",
+        Label = "humain grand + chapeau haut d'essai",
+        Height = 1.05,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0,
+        Props = { TALL_HAT },
+    },
+    {
+        Id = "H7",
+        Label = "humain moyen + accessoires volumineux d'essai",
+        Height = 1,
+        Width = 0.85,
+        Depth = 0.85,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0.5,
+        Props = BULKY,
+    },
 }
 
 if session == "aster" then
@@ -743,7 +831,7 @@ if session == "aster" then
     record("aster.serveur.client_pret", calibrated)
     local strip0 = CFrame.new(40, 4, 0)
     local measured, expected = 0, 0
-    for _, morph in MORPHS do
+    for _, morph in HUMAN_MORPHS do
         standUp(player)
         local character0 = characterOf(player)
         if character0 then
@@ -772,7 +860,7 @@ if session == "aster" then
                 if ask(player, "astermeasure:" .. key, { Morph = morph.Id, Pose = pose, Seat = seatName }, 10) then
                     measured += 1
                 end
-                if (morph.Id == "M1" or morph.Id == "M4" or morph.Id == "M7") and seatName == "SiegeConducteur" then
+                if (morph.Id == "H1" or morph.Id == "H4" or morph.Id == "H6") and seatName == "SiegeConducteur" then
                     shot(player, string.format("aster_%s_%s_profil", morph.Id, pose), sideView(model, seat, -1), {
                         morphologie = morph.Label,
                         pose = pose,
