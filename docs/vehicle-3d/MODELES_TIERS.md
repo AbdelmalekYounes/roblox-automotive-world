@@ -27,7 +27,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
-| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; **attaches, collisions et LOD faits le 2026-11-04, à revoir** (§3) ; non intégré |
+| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; **LOD0 exporté pour un premier import Studio par le propriétaire** (§4) ; non intégré |
 
 ## Modèles examinés et refusés
 
@@ -171,3 +171,40 @@ Non vérifié :
 - bascule des LOD ;
 - import Studio (témoin d'orientation v2) ;
 - performances D5.
+
+## 4. Export du LOD0 pour un premier import dans Studio (2026-11-04, demande du propriétaire : « importons la comète »)
+
+Règle d'étalonnage (dépôt d'art, `calibration/README.md`) : glTF, demi-tour de 180° autour de la verticale avant
+l'export, import avec les réglages par défaut. Outil : `tools/blender/export_roblox_glb.py`. La scène n'est pas modifiée.
+
+```
+blender --background --factory-startup --disable-autoexec vehicles/wk_comete/blend/wk_comete_720s.blend --python tools/blender/export_roblox_glb.py -- vehicles/wk_comete/export/wk_comete_720s_lod0.glb EXT INT ROUES
+```
+
+Fichier produit : `vehicles/wk_comete/export/wk_comete_720s_lod0.glb`, soit 1,25 Mo, 28 objets et 6 907 triangles.
+Les valeurs attendues sont dans `wk_comete_720s_lod0.json`.
+
+Contrôle par relecture dans Blender, après le demi-tour de l'importeur :
+- les 28 objets sont présents ;
+- écart maximal des centres avec le repère du jeu : 0,0005 st ;
+- aucune animation, caméra ni script ;
+- les 5 textures embarquées sont identiques aux textures nettoyées.
+
+**Attendu dans Studio**, en positions relatives : l'emplacement d'insertion décale tout, seules les différences comptent.
+
+| Mesure | Attendu |
+|---|---|
+| Size de `COMETE_Caisse_body` | 6,984 ; 2,994 ; 16,44 |
+| `COMETE_Pneu_AvG` − `COMETE_Pneu_ArG` | (−0,005 ; −0,025 ; **−9,643**) : roue avant vers −Z, l'avant du jeu |
+| `COMETE_Pneu_AvD` − `COMETE_Pneu_AvG` | (**+5,962** ; 0 ; 0) : roue droite vers +X |
+| `COMETE_Retroviseurs_body` − `COMETE_Caisse_body` (centres) | (0 ; +1,053 ; −2,360) |
+
+**Point de décision du propriétaire.** Avec « Importer sur Roblox » coché, les maillages sont envoyés sur son compte, ce
+qui revient à une publication d'actifs ; le crédit CC BY s'appliquera dès que le modèle sera partagé. L'assistant ne
+publie rien.
+
+Non fait :
+- LOD1 et LOD2 non exportés ;
+- attaches et collisions non exportées : ce sont des repères du jeu, créés par la fabrique à l'intégration, et leurs
+  valeurs sont dans `renders_720s/finition.json` ;
+- aucune intégration au jeu.
