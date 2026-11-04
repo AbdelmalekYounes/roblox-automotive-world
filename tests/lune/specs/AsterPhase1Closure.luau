@@ -153,7 +153,8 @@ return function(T: any, H: any)
         local definition = Definitions.get("wk_aster")
         local params = table.clone(AsterTemplate.Defaults) :: any
         params.FloorTopSt = -1.30
-        params.HeadroomSt = 4.60
+        params.HeadroomSt = 4.20 -- décision du propriétaire (2026-11-04)
+        params.Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 }
         params.PedalZ = -1.4
         local template =
             AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
@@ -172,7 +173,23 @@ return function(T: any, H: any)
         T.truthy(side.Center[2] - side.Size[2] / 2 <= floorBottom + 1e-6, "bas de caisse qui masque le plancher")
         local pedal = boxes.Pedalier
         T.truthy(pedal.Center[2] - pedal.Size[2] / 2 >= floorTop - 1e-6, "pédalier posé sur le plancher")
-        T.near(template.HeightAboveGroundM, 1.83, 0.01, "hauteur hors tout inchangée")
+        T.near(template.HeightAboveGroundM, 1.72, 0.01, "hauteur hors tout : 1,72 m avec 4,20 st sous le toit")
+        -- Vue de conduite : point CameraCockpit de la règle du jeu (VehicleFactory : yeux à
+        -- assise − 0,35 st, haut du volant = centre + 0,55), haut du volant ≥ 10° sous la visée,
+        -- yeux ≥ 0,6 st sous le pavillon.
+        local CockpitGeometry = H.require("ReplicatedStorage.Shared.Vehicles.CockpitGeometry")
+        local seat = boxes.SiegeConducteur
+        local wheel = boxes.Volant
+        local eyeZ = seat.Center[3] - 0.35
+        local wheelTop = wheel.Center[2] + 0.55
+        local eyeY = CockpitGeometry.eyeY(seat.Center[2], wheelTop, eyeZ - wheel.Center[3], template.RoofUnder)
+        T.near(eyeY, 2.24, 0.005, "CameraCockpit à y 2,24 (dossier ASTER-02)")
+        T.near(eyeZ, 2.07, 1e-6, "CameraCockpit à z 2,07")
+        T.truthy(
+            CockpitGeometry.wheelDropDeg(eyeY, wheelTop, eyeZ - wheel.Center[3]) >= 10 - 1e-6,
+            "haut du volant au moins 10° sous la ligne de visée"
+        )
+        T.truthy(template.RoofUnder - eyeY >= CockpitGeometry.RoofClearance, "yeux à 0,6 st au moins sous le pavillon")
     end)
 
     T.test("AvatarService : toutes les applications passent par la file", function()

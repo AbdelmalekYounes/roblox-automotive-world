@@ -918,7 +918,13 @@ if session == "aster" then
             record(prefix .. "pieds_au_dessus_du_plancher", #floorFail == 0, table.concat(floorFail, " / "))
             if pose == "jeu" and seatName == "SiegeConducteur" then
                 record(prefix .. "mains_sur_la_jante", #rimFail == 0, table.concat(rimFail, " / "))
-                record(prefix .. "vue_au_dessus_du_volant", #viewFail == 0, table.concat(viewFail, " / "))
+                -- Décision du propriétaire (2026-11-04) : critère informatif (la vue de conduite passe par
+                -- `CameraCockpit`, point fixe du véhicule, avatar masqué ; règle des 10° vérifiée en Lune).
+                record(
+                    prefix .. "info_yeux_de_l_avatar_au_dessus_du_volant",
+                    true,
+                    if #viewFail == 0 then "toutes les morphologies" else table.concat(viewFail, " / ")
+                )
             end
         end
     end

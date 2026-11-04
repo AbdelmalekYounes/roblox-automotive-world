@@ -665,7 +665,7 @@ end
 -- y 2,5 à 3,1 st, z −0,7 à −0,9 st → volant de 0,8 st de rayon centré entre les corps
 -- humains grand et élancé ; planche de bord avancée ; pavillon à 4,60 st de l'assise.
 local ASTER_PARAMS: { [string]: any }? = {
-    HeadroomSt = 4.60,
+    HeadroomSt = 4.20, -- décision du propriétaire (2026-11-04) : 4,20 st, hors tout 1,72 m
     -- Passage 4 : volant ajusté aux mains mesurées dans le repère du gabarit (passage 3,
     -- tâche 20261104-135355, pose du jeu, 7 morphologies : écart max. 0,26 st à la jante),
     -- pédalier devant les pointes de pied (−0,90 à −0,21 st), planche de bord devant le volant.
@@ -959,7 +959,7 @@ if session == "silhouette" then
         shot(player, "tete_non_classique_conservee", frontView(player, 0), { tete = "Addison (988), non classique" })
     end
 
-    -- 5. Couleurs de peau différentes (tête, tronc, bras, jambes) : rendu présenté, aucune correction.
+    -- 5. Couleurs de peau différentes au départ (tête, tronc, bras, jambes) : unifiées sur la tête.
     local COLORS = {
         HeadColor = Color3.fromRGB(255, 224, 196),
         TorsoColor = Color3.fromRGB(176, 120, 86),
@@ -983,21 +983,36 @@ if session == "silhouette" then
             task.wait(1.5)
             local applied = humanoidOf(player)
             local d = applied and applied:GetAppliedDescription()
-            local kept = d ~= nil
+            -- Décision du propriétaire (2026-11-04) : toutes les parties prennent la couleur de la tête.
+            local unified = d ~= nil
+            local seen = {}
             if d then
-                for field, color in COLORS do
+                local head = COLORS.HeadColor
+                for field in COLORS do
                     local value = (d :: any)[field] :: Color3
-                    if (value.R - color.R) ^ 2 + (value.G - color.G) ^ 2 + (value.B - color.B) ^ 2 > 1e-4 then
-                        kept = false
+                    table.insert(
+                        seen,
+                        string.format(
+                            "%s %d,%d,%d",
+                            field,
+                            value.R * 255 + 0.5,
+                            value.G * 255 + 0.5,
+                            value.B * 255 + 0.5
+                        )
+                    )
+                    if (value.R - head.R) ^ 2 + (value.G - head.G) ^ 2 + (value.B - head.B) ^ 2 > 1e-4 then
+                        unified = false
                     end
                 end
             end
+            table.sort(seen)
             record(
-                "silhouette.serveur.couleurs_conservees_" .. string.lower(id),
-                result.Status == "Ok" and kept,
-                "tête (255,224,196), tronc (176,120,86), bras (96,64,44), jambes (236,190,150) ; aucune correction"
+                "silhouette.serveur.couleurs_unifiees_sur_la_tete_" .. string.lower(id),
+                result.Status == "Ok" and unified,
+                "départ : tête (255,224,196), tronc (176,120,86), bras (96,64,44), jambes (236,190,150) ; lu : "
+                    .. table.concat(seen, " ; ")
             )
-            shot(player, "couleurs_melangees_" .. string.lower(id), frontView(player, 20), { silhouette = id })
+            shot(player, "couleurs_unifiees_" .. string.lower(id), frontView(player, 20), { silhouette = id })
         end
     end
 

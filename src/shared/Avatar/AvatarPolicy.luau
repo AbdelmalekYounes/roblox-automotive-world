@@ -125,6 +125,23 @@ function AvatarPolicy.body(id: any): Body?
     return AvatarPolicy.Bodies[id]
 end
 
+-- Couleur de peau (décision du propriétaire, 2026-11-04, « Unifier sur la tête ») : sur le corps
+-- réaliste, des couleurs différentes par partie créent des ruptures au cou, aux épaules et aux
+-- hanches (captures de la tâche VM 20261104-181108). Toutes les parties prennent la couleur de la
+-- TÊTE choisie par le joueur : aucun choix n'est restreint (un visage bleu donne un corps bleu).
+AvatarPolicy.UnifySkinOnHead = true
+AvatarPolicy.BodyColorFields =
+    table.freeze({ "TorsoColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor" })
+
+-- Couleurs des parties après unification : toutes égales à `head` (couleur de la tête).
+function AvatarPolicy.unifiedColors(head: Color3): { [string]: Color3 }
+    local colors: { [string]: Color3 } = {}
+    for _, field in AvatarPolicy.BodyColorFields do
+        colors[field] = head
+    end
+    return colors
+end
+
 -- Vrai si les parties lues (`HumanoidDescription`) sont exactement celles du corps.
 function AvatarPolicy.wearsBody(parts: { [string]: number }, bodyId: string): boolean
     local body = AvatarPolicy.Bodies[bodyId]

@@ -79,6 +79,15 @@ return function(T: any, H: any)
         T.truthy(not AvatarPolicy.wearsBody(worn, "Masculin"), "autre corps non reconnu")
         worn.LeftLeg = 0
         T.truthy(not AvatarPolicy.wearsBody(worn, "Feminin"), "partie manquante détectée")
+        -- Couleurs unifiées sur la tête (décision du propriétaire, 2026-11-04).
+        T.truthy(AvatarPolicy.UnifySkinOnHead, "couleurs unifiées sur la tête")
+        T.truthy(table.find(AvatarPolicy.BodyColorFields, "HeadColor") == nil, "couleur de la tête jamais modifiée")
+        T.equal(#AvatarPolicy.BodyColorFields, 5, "tronc, bras et jambes")
+        local headColor = { R = 1, G = 0.88, B = 0.77 }
+        local unified = AvatarPolicy.unifiedColors(headColor :: any)
+        for _, field in AvatarPolicy.BodyColorFields do
+            T.equal(unified[field], headColor, field .. " = couleur de la tête")
+        end
         local ok, outside = AvatarPolicy.scalesWithinRanges({ Height = 1.2, Width = 0 / 0 })
         T.truthy(not ok, "hors plage refusé")
         T.equal(table.concat(outside, ","), "Height,Width", "hauteur excessive et NaN signalés")

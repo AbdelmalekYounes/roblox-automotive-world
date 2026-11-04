@@ -430,6 +430,14 @@ local function humanDescription(description: HumanoidDescription, bodyId: string
         description.Head = head
         changed = true
     end
+    if AvatarPolicy.UnifySkinOnHead then
+        for field, color in AvatarPolicy.unifiedColors(description.HeadColor) do
+            if (description :: any)[field] ~= color then
+                (description :: any)[field] = color
+                changed = true
+            end
+        end
+    end
     return changed
 end
 
