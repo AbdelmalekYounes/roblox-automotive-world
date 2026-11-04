@@ -103,9 +103,23 @@ avatars Roblox sont grands à l'échelle 0,28 m/stud (référence debout : 5,09 
 - cible de conception : **≥ 4,30 st** de l'assise au pavillon pour tous les modèles, **5,00 st** visés quand la
   silhouette le permet (SUV, tout-terrain, pick-up, compactes hautes) ;
 - l'assise basse suppose une **pose assise propre au jeu** (animation ou réglage de la pose du moteur) : elle lie cette
-  décision à **D3**, à trancher avant la maquette volumique ; tant que D3 n'est pas tranchée, la maquette est essayée
-  avec la pose standard du moteur (mesures §3.1) ;
+  décision à **D3** ;
 - aucune limitation du type de corps n'est retenue.
+
+**Décision du propriétaire (2026-11-04), D3 : pose assise propre au jeu** (pas d'IK des mains). Conséquences [proposé] :
+
+- une pose de conduite **originale** (aucune animation de la place de marché ni d'un autre projet), commune aux places
+  conducteur et passager, avec une variante passager sans volant ; buste incliné en arrière, bassin bas, jambes
+  allongées vers le pédalier, mains à 10 h 10 ;
+- deux réalisations possibles, à départager par un essai en VM : animation assise jouée par le jeu au remplacement de
+  l'animation `sit` du moteur (actif d'animation à publier **par le propriétaire**), ou pose procédurale appliquée par
+  chaque client sur `Transform` des articulations, sur le modèle du bras du téléphone (QA-A10), sans actif ;
+- le **volant et le pédalier se placent là où la pose met les mains et les pieds** : la pose est fixée d'abord (cotes
+  relevées en VM sur les 8 morphologies du lot AVATAR-01), puis reportée dans le gabarit technique de chaque modèle ;
+- les mains ne suivent pas la rotation du volant (pose fixe) ; un léger mouvement des bras au braquage est une
+  amélioration possible, non retenue à ce stade ;
+- validation : nouvelle mesure de la hauteur de tête assise (§3.1) avec la pose du jeu, distance mains-volant, pieds et
+  jambes contre la planche de bord, sur les 8 morphologies.
 
 ## 4. Matériaux et textures
 

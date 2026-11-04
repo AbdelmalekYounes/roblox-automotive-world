@@ -92,7 +92,7 @@ Conséquences de ce choix [proposé] :
 | Assise → pavillon | ≥ 4,30 st (minimum), 5,00 st (confort) | spécification §3.3 (aujourd'hui 3,11 st) |
 | Hauteur d'assise | abaissée de 0,3 à 0,5 st si la pose de conduite le permet (D3) | assise à 0,60 m aujourd'hui |
 | Largeur intérieure | +0,7 st (0,35 st par côté) | dépassement des avant-bras 0,37 st |
-| Volant | centré sur l'axe du siège conducteur, position finale fixée par l'essai de pose (D3) | mains à 2,3 st du volant aujourd'hui |
+| Volant | centré sur l'axe du siège conducteur, placé là où la pose assise du jeu met les mains (D3 tranchée : pose propre au jeu) | mains à 2,3 st du volant aujourd'hui |
 | Planche de bord | reculée de 0,3 st vers l'avant au droit des genoux | recouvrement jambe/volant 0,24 st |
 | Caméra cockpit | à hauteur des yeux de la référence (centre de sa tête mesuré 0,77 st **au-dessus** du point de vue actuel de l'Aster), volant ≥ 10° sous la ligne de visée | AVATAR-01, QA-F15 |
 | Sorties | `ExitLeft`/`ExitRight` à 1 st des portières, boîte libre 3 × 7,5 × 3 st | AVATAR-01 |

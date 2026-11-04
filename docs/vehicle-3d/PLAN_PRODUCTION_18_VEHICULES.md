@@ -8,7 +8,7 @@ reste **proposé** (`docs/lot-0.8/CATALOGUE_18_VEHICULES.md`, `PendingApproval`)
 | Phase | Contenu | Porte (décision du propriétaire) |
 |---|---|---|
 | 0 | Références des 18 modèles, fiches de design, spécification, pipeline (**ce lot**) | Validation des documents et des décisions D1 à D6 |
-| 1 | **Aster pilote** : étalonnage de l'échelle, gabarit, esquisses des 3 directions, maquette volumique, essai R15 en VM | Direction de l'Aster et langage de design commun |
+| 1 | **Aster pilote** (direction A « Trait » retenue) : pose assise du jeu (essai VM), étalonnage de l'échelle, gabarit, esquisses, maquette volumique, essai R15 en VM | Pose assise validée, langage de design commun |
 | 2 | Aster haute fidélité, LOD, collisions, matériaux, intégration derrière un kit de maillages (provisoire en repli) | Budget de performance mesuré (VM `perf`), essais `avatar` |
 | 3 | Familles de silhouettes (gabarits d'habitacle partagés) | Validation par famille |
 | 4 | Finitions, nuit, dégâts visuels, captures, essais humains | Recette finale |
@@ -29,7 +29,7 @@ reste **proposé** (`docs/lot-0.8/CATALOGUE_18_VEHICULES.md`, `PendingApproval`)
 |---|---|
 | D1 | Proportions de l'habitacle : **« échelle Roblox + assise basse » retenue par le propriétaire (2026-11-04)** (spécification §3.3, option 4) ; dépend de D3 pour la pose assise |
 | D2 | Direction de l'Aster : **A « Trait » retenue par le propriétaire (2026-11-04)** ; reste à valider : langage commun de la gamme (signature lumineuse, monogramme fictif) |
-| D3 | Animation de conduite : pose assise propre au jeu ou IK des mains sur le volant |
+| D3 | Animation de conduite : **pose assise propre au jeu retenue par le propriétaire (2026-11-04)** (spécification §3.3) ; réalisation (animation publiée ou pose procédurale) à départager par un essai en VM |
 | D4 | Ouvrants animés (portières) : maintenant ou plus tard |
 | D5 | Critère de performance (spécification §6) |
 | D6 | Qui importe et publie les actifs (le propriétaire) et où sont rangés les fichiers sources (dépôt d'art séparé, non public) |

@@ -169,7 +169,7 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   production, dossier du véhicule pilote **Aster** (trois directions).
 - Aucune géométrie définitive, aucun actif importé ou publié, physique et carrosseries provisoires inchangées.
 - Documents : `docs/vehicle-3d/`. Direction A « Trait » retenue pour l'Aster et habitacle « échelle Roblox + assise basse »
-  (D1) le 2026-11-04 ; D3 à D6 et le langage commun de la gamme en attente.
+  (D1), pose assise propre au jeu (D3) le 2026-11-04 ; D4 à D6 et le langage commun de la gamme en attente.
 
 ## Critères de passage du socle 0.0.1
 
