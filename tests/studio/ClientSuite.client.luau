@@ -144,6 +144,8 @@ if model == nil then
     return
 end
 local root = model.PrimaryPart :: BasePart
+-- Lot 0.9.2 (QA-A09) : ligne du plot de départ, tenue pendant l'élan des virages.
+local laneX = root.Position.X
 measures.joueur = myIndex
 measures.ping_ms = math.floor(player:GetNetworkPing() * 1000 + 0.5)
 
@@ -462,10 +464,17 @@ end
 local function wrap(angle: number): number
     return (angle + math.pi) % (2 * math.pi) - math.pi
 end
-setCommand(0.6, 0, 0)
-waitFor(function()
-    return snapshot().SpeedKmh >= 40
-end, 10)
+-- Élan à 40 km/h en tenant la ligne du plot (QA-A09, lot 0.9.2) : sans correction, une
+-- dérive d'environ 2 m menait le véhicule du joueur 2 sur le poteau du portique d'arrivée
+-- du drag d'essai (x = 7,6 m, z = −204 m ; trajectoire tracée, tâche 20261104-020328).
+local elanStart = os.clock()
+while snapshot().SpeedKmh < 40 and os.clock() - elanStart < 10 do
+    local lateral = (laneX - root.Position.X) * METERS_PER_STUD
+    local hold = math.clamp(lateral * 0.15 - heading() * 1.2, -0.35, 0.35)
+    setCommand(0.6, 0, hold)
+    task.wait(0.05)
+end
+measures.elan_ecart_ligne_m = math.floor((root.Position.X - laneX) * METERS_PER_STUD * 100) / 100
 local h0 = heading()
 setCommand(0.3, 0, 0.6)
 task.wait(2)
