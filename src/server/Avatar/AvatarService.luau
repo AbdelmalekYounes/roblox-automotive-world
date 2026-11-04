@@ -51,6 +51,7 @@ type State = {
     PreviewToken: number,
     Busy: boolean,
     Body: string?, -- corps choisi par le joueur pendant la session (nil : corps par défaut)
+    SpawnToken: number, -- préparation du personnage en cours (corps et tenue à l'apparition)
 }
 
 local states: { [Player]: State } = {}
@@ -62,7 +63,7 @@ local started = false
 local function stateOf(player: Player): State
     local state = states[player]
     if state == nil then
-        state = { Initial = nil, Equipped = nil, PreviewToken = 0, Busy = false, Body = nil }
+        state = { Initial = nil, Equipped = nil, PreviewToken = 0, Busy = false, Body = nil, SpawnToken = 0 }
         states[player] = state
     end
     return state :: State
@@ -357,6 +358,25 @@ end
 -- laisse l'apparence d'origine (journalisé). L'attribut `AWAvatarBody` indique le corps porté.
 local humanized = 0
 local APPLY_ATTEMPTS = 3
+local APPLY_TIMEOUT_S = 10 -- au-delà, l'essai est abandonné (l'application peut ne jamais rendre)
+
+-- `ApplyDescriptionAsync` borné dans le temps : exécuté dans un fil séparé, attendu au plus
+-- APPLY_TIMEOUT_S. Passage VM 20261104-151955 : après un premier refus à l'apparition, un appel
+-- n'a jamais rendu la main et bloquait la préparation du personnage.
+local function applyBounded(humanoid: Humanoid, description: HumanoidDescription): (boolean, string)
+    local done, ok, err = false, false, "délai dépassé"
+    task.spawn(function()
+        local success, message = pcall(function()
+            humanoid:ApplyDescriptionAsync(description)
+        end)
+        done, ok, err = true, success, if success then "" else tostring(message)
+    end)
+    local deadline = os.clock() + APPLY_TIMEOUT_S
+    while not done and os.clock() < deadline do
+        task.wait(0.1)
+    end
+    return ok, err
+end
 local function humanDescription(description: HumanoidDescription, bodyId: string): boolean
     local changed = false
     local scales: { [string]: string } = {
@@ -410,14 +430,33 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         if not humanDescription(description, bodyId) then
             break
         end
-        local ok, err = pcall(function()
-            humanoid:ApplyDescriptionAsync(description)
-        end)
+        local attemptStart = os.clock()
+        local ok, err = applyBounded(humanoid, description)
         if ok then
             humanized += 1
+            if attempt > 1 then
+                print(
+                    string.format(
+                        "[AutomotiveWorld] Avatar humain appliqué à %s à l'essai %d (%.1f s)",
+                        player.Name,
+                        attempt,
+                        os.clock() - attemptStart
+                    )
+                )
+            end
             break
-        elseif attempt == APPLY_ATTEMPTS or humanoid.Parent == nil then
-            warn(string.format("[AutomotiveWorld] Avatar humain non appliqué à %s : %s", player.Name, tostring(err)))
+        end
+        warn(
+            string.format(
+                "[AutomotiveWorld] Avatar humain : essai %d/%d refusé pour %s (%.1f s) : %s",
+                attempt,
+                APPLY_ATTEMPTS,
+                player.Name,
+                os.clock() - attemptStart,
+                err
+            )
+        )
+        if humanoid.Parent == nil then
             break
         end
         task.wait(0.5)
@@ -478,16 +517,29 @@ local function onCharacter(player: Player, character: Model)
     if player.Character ~= character or humanoid.Parent == nil then
         return
     end
-    enforceHuman(player, humanoid)
+    -- Apparence initiale (vêtements et accessoires, que le corps ne change pas) mémorisée
+    -- AVANT le corps humain : la préparation du personnage n'attend pas le moteur. Corps puis
+    -- tenue équipée appliqués ensuite dans un fil séparé, demandes du joueur refusées entre-temps
+    -- (« OutfitBusy »).
     local state = stateOf(player)
     state.Initial = lookOf(humanoid:GetAppliedDescription())
     state.PreviewToken += 1
     player:SetAttribute(PREVIEW_ATTRIBUTE, nil)
-    if state.Equipped then
-        state.Busy = true
-        applyLook(humanoid, OutfitRules.wear(state.Initial :: OutfitRules.Look, state.Equipped :: OutfitCatalog.Outfit))
-        state.Busy = false
-    end
+    state.Busy = true
+    state.SpawnToken += 1
+    local token = state.SpawnToken
+    task.spawn(function()
+        enforceHuman(player, humanoid)
+        if state.Equipped and player.Character == character then
+            applyLook(
+                humanoid,
+                OutfitRules.wear(state.Initial :: OutfitRules.Look, state.Equipped :: OutfitCatalog.Outfit)
+            )
+        end
+        if state.SpawnToken == token then
+            state.Busy = false
+        end
+    end)
 end
 
 function AvatarService.start()

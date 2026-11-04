@@ -1023,6 +1023,11 @@ local function partsNow(): { [string]: number }
     end
     return parts
 end
+-- Corps appliqué dans un fil séparé après l'apparition : attente de la confirmation.
+waitFor(function()
+    return player:GetAttribute("AWAvatarBody") ~= nil
+end, 30)
+task.wait(0.5) -- fin de la préparation du personnage (tenue équipée éventuelle)
 record(
     "avatar.corps.defaut_applique",
     player:GetAttribute("AWAvatarBody") == AvatarPolicy.DefaultBody
