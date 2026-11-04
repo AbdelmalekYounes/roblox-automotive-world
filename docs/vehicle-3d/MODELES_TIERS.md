@@ -27,7 +27,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
-| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; **LOD0 exporté pour un premier import Studio par le propriétaire** (§4) ; non intégré |
+| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; LOD0 exporté et **importé dans Studio par le propriétaire : géométrie conforme, vitrage opaque** (§5) ; non intégré |
 
 ## Modèles examinés et refusés
 
@@ -208,3 +208,36 @@ Non fait :
 - attaches et collisions non exportées : ce sont des repères du jeu, créés par la fabrique à l'intégration, et leurs
   valeurs sont dans `renders_720s/finition.json` ;
 - aucune intégration au jeu.
+
+## 5. Premier import dans Studio (relevé par le propriétaire, 2026-11-04)
+
+Import de `wk_comete_720s_lod0.glb` avec les réglages par défaut. Captures fournies par le propriétaire : fenêtres
+Propriétés et quatre vues 3D.
+
+| Mesure | Studio | Attendu |
+|---|---|---|
+| Size de `COMETE_Caisse_body` | 6,984 ; 2,994 ; 16,44 | identique |
+| Position `COMETE_Caisse_body` | (−1,345 ; 1,833 ; 25) | — (emplacement d'insertion) |
+| `Pneu_AvG` (−4,326 ; 1,192 ; 20,621) − `Pneu_ArG` (−4,321 ; 1,217 ; 30,264) | (−0,005 ; −0,025 ; −9,643) | identique |
+| `Pneu_AvD` (1,636 ; 1,192 ; 20,621) − `Pneu_AvG` | (+5,962 ; 0 ; 0) | identique |
+| `Pneu_ArD` (1,631 ; 1,217 ; 30,264) − `Pneu_ArG` | (+5,952 ; 0 ; 0) | 2 × 2,976 |
+| `Caisse_body` − `Pneu_AvG` (centres) | (2,981 ; 0,641 ; 4,379) | (2,981 ; 0,640 ; 4,379) |
+| Size des pneus | avant 1,031 ; 2,379 ; 2,343 ; arrière 1,054 ; 2,434 ; 2,397 | identique |
+
+**Lecture.**
+- Échelle, orientation et positions relatives sont **exactes**, ce qui valide la règle d'étalonnage sur un vrai modèle.
+- Les pièces arrivent en MeshParts nommées comme dans Blender, chacune dans un modèle `<nom>_Node`.
+- Textures sans logos ; couleur de caisse, feux et caches de moyeu conformes aux rendus.
+
+**Défaut constaté : vitrage opaque, gris clair.** Le pare-brise, les vitres et les petites pièces vitrées près de la roue
+arrière sont touchés. La transparence du matériau glTF n'est pas reprise par l'importeur. C'est l'hypothèse « vitrage » de
+la passe HF3 de l'Aster, désormais **observée**.
+
+Piste, à l'intégration : la fabrique donne aux pièces de vitrage (`*_glass*`) un matériau Verre, une transparence d'au
+moins 0,3 et une teinte sombre. Une autre voie serait une transparence portée par la texture (SurfaceAppearance) ; elle
+est à essayer.
+
+Non vérifié :
+- l'envoi sur Roblox des maillages (choix « Importer sur Roblox » du propriétaire) ;
+- l'éclairage des feux (`AWLight`) ;
+- la conduite, les LOD, les performances D5, les avatars à bord.

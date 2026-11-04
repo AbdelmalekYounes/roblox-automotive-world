@@ -253,6 +253,7 @@ Le détail fin des surfaces intérieures reste donc limité par le budget de 3 t
 - **Atlas ORM** : Roblox attend des cartes séparées de rugosité et de métal. La conversion par l'importateur n'est pas
   connue. Elle pourrait exiger une 4ᵉ texture ou un matériau Roblox pour les pièces métalliques : **écart à arbitrer**
   le cas échéant.
+- **Vitrage** : premier import réel (Comète, `MODELES_TIERS.md` §5, 2026-11-04) : la transparence glTF **n'est pas reprise**, le vitrage arrive opaque et gris clair. La fabrique devra la poser à l'intégration.
 - **Émission des feux et de l'écran** : rendue dans Blender seulement. En jeu, l'éclairage passe par l'attribut
   `AWLight` prévu au contrat.
 
