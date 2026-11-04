@@ -24,6 +24,7 @@ local SocialService = require(SocialFolder:WaitForChild("SocialService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
 local OnboardingService = require(script.Parent:WaitForChild("Onboarding"):WaitForChild("OnboardingService"))
 local RadioService = require(script.Parent:WaitForChild("Audio"):WaitForChild("RadioService"))
+local AvatarService = require(script.Parent:WaitForChild("Avatar"):WaitForChild("AvatarService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
 assert(Settings.RequirementsVersion == "1.0", "Version du cahier des charges non conforme")
@@ -60,6 +61,8 @@ end)
 -- Lot 0.8 : parcours de première connexion et formation (les deux modes).
 OnboardingService.start()
 RadioService.start()
+-- Lot AVATAR-01 : contrôle R15, apparence initiale, tenues (catalogue sans ressource).
+AvatarService.start()
 -- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
 ProfileService.start()
 ReplicatedStorage:SetAttribute("AutomotiveWorldMode", PlaceConfig.Mode)
