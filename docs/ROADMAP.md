@@ -195,8 +195,9 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   8 rendus de revue : `docs/vehicle-3d/ASTER_02_BLOCKOUT.md`. **À valider** avant le modèle haute fidélité ; aucun import,
   aucune publication, aucune intégration.
 - Blockout validé par le propriétaire (2026-11-04). Haute fidélité par passes (`docs/vehicle-3d/ASTER_02_HAUTE_FIDELITE.md`) :
-  HF1 extérieur et HF2 intérieur faites et acceptées ; HF3 matériaux faite, à revoir (peinture teintable sans texture,
-  vitrage 0,55, 3 atlas de 1024 px calculés, contrôles 22/22 ; 101 744 triangles, réduction en HF4) ; HF4 et HF5 à faire.
+  HF1 à HF3 (extérieur, intérieur, matériaux) faites et acceptées ; HF4 faite, à revoir (LOD0 36 696 triangles au lieu de
+  101 744, LOD1 12 978, LOD2 3 544, 4 collisions, attaches, roues instanciées ; contrôles 33/33 ; LOD0 au-dessus de
+  l'hypothèse de 25 000 : écart à arbitrer) ; HF5 à faire, sur accord.
 
 ## Critères de passage du socle 0.0.1
 
