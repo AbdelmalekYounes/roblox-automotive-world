@@ -153,7 +153,7 @@ n'a été fait.
 | Correspondances avec les 18 références | Comète : « 2017 Mclaren 720s » (s0h1o9b), CC BY, 6 917 faces. Aster / Rafale : « 2024 Volkswagen Golf GTI », « 2025 Volkswagen Golf R » (ddiaz-design). Brise : « 2015 / 2019 Mazda MX-5 ». Éclat : « 2022 Toyota GR86 - EU ». Rien pour les 13 autres |
 | Origine déclarée par l'auteur des modèles ddiaz-design | Golf GTI 2024 : « Based on a Volkswagen 3d model », étiquette `configurator`. Golf R 2025 : « Based on a Volkswagen 3d model », crédit à un serveur Discord « GameModels Community ». GR86 : « Based on a Racing Master 3d model ». MX-5 2015 : « Based on a Need For Speed Heat 3d model » |
 | Conséquence | Modèles **repris de jeux vidéo commerciaux ou d'un configurateur de constructeur**. La licence CC BY-NC-SA affichée ne peut pas venir de l'ayant droit, et l'absence de monétisation n'y change rien. **Non retenus** (CLAUDE.md : aucun emprunt de modèle ni actif non inspecté) |
-| McLaren 720s | L'auteur déclare l'avoir modélisée lui-même (« Modelled in Blender, textures made in Photoshop »). Seul candidat recevable, sous réserve d'une **exception du propriétaire** à la règle d'emprunt, d'une inspection du fichier (logos, contenu) et du crédit exigé par CC BY |
+| McLaren 720s (exception accordée : « Tester la 720s », registre `MODELES_TIERS.md`) | L'auteur déclare l'avoir modélisée lui-même (« Modelled in Blender, textures made in Photoshop »). Seul candidat recevable, sous réserve d'une **exception du propriétaire** à la règle d'emprunt, d'une inspection du fichier (logos, contenu) et du crédit exigé par CC BY |
 
 ## 5. Rappel des autres points ouverts
 
