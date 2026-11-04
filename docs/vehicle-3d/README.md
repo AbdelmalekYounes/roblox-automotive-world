@@ -16,6 +16,7 @@ d'actif, aucune modification de la physique ni des carrosseries provisoires** ; 
 | [ASTER_PHASE1_CLOTURE.md](ASTER_PHASE1_CLOTURE.md) | Clôture de la phase 1 : essais par vrais clics, file d'application, anomalies, recommandation |
 | [ASTER_02_LANCEMENT.md](ASTER_02_LANCEMENT.md) | Dossier de lancement de la modélisation de l'Aster (non lancée) |
 | [ASTER_02_HAUTE_FIDELITE.md](ASTER_02_HAUTE_FIDELITE.md) | Modèle haute fidélité de l'Aster, dessin « Trait » : passes HF1 à HF4 (extérieur, intérieur, matériaux, LOD et collisions) |
+| [VEH3D_01_INTEGRATION_COMETE.md](VEH3D_01_INTEGRATION_COMETE.md) | Lot VEH3D-01 : intégration de la Comète 3D (plan, étape du propriétaire, essais) |
 | [MODELES_TIERS.md](MODELES_TIERS.md) | Registre des modèles 3D tiers : conditions, exceptions accordées par le propriétaire, inspections, préparations (crédits : `../CREDITS_ACTIFS.md`) |
 | [ASTER_02_REPRODUCTION.md](ASTER_02_REPRODUCTION.md) | Blockout « reproduction » de la référence, sans logo (décision du 2026-11-04), à valider |
 | [ASTER_02_BLOCKOUT.md](ASTER_02_BLOCKOUT.md) | Blockout extérieur et intérieur de l'Aster, contrôles, captures (à valider) |

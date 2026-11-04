@@ -237,6 +237,8 @@ Piste, à l'intégration : la fabrique donne aux pièces de vitrage (`*_glass*`)
 moins 0,3 et une teinte sombre. Une autre voie serait une transparence portée par la texture (SurfaceAppearance) ; elle
 est à essayer.
 
+Lot VEH3D-01 (2026-11-04) : feux séparés en `COMETE_Feu_Av` (`AWLight = Head`) et `COMETE_Feu_Ar` (`Tail`), de 44 triangles chacun. Le LOD0 est réexporté (28 pièces, relu : centres à 0,0005 st près) et attend l'envoi sur Roblox par le propriétaire (`VEH3D_01_INTEGRATION_COMETE.md` §2).
+
 Non vérifié :
 - l'envoi sur Roblox des maillages (choix « Importer sur Roblox » du propriétaire) ;
 - l'éclairage des feux (`AWLight`) ;
