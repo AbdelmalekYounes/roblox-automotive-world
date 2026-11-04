@@ -660,9 +660,12 @@ local ASTER_PARAMS: { [string]: any }? = {
     -- Passage 4 : volant ajusté aux mains mesurées dans le repère du gabarit (passage 3,
     -- tâche 20261104-135355, pose du jeu, 7 morphologies : écart max. 0,26 st à la jante),
     -- pédalier devant les pointes de pied (−0,90 à −0,21 st), planche de bord devant le volant.
-    Wheel = { Center = { -1.4, 2.46, 1.16 }, Radius = 0.85, TiltDeg = 15 },
-    PedalZ = -1.1,
-    DashZ = 0.1,
+    -- Passage 5 : volant ajusté aux mains des deux corps retenus (passage 4, tâche
+    -- 20261104-145632, repère du gabarit corrigé : mains de y 1,21 à 2,20 st, yeux du plus petit
+    -- à 2,08 st) : meilleur compromis jante (≤ 0,34 st) et vue au-dessus du volant (≥ 0).
+    Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 },
+    PedalZ = -1.4, -- pointes de pied de −1,21 à 0,34 st (F1 la plus en avant)
+    DashZ = 0.0,
 }
 
 -- Morphologies HUMAINES (type de corps imposé à 1) : la session « aster » ne mesure plus les

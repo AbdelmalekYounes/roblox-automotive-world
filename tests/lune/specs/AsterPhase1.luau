@@ -100,15 +100,15 @@ return function(T: any, H: any)
         T.near(same[3], 0.5, 1e-12)
         local definition = Definitions.get("wk_aster")
         local params = table.clone(AsterTemplate.Defaults) :: any
-        params.Wheel = { Center = { -1.4, 2.46, 1.16 }, Radius = 0.85, TiltDeg = 15 }
-        params.PedalZ = -1.1
+        params.Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 }
+        params.PedalZ = -1.4
         local template =
             AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
         for _, item in template.Boxes do
             if item.Name == "Volant" then
                 T.equal(item.Rotation[1], -15, "inclinaison appliquée autour de l'axe latéral")
                 T.equal(item.Rotation[2], 90, "disque face au conducteur")
-                T.equal(item.Center[3], 1.16, "centre du volant au paramètre")
+                T.equal(item.Center[3], 1.1, "centre du volant au paramètre")
             end
         end
     end)

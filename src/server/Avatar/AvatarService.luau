@@ -356,6 +356,7 @@ end
 -- Tête, visage, peau, vêtements et accessoires du joueur sont conservés. Un échec du moteur
 -- laisse l'apparence d'origine (journalisé). L'attribut `AWAvatarBody` indique le corps porté.
 local humanized = 0
+local APPLY_ATTEMPTS = 3
 local function humanDescription(description: HumanoidDescription, bodyId: string): boolean
     local changed = false
     local scales: { [string]: string } = {
@@ -397,16 +398,29 @@ function enforceHuman(player: Player, humanoid: Humanoid)
         return
     end
     local bodyId = stateOf(player).Body or AvatarPolicy.DefaultBody
-    local description = humanoid:GetAppliedDescription()
-    if humanDescription(description, bodyId) then
+    -- À l'apparition, le moteur peut refuser l'application tant que le personnage n'est pas
+    -- installé (« DataModel was not available », VM 2026-11-04, tâche 20261104-145632) :
+    -- attente de l'entrée dans Workspace, puis jusqu'à 3 essais espacés de 0,5 s.
+    local deadline = os.clock() + 5
+    while not humanoid:IsDescendantOf(workspace) and os.clock() < deadline do
+        task.wait(0.1)
+    end
+    for attempt = 1, APPLY_ATTEMPTS do
+        local description = humanoid:GetAppliedDescription()
+        if not humanDescription(description, bodyId) then
+            break
+        end
         local ok, err = pcall(function()
             humanoid:ApplyDescriptionAsync(description)
         end)
         if ok then
             humanized += 1
-        else
+            break
+        elseif attempt == APPLY_ATTEMPTS or humanoid.Parent == nil then
             warn(string.format("[AutomotiveWorld] Avatar humain non appliqué à %s : %s", player.Name, tostring(err)))
+            break
         end
+        task.wait(0.5)
     end
     local worn = AvatarPolicy.wearsBody(partsOf(humanoid:GetAppliedDescription()), bodyId)
     player:SetAttribute(BODY_ATTRIBUTE, if worn then bodyId else nil)
