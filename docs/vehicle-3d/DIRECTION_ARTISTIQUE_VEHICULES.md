@@ -26,7 +26,7 @@ protégés (`docs/CAHIER_DES_CHARGES_GLOBAL_v1.0.md`, §1). Pour chaque modèle 
 famille** (pas de motif commun à toute la gamme). **Répartition des modèles en quatre marques validée par le
 propriétaire (2026-11-04)** ; pistes de signature et emblèmes : **[proposé]**, à dessiner puis valider.
 
-| Marque (nom proposé) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
+| Marque (nom validé) | Rôle | Modèles | Piste de signature lumineuse (famille) | Emblème |
 |---|---|---|---|---|
 | **Mivale** | généraliste urbaine | Pixel, Brio, Fil, **Aster**, Rafale | deux traits en « L » aux angles (déjà retenus pour l'Aster « Trait ») | deux équerres en « L » aux angles opposés, carré central |
 | **Orvane** | routière et familiale | Nova, Cadence, Lumen, Orée | trait horizontal fin terminé par un point lumineux à l'intérieur, interrompu au centre (jamais de bandeau continu) | deux traits horizontaux décalés, chacun terminé par un point |
@@ -35,12 +35,12 @@ propriétaire (2026-11-04)** ; pistes de signature et emblèmes : **[proposé]**
 
 Règles :
 
-- **Noms de marque** : **proposés le 2026-11-04** (Mivale, Orvane, Rocalt, Celvar) après une **vérification
+- **Noms de marque** : **validés par le propriétaire le 2026-11-04** (Mivale, Orvane, Rocalt, Celvar) après une **vérification
   préliminaire** sur le web (aucune marque ni véhicule de ces noms trouvé ; détail et noms écartés dans
   `brands/BRANDS.md` du dépôt d'art) ; **recherche d'antériorité officielle (EUIPO, INPI, USPTO, OMPI ; classes 12, 9,
   41) à faire avant tout usage commercial**. « Automotive World » étant un nom technique provisoire, aucune marque n'en
   dérive.
-- **Emblèmes** : formes géométriques originales sans lettres (SVG dans `brands/<marque>/` du dépôt d'art), à comparer
+- **Emblèmes** : **validés par le propriétaire le 2026-11-04** ; formes géométriques originales sans lettres (SVG dans `brands/<marque>/` du dépôt d'art), à comparer
   aux emblèmes déposés avant usage commercial ; plaques
   et inscriptions fictives.
 - **Unité entre marques** : seuls des éléments techniques communs (gabarit d'habitacle, pose assise, combinés et

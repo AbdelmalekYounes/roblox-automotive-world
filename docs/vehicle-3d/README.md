@@ -17,7 +17,6 @@ d'actif, aucune modification de la physique ni des carrosseries provisoires** ; 
 Décisions prises (2026-11-04) : direction **A « Trait »** pour l'Aster ; D1 habitacle **« échelle Roblox + assise
 basse »** ; D3 **pose assise propre au jeu** ; D4 **ouvrants animés plus tard** ; D5 **+2 ms avec 24 véhicules visibles** ; D6 **actifs publiés par le propriétaire sous le créateur de
 l'expérience, sources dans un dépôt d'art privé (Git LFS)** ; langage commun **plusieurs marques fictives, signature
-par famille**. Répartition en 4 marques validée ; noms proposés **Mivale, Orvane, Rocalt, Celvar** (vérification préliminaire) et
-emblèmes dessinés dans le [dépôt d'art privé](https://github.com/AbdelmalekYounes/roblox-automotive-world-art) : à valider ; recherche d'antériorité officielle à faire.
+par famille**. Répartition en 4 marques validée ; noms **Mivale, Orvane, Rocalt, Celvar** et emblèmes **validés** (2026-11-04), dans le [dépôt d'art privé](https://github.com/AbdelmalekYounes/roblox-automotive-world-art) ; recherche d'antériorité officielle à faire avant tout usage commercial.
 
 Outil de mesure (lecture seule) : `lune run tests/lune/tools/cabin-geometry.luau build/AutomotiveWorld.rbxlx`.
