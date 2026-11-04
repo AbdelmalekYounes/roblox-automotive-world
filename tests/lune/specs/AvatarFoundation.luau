@@ -242,7 +242,10 @@ return function(T: any, H: any)
         T.truthy(string.find(server, "data.AssetId", 1, true) == nil, "aucun identifiant d'actif reçu du client")
         T.truthy(string.find(server, '"OutfitNotWhileSeated"', 1, true) ~= nil, "refus dans un véhicule")
         T.truthy(string.find(server, "RateLimiter.consume", 1, true) ~= nil, "demandes limitées")
-        T.truthy(string.find(server, "ApplyDescriptionAsync(before)", 1, true) ~= nil, "apparence rétablie après échec")
+        T.truthy(
+            string.find(server, "ApplyDescriptionAsync(before)", 1, true) ~= nil,
+            "apparence rétablie après échec"
+        )
         -- QA-A10 (lot 0.9.2) non remplacée : le téléphone et le bras ne dépendent pas de ce lot.
         T.truthy(string.find(server, "AWPhoneRaised", 1, true) == nil, "bras du téléphone non touché")
     end)
