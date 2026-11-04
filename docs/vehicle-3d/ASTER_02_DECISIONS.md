@@ -1,6 +1,6 @@
 # ASTER-02 — recommandations sur les décisions restantes
 
-Statut : **recommandations**, à arbitrer par le propriétaire avant la modélisation. Rien n'est appliqué. Données :
+Statut : **décidé par le propriétaire le 2026-11-04**, recommandations retenues sur les quatre points. Décisions appliquées et mesurées (tâche VM `20261104-193715`, commit `9f1c4b7`) : voir « Décisions et vérification » en fin de document. Version d'origine des recommandations ci-dessous. Données :
 session VM `aster`, tâche `20261104-181108` (commit `6627a1f`), gabarit final (plancher −1,30 st). Il y a
 10 morphologies : H1 à H7 sur le corps masculin 995, F1, F2 et F4 sur le corps féminin 994, avec les têtes remplacées
 selon la règle des têtes classiques. Les valeurs sont en studs (1 st = 0,28 m), au-dessus du dessus de l'assise
@@ -107,6 +107,18 @@ D7 est **sans objet**, à confirmer.
 
 **Recommandation** : inscrire ces budgets comme volumes d'encombrement (fil de fer) dans la scène Blender, dans une
 collection `ENVELOPPES`, et ajouter à la session VM du modèle réel les contrôles « garnitures » et « moquette ».
+
+## Décisions et vérification (2026-11-04)
+
+| Point | Décision du propriétaire | Appliqué | Vérifié |
+|---|---|---|---|
+| Pose (H5) | « Accepter » | Contrôle VM « yeux de l'avatar au-dessus du volant » rendu informatif ; vue de conduite contrôlée par la règle `CockpitGeometry` (Lune) | Lune : `CameraCockpit` (−1,40 ; 2,24 ; 2,07), haut du volant à 10° sous la visée, ≥ 0,6 st sous le pavillon |
+| Toit | « 4,20 st — 1,72 m » | Gabarit `HeadroomSt = 4,20` ; dépôt d'art `00e9ade` | VM `20261104-193715`, pose du jeu : marge corps ≥ 1,02, marge cheveux ≥ 0,81 (hors chapeau d'essai : −0,23, accepté), marge latérale ≥ 0,21, pieds ≥ 0,07 ; tous les contrôles de la pose du jeu réussis |
+| Couleurs | « Unifier sur la tête » | `AvatarPolicy.UnifySkinOnHead` : tronc, bras et jambes prennent la couleur de la tête, à chaque application du corps | VM `20261104-193715` : couleurs de départ différentes unifiées sur les deux silhouettes ; capture `captures/aster_02_couleurs_unifiees.jpg` |
+| Marges, D7 | « Valider budgets + D7 » | Budgets du §4 ; collection `ENVELOPPES` (7 plans) dans `wk_aster.blend` ; D7 sans objet | Scène relue par Blender sans interface (collections, repères, pavillon à 4,16) |
+
+Échecs restants de la tâche `20261104-193715` : pieds sous le plancher en **pose standard** (siège sans `AWSeatPose`), sans
+objet pour l'Aster, dont les sièges portent l'attribut (exigence d'ASTER-02).
 
 ## 5. Rappel des autres points ouverts
 

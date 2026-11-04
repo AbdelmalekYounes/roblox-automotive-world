@@ -12,11 +12,11 @@ droite +X, sol à y −1,786). Dans Blender : x → x, y → z, z → −y (1 un
 
 | Fichier | Contenu |
 |---|---|
-| `vehicles/wk_aster/blend/wk_aster.blend` | Scène du pipeline : collections, gabarit final en fil de fer verrouillé, repères d'intégration |
+| `vehicles/wk_aster/blend/wk_aster.blend` | Scène du pipeline : collections, gabarit final en fil de fer verrouillé, repères d'intégration, plans de budget `ENVELOPPES` (dépôt d'art `00e9ade`) |
 | `vehicles/wk_aster/ref-sheets/wk_aster_gabarit.{json,obj}` + `_params.json` | Gabarit final (23 blocs) et paramètres, exportés du jeu |
 | `vehicles/wk_aster/ref-sheets/aster_trait_{profil,face}.{svg,png}` | Esquisses techniques « Trait » sur le gabarit final |
 | `vehicles/wk_aster/ref-sheets/aster_habitacle_coupe.{svg,png}` | Coupe d'habitacle avec têtes, mains et pointes de pied mesurées (10 morphologies) |
-| `vehicles/wk_aster/ref-sheets/mesures_vm_20261104-181108.jsonl` | Mesures brutes de la session VM `aster` |
+| `vehicles/wk_aster/ref-sheets/mesures_vm_20261104-193715.jsonl` | Mesures brutes de la session VM `aster` (toit 4,20 st) |
 | `calibration/temoins_*.fbx`, `temoins.glb` | Témoins d'échelle : **relevé dans Studio à faire par le propriétaire** (§8), procédure dans `calibration/README.md` |
 
 Vérification du dépôt d'art (2026-11-04, préparation d'ASTER-02) :
@@ -36,18 +36,20 @@ Deux défauts corrigés dans la scène lors de cette vérification :
 Non inspecté : le rendu des fichiers SVG dans un navigateur ; l'ouverture de la scène dans l'interface graphique de
 Blender.
 
-Cotes du gabarit final (mesurées en VM, tâche `20261104-181108`, deux corps humains retenus, pose du jeu) :
+Cotes du gabarit final (mesurées en VM, tâches `20261104-181108` et `20261104-193715` pour le toit à 4,20 st, deux corps humains retenus, pose du jeu) :
 
 | Élément | Valeur |
 |---|---|
 | Dessus de l'assise | y −0,04 ; siège conducteur x −1,40, z 2,42 ; passager x +1,40 |
-| Dessous du pavillon | y 4,56 (assise + 4,60) ; cheveux au plus haut : assise + 3,39 (pose du jeu), + 3,76 (pose standard) |
+| Dessous du pavillon | y 4,16 (assise + **4,20**, décision du propriétaire) ; cheveux au plus haut : assise + 3,39 (pose du jeu) |
 | Plancher | dessus y −1,30, tôle 0,1 ; garde au sol 0,39 st (0,11 m) ; pieds 0,07 à 0,34 st au-dessus (pose du jeu) |
 | Volant | centre (−1,40 ; 1,52 ; 1,10), rayon 0,55, incliné de 15° (haut vers le conducteur) ; mains à 0,15–0,34 st de la jante |
 | Pédalier | z −1,4 (pointes de pied jusqu'à z −1,21) |
 | Planche de bord | centre z 0, y 0,86 à 1,56 |
 | Largeur intérieure | portières à x ±2,93 (faces internes) ; marge des bras ≥ 0,21 st |
-| Hors tout | 1,83 m (définition physique : 1,47 m, inchangée) |
+| Hors tout | **1,72 m** (définition physique : 1,47 m, inchangée) |
+| Couleurs du personnage | unifiées sur la couleur de la tête (décision du propriétaire) |
+| Budgets intérieurs | collection `ENVELOPPES` de la scène (ciel de toit ≥ y 3,65, garnitures ≤ 0,10 st côté passager et ≤ 0,30 st côté conducteur, moquette ≤ 0,04 st, face des pédales ≤ z −1,25, planche de bord : bas ≥ y 0,86, face arrière ≤ z 0,50) |
 
 ## 2. Liste des maillages
 
@@ -109,7 +111,8 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
 | Essai | Outil | Critère |
 |---|---|---|
 | Structure, noms, attributs, centres de roues | Lune (place construite) | 100 % des exigences du §3 ; écart des moyeux ≤ 0,05 st |
-| Habitacle, deux corps × échelles extrêmes | VM `aster` adaptée au modèle (10 morphologies, 2 places, 2 poses) | Tête et cheveux sous le pavillon, bras dans l'habitacle, jambes et **pieds au-dessus du plancher**, mains sur la jante ≤ 0,35 st, vue au-dessus du volant ≥ 0 |
+| Habitacle, deux corps × échelles extrêmes | VM `aster` adaptée au modèle (10 morphologies, 2 places, 2 poses) | Tête et cheveux sous le pavillon, bras dans l'habitacle, jambes et **pieds au-dessus du plancher**, mains sur la jante ≤ 0,35 st ; yeux de l'avatar au-dessus du volant : **informatif** (décision du propriétaire) |
+| Vue de conduite | Lune (`CockpitGeometry`) | `CameraCockpit` du modèle : haut du volant ≥ 10° sous la ligne de visée, ≥ 0,6 st sous le pavillon |
 | Pose du jeu activée | VM `aster` | Les deux sièges portent `AWSeatPose` (sinon, pose standard : pieds jusqu'à 0,42 st sous le plancher, tâche `20261104-181108`) |
 | Avatars, sorties, cockpit | VM `avatar`, `silhouette` | Aucune régression par rapport à la tâche `20261104-181108` |
 | Réplication | VM `silhouette2` | Corps vu identique par un autre client |
@@ -142,8 +145,8 @@ Blender (wk_aster.blend)                     Roblox (Model, PrimaryPart = Chassi
 |---|---|---|
 | 1 | Valider le **plancher abaissé** (−1,30 st, bas de caisse à 0,39 st du sol) | **Validé par le propriétaire** (« Je valide », 2026-11-04) |
 | 2 | Relever l'étalonnage Blender → Studio (§6.1) | **À faire par le propriétaire** |
-| 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : sans effet sur la vue de conduite | **À arbitrer** — recommandation : accepter (`ASTER_02_DECISIONS.md` §1) |
+| 3 | Vue au-dessus du volant pour la plus petite morphologie (H5 : −0,03 st) : sans effet sur la vue de conduite | **Décidé** : accepter (2026-11-04) |
 | 4 | Corps par défaut avant le choix du joueur (masculin, provisoire) | À confirmer |
-| 5 | Couleurs de peau du joueur (ruptures visibles, captures de la clôture) | **À arbitrer** — recommandation : unifier sur la couleur de la tête (§3) |
-| 6 | Hauteur sous pavillon : 4,60 st conservés ou réduite | **À arbitrer** — recommandation : 4,20 st, hors tout 1,72 m (§2) |
-| 7 | D7, largeur : marges positives avec les deux corps (≥ 0,21 st) | À confirmer comme sans objet ; budgets de garnitures (§4) |
+| 5 | Couleurs de peau du joueur | **Décidé** : unifier sur la tête (2026-11-04) ; appliqué et vérifié en VM |
+| 6 | Hauteur sous pavillon | **Décidé** : 4,20 st, hors tout 1,72 m (2026-11-04) ; appliqué et mesuré en VM |
+| 7 | D7, largeur, et budgets de l'habitacle | **Décidé** : budgets validés, D7 sans objet (2026-11-04) ; plans `ENVELOPPES` dans la scène |
