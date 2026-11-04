@@ -880,8 +880,10 @@ phase("photo", function()
             -- Le téléphone redessine son accueil à l'ouverture : bouton recherché juste avant
             -- le clic, nouvel essai si le clic visait un bouton déjà remplacé.
             task.wait(0.6)
-            local opened = click("ui.photo.app_photo_du_telephone", phoneButton("Photo"), "Photo")
-            if not opened then
+            -- (Lot 0.9.2, tâche 20261104-035727 : la variable du clic ne doit pas masquer
+            -- `opened`, sinon le mode photo restait ouvert et bloquait l'embarquement.)
+            local clicked = click("ui.photo.app_photo_du_telephone", phoneButton("Photo"), "Photo")
+            if not clicked then
                 task.wait(0.4)
                 click("ui.photo.app_photo_du_telephone_2", phoneButton("Photo"), "Photo")
             end

@@ -113,3 +113,59 @@ Correction (`5805636`) : sans pédale d'embrayage, le démarreur tourne quand le
 (équivalent du passage par N/P et de la clé, sans nouvelle commande). Boîte manuelle inchangée. Tests Lune : relance
 de P-01 calée en D accélérateur relâché, aucune relance accélérateur enfoncé, P-02 manuelle inchangée ; calage par
 rebond de `wk_atlas` sans activation de la borne puis relance.
+
+### 3.4 Vérification en jeu (tâche `20261104-031929`, `360f903`, session `gps2`)
+
+Le pilote heurte de nouveau le poteau de feu au même endroit (`FeuPoteau`, Δv 25,0 m/s) ; le calage est relevé avec
+son contexte : `moteur calé en (-2578, 102) — proto_p01, 18 km/h, rapport 1, ponté false, 4 roue(s) au sol,
+limitations du convertisseur 0`, puis `moteur relancé en 0.7 s` (pédales relâchées). La borne du convertisseur n'a
+agi à aucun moment des deux trajets (`limitations_convertisseur` = 0 et 0). Le trajet se poursuit et arrive.
+
+## 4. QA-A10 — téléphone tenu bras baissé : cause établie et corrigée
+
+- **Cause** (tâche `20261104-021402`, relevé `ui_monde.info_articulations_avatar`) : l'avatar par défaut utilise le
+  nouveau squelette R15 de Roblox (« Avatar Joint Upgrade ») : épaule `AnimationConstraint:RightShoulder` et
+  `BallSocketConstraint:RightShoulderBallSocket`, **aucun Motor6D**. `InterfaceService` ne cherchait qu'un Motor6D :
+  le bras n'était jamais levé.
+- **Première correction rejetée par l'essai** (`d98f60c`, tâche `20261104-025158`) : rotation de l'attache côté torse
+  — bras inchangé (8° → 8°). La documentation de Roblox indique que C0 est en lecture seule sur ces articulations et
+  qu'il ne faut pas modifier les attaches du squelette ; elle recommande de multiplier le décalage dans `Transform`
+  après l'animation (`RunService.PreSimulation`), côté client, l'état étant partagé par attribut.
+- **Correction** (`360f903`) : le serveur publie l'attribut `AWPhoneRaised` du personnage (chemin Motor6D conservé
+  pour R6 et R15 classique) ; chaque client (`PhoneController`) applique 60° à l'épaule de chaque joueur concerné,
+  progressivement (0,25 s), sans cumul quand l'animation n'est pas réévaluée ; attaches non modifiées. Direction
+  artistique inchangée (aucune interface modifiée).
+- **Vérification** (tâche `20261104-031929`, mesure géométrique indépendante du squelette, vraies touches) :
+
+| Contrôle | Mesure |
+|---|---|
+| `ui_monde.telephone_bras_leve` | bras à 55° de la verticale (avant : 8°), **levé de 47°** (rotation de 60° composée avec la pose d'attente) |
+| `ui_monde.telephone_devant_le_personnage` | téléphone 1,8 st devant, 0,3 st au-dessus du centre du personnage, 0,29 st de la main (avant correction : 0,7 st devant, 1,1 st **sous** le centre) |
+| `ui_monde.telephone_en_marchant` | vraie touche W 2,5 s : 13,6 st parcourus, bras levé d'au moins 31° pendant la marche, téléphone toujours dans la main (≤ 0,29 st) |
+
+  Capture `054_telephone_en_main_face`. Non vérifié : vue par un **autre joueur** (une seule session cliente en
+  monde ouvert) — le mécanisme est le même pour tous les personnages (attribut lu par chaque client).
+
+## 5. GPS — destinations des 7 zones par conduite réelle
+
+Pilote d'essai (`tests/studio/GpsClient.client.luau`) amélioré, **sans téléportation** (le véhicule est posé une
+seule fois au départ, puis conduit) :
+
+- voie de droite (décalage de 1,8 m de l'axe de l'itinéraire) ; dépassement par la gauche d'un obstacle immobile ;
+- trois rayons d'obstacle (axe et coins avant) ; dégagements journalisés, alternés et allongés quand ils se répètent ;
+- moteur calé : pédales relâchées (relance, §3) ;
+- **sortie d'itinéraire par la route** : point de route à 180-400 m et à plus de 90 m de l'itinéraire, itinéraire du
+  jeu pour s'y rendre (même planificateur que le GPS) ; le coup de volant « vers le côté dégagé » des lots
+  précédents ne quittait pas l'itinéraire en ville (2 à 7 m d'écart, tâches `20261104-021402` et `-025158`).
+
+| Tâche | Code | Motorsport | Montagnes | Sortie et recalcul |
+|---|---|---|---|---|
+| `20261104-021402` | `9715443` | abandon (calé, immobilisé 90 s) | abandon (même point) | sortie insuffisante (2 m) |
+| `20261104-025158` | `a089a03` | **arrivé** (463 s, 24 m) | abandon (carrefour, 90 s) | sortie insuffisante (7 m) |
+| `20261104-031929` | `360f903` | **arrivé** (414 s, 24 m) | **arrivé** (1 582 s, 24 m) | **écart 51 m, recalcul après 22 s** |
+
+Arrivées **constatées par le GPS du jeu** (statut « Arrivé »). Zones traversées pendant `gps2` : Banlieues,
+Métropole, Montagnes, Motorsport. Les cinq autres destinations sont couvertes par la session `gps` (campagne finale,
+§7). Conduite du pilote encore imparfaite : 39 chocs confirmés par le serveur pendant les deux trajets (surtout des
+glissières, trois fois le même poteau de feu), 29 dégagements ; ce sont des limites du pilote d'essai, pas des
+défauts du jeu (chocs constatés, dégâts appliqués, aucune erreur).
