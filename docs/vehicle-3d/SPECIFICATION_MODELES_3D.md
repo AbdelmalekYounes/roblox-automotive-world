@@ -39,7 +39,7 @@ jour), attaches, collisions et caméras restent des objets du jeu.
 | Carrosserie principale | MeshPart(s) visuels : `Massless`, `CanCollide`/`CanQuery`/`CanTouch` faux, soudés au châssis |
 | Collisions | **indépendantes du rendu** : boîtes ou enveloppes simples (coque, boucliers, habitacle), mêmes noms qu'aujourd'hui pour les zones de dégâts et la détection de choc ; aucune collision sur le maillage détaillé |
 | Roues | une jante + un pneu par roue (ou un maillage), pivot au **centre du moyeu**, axe de rotation X ; disques et étriers facultatifs, fixes |
-| Portières, capot, coffre | pièces séparées (ouvertures futures possibles), pivot sur la charnière [hypothèse] ; fermées en jeu dans ce lot |
+| Portières, capot, coffre | pièces séparées, pivot sur la charnière ; **fermées en jeu** (D4, propriétaire, 2026-11-04 : animation reportée à un lot ultérieur, sans reprise des modèles) |
 | Vitrages | pare-brise, latérales, lunette séparés ; matériau verre, transparence ≥ 0,3 pour voir l'avatar de l'extérieur |
 | Rétroviseurs | séparés (exclus de l'enveloppe des flancs, comme aujourd'hui) |
 | Feux | pièces séparées avec attribut `AWLight` = `Head`/`Tail` (feux allumés par `VehicleLights`) |
