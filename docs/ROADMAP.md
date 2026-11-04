@@ -198,6 +198,10 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   HF1 à HF3 (extérieur, intérieur, matériaux) faites et acceptées ; HF4 faite, à revoir (LOD0 36 696 triangles au lieu de
   101 744, LOD1 12 978, LOD2 3 544, 4 collisions, attaches, roues instanciées ; contrôles 33/33 ; LOD0 au-dessus de
   l'hypothèse de 25 000 : gardé, D5 tranche, décision du propriétaire du 2026-11-04) ; HF5 à faire, sur accord.
+- **Direction changée le 2026-11-04** (décision du propriétaire) : reproduction de la référence sans logo, aux proportions
+  réelles (1,47 m). Blockout de reproduction fait, à valider (`docs/vehicle-3d/ASTER_02_REPRODUCTION.md`) ; contrôles
+  13/15 : ciel de toit et têtes en échec, conséquence de la hauteur réelle (habitacle et VM à reprendre) ; passes HF à
+  rejouer après validation.
 
 ## Critères de passage du socle 0.0.1
 

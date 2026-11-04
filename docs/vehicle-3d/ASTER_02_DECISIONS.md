@@ -120,6 +120,25 @@ collection `ENVELOPPES`, et ajouter à la session VM du modèle réel les contr�
 Échecs restants de la tâche `20261104-193715` : pieds sous le plancher en **pose standard** (siège sans `AWSeatPose`), sans
 objet pour l'Aster, dont les sièges portent l'attribut (exigence d'ASTER-02).
 
+## 4 bis. Changement de direction : reproduction de la référence (2026-11-04)
+
+Décision du propriétaire, écart au cahier des charges **arbitré par lui** (CLAUDE.md : seul le propriétaire accorde une
+exception).
+
+Il a écrit : « on ne prend pas en compte ce que dit le CDC sur la reproduction des véhicules ; on va essayer de
+reproduire le véhicule sans le logo Volkswagen ». Réponses aux deux questions posées :
+- **hauteur : proportions réelles**, environ 1,46 m ; la hauteur de la définition du jeu est 1,47 m ;
+- **face avant et détails : tout reproduire**, c'est-à-dire bandeau lumineux, phares, calandre, boucliers, feux et
+  jantes, sans le logo.
+
+| Point | Conséquence |
+|---|---|
+| Direction A « Trait », signature Mivale « L » | Remplacées pour l'Aster ; le blockout validé et les passes HF1 à HF4 restent dans l'historique (dépôt d'art `4ff1a75`) |
+| Interdits maintenus | Aucun logo, aucun nom « Volkswagen » ni « Golf » dans le jeu, les fichiers du modèle ou les textures ; aucune photographie utilisée comme texture ; plaques fictives. Les photos du manifeste servent de référence de modelage seulement |
+| Risque signalé au propriétaire | La forme d'un véhicule récent peut être protégée (dessin ou modèle, image de marque), même sans logo ; un ayant droit peut faire retirer un contenu publié sur Roblox. Ce risque porte sur la publication, que seul le propriétaire décide (aucune publication sans son accord) |
+| Toit (décision du §2 remplacée) | Hors tout ramené à la hauteur de la définition, 1,47 m, soit le dessus du pavillon à y 3,46. Il reste environ 3,3 st entre l'assise et le dessous du pavillon, au lieu de 4,20 : **les marges de tête mesurées en VM (§2) ne tiennent plus**. Assise, pose et contrôles VM sont à reprendre ; aucune solution n'est choisie à ce stade |
+| Physique | Inchangée : la définition (4,25 × 1,78 × 1,47 m, empattement 2,62 m) est déjà proche des cotes réelles de la référence |
+
 ## 5. Rappel des autres points ouverts
 
 - Corps par défaut avant le choix du joueur : masculin, provisoire (à confirmer).

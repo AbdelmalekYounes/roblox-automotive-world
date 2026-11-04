@@ -5,6 +5,10 @@ Point de départ : blockout **validé par le propriétaire le 2026-11-04** (`AST
 
 HF1 acceptée par le propriétaire (« Oui, HF2 », 2026-11-04) ; HF2 acceptée (« Oui, HF3 », 2026-11-04) ; HF3 acceptée (« Oui, HF4 », 2026-11-04).
 
+**Direction remplacée le 2026-11-04** : le propriétaire a décidé de reproduire la référence (`ASTER_02_DECISIONS.md` §4 bis ;
+blockout de reproduction : `ASTER_02_REPRODUCTION.md`). Les passes ci-dessous portent sur le dessin « Trait », qui reste
+générable ; elles seront rejouées sur la reproduction après sa validation.
+
 Statut :
 - aucun import dans Studio, aucune publication, aucune intégration au jeu, aucune fusion ;
 - physique et carrosseries provisoires inchangées.
