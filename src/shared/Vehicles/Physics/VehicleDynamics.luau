@@ -232,7 +232,12 @@ function VehicleDynamics.requestShift(
 end
 
 -- Démarreur et calage du moteur thermique, panne d'énergie.
-local function updateEngineState(state: Types.VehicleRuntimeState, powertrain: Types.PowertrainDefinition, dt: number)
+local function updateEngineState(
+    state: Types.VehicleRuntimeState,
+    powertrain: Types.PowertrainDefinition,
+    driveThrottle: number,
+    dt: number
+)
     if not state.EnergyAvailable then
         -- Panne sèche ou batterie vide : plus de propulsion, aucune relance possible.
         state.EngineRunning = false
@@ -246,7 +251,13 @@ local function updateEngineState(state: Types.VehicleRuntimeState, powertrain: T
     -- Relance d'un moteur calé : démarreur quand l'embrayage est enfoncé ou au
     -- neutre (simplification : pas de clé), ou démarrage « à la poussette » si
     -- les roues entraînent le moteur au-dessus de 80 % du ralenti.
-    local free = state.Gear == 0 or state.ClutchPedal >= 0.9
+    -- Lot 0.9.2 : sans pédale d'embrayage (automatique, double embrayage, CVT…), le
+    -- sélecteur ne repasse jamais au neutre en jeu ; un moteur calé (rebond contre un
+    -- obstacle, par exemple) restait donc calé jusqu'à la sortie du véhicule. Le
+    -- démarreur y tourne quand le conducteur relâche l'accélérateur (équivalent du
+    -- passage par N/P et de la clé, sans commande supplémentaire).
+    local noClutchPedal = powertrain.Transmission.Kind ~= "Manual"
+    local free = state.Gear == 0 or state.ClutchPedal >= 0.9 or (noClutchPedal and driveThrottle < 0.05)
     if free then
         state.StarterTimer += dt
         if state.StarterTimer >= Transmission.StarterDurationS then
@@ -401,7 +412,7 @@ function VehicleDynamics.step(
     local driveThrottle, brakePedal = Transmission.update(state, powertrain, input, forwardSpeed, wheelOmega0, dt)
     state.DriveThrottle = driveThrottle
     state.BrakePedal = brakePedal
-    updateEngineState(state, powertrain, dt)
+    updateEngineState(state, powertrain, driveThrottle, dt)
     -- Couple coupé pendant un passage (allumage coupé, embrayages qui se relaient).
     local torqueThrottle = if state.ShiftTimer > 0 then 0 else driveThrottle
 
