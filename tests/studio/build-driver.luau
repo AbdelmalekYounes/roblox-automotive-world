@@ -68,6 +68,8 @@ local KNOWN_SESSIONS = {
     ui_panels2 = { Name = "ui_panels2", Players = 1 },
     -- Lot UI-04 : HUD, carte complète et notifications en V1.2.
     ui_hud = { Name = "ui_hud", Players = 1 },
+    -- UI V1.2 : résolutions 1280 × 720 à 3440 × 1440 (écran virtuel, surcharge de la vue en Studio).
+    ui_resolutions = { Name = "ui_resolutions", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -103,6 +105,7 @@ local EXTRA = {
     { "AW_TestUiGarage2Client", "UiGarage2Client.client.luau", true },
     { "AW_TestUiPanels2Client", "UiPanels2Client.client.luau", true },
     { "AW_TestUiHudClient", "UiHudClient.client.luau", true },
+    { "AW_TestUiResolutionsClient", "UiResolutionsClient.client.luau", true },
 }
 
 local output = process.args[1]

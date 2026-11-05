@@ -49,6 +49,7 @@ if
     or sessionName == "ui_garage2"
     or sessionName == "ui_panels2"
     or sessionName == "ui_hud"
+    or sessionName == "ui_resolutions"
 then
     return
 end

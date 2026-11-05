@@ -206,7 +206,12 @@ end
 -- Placement selon les préférences (coin, taille).
 local function layout()
     local prefs = UIState.prefs()
-    scale.Scale = prefs.Hud.Scale / 100
+    local view = UIState.layout()
+    -- 1440 p : tailles 1080 p agrandies de 1,333 (maquette §3), multipliées par la taille choisie du HUD.
+    scale.Scale = prefs.Hud.Scale / 100 * view.Scale
+    minimapMask.Size = UDim2.fromOffset(math.floor(MINIMAP_SIZE * view.Scale), math.floor(MINIMAP_SIZE * view.Scale))
+    local turnScale = turnFrame:FindFirstChildOfClass("UIScale") or UITheme.make("UIScale", {}, turnFrame)
+    turnScale.Scale = view.Scale
     local left = prefs.Hud.Corner == "BottomLeft"
     cluster.AnchorPoint = Vector2.new(if left then 0 else 1, 1)
     cluster.Position = if left then UDim2.new(0, 16, 1, -16) else UDim2.new(1, -16, 1, -16)
@@ -435,6 +440,7 @@ function HUDController.start()
     build()
     layout()
     UIState.onPrefs(layout)
+    UIState.onViewport(layout)
     RunService.RenderStepped:Connect(updateCluster)
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)

@@ -140,7 +140,7 @@ do
         )
     )
     if panel then
-        local tabsBar = panel:FindFirstChild("Onglets") :: Frame
+        local tabsBar = panel:FindFirstChild("Onglets", true) :: Frame
         for index, tab in spec.Tabs do
             local button = tabsBar and tabsBar:FindFirstChild("Onglet" .. index) :: TextButton?
             local ok = Gui.click(button, tab)

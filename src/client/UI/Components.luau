@@ -24,6 +24,7 @@ local Tokens = require(SharedUI:WaitForChild("DesignTokens"))
 local InputMap = require(SharedUI:WaitForChild("InputMap"))
 local Localization = require(SharedUI:WaitForChild("Localization"))
 local UITheme = require(script.Parent.UITheme)
+local UIState = require(script.Parent.UIState)
 
 local Components = {}
 
@@ -550,6 +551,44 @@ function Components.confirm(parent: Instance, options: ConfirmOptions): Frame?
         end
     end)
     return panel
+end
+
+-- Taille d'un élément en pixels LOGIQUES : AbsoluteSize (pixels d'écran) divisée par le produit des UIScale de ses
+-- ancêtres et du sien. Indispensable pour calculer des cotes en « offset » dans une racine mise à l'échelle.
+function Components.logicalSize(item: GuiObject): Vector2
+    local factor = 1
+    local node: Instance? = item
+    while node ~= nil and not node:IsA("LayerCollector") do
+        local scale = node:FindFirstChildOfClass("UIScale")
+        if scale then
+            factor *= scale.Scale
+        end
+        node = node.Parent
+    end
+    return item.AbsoluteSize / math.max(factor, 1e-3)
+end
+
+-- Racine logique d'un écran plein (§3) : le contenu est disposé en pixels logiques (taille de la vue divisée par
+-- l'échelle), puis agrandi par un UIScale (1440 p : 1,333) ; il remplit exactement son parent sans déborder. Suit
+-- les changements de taille de la vue.
+function Components.logicalRoot(parent: GuiObject, name: string?): Frame
+    local root = UITheme.make("Frame", {
+        Name = name or "Logique",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.fromScale(1, 1),
+    }, parent) :: Frame
+    local scale = UITheme.make("UIScale", {}, root) :: UIScale
+    local function update()
+        local layout = UIState.layout()
+        scale.Scale = layout.Scale
+        root.Size = UDim2.fromScale(1 / layout.Scale, 1 / layout.Scale)
+        root:SetAttribute("AWScale", layout.Scale)
+        root:SetAttribute("AWCompact", layout.Compact)
+    end
+    update()
+    UIState.onViewport(update)
+    return root
 end
 
 -- Échelle de l'écran (§3) : 1440 p = disposition 1080 p à l'échelle 1,333 ; compacte sous 1400 px logiques. Pose un

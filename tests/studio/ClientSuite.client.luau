@@ -93,6 +93,7 @@ if
     or currentSession == "ui_garage2"
     or currentSession == "ui_panels2"
     or currentSession == "ui_hud"
+    or currentSession == "ui_resolutions"
 then
     return
 end
