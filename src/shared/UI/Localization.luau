@@ -368,6 +368,17 @@ local E: { [string]: Entry } = {
     ["ui.open"] = { "Ouvrir", "Open" },
     ["ui.confirm"] = { "Confirmer", "Confirm" },
     ["ui.cancel"] = { "Annuler", "Cancel" },
+    -- Lot UI-01 : composants du système de conception V1.2 (états de chargement et de sauvegarde, §6).
+    ["ui.state.loading"] = { "Chargement…", "Loading…" },
+    ["ui.state.draft"] = { "Brouillon non envoyé", "Unsent draft" },
+    ["ui.state.pending"] = { "Envoyé, en attente de confirmation", "Sent, awaiting confirmation" },
+    ["ui.state.confirmed"] = { "Confirmé", "Confirmed" },
+    ["ui.state.rejected"] = { "Refusé", "Rejected" },
+    ["ui.state.offline"] = {
+        "Serveur injoignable : rien n'est confirmé.",
+        "Server unreachable: nothing is confirmed.",
+    },
+    ["ui.tuning.origin"] = { "Origine {value}", "Stock {value}" },
     ["ui.on"] = { "activé", "on" },
     ["ui.off"] = { "désactivé", "off" },
     ["ui.yes"] = { "Oui", "Yes" },

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0E0F11;color:#ECEAE6;font-family:'Titillium Web',sans-serif}a{color:#E8A33D;text-decoration:none}a:hover{color:#F4BE6A}*{box-sizing:border-box}</style>
+</helmet>
+<div style="max-width:1280px;margin:0 auto;padding:40px 40px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px">
+    <span style="font-weight:700;letter-spacing:.1em;padding:4px 10px;background:#E8A33D;color:#15120B;border-radius:3px">V1.2 · POUR INTÉGRATION · EN ATTENTE D'APPROBATION</span>
+    <a href="Directions artistiques.dc.html">Directions</a><span style="color:#E8A33D">Design System</span><a href="Smartphone.dc.html">Smartphone</a><a href="Garage.dc.html">Garage</a>
+  </div>
+  <h1 style="margin:0;font-size:56px;line-height:1;font-weight:700">Automotive World — Design System V1.2</h1>
+  <p style="margin:0;font-size:17px;color:#C9C6BF;max-width:860px;text-wrap:pretty">Référence unique pour l'intégration Roblox. Elle ne contient que ce qui est retenu. Les explorations V1.0 et V1.1 sont rangées à part (archive v1.0/, archive v1.1/) et ne font pas autorité. Les maquettes .dc.html illustrent le comportement ; ce ne sont pas du code Luau.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:#A3A29C">
+    <a href="#couleurs">Couleurs</a><a href="#typo">Typographie</a><a href="#mesures">Mesures</a><a href="#composants">Composants</a><a href="#icones">Icônes</a><a href="#etats">États</a><a href="#animations">Animations</a><a href="#accessibilite">Accessibilité</a><a href="#regles">Règles d'interface</a><a href="#raccourcis">Raccourcis</a>
+  </div>
+</header>
+
+<section id="couleurs" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font-size:30px">1. Couleurs</h2>
+  <p style="margin:0;font-size:14px;color:#A3A29C;max-width:820px">Base anthracite et ambre. Deux couleurs fonctionnelles seulement : le cyan pour le GPS et les instruments, le rouge pour le chrono de course et les refus. Aucune autre teinte n'est autorisée dans l'interface.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#0E0F11;border:1px solid #33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">bg.base #0E0F11</b><span style="font-size:12px;color:#A3A29C">14, 15, 17 · fond des panneaux</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#121416;border:1px solid #33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">bg.chrome #121416</b><span style="font-size:12px;color:#A3A29C">18, 20, 22 · barres, panneau latéral</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#16181B;border:1px solid #33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">surface.1 #16181B</b><span style="font-size:12px;color:#A3A29C">22, 24, 27 · cartes, lignes</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#1E2125;border:1px solid #33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">surface.2 #1E2125</b><span style="font-size:12px;color:#A3A29C">30, 33, 37 · boutons, champs</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">line #33363C</b><span style="font-size:12px;color:#A3A29C">51, 54, 60 · contraste renforcé #6B6F77</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#ECEAE6"></div><b style="font-family:'Roboto Mono';font-size:12px">text #ECEAE6</b><span style="font-size:12px;color:#A3A29C">236, 234, 230 · 15,9:1 sur bg.base</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#A3A29C"></div><b style="font-family:'Roboto Mono';font-size:12px">text.muted #A3A29C</b><span style="font-size:12px;color:#A3A29C">7,4:1 · renforcé #D9D7D2</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#E8A33D"></div><b style="font-family:'Roboto Mono';font-size:12px">amber #E8A33D</b><span style="font-size:12px;color:#A3A29C">232, 163, 61 · sélection, focus, action principale</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#2A2416;border:1px solid #33363C"></div><b style="font-family:'Roboto Mono';font-size:12px">amber.soft #2A2416</b><span style="font-size:12px;color:#A3A29C">texte #F4BE6A · sélectionné, en attente</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#5CC8D6"></div><b style="font-family:'Roboto Mono';font-size:12px">gps.cyan #5CC8D6</b><span style="font-size:12px;color:#A3A29C">92, 200, 214 · GPS, mini-carte, instruments</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#E5534B"></div><b style="font-family:'Roboto Mono';font-size:12px">race.red #E5534B</b><span style="font-size:12px;color:#A3A29C">229, 83, 75 · chrono, refus</span></div>
+    <div style="padding:10px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><div style="height:40px;border-radius:3px;background:#7FCF9C"></div><b style="font-family:'Roboto Mono';font-size:12px">ok #7FCF9C</b><span style="font-size:12px;color:#A3A29C">127, 207, 156 · réussite, écart positif</span></div>
+  </div>
+  <p style="margin:0;font-size:13px;color:#A3A29C">Fonds d'état : warn #1E1A10 + bord #6B5A2E + texte #F1E3C4 · danger #2A1715 + texte #F2C9C5 · ok #132219 + texte #BFE6CC. Texte sur ambre : #15120B.</p>
+</section>
+
+<section id="typo" style="display:flex;flex-direction:column;gap:14px">
+  <h2 style="margin:0;font-size:30px">2. Typographie</h2>
+  <p style="margin:0;font-size:14px;color:#A3A29C">Titillium Web pour le texte, Roboto Mono pour les chiffres et les touches. Dans Roblox : Font.fromName("TitilliumWeb") et Font.fromName("RobotoMono"), à vérifier dans Studio. Tailles à la référence 1080 p ; minimum absolu 11 px.</p>
+  <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:10px 24px;align-items:baseline">
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">display · 56 / Bold</span><span style="font-size:56px;font-weight:700;line-height:1">Rafale</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">h1 · 28 / Bold</span><span style="font-size:28px;font-weight:700">Collection</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">h2 · 22 / Bold, capitales</span><span style="font-size:22px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Garage</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">bouton, onglet · 15 / 600</span><span style="font-size:15px;font-weight:600">Appliquer les réglages</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">corps · 14 / 400</span><span style="font-size:14px">Traction vive à double embrayage et différentiel autobloquant.</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">libellé · 12 / 600, capitales</span><span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#A3A29C">Réglages</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">vitesse · Mono 64 / Bold</span><span style="font-family:'Roboto Mono';font-size:64px;font-weight:700;line-height:1">84</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">course · Mono 28 / Bold italique</span><span style="font-family:'Roboto Mono';font-size:28px;font-weight:700;font-style:italic">1:42.6</span>
+    <span style="font-family:'Roboto Mono';font-size:12px;color:#A3A29C">valeur · Mono 15</span><span style="font-family:'Roboto Mono';font-size:15px;color:#E8A33D">1.08×</span>
+  </div>
+</section>
+
+<section id="mesures" style="display:flex;flex-direction:column;gap:14px">
+  <h2 style="margin:0;font-size:30px">3. Mesures et résolutions</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+    <div style="padding:16px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <b>Espacements</b><span style="color:#C9C6BF">Pas de 4 : 4 · 8 · 12 · 16 · 20 · 24 · 28. Marges de panneau 20 px ; 16 px en compact.</span>
+      <b style="margin-top:8px">Rayons</b><span style="color:#C9C6BF">Puce 2–3 · bouton et champ 4 · carte 6 · tuile d'application 14 · téléphone 34 (cadre) / 26 (écran).</span>
+      <b style="margin-top:8px">Cibles</b><span style="color:#C9C6BF">Bouton principal 44 px de haut. Aucune cible sous 32 px (36 px pour les puces de pièce).</span>
+    </div>
+    <div style="padding:16px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <b>Résolutions</b>
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 12px;color:#C9C6BF"><span style="font-family:'Roboto Mono'">2560×1440</span><span>Disposition 1080 p, UIScale 1,333</span><span style="font-family:'Roboto Mono'">1920×1080</span><span>Référence</span><span style="font-family:'Roboto Mono'">1366×768</span><span>Disposition compacte, UIScale 1</span><span style="font-family:'Roboto Mono'">1280×720</span><span>Disposition compacte, UIScale 1</span></div>
+      <span style="color:#A3A29C;font-size:13px">Compacte sous 1400 px de large logique. Le texte n'est jamais réduit sous 11 px.</span>
+    </div>
+    <div style="padding:16px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <b>Garage (1080 p / compact)</b>
+      <span style="color:#C9C6BF">Barre haute 56 · onglets 48 · barre d'aide 40.</span>
+      <span style="color:#C9C6BF">Panneau latéral : Véhicule 420 / 340 · Préparation 680 / 540 · autres 560 / 460.</span>
+      <span style="color:#C9C6BF">Zone 3D (ViewportFrame) = largeur restante × (hauteur − 144). Exemple 1080 p, Véhicule : 1500 × 936.</span>
+      <b style="margin-top:8px">Téléphone</b><span style="color:#C9C6BF">380×780 · agrandi 460×940 · compact 330×600 / 380×660. Marge 40 / 20 depuis le coin bas-droit.</span>
+    </div>
+  </div>
+</section>
+
+<section id="composants" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font-size:30px">4. Composants</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px">
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:12px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">BOUTONS</b>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button style="height:44px;padding:0 18px;background:#E8A33D;border:none;border-radius:4px;color:#15120B;font:700 15px 'Titillium Web'">Principal</button>
+        <button style="height:44px;padding:0 18px;background:#1E2125;border:1px solid #33363C;border-radius:4px;color:#ECEAE6;font:600 15px 'Titillium Web'">Secondaire</button>
+        <button style="height:44px;padding:0 18px;background:#1E2125;border:1px solid #33363C;border-radius:4px;color:#ECEAE6;font:600 15px 'Titillium Web';outline:2px solid #E8A33D;outline-offset:2px">Focus manette</button>
+        <button style="height:44px;padding:0 18px;background:#1E2125;border:1px solid #33363C;border-radius:4px;color:#ECEAE6;font:600 15px 'Titillium Web';opacity:.45">Désactivé</button>
+        <button style="height:36px;padding:0 12px;background:transparent;border:1px solid #7A3B37;border-radius:3px;color:#F2C9C5;font:600 13px 'Titillium Web'">Révoquer</button>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Roblox : TextButton + UICorner 4 + UIStroke 1. Survol souris : surface.2 → #262A2F. Désactivé : opacité 0,45, Active = false, raison affichée à côté ou en info-bulle.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:12px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">ONGLETS · CHOIX SEGMENTÉ</b>
+      <div style="display:flex;gap:2px;border-bottom:1px solid #33363C">
+        <span style="height:44px;padding:0 14px;display:flex;align-items:center;border-bottom:3px solid #E8A33D;font-weight:600">Véhicule</span>
+        <span style="height:44px;padding:0 14px;display:flex;align-items:center;border-bottom:3px solid transparent;font-weight:600;color:#A3A29C">Préparation</span>
+        <span style="height:44px;padding:0 14px;display:flex;align-items:center;border-bottom:3px solid transparent;font-weight:600;color:#A3A29C">Configurations</span>
+      </div>
+      <div style="display:flex;gap:2px;padding:3px;background:#0E0F11;border:1px solid #33363C;border-radius:5px;align-self:flex-start">
+        <span style="height:34px;padding:0 12px;display:flex;align-items:center;border-radius:3px;background:#E8A33D;color:#15120B;font-weight:600;font-size:13px">3/4</span>
+        <span style="height:34px;padding:0 12px;display:flex;align-items:center;font-weight:600;font-size:13px">Avant</span>
+        <span style="height:34px;padding:0 12px;display:flex;align-items:center;font-weight:600;font-size:13px">Arrière</span>
+        <span style="height:34px;padding:0 12px;display:flex;align-items:center;font-weight:600;font-size:13px">Profil</span>
+        <span style="height:34px;padding:0 12px;display:flex;align-items:center;font-weight:600;font-size:13px">Intérieur</span>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Onglet actif : filet ambre 3 px. Sélecteur de vue de caméra : segment actif plein ambre.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:8px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">LIGNE DE RÉGLAGE</b>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px">
+        <span style="font-size:15px">Rapport de pont</span><span style="font-family:'Roboto Mono';font-size:15px;text-align:right;color:#E8A33D">1.04×</span>
+        <div style="grid-column:1 / span 2;height:24px;position:relative"><div style="position:absolute;left:0;right:0;top:10px;height:4px;background:#33363C;border-radius:2px"></div><div style="position:absolute;left:0;width:75%;top:10px;height:4px;background:#E8A33D;border-radius:2px"></div><div style="position:absolute;left:75%;top:4px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#ECEAE6;border:2px solid #E8A33D"></div></div>
+        <div style="grid-column:1 / span 2;display:flex;justify-content:space-between;font-family:'Roboto Mono';font-size:11px;color:#8E8C86"><span>0.92×</span><span>origine 1.00×</span><span>1.08×</span></div>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Valeur modifiée en ambre. Pas : 0,01 (×), 0,005 m, 50 tr/min. Manette : gauche/droite = un pas, gâchettes = 5 pas. Plages : TuningRules.ranges, jamais codées dans l'interface.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">PUCES DE PIÈCE · NUANCIER</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="min-height:36px;padding:0 12px;display:flex;align-items:center;border-radius:3px;background:#1E2125;border:1px solid #33363C;font-size:13px;font-weight:600">Série</span>
+        <span style="min-height:36px;padding:0 12px;display:flex;align-items:center;border-radius:3px;background:#2A2416;border:1px solid #E8A33D;color:#F4BE6A;font-size:13px;font-weight:600">Pneus sport</span>
+        <span style="min-height:36px;padding:0 12px;display:flex;align-items:center;border-radius:3px;background:#1E2125;border:1px solid #33363C;font-size:13px;font-weight:600;opacity:.4">Cartographie moteur sport</span>
+      </div>
+      <div style="display:flex;gap:6px"><span style="width:36px;height:36px;border-radius:3px;background:rgb(74,80,89);border:2px solid #E8A33D"></span><span style="width:36px;height:36px;border-radius:3px;background:rgb(236,236,232)"></span><span style="width:36px;height:36px;border-radius:3px;background:rgb(176,28,34)"></span><span style="width:36px;height:36px;border-radius:3px;background:rgb(28,58,120)"></span><span style="width:36px;height:36px;border-radius:3px;background:rgb(255,122,26)"></span></div>
+      <span style="font-size:12px;color:#A3A29C">Pièce incompatible : opacité 0,4 + raison (PartCatalog.compatible). Couleurs : CosmeticCatalog.Colors (10), jamais redéfinies côté interface.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">ZONE 3D DU VÉHICULE</b>
+      <div style="aspect-ratio:16 / 9;border-radius:4px;background:radial-gradient(ellipse at 50% 70%,#2A2E34 0%,#17191C 55%,#0E0F11 100%);position:relative;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;left:22%;right:22%;top:58%;aspect-ratio:4 / 1;border:1px solid #444951;border-radius:50%"></div>
+        <span style="font-family:'Roboto Mono';font-size:11px;color:#A3A29C;padding:6px 10px;border:1px dashed #4A4F57;border-radius:4px;background:#0E0F11B3">VIEWPORTFRAME</span>
+        <span style="position:absolute;left:10px;top:10px;font-size:20px;font-weight:700">Aster</span>
+        <span style="position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:4px"><span style="height:26px;padding:0 10px;display:flex;align-items:center;border-radius:3px;background:#1E2125;font-size:11px">Sortir</span><span style="height:26px;padding:0 10px;display:flex;align-items:center;border-radius:3px;background:#E8A33D;color:#15120B;font-size:11px;font-weight:700">Préparer</span></span>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Fond : dégradé radial #2A2E34 → #0E0F11 (image 9-slice ou UIGradient). Nom en haut à gauche, vues en haut à droite, flèches de rotation à mi-hauteur, actions centrées en bas : rien ne couvre le centre.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:8px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">CARTES · AVERTISSEMENTS · MARQUEURS</b>
+      <div style="padding:10px 12px;background:#0E0F11;border:1px solid #33363C;border-left:3px solid #5CC8D6;border-radius:4px;display:flex;flex-direction:column"><b style="font-size:15px">Concession Métropole</b><span style="font-size:12px;color:#A3A29C">3,2 km · 6 min</span></div>
+      <div style="padding:8px 10px;border:1px solid #6B5A2E;background:#1E1A10;border-radius:4px;font-size:13px;color:#F1E3C4">Mode photo disponible à l'arrêt ou à pied.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:3px;background:#2A2416;color:#F4BE6A">PROPOSÉ · EN ATTENTE D'APPROBATION</span><span style="font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border:1px solid #4A4F57;border-radius:2px;color:#A3A29C">NON SIMULÉ</span><span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#E8A33D">ILLUSTRATIF</span></div>
+      <span style="font-size:12px;color:#A3A29C">Filet gauche de 3 px réservé au statut (cyan = GPS, ambre = en attente, vert = réussi). Les marqueurs NON SIMULÉ et ILLUSTRATIF n'existent que dans les maquettes.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">CONFIRMATION PROTÉGÉE</b>
+      <div style="padding:14px;background:#0E0F11;border:1px solid #33363C;border-radius:10px;display:flex;flex-direction:column;gap:8px">
+        <b style="font-size:16px">Transférer Rafale à Joueur_Lina ?</b>
+        <div style="display:flex;gap:8px"><span style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #33363C;border-radius:4px;font-weight:600">Annuler</span><span style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:#E8A33D;color:#15120B;font-weight:700;opacity:.45">Confirmer</span></div>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Confirmer est inactif tant que InputMap.accepts(guard, pressBegan) est faux : 0,25 s après l'affichage, 0,4 s après un changement de périphérique. Jamais proposée en mode rapide.</span>
+    </div>
+
+    <div style="padding:18px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:10px">
+      <b style="font-size:13px;letter-spacing:.1em;color:#A3A29C">HUD · GPS · COURSE</b>
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div style="width:96px;height:96px;border-radius:50%;background:#0F1214;border:2px solid #2A4A50;position:relative"><div style="position:absolute;left:45px;top:16px;width:6px;height:46px;background:#5CC8D6;border-radius:3px"></div><div style="position:absolute;left:40px;top:58px;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #E8A33D"></div></div>
+        <div style="display:flex;gap:2px"><div style="padding:6px 12px;background:#0E0F11;border-top:3px solid #E8A33D;display:flex;flex-direction:column;align-items:center"><span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#A3A29C">POS</span><span style="font-family:'Roboto Mono';font-size:22px;font-weight:700;font-style:italic">3/8</span></div><div style="padding:6px 12px;background:#0E0F11;border-top:3px solid #E5534B;display:flex;flex-direction:column;align-items:center"><span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#A3A29C">TEMPS</span><span style="font-family:'Roboto Mono';font-size:22px;font-weight:700;font-style:italic">1:42.6</span></div></div>
+      </div>
+      <span style="font-size:12px;color:#A3A29C">Mini-carte : cyan pour l'itinéraire, flèche joueur ambre, 5 Hz. Course : cellules à filet supérieur coloré, chiffres mono gras italique, rien d'autre.</span>
+    </div>
+  </div>
+</section>
+
+<section id="icones" style="display:flex;flex-direction:column;gap:14px">
+  <h2 style="margin:0;font-size:30px">5. Icônes du téléphone</h2>
+  <p style="margin:0;font-size:14px;color:#A3A29C;max-width:860px">12 icônes originales. Grille 24, trait 1,75, extrémités arrondies, sans remplissage, aucun caractère Unicode. Fichiers : icons/svg (sources), icons/png (blanc 64 et 128 px, teinté par ImageColor3), icons/icons.json. Tuile de 56 px, icône de 28 px. Ambre partout, cyan pour Carte.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;color:#E8A33D">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center;color:#5CC8D6"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5L9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Carte · Map</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 15.5v-2.8c0-.5.3-.9.7-1.1l2.3-.9 2.2-3.3c.3-.5.8-.7 1.3-.7h5.6c.5 0 .9.2 1.2.5l2.7 3.3 2.4.6c.6.2 1.1.7 1.1 1.4v3 M5.5 11h13 M10 7v4 M5 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M15 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M9 16h6"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Véhicules · Vehicles</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z M7 20v-6.5h10V20 M7 16.2h10"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Propriétés · Properties</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5h10c.6 0 1 .4 1 1V20c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V5.5c0-.6.4-1 1-1z M9.5 3h5v3h-5z M9 13.5l2 2 4-4"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Missions</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V3.5 M5 4h13l-2.5 4.5L18 13H5 M9.5 4v9 M14 4v9 M5 8.5h11.5"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Courses · Races</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h15 M15.5 5l3.5 3.5-3.5 3.5 M20 15.5H5 M8.5 12L5 15.5 8.5 19"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Marché · Market</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M3 20c0-3.4 2.6-6 6-6s6 2.6 6 6 M14.7 8.5a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0 M16.5 13.6c2.6.2 4.5 2.4 4.5 5"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Social</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2z M6 9l11-5 M13 15a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M6.5 13h4 M6.5 16h4 M6.5 19h4"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Radio</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7.5h2.5L9 5h6l1.5 2.5H19c1.1 0 2 .9 2 2V18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9.5c0-1.1.9-2 2-2z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Photo</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M9.5 12a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M3.2 11l6.4 .6 M20.8 11l-6.4 .6 M12 14.5V21"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Guide</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3 M11 7h9 M4 12h9 M17 12h3 M4 17h2 M10 17h10 M7 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M13 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M6 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Paramètres · Settings</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid #33363C;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l2 2H4z M10 20.5a2 2 0 0 0 4 0"></path></svg></div><span style="font-size:12px;color:#ECEAE6">Notifications</span></div>
+  </div>
+</section>
+
+<section id="etats" style="display:flex;flex-direction:column;gap:14px">
+  <h2 style="margin:0;font-size:30px">6. États de chargement et de sauvegarde</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+    <div style="padding:12px 14px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><span style="font-family:'Roboto Mono';font-size:11px;color:#A3A29C">LOADING</span><span style="font-size:14px">Squelettes surface.1, pas de chiffres inventés. Boutons d'action inactifs.</span></div>
+    <div style="padding:12px 14px;background:#16181B;border:1px solid #33363C;border-radius:4px;display:flex;flex-direction:column;gap:4px"><span style="font-family:'Roboto Mono';font-size:11px;color:#A3A29C">DRAFT</span><span style="font-size:14px">Puce « Brouillon non envoyé » ; valeurs modifiées en ambre. Conservé si l'interface se ferme.</span></div>
+    <div style="padding:12px 14px;background:#2A2416;border-radius:4px;display:flex;flex-direction:column;gap:4px;color:#F4BE6A"><span style="font-family:'Roboto Mono';font-size:11px">PENDING</span><span style="font-size:14px">Envoyé, écriture durable non confirmée. Compteur state.Pending.</span></div>
+    <div style="padding:12px 14px;background:#132219;border-radius:4px;display:flex;flex-direction:column;gap:4px;color:#BFE6CC"><span style="font-family:'Roboto Mono';font-size:11px">CONFIRMED</span><span style="font-size:14px">Seulement à réception de l'évènement serveur « Confirmed ».</span></div>
+    <div style="padding:12px 14px;background:#2A1715;border-radius:4px;display:flex;flex-direction:column;gap:4px;color:#F2C9C5"><span style="font-family:'Roboto Mono';font-size:11px">REJECTED</span><span style="font-size:14px">Code d'erreur du serveur traduit (Text.text(response.Error)).</span></div>
+    <div style="padding:12px 14px;background:#2A1715;border-radius:4px;display:flex;flex-direction:column;gap:4px;color:#F2C9C5"><span style="font-family:'Roboto Mono';font-size:11px">OFFLINE</span><span style="font-size:14px">« Serveur injoignable : rien n'est confirmé. » Aucune action rejouée automatiquement.</span></div>
+  </div>
+</section>
+
+<section id="animations" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font-size:30px">7. Animations</h2>
+  <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 140px minmax(0,1fr);gap:0 16px;font-size:14px">
+    <span style="padding:8px 0;border-bottom:1px solid #33363C;color:#A3A29C;font-size:12px">ÉLÉMENT</span><span style="padding:8px 0;border-bottom:1px solid #33363C;color:#A3A29C;font-size:12px">DURÉE</span><span style="padding:8px 0;border-bottom:1px solid #33363C;color:#A3A29C;font-size:12px">TWEENINFO</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Ouverture / fermeture de panneau (fondu + 12 px)</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">160 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Quad, Out / In</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Collection → présentation du véhicule (fondu + échelle 0,96 → 1)</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">220 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Quad, Out</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Changement de vue de caméra (CFrame)</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">400 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Sine, InOut</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Rotation par flèche (15°)</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">180 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Quad, Out</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Onglet, barres d'effet</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">120 / 250 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Linear / Quad Out</span>
+    <span style="padding:8px 0;border-bottom:1px solid #1F2226">Téléphone normal ↔ agrandi · notification</span><span style="padding:8px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">200 / 180 ms</span><span style="padding:8px 0;border-bottom:1px solid #1F2226">Quad, Out · affichage 3,5–4 s</span>
+  </div>
+  <p style="margin:0;font-size:14px;color:#C9C6BF">Réduire les animations (Access.ReduceMotion) : toutes les durées à 0, caméra placée directement, aucune rotation automatique. Seules les couleurs changent.</p>
+</section>
+
+<section id="accessibilite" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font-size:30px">8. Accessibilité</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;font-size:14px;color:#C9C6BF">
+    <div style="padding:14px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:4px"><b style="color:#ECEAE6">Contraste</b>Texte ≥ 4,5:1 partout. Contraste renforcé : bordures #6B6F77, texte secondaire #D9D7D2, aucun texte sous 0,45 d'opacité hors désactivés.</div>
+    <div style="padding:14px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:4px"><b style="color:#ECEAE6">Taille du texte</b>Access.TextScale 80–150 % appliqué via UIScale sur les TextLabel ; les cadres s'allongent (AutomaticSize Y) au lieu de couper.</div>
+    <div style="padding:14px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:4px"><b style="color:#ECEAE6">Textes anglais</b>Prévoir +35 % de longueur. Onglets à largeur automatique, défilement horizontal sans barre, aucun texte tronqué sur une action.</div>
+    <div style="padding:14px;background:#16181B;border:1px solid #33363C;border-radius:6px;display:flex;flex-direction:column;gap:4px"><b style="color:#ECEAE6">Manette</b>Focus visible (contour ambre 2 px). Sélection imposée seulement si le dernier périphérique est la manette (correctif du lot 0.8). Aucune sélection en mode rapide.</div>
+  </div>
+</section>
+
+<section id="regles" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font-size:30px">9. Règles d'interface selon la situation du joueur</h2>
+  <p style="margin:0;font-size:14px;color:#A3A29C;max-width:900px">Ces règles reproduisent le comportement existant ; l'interface ne les modifie pas. CODE = lu dans InputMap, PhoneController ou PhotoRules. SUPPOSÉ = UIManager et DrivingGate non fournis : règle la plus restrictive, à confirmer par le propriétaire.</p>
+  <div style="overflow-x:auto">
+  <div style="display:grid;grid-template-columns:200px repeat(6,minmax(120px,1fr));min-width:980px;font-size:13px">
+    <span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">Fonction</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">À pied</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">Conducteur arrêté</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">Conducteur roulant</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">Passager arrêté</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">Passager roulant</span><span style="padding:8px;border-bottom:1px solid #33363C;color:#A3A29C">En course</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Téléphone</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Complet</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Complet</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F4BE6A">Rapide · CODE</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Complet</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F4BE6A">Rapide · SUPPOSÉ</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F4BE6A">Rapide · SUPPOSÉ</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Garage (P), économie (J)</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non · CODE</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non · SUPPOSÉ</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non · SUPPOSÉ</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Mode photo (O)</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non · CODE</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Carte (M), courses (K), HUD (H)</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui · CODE</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Choix de la station</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#A3A29C">—</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Oui</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F4BE6A">Via mode rapide</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Conducteur seul</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Conducteur seul</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F4BE6A">Via mode rapide</span>
+    <span style="padding:8px;border-bottom:1px solid #1F2226">Transactions, invitations</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Protégées</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Protégées</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#7FCF9C">Protégées</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non</span><span style="padding:8px;border-bottom:1px solid #1F2226;color:#F09A92">Non</span>
+  </div>
+  </div>
+  <p style="margin:0;font-size:13px;color:#A3A29C">Ouverture refusée en roulant : le brouillon est conservé, le véhicule n'est jamais freiné ni mis en pause.</p>
+</section>
+
+<section id="raccourcis" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font-size:30px">10. Raccourcis (InputMap.luau)</h2>
+  <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 120px minmax(0,1.3fr) 120px;gap:0 16px;font-size:14px;max-width:1000px">
+    <span style="padding:7px 0;border-bottom:1px solid #33363C;font-size:12px;color:#A3A29C">ACTION</span><span style="padding:7px 0;border-bottom:1px solid #33363C;font-size:12px;color:#A3A29C">CLAVIER</span><span style="padding:7px 0;border-bottom:1px solid #33363C;font-size:12px;color:#A3A29C">MANETTE</span><span style="padding:7px 0;border-bottom:1px solid #33363C;font-size:12px;color:#A3A29C">EN ROULANT</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Téléphone</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">T</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">Select</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">rapide</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Carte</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">M</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">via téléphone</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">oui</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Garage</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">P</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">via téléphone (Véhicules)</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">non</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Économie</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">J</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">R3</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">non</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Courses</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">K</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">L3</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">oui</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Niveau du HUD</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">H</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">via téléphone</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">oui</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Mode photo</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">O</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">application Photo</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">non</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Effacer l'itinéraire (carte)</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">X</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">—</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">oui</span>
+    <span style="padding:7px 0;border-bottom:1px solid #1F2226">Retour (non personnalisable)</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono';color:#E8A33D">Backspace</span><span style="padding:7px 0;border-bottom:1px solid #1F2226;font-family:'Roboto Mono'">B</span><span style="padding:7px 0;border-bottom:1px solid #1F2226">oui</span>
+  </div>
+  <div style="padding:12px 14px;border:1px solid #6B5A2E;background:#1E1A10;border-radius:4px;font-size:13px;color:#F1E3C4;max-width:1000px;text-wrap:pretty">À décider par le propriétaire (absents d'InputMap) : changement d'onglet du garage (proposé : [ ] au clavier, LB/RB à la manette) et rotation de la caméra du garage (proposé : glisser souris, flèches gauche/droite, stick droit). Les flèches sont réservées à la conduite : elles ne doivent agir que lorsque le garage a le focus (contexte UI).</div>
+</section>
+
+<footer style="font-size:13px;color:#8E8C86;border-top:1px solid #33363C;padding-top:16px;display:flex;gap:16px;flex-wrap:wrap">
+  <span>Historique non normatif : archive v1.0/, archive v1.1/.</span><span>Transmission : HANDOFF_CLAUDE_CODE.md.</span><span>Icônes : icons/.</span>
+</footer>
+</div>
+</x-dc>
+</body>
+</html>

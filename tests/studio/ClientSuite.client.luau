@@ -85,6 +85,7 @@ if
     or currentSession == "comete_perf"
     or currentSession == "comete2"
     or currentSession == "comete_avatar"
+    or currentSession == "ui_design"
 then
     return
 end

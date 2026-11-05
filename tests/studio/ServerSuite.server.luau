@@ -41,6 +41,7 @@ if
     or sessionName == "comete_perf"
     or sessionName == "comete2"
     or sessionName == "comete_avatar"
+    or sessionName == "ui_design"
 then
     return
 end
