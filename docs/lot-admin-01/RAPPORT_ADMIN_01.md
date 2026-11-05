@@ -154,3 +154,7 @@ Corrections :
 
 `verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK, Lune 398/398.
 
+Résultat du diagnostic, rapporté par le propriétaire : « Menu indisponible : le compte Akroniik (UserId 7835831473)
+n'est pas administrateur ». **Cause établie** : le compte Studio du propriétaire n'était pas dans la liste. Akroniik
+(7835831473) est ajouté à `AdminConfig`, à côté de youyou31110 (941826283).
+

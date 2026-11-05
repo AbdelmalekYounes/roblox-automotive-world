@@ -107,4 +107,5 @@ dans un magasin de test.
 
 Conséquence de A3 sur le §2 : « donner ou retirer un véhicule possédé » n'est **pas** réalisé ; les véhicules apparus
 restent temporaires.
+- **A6, complément (2026-11-05)** : le compte Studio du propriétaire, **Akroniik** (UserId 7835831473), est aussi administrateur.
 

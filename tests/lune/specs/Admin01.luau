@@ -22,9 +22,10 @@ return function(T: any, H: any)
 
     T.suite("Lot ADMIN-01 — menu d'administration")
 
-    T.test("droits : le compte du propriétaire seul, côté serveur, jamais répliqué", function()
-        T.equal(#AdminConfig.AdminUserIds, 1)
+    T.test("droits : les comptes du propriétaire seuls, côté serveur, jamais répliqués", function()
+        T.equal(#AdminConfig.AdminUserIds, 2)
         T.truthy(AdminRules.isAdmin(941826283, AdminConfig.AdminUserIds), "youyou31110 administrateur")
+        T.truthy(AdminRules.isAdmin(7835831473, AdminConfig.AdminUserIds), "Akroniik administrateur")
         T.truthy(not AdminRules.isAdmin(1, AdminConfig.AdminUserIds), "un autre joueur ne l'est pas")
         local shared = H.game().ReplicatedStorage.Shared
         T.truthy(shared:FindFirstChild("AdminConfig", true) == nil, "liste absente de l'espace répliqué")
