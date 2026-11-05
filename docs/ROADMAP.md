@@ -174,6 +174,20 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   signature par famille, répartition en 4 marques le 2026-11-04 ; noms (Mivale, Orvane, Rocalt, Celvar) et
   emblèmes validés, dans le dépôt d'art privé (https://github.com/AbdelmalekYounes/roblox-automotive-world-art) ; recherche d'antériorité officielle à faire.
 
+## Phase 1 de l'Aster (branche `feat/aster-phase1`, base : préparation des véhicules 3D)
+
+- Pose assise du jeu activable par siège (aucun siège actuel ne la porte), gabarit technique de l'Aster mesuré en VM
+  sur 10 morphologies (tous les contrôles réussis, tâche `20261104-151955`), export vers le dépôt d'art et scène Blender.
+- Avatars humains uniquement (décision du propriétaire, 2026-11-04) : tous les joueurs reçoivent le corps 995 (masculin)
+  ou 994 (féminin) à leur choix, vêtements conservés, tête classique « bloc » remplacée par celle du corps (contrôles
+  réussis, tâche `20261104-170413`).
+- Clôture (2026-11-04) : choix de silhouette validé par vrais clics et à deux joueurs, file ordonnée des applications
+  d'apparence, plancher du gabarit abaissé (QA-A23) ; dossier de lancement `docs/vehicle-3d/ASTER_02_LANCEMENT.md`
+  (ASTER-02 non lancé : GO conditionnel ; plancher abaissé validé ; décisions du 2026-11-04 appliquées — pose H5
+  acceptée, toit 4,20 st, couleurs unifiées sur la tête, budgets de l'habitacle ; étalonnage Studio à relever). Rapport de clôture : `docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md`.
+- Rapport : `docs/vehicle-3d/ASTER_PHASE1.md`. À arbitrer : corps par défaut, couleurs de peau, D7, hauteur sous pavillon,
+  pose adaptée à la taille. Étalonnage de l'import dans Studio à relever par le propriétaire.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.

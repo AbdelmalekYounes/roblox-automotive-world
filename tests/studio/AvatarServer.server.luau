@@ -25,7 +25,13 @@ local Workspace = game:GetService("Workspace")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "avatar" and session ~= "avatar2" then
+if
+    session ~= "avatar"
+    and session ~= "avatar2"
+    and session ~= "aster"
+    and session ~= "silhouette"
+    and session ~= "silhouette2"
+then
     return
 end
 
@@ -67,7 +73,7 @@ local askEvent = Instance.new("RemoteEvent")
 askEvent.Name = "AWAvatarAsk"
 askEvent.Parent = ReplicatedStorage
 ReplicatedStorage:SetAttribute("AWTestSession", session)
-ReplicatedStorage:SetAttribute("AWTestPlayers", if session == "avatar2" then 2 else 1)
+ReplicatedStorage:SetAttribute("AWTestPlayers", if session == "avatar2" or session == "silhouette2" then 2 else 1)
 
 local Server = ServerScriptService:WaitForChild("AutomotiveWorldServer")
 local MissionService = require(Server:WaitForChild("Economy"):WaitForChild("MissionService"))
@@ -75,6 +81,7 @@ local VehicleService = require(Server:WaitForChild("Vehicles"):WaitForChild("Veh
 local AvatarService = require(Server:WaitForChild("Avatar"):WaitForChild("AvatarService"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local OutfitRules = require(Shared:WaitForChild("Cosmetics"):WaitForChild("OutfitRules")) :: any
+local AvatarPolicy = require(Shared:WaitForChild("Avatar"):WaitForChild("AvatarPolicy")) :: any
 local WorkingCatalog =
     require(Shared:WaitForChild("Vehicles"):WaitForChild("Definitions"):WaitForChild("WorkingCatalog")) :: any
 
@@ -124,6 +131,7 @@ type Morph = {
     BodyType: number,
     Proportion: number,
     Props: { Prop },
+    Body: string?, -- corps imposé (AvatarPolicy.Bodies) ; nil : corps par défaut
 }
 
 -- Accessoires d'essai (pièces simples, sans actif) : volumes extrêmes plausibles.
@@ -302,6 +310,13 @@ local function applyMorph(player: Player, morph: Morph): (boolean, string)
     description.HeadScale = morph.Head
     description.BodyTypeScale = morph.BodyType
     description.ProportionScale = morph.Proportion
+    local body = AvatarPolicy.Bodies[morph.Body or AvatarPolicy.DefaultBody]
+    for _, field in AvatarPolicy.ReplacedParts do
+        (description :: any)[field] = body.Parts[field]
+    end
+    -- Même tête que le jeu (tête classique du compte de test → tête du corps).
+    local playerHead, classic = AvatarService.headInfo(player)
+    description.Head = AvatarPolicy.headFor(body.Id, playerHead, classic)
     local ok, err = pcall(function()
         humanoid:ApplyDescriptionAsync(description)
     end)
@@ -634,6 +649,715 @@ if session == "avatar2" then
     return
 end
 
+-- ======================== Session « aster » (phase 1 de l'Aster) ========================
+-- Maquette en blocs de l'Aster construite d'après le gabarit (`AW_TestAsterTemplate`, module
+-- pur partagé avec l'outil d'export), ancrée, posée au sol de la zone d'essai. Pour chaque
+-- morphologie : pose standard du moteur puis pose du jeu (attribut AWSeatPose), places
+-- conducteur et passager. La pose du jeu étant appliquée par chaque CLIENT (Transform), les
+-- mesures sont faites par le client (journal « @@AWASTER@@ »).
+
+-- Volant et pédalier : nil au premier passage (mesure de la pose), puis cotes relevées.
+-- Second passage (2026-11-04) : volant au droit de l'axe du siège, à la hauteur et à la
+-- distance visées pour la pose v2 ; pédalier au bout des pieds de la référence (tâche
+-- 20261104-134156 : pieds à z = −1,79 st, mains de la pose v1 à z ≈ 0).
+-- Troisième passage (avatars humains uniquement, décision du propriétaire du 2026-11-04) :
+-- mains des corps humains mesurées (tâche 20261104-134756, pose v2) à ±1,05 st de l'axe,
+-- y 2,5 à 3,1 st, z −0,7 à −0,9 st → volant de 0,8 st de rayon centré entre les corps
+-- humains grand et élancé ; planche de bord avancée ; pavillon à 4,60 st de l'assise.
+local ASTER_PARAMS: { [string]: any }? = {
+    HeadroomSt = 4.20, -- décision du propriétaire (2026-11-04) : 4,20 st, hors tout 1,72 m
+    -- Passage 4 : volant ajusté aux mains mesurées dans le repère du gabarit (passage 3,
+    -- tâche 20261104-135355, pose du jeu, 7 morphologies : écart max. 0,26 st à la jante),
+    -- pédalier devant les pointes de pied (−0,90 à −0,21 st), planche de bord devant le volant.
+    -- Passage 5 : volant ajusté aux mains des deux corps retenus (passage 4, tâche
+    -- 20261104-145632, repère du gabarit corrigé : mains de y 1,21 à 2,20 st, yeux du plus petit
+    -- à 2,08 st) : meilleur compromis jante (≤ 0,34 st) et vue au-dessus du volant (≥ 0).
+    Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 },
+    PedalZ = -1.4, -- pointes de pied de −1,21 à 0,34 st (F1 la plus en avant)
+    DashZ = 0.0,
+    -- Clôture de la phase 1 : plancher abaissé (pieds mesurés jusqu'à y −1,23 st en pose du jeu,
+    -- tâche 20261104-162124) ; garde au sol 0,39 st (0,11 m) sous le plancher.
+    FloorTopSt = -1.30,
+}
+
+-- Morphologies HUMAINES (type de corps imposé à 1) : la session « aster » ne mesure plus les
+-- corps aux proportions « en blocs », exclus par la décision du propriétaire.
+local HUMAN_MORPHS: { Morph } = {
+    {
+        Id = "H1",
+        Label = "humain grand",
+        Height = 1.05,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0,
+        Props = {},
+    },
+    {
+        Id = "H2",
+        Label = "humain petit et mince",
+        Height = 0.9,
+        Width = 0.7,
+        Depth = 0.7,
+        Head = 0.95,
+        BodyType = 1,
+        Proportion = 0,
+        Props = {},
+    },
+    {
+        Id = "H3",
+        Label = "humain moyen",
+        Height = 1,
+        Width = 0.85,
+        Depth = 0.85,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0.5,
+        Props = {},
+    },
+    {
+        Id = "H4",
+        Label = "humain grand élancé",
+        Height = 1.05,
+        Width = 0.7,
+        Depth = 0.7,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 1,
+        Props = {},
+    },
+    {
+        Id = "H5",
+        Label = "humain petit et large",
+        Height = 0.9,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 1,
+        Props = {},
+    },
+    {
+        Id = "H6",
+        Label = "humain grand + chapeau haut d'essai",
+        Height = 1.05,
+        Width = 1,
+        Depth = 1,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0,
+        Props = { TALL_HAT },
+    },
+    {
+        Id = "H7",
+        Label = "humain moyen + accessoires volumineux d'essai",
+        Height = 1,
+        Width = 0.85,
+        Depth = 0.85,
+        Head = 1,
+        BodyType = 1,
+        Proportion = 0.5,
+        Props = BULKY,
+    },
+}
+-- Corps féminin (994 Jordan) : extrêmes de taille et de largeur (copies de H1, H2, H4).
+for _, source in { "H1", "H2", "H4" } do
+    for _, morph in table.clone(HUMAN_MORPHS) do
+        if morph.Id == source then
+            local copy = table.clone(morph)
+            copy.Id = "F" .. string.sub(source, 2)
+            copy.Label = morph.Label .. " (corps féminin)"
+            copy.Body = "Feminin"
+            table.insert(HUMAN_MORPHS, copy)
+        end
+    end
+end
+
+-- ======================== Sessions « silhouette » et « silhouette2 » ========================
+-- Clôture de la phase 1 de l'Aster (2026-11-04). « silhouette » (1 joueur, vraies entrées dans
+-- la VM) : choix par vrai clic dans le panneau d'apparition, changement par vrais clics dans le
+-- téléphone, vêtements conservés, tête classique remplacée, tête non classique conservée,
+-- réapparition, couleurs de peau différentes (captures, aucune correction), puis changements
+-- successifs avec expirations forcées (régression de la file d'application).
+-- « silhouette2 » (2 joueurs) : changements du joueur 1 (appelés par le serveur de test,
+-- instrumenté) mesurés par le client du joueur 2 et comparés aux tailles vues par le serveur.
+-- Instrumenté (signalé) : réapparitions et apparences de départ imposées par le serveur de
+-- test (`LoadCharacter`, `LoadCharacterWithHumanoidDescription`) ; caméra des captures.
+
+local SIL_PARTS = { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftUpperLeg" }
+local function partSizes(character: Model?): string
+    local out = {}
+    for _, name in SIL_PARTS do
+        local part = character and character:FindFirstChild(name)
+        if part and part:IsA("BasePart") then
+            table.insert(out, string.format("%s=%.3f,%.3f,%.3f", name, part.Size.X, part.Size.Y, part.Size.Z))
+        else
+            table.insert(out, name .. "=?")
+        end
+    end
+    return table.concat(out, ";")
+end
+
+local function wornNow(player: Player): (string, number, { [string]: number })
+    local humanoid = humanoidOf(player)
+    local parts: { [string]: number } = {}
+    if humanoid == nil then
+        return "?", -1, parts
+    end
+    local description = humanoid:GetAppliedDescription()
+    for _, field in AvatarPolicy.ReplacedParts do
+        parts[field] = (description :: any)[field]
+    end
+    local body = "autre"
+    for _, id in AvatarPolicy.BodyOrder do
+        if AvatarPolicy.wearsBody(parts, id) then
+            body = id
+        end
+    end
+    return body, description.Head, parts
+end
+
+local function waitAppearance(player: Player, previous: Model?): Model?
+    waitFor(function()
+        return player.Character ~= nil and player.Character ~= previous
+    end, 30)
+    local character = player.Character
+    waitFor(function()
+        return player:HasAppearanceLoaded()
+    end, 30)
+    -- Corps appliqué dans un fil séparé après l'apparition (AvatarService).
+    waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") ~= nil and pending == 0
+    end, 30)
+    task.wait(1)
+    return character
+end
+
+local function frontView(player: Player, angle: number): CFrame
+    local character = characterOf(player)
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if root == nil or not root:IsA("BasePart") then
+        return CFrame.new()
+    end
+    local offset = CFrame.Angles(0, math.rad(angle), 0) * CFrame.new(0, 0.8, -8)
+    return CFrame.lookAt((root.CFrame * offset).Position, root.Position + Vector3.new(0, 0.3, 0))
+end
+
+if session == "silhouette" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 1
+    end, 60)
+    record("silhouette.serveur.joueur_connecte", joined, #Players:GetPlayers())
+    local player = Players:GetPlayers()[1]
+    waitAppearance(player, nil)
+    local playerHead, classic = AvatarService.headInfo(player)
+    local body0, head0 = wornNow(player)
+    record(
+        "silhouette.serveur.defaut_applique",
+        body0 == AvatarPolicy.DefaultBody and head0 == AvatarPolicy.headFor(body0, playerHead, classic),
+        string.format(
+            "corps %s, tête %d (tête du joueur %d, %s)",
+            body0,
+            head0,
+            playerHead,
+            if classic then "classique" else "non classique"
+        )
+    )
+    record("silhouette.serveur.choix_non_fait", player:GetAttribute("AWAvatarBodyChosen") ~= true)
+    local look0 = AvatarService.currentLook(player)
+
+    local function checkBody(prefix: string, expected: string, expectedHead: number)
+        local body, head = wornNow(player)
+        local look = AvatarService.currentLook(player)
+        record(
+            prefix .. "_applique",
+            body == expected and head == expectedHead,
+            string.format("corps %s (attendu %s), tête %d (attendue %d)", body, expected, head, expectedHead)
+        )
+        record(
+            prefix .. "_vetements_conserves",
+            look ~= nil and look0 ~= nil and OutfitRules.equal(look, look0),
+            if look and look0
+                then string.format(
+                    "haut %d → %d, bas %d → %d, %d → %d accessoire(s)",
+                    look0.Shirt,
+                    look.Shirt,
+                    look0.Pants,
+                    look.Pants,
+                    #look0.Accessories,
+                    #look.Accessories
+                )
+                else "?"
+        )
+    end
+
+    -- 1. Vrais clics : étalonnage, panneau d'apparition (« Féminin »).
+    record("silhouette.serveur.client_pret", ask(player, "calibrate", {}, 90))
+    ask(player, "silpanel", { Label = "Féminin", Key = "feminin" }, 60)
+    local chosen = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") == "Feminin" and pending == 0
+    end, 30)
+    record("silhouette.serveur.clic_feminin_recu", chosen, tostring(player:GetAttribute("AWAvatarBody")))
+    checkBody("silhouette.serveur.feminin", "Feminin", AvatarPolicy.headFor("Feminin", playerHead, classic))
+    task.wait(1)
+    shot(player, "silhouette_feminin_face", frontView(player, 0), { silhouette = "Feminin (994 Jordan)" })
+    shot(player, "silhouette_feminin_trois_quarts", frontView(player, 35), { silhouette = "Feminin (994 Jordan)" })
+
+    -- 2. Vrais clics dans le téléphone : Paramètres › Interface › Silhouette (→ Masculin).
+    ask(player, "silphone", { Expect = "Masculin" }, 90)
+    local switched = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return player:GetAttribute("AWAvatarBody") == "Masculin" and pending == 0
+    end, 30)
+    record("silhouette.serveur.telephone_masculin_recu", switched, tostring(player:GetAttribute("AWAvatarBody")))
+    checkBody("silhouette.serveur.masculin", "Masculin", AvatarPolicy.headFor("Masculin", playerHead, classic))
+    task.wait(1)
+    shot(player, "silhouette_masculin_face", frontView(player, 0), { silhouette = "Masculin (995 Billie)" })
+    shot(player, "silhouette_masculin_trois_quarts", frontView(player, 35), { silhouette = "Masculin (995 Billie)" })
+
+    -- 3. Réapparition : le choix de la session est conservé, le panneau ne revient pas.
+    local before = player.Character
+    player:LoadCharacter()
+    waitAppearance(player, before)
+    checkBody("silhouette.serveur.reapparition", "Masculin", AvatarPolicy.headFor("Masculin", playerHead, classic))
+    ask(player, "silcheck", { Key = "reapparition" }, 20)
+
+    -- 4. Tête NON classique (tête réaliste du paquet 988, pour la forme) : conservée, même après
+    -- un changement de silhouette.
+    local REALISTIC_HEAD = 11702291006 -- « Addison - Head » (paquet 988)
+    local humanoid = humanoidOf(player)
+    if humanoid then
+        local description = humanoid:GetAppliedDescription()
+        description.Head = REALISTIC_HEAD
+        before = player.Character
+        player:LoadCharacterWithHumanoidDescription(description)
+        waitAppearance(player, before)
+        local readHead, readClassic = AvatarService.headInfo(player)
+        local body, head = wornNow(player)
+        record(
+            "silhouette.serveur.tete_non_classique_conservee",
+            readHead == REALISTIC_HEAD and not readClassic and head == REALISTIC_HEAD and body == "Masculin",
+            string.format(
+                "tête lue %d (%s), portée %d, corps %s",
+                readHead,
+                if readClassic then "classique" else "non classique",
+                head,
+                body
+            )
+        )
+        local result = AvatarService.chooseBody(player, "Feminin")
+        local body2, head2 = wornNow(player)
+        record(
+            "silhouette.serveur.tete_non_classique_apres_changement",
+            result.Status == "Ok" and body2 == "Feminin" and head2 == REALISTIC_HEAD,
+            string.format("%s ; corps %s, tête %d", result.Status, body2, head2)
+        )
+        task.wait(1)
+        shot(player, "tete_non_classique_conservee", frontView(player, 0), { tete = "Addison (988), non classique" })
+    end
+
+    -- 5. Couleurs de peau différentes au départ (tête, tronc, bras, jambes) : unifiées sur la tête.
+    local COLORS = {
+        HeadColor = Color3.fromRGB(255, 224, 196),
+        TorsoColor = Color3.fromRGB(176, 120, 86),
+        LeftArmColor = Color3.fromRGB(96, 64, 44),
+        RightArmColor = Color3.fromRGB(96, 64, 44),
+        LeftLegColor = Color3.fromRGB(236, 190, 150),
+        RightLegColor = Color3.fromRGB(236, 190, 150),
+    }
+    humanoid = humanoidOf(player)
+    if humanoid then
+        local description = humanoid:GetAppliedDescription()
+        description.Head = 10638267973 -- tête classique « Stevie Standard » (compte de test)
+        for field, color in COLORS do
+            (description :: any)[field] = color
+        end
+        before = player.Character
+        player:LoadCharacterWithHumanoidDescription(description)
+        waitAppearance(player, before)
+        for _, id in AvatarPolicy.BodyOrder do
+            local result = AvatarService.chooseBody(player, id)
+            task.wait(1.5)
+            local applied = humanoidOf(player)
+            local d = applied and applied:GetAppliedDescription()
+            -- Décision du propriétaire (2026-11-04) : toutes les parties prennent la couleur de la tête.
+            local unified = d ~= nil
+            local seen = {}
+            if d then
+                local head = COLORS.HeadColor
+                for field in COLORS do
+                    local value = (d :: any)[field] :: Color3
+                    table.insert(
+                        seen,
+                        string.format(
+                            "%s %d,%d,%d",
+                            field,
+                            value.R * 255 + 0.5,
+                            value.G * 255 + 0.5,
+                            value.B * 255 + 0.5
+                        )
+                    )
+                    if (value.R - head.R) ^ 2 + (value.G - head.G) ^ 2 + (value.B - head.B) ^ 2 > 1e-4 then
+                        unified = false
+                    end
+                end
+            end
+            table.sort(seen)
+            record(
+                "silhouette.serveur.couleurs_unifiees_sur_la_tete_" .. string.lower(id),
+                result.Status == "Ok" and unified,
+                "départ : tête (255,224,196), tronc (176,120,86), bras (96,64,44), jambes (236,190,150) ; lu : "
+                    .. table.concat(seen, " ; ")
+            )
+            shot(player, "couleurs_unifiees_" .. string.lower(id), frontView(player, 20), { silhouette = id })
+        end
+    end
+
+    -- 6. Régression : changements successifs avec expirations forcées (file d'application).
+    AvatarService.setApplyTimeoutsForTests(0.05, 20)
+    local sequence = { "Masculin", "Feminin", "Masculin", "Feminin", "Masculin" }
+    local accepted = {}
+    for _, id in sequence do
+        local result = AvatarService.chooseBody(player, id)
+        table.insert(
+            accepted,
+            id .. ":" .. tostring(result.Status) .. (if result.Reason then "/" .. result.Reason else "")
+        )
+        task.wait(0.05)
+    end
+    AvatarService.setApplyTimeoutsForTests(10, 30)
+    local settled = waitFor(function()
+        local _, pending = AvatarService.applyStats(player)
+        return pending == 0
+    end, 40)
+    task.wait(1)
+    local finalBody, finalHead = wornNow(player)
+    local expected = sequence[#sequence]
+    local overwritten = false
+    for _ = 1, 25 do
+        task.wait(0.2)
+        if wornNow(player) ~= expected then
+            overwritten = true
+        end
+    end
+    local stale = AvatarService.applyStats(player)
+    record(
+        "silhouette.serveur.regression_dernier_choix_applique",
+        settled and finalBody == expected,
+        string.format(
+            "demandes %s ; corps final %s (attendu %s), tête %d",
+            table.concat(accepted, ", "),
+            finalBody,
+            expected,
+            finalHead
+        )
+    )
+    record(
+        "silhouette.serveur.regression_aucun_ecrasement_ulterieur",
+        not overwritten,
+        "5 s observées après la file vide"
+    )
+    record(
+        "silhouette.serveur.regression_attribut_coherent",
+        player:GetAttribute("AWAvatarBody") == finalBody,
+        tostring(player:GetAttribute("AWAvatarBody"))
+    )
+    record("silhouette.serveur.info_fins_tardives", true, tostring(stale))
+
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("silhouette.serveur.rapport_client", next(reports) ~= nil)
+    record("silhouette.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    record("silhouette.serveur.info_avertissements", true, #warnings .. " : " .. table.concat(warnings, " || "))
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
+    return
+end
+
+if session == "silhouette2" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 2
+    end, 90)
+    record("silhouette2.serveur.joueurs_connectes", joined, #Players:GetPlayers())
+    local all = Players:GetPlayers()
+    table.sort(all, function(a, b)
+        return a.UserId < b.UserId
+    end)
+    local holder = all[1]
+    for _, p in all do
+        waitAppearance(p, nil)
+    end
+    local function publish(phase: string)
+        task.wait(1.5)
+        ReplicatedStorage:SetAttribute("AWSil2Sizes", partSizes(characterOf(holder)))
+        ReplicatedStorage:SetAttribute("AWSil2Body", (wornNow(holder)))
+        ReplicatedStorage:SetAttribute("AWSil2Phase", phase)
+        task.wait(8) -- mesure de l'observateur
+    end
+    publish("defaut")
+    for _, id in { "Feminin", "Masculin" } do
+        local result = AvatarService.chooseBody(holder, id)
+        record("silhouette2.serveur.changement_" .. string.lower(id), result.Status == "Ok", tostring(result.Status))
+        publish(string.lower(id))
+    end
+    local before = holder.Character
+    holder:LoadCharacter()
+    waitAppearance(holder, before)
+    record("silhouette2.serveur.reapparition_corps_conserve", (wornNow(holder)) == "Masculin", (wornNow(holder)))
+    publish("reapparition")
+    ReplicatedStorage:SetAttribute("AWSil2Phase", "fin")
+    local gotReports = waitFor(function()
+        local count = 0
+        for _ in reports do
+            count += 1
+        end
+        return count >= 2
+    end, 120)
+    record("silhouette2.serveur.rapports_clients", gotReports)
+    record("silhouette2.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    StudioTestService:EndTest({ session = session, players = #Players:GetPlayers(), server = steps, clients = reports })
+    return
+end
+
+if session == "aster" then
+    local joined = waitFor(function()
+        return #Players:GetPlayers() >= 1
+    end, 60)
+    record("aster.serveur.joueur_connecte", joined, #Players:GetPlayers())
+    local player = Players:GetPlayers()[1]
+    if player and not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    waitFor(function()
+        return player ~= nil and player:HasAppearanceLoaded()
+    end, 20)
+    -- Forme des têtes (décision du propriétaire, 2026-11-04 : remplacer les têtes classiques) :
+    -- dimensions de la pièce `Head` mesurées par le moteur, têtes réalistes des paquets 988 à 995
+    -- contre têtes classiques « bloc » publiées par Roblox (identifiants relevés au catalogue le
+    -- 2026-11-04). Sert à fixer le critère de remplacement ; aucun contrôle de réussite.
+    do
+        local HEADS = {
+            { "classique_defaut", 0 },
+            { "classique_stevie_standard", 10638267973 },
+            { "classique_freckles", 11244608373 },
+            { "classique_squigglin_out", 11308682721 },
+            { "classique_err", 11308884165 },
+            { "classique_check_it", 11308945948 },
+            { "realiste_addison_988", 11702291006 },
+            { "realiste_harper_989", 11702751287 },
+            { "realiste_robin_990", 11709148634 },
+            { "realiste_dawson_991", 11709871094 },
+            { "realiste_rene_992", 11714044513 },
+            { "realiste_andi_993", 11715265417 },
+            { "realiste_jordan_994", 11740063830 },
+            { "realiste_billie_995", 11748988354 },
+        }
+        local humanoid0 = humanoidOf(player)
+        local original = humanoid0 and humanoid0:GetAppliedDescription()
+        for _, entry in HEADS do
+            local humanoid = humanoidOf(player)
+            local character = characterOf(player)
+            if humanoid == nil or character == nil or original == nil then
+                break
+            end
+            local description = original:Clone()
+            description.Head = entry[2]
+            description.HeadScale = 1
+            local ok, err = pcall(function()
+                humanoid:ApplyDescriptionAsync(description)
+            end)
+            task.wait(1)
+            local head = character:FindFirstChild("Head")
+            if ok and head and head:IsA("BasePart") then
+                local size = head.Size
+                record(
+                    "aster.tete." .. entry[1],
+                    true,
+                    string.format(
+                        "Head %d : %.3f × %.3f × %.3f st ; largeur/hauteur %.3f ; profondeur/hauteur %.3f",
+                        entry[2],
+                        size.X,
+                        size.Y,
+                        size.Z,
+                        size.X / size.Y,
+                        size.Z / size.Y
+                    )
+                )
+            else
+                record("aster.tete." .. entry[1], false, tostring(err))
+            end
+        end
+        local humanoid = humanoidOf(player)
+        if humanoid and original then
+            pcall(function()
+                humanoid:ApplyDescriptionAsync(original)
+            end)
+            task.wait(1)
+        end
+    end
+    local Template = require(ReplicatedStorage:WaitForChild("AW_TestAsterTemplate", 20)) :: any
+    local Vehicles = Shared:WaitForChild("Vehicles")
+    local Definitions = require(Vehicles:WaitForChild("VehicleDefinitions")) :: any
+    local Dynamics = require(Vehicles:WaitForChild("Physics"):WaitForChild("VehicleDynamics")) :: any
+    local Constants = require(Vehicles:WaitForChild("VehicleConstants")) :: any
+    local SeatPose = require(Vehicles:WaitForChild("SeatPose")) :: any
+    local definition = Definitions.get("wk_aster")
+    local params = if ASTER_PARAMS
+        then (function()
+            local merged = table.clone(Template.Defaults)
+            for key, value in ASTER_PARAMS :: any do
+                merged[key] = value
+            end
+            return merged
+        end)()
+        else nil
+    local template = Template.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
+    local model = Instance.new("Model")
+    model.Name = "MaquetteAster"
+    local COLORS = {
+        caisse = Color3.fromRGB(205, 210, 218),
+        vitrage = Color3.fromRGB(150, 190, 220),
+        habitacle = Color3.fromRGB(45, 48, 54),
+        siege = Color3.fromRGB(80, 40, 40),
+        roue = Color3.fromRGB(25, 25, 28),
+        repere = Color3.fromRGB(255, 200, 0),
+    }
+    for _, item in template.Boxes do
+        local part: BasePart = if item.Seat then Instance.new("Seat") else Instance.new("Part")
+        part.Name = item.Name
+        part.Anchored = true
+        part.Size = Vector3.new(item.Size[1], item.Size[2], item.Size[3])
+        part.CFrame = CFrame.new(item.Center[1], item.Center[2], item.Center[3])
+        if item.Rotation then
+            part.CFrame = part.CFrame
+                * CFrame.Angles(math.rad(item.Rotation[1]), 0, math.rad(item.Rotation[3]))
+                * CFrame.Angles(0, math.rad(item.Rotation[2]), 0)
+        end
+        if item.Cylinder then
+            (part :: Part).Shape = Enum.PartType.Cylinder
+        end
+        part.Color = COLORS[item.Role] or Color3.new(1, 1, 1)
+        part.Material = if item.Role == "vitrage" then Enum.Material.Glass else Enum.Material.SmoothPlastic
+        part.Transparency = if item.Role == "vitrage" then 0.6 elseif item.Role == "repere" then 0.5 else 0
+        part.CanCollide = item.Role == "caisse" or item.Role == "habitacle" and item.Name ~= "Volant"
+        part.CanTouch = false
+        if item.Seat then
+            part:SetAttribute("AWAsterSeat", item.Seat)
+        end
+        part.Parent = model
+        if item.Name == "Plancher" then
+            model.PrimaryPart = part
+        end
+    end
+    -- Sol de la maquette au sol de la zone d'essai (y = 0), à l'écart du parc.
+    local origin = CFrame.new(40, -template.Ground, -30)
+    for _, part in model:GetChildren() do
+        if part:IsA("BasePart") then
+            part.CFrame = origin * part.CFrame
+        end
+    end
+    -- Repère du gabarit transmis tel quel : le pivot d'un modèle à PrimaryPart suit le plancher
+    -- côté client (mesures des passages 1 à 3 du 2026-11-04 dans le repère du plancher, décalé
+    -- de 0 ; −0,39 ; +1,92 st), d'où un volant placé 2 st trop en avant.
+    model:SetAttribute("AWAsterOrigin", origin)
+    model.WorldPivot = origin
+    model.Parent = Workspace
+    record(
+        "aster.serveur.maquette",
+        true,
+        string.format(
+            "%d blocs ; assise %.2f st, dessous du pavillon %.2f st (%.2f st au-dessus de l'assise), hauteur hors tout %.2f m%s",
+            #template.Boxes,
+            template.SeatTop,
+            template.RoofUnder,
+            template.RoofUnder - template.SeatTop,
+            template.HeightAboveGroundM,
+            if ASTER_PARAMS then " ; volant et pédalier placés" else " ; sans volant ni pédalier (mesure de la pose)"
+        )
+    )
+    local calibrated = ask(player, "calibrate", {}, 40)
+    record("aster.serveur.client_pret", calibrated)
+    local strip0 = CFrame.new(40, 4, 0)
+    local measured, expected = 0, 0
+    for _, morph in HUMAN_MORPHS do
+        standUp(player)
+        local character0 = characterOf(player)
+        if character0 then
+            character0:PivotTo(strip0)
+        end
+        task.wait(0.4)
+        local applied = applyMorph(player, morph)
+        if not applied then
+            record("aster.morphologie." .. morph.Id, false, "non appliquée")
+            continue
+        end
+        for _, pose in { "standard", "jeu" } do
+            for _, seatName in { "SiegeConducteur", "SiegePassager" } do
+                expected += 1
+                local seatPart = model:FindFirstChild(seatName) :: Seat
+                seatPart:SetAttribute(
+                    SeatPose.Attribute,
+                    if pose == "jeu" then seatPart:GetAttribute("AWAsterSeat") else nil
+                )
+                local seat = sit(player, model, seatName)
+                if seat == nil then
+                    continue
+                end
+                task.wait(0.8) -- mise en place de la pose (0,3 s) et stabilisation
+                local key = string.format("%s:%s:%s", morph.Id, pose, seatName)
+                if
+                    ask(
+                        player,
+                        "astermeasure:" .. key,
+                        { Morph = morph.Id, Pose = pose, Seat = seatName, Morphs = #HUMAN_MORPHS },
+                        10
+                    )
+                then
+                    measured += 1
+                end
+                if
+                    (morph.Id == "H1" or morph.Id == "H4" or morph.Id == "H6" or morph.Id == "F4")
+                    and seatName == "SiegeConducteur"
+                then
+                    shot(player, string.format("aster_%s_%s_profil", morph.Id, pose), sideView(model, seat, -1), {
+                        morphologie = morph.Label,
+                        pose = pose,
+                    })
+                    if pose == "jeu" then
+                        ask(
+                            player,
+                            "asterpov:" .. key,
+                            { Name = string.format("aster_%s_vue_conducteur", morph.Id) },
+                            10
+                        )
+                    end
+                end
+                standUp(player)
+                seatPart:SetAttribute(SeatPose.Attribute, nil)
+            end
+        end
+    end
+    standUp(player)
+    record("aster.serveur.mesures", measured == expected, string.format("%d / %d", measured, expected))
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("aster.serveur.rapport_client", next(reports) ~= nil)
+    record("aster.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    record(
+        "aster.serveur.info_erreurs_internes_roblox",
+        true,
+        #robloxErrors .. " : " .. table.concat(robloxErrors, " || ")
+    )
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
+    return
+end
+
 -- ======================== Session « avatar » ========================
 
 local joined = waitFor(function()
@@ -713,6 +1437,84 @@ record(
 )
 local initialLook = AvatarService.initialLook(player)
 record("avatar.tenue.apparence_initiale_memorisee", initialLook ~= nil)
+
+-- 0 bis. Corps humains (décision du propriétaire, 2026-11-04) : corps par défaut appliqué à
+-- tous, choix du joueur, tête et vêtements conservés, corps inconnu refusé.
+local function partsNow(): { [string]: number }
+    local d = humanoid:GetAppliedDescription()
+    local parts = {}
+    for _, field in AvatarPolicy.ReplacedParts do
+        parts[field] = (d :: any)[field]
+    end
+    return parts
+end
+-- Corps appliqué dans un fil séparé après l'apparition : attente de la confirmation.
+waitFor(function()
+    return player:GetAttribute("AWAvatarBody") ~= nil
+end, 30)
+task.wait(0.5) -- fin de la préparation du personnage (tenue équipée éventuelle)
+record(
+    "avatar.corps.defaut_applique",
+    player:GetAttribute("AWAvatarBody") == AvatarPolicy.DefaultBody
+        and AvatarPolicy.wearsBody(partsNow(), AvatarPolicy.DefaultBody),
+    string.format("attribut %s ; Torso %d", tostring(player:GetAttribute("AWAvatarBody")), partsNow().Torso or 0)
+)
+do
+    local playerHead, classic = AvatarService.headInfo(player)
+    local applied = humanoid:GetAppliedDescription().Head
+    local expected = AvatarPolicy.headFor(AvatarPolicy.DefaultBody, playerHead, classic)
+    record(
+        "avatar.corps.tete_classique_remplacee",
+        applied == expected,
+        string.format(
+            "tête du joueur %d, %s ; portée %d, attendue %d",
+            playerHead,
+            if classic then "classique" else "non classique",
+            applied,
+            expected
+        )
+    )
+end
+local headBefore, shirtBefore, pantsBefore = initialDescription.Head, initialDescription.Shirt, initialDescription.Pants
+local chosen = AvatarService.chooseBody(player, "Feminin")
+local afterChoice = humanoid:GetAppliedDescription()
+record(
+    "avatar.corps.choix_feminin_applique",
+    chosen.Status == "Ok" and AvatarPolicy.wearsBody(partsNow(), "Feminin"),
+    string.format("%s / %s ; Torso %d", chosen.Status, tostring(chosen.Reason), partsNow().Torso or 0)
+)
+local playerHead, headClassic = AvatarService.headInfo(player)
+local expectedHead = AvatarPolicy.headFor("Feminin", playerHead, headClassic)
+record(
+    "avatar.corps.tete_selon_forme_vetements_conserves",
+    afterChoice.Head == expectedHead and afterChoice.Shirt == shirtBefore and afterChoice.Pants == pantsBefore,
+    string.format(
+        "tête du joueur %d (%s) → %d, attendu %d ; Shirt %d → %d",
+        playerHead,
+        if headClassic then "classique" else "conservée",
+        afterChoice.Head,
+        expectedHead,
+        shirtBefore,
+        afterChoice.Shirt
+    )
+)
+record("avatar.corps.info_tete_initiale", true, string.format("Head initial lu par le test : %d", headBefore))
+record(
+    "avatar.corps.choix_memorise_session",
+    player:GetAttribute("AWAvatarBodyChosen") == true and player:GetAttribute("AWAvatarBody") == "Feminin"
+)
+local unknown = AvatarService.chooseBody(player, "Robot")
+record(
+    "avatar.corps.corps_inconnu_refuse",
+    unknown.Status == "Rejected" and unknown.Reason == "AvatarBodyUnknown",
+    tostring(unknown.Reason)
+)
+local back = AvatarService.chooseBody(player, "Masculin")
+record(
+    "avatar.corps.retour_masculin",
+    back.Status == "Ok" and AvatarPolicy.wearsBody(partsNow(), "Masculin"),
+    tostring(back.Status)
+)
 
 -- Essais du client (étalonnage des vraies entrées).
 local calibrated = ask(player, "calibrate", {}, 40)

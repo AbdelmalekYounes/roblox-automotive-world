@@ -34,8 +34,60 @@ return function(T: any, H: any)
         T.equal(ranges.Width.Min, 0.7)
         T.equal(ranges.Head.Min, 0.95)
         T.equal(ranges.BodyType.Max, 1)
+        T.equal(ranges.BodyType.Min, 1, "avatars humains : type de corps imposé (propriétaire, 2026-11-04)")
         T.equal(ranges.Proportion.Max, 1)
         T.truthy((AvatarPolicy.scalesWithinRanges({ Height = 1.05, Width = 0.7, BodyType = 1 })), "extrêmes admis")
+        T.truthy(AvatarPolicy.HumanOnly, "avatars humains uniquement")
+        T.truthy(not (AvatarPolicy.scalesWithinRanges({ BodyType = 0 })), "corps « en blocs » hors plage")
+        T.equal(AvatarPolicy.clampScale("BodyType", 0), 1, "proportions humaines imposées")
+        T.equal(AvatarPolicy.clampScale("Height", 0 / 0), 0.9, "valeur non finie ramenée au minimum")
+        -- Deux corps retenus par le propriétaire (2026-11-04) : 995 Billie et 994 Jordan, corps seul.
+        T.equal(table.concat(AvatarPolicy.BodyOrder, ","), "Masculin,Feminin", "choix proposé au joueur")
+        T.equal(AvatarPolicy.Bodies.Masculin.BundleId, 995, "corps masculin : Base Body - Billie")
+        T.equal(AvatarPolicy.Bodies.Feminin.BundleId, 994, "corps féminin : Base Body - Jordan")
+        T.equal(AvatarPolicy.Bodies.Masculin.Parts.Torso, 11748986529)
+        T.equal(AvatarPolicy.Bodies.Feminin.Parts.Torso, 11740060397)
+        T.truthy(table.find(AvatarPolicy.ReplacedParts, "Head") == nil, "tête jamais remplacée d'office")
+        -- Têtes classiques (propriétaire, 2026-11-04) : critère de forme mesuré en VM (20261104-161530).
+        T.truthy(AvatarPolicy.isClassicHeadShape(1.127, 1.133, 1.128), "tête par défaut : classique")
+        T.truthy(AvatarPolicy.isClassicHeadShape(1.198, 1.202, 1.207), "tête classique dynamique (Err...)")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.282, 1.802, 1.383), "tête réaliste Addison : conservée")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.269, 1.943, 1.472), "tête réaliste Billie : conservée")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1.279, 1.801, 1.445), "tête réaliste Dawson (profondeur 0,80)")
+        T.truthy(not AvatarPolicy.isClassicHeadShape(1, 0, 1), "hauteur nulle : non classée")
+        T.equal(AvatarPolicy.headFor("Masculin", 10638267973, true), 11748988354, "classique → tête Billie")
+        T.equal(AvatarPolicy.headFor("Feminin", 10638267973, true), 11740063830, "classique → tête Jordan")
+        T.equal(AvatarPolicy.headFor("Feminin", 0, false), 11740063830, "tête par défaut toujours remplacée")
+        T.equal(AvatarPolicy.headFor("Masculin", 11702291006, false), 11702291006, "tête réaliste conservée")
+        local seen = {}
+        for _, id in AvatarPolicy.BodyOrder do
+            local body = AvatarPolicy.Bodies[id]
+            T.equal(body.Parts.Head, nil, id .. " : aucune tête imposée")
+            for _, field in AvatarPolicy.ReplacedParts do
+                local assetId = body.Parts[field]
+                T.truthy(type(assetId) == "number" and assetId > 0, id .. "." .. field .. " renseigné")
+                T.truthy(seen[assetId] == nil, "identifiant unique " .. tostring(assetId))
+                seen[assetId] = true
+            end
+        end
+        T.truthy(AvatarPolicy.body(AvatarPolicy.DefaultBody) ~= nil, "corps par défaut connu")
+        T.equal(AvatarPolicy.body("Robot"), nil, "corps inconnu refusé")
+        T.equal(AvatarPolicy.body(42), nil, "identifiant non textuel refusé")
+        local worn = table.clone(AvatarPolicy.Bodies.Feminin.Parts) :: { [string]: number }
+        worn.Head = 999 -- tête du joueur, sans effet sur la vérification
+        T.truthy(AvatarPolicy.wearsBody(worn, "Feminin"), "corps porté reconnu")
+        T.truthy(not AvatarPolicy.wearsBody(worn, "Masculin"), "autre corps non reconnu")
+        worn.LeftLeg = 0
+        T.truthy(not AvatarPolicy.wearsBody(worn, "Feminin"), "partie manquante détectée")
+        -- Couleurs unifiées sur la tête (décision du propriétaire, 2026-11-04).
+        T.truthy(AvatarPolicy.UnifySkinOnHead, "couleurs unifiées sur la tête")
+        T.truthy(table.find(AvatarPolicy.BodyColorFields, "HeadColor") == nil, "couleur de la tête jamais modifiée")
+        T.equal(#AvatarPolicy.BodyColorFields, 5, "tronc, bras et jambes")
+        local headColor = { R = 1, G = 0.88, B = 0.77 }
+        local unified = AvatarPolicy.unifiedColors(headColor :: any)
+        for _, field in AvatarPolicy.BodyColorFields do
+            T.equal(unified[field], headColor, field .. " = couleur de la tête")
+        end
         local ok, outside = AvatarPolicy.scalesWithinRanges({ Height = 1.2, Width = 0 / 0 })
         T.truthy(not ok, "hors plage refusé")
         T.equal(table.concat(outside, ","), "Height,Width", "hauteur excessive et NaN signalés")
@@ -243,8 +295,8 @@ return function(T: any, H: any)
         T.truthy(string.find(server, '"OutfitNotWhileSeated"', 1, true) ~= nil, "refus dans un véhicule")
         T.truthy(string.find(server, "RateLimiter.consume", 1, true) ~= nil, "demandes limitées")
         T.truthy(
-            string.find(server, "ApplyDescriptionAsync(before)", 1, true) ~= nil,
-            "apparence rétablie après échec"
+            string.find(server, "ApplyDescriptionAsync(previous :: HumanoidDescription)", 1, true) ~= nil,
+            "apparence rétablie après échec (dans la file d'application)"
         )
         -- QA-A10 (lot 0.9.2) non remplacée : le téléphone et le bras ne dépendent pas de ce lot.
         T.truthy(string.find(server, "AWPhoneRaised", 1, true) == nil, "bras du téléphone non touché")

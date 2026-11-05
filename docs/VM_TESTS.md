@@ -47,6 +47,10 @@ clavier/manette est remplacée** par un point d'accès réservé à Studio (`Veh
 | `collision` | expérience de collision : 6 impacts latéraux à ~20 km/h, alternant véhicule **conduit** par l'autre joueur et véhicule **garé** ; mesures serveur et clients, échanges d'impulsion confirmés par le serveur |
 | `collision_latence` | la même expérience avec 100 ms de délai réseau dans chaque sens |
 | `lot02` | lot 0.2, 1 joueur, 22 étapes : six boîtes, aides avec/sans, mouillé, pente, bordures (rayon/sphère), dégâts, énergie et panne, caméras, banc de 16 véhicules serveur (≈ 7 min 30) |
+| `avatar`, `avatar2` | lot AVATAR-01 : morphologies R15 dans les véhicules, sorties, tenues, téléphone (vraies entrées) ; bras levé vu par un 2ᵉ joueur |
+| `aster` | phase 1 de l'Aster : maquette en blocs d'après le gabarit, 10 morphologies sur les deux corps humains, pose standard et pose du jeu, mesures côté client (`@@AWASTER@@`), forme des têtes |
+| `silhouette` | clôture de la phase 1 : choix de silhouette par **vrais clics** (panneau d'apparition, téléphone), vêtements, têtes classiques et non classiques, réapparition, couleurs de peau, changements successifs avec expirations forcées |
+| `silhouette2` | 2 clients : corps du joueur 1 mesuré par le joueur 2 et comparé au serveur à chaque changement (changements appelés par le serveur de test) |
 
 Non couvert par ces sessions : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir
 `docs/lot-0.1/RAPPORT_TESTS.md`). Lot 0.9.1 : les sessions `ui` et `ui_monde` utilisent de **vraies** entrées

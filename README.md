@@ -29,6 +29,9 @@
 > Lot AVATAR-01 (branche `feat/avatar-r15-foundation`, PR brouillon #12) : R15 seul, apparence du joueur conservée,
 > fondation des tenues, compatibilité avec les véhicules mesurée
 > ([rapport](docs/lot-avatar-01/RAPPORT_AVATAR_R15.md)).
+> Phase 1 de l'Aster (branche `feat/aster-phase1`) : pose assise du jeu, gabarit mesuré en VM, avatars humains
+> (corps 995 ou 994 au choix du joueur, tête classique « bloc » remplacée par celle du corps) ([rapport](docs/vehicle-3d/ASTER_PHASE1.md),
+> [clôture](docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md), [lancement d'ASTER-02](docs/vehicle-3d/ASTER_02_LANCEMENT.md)).
 > **Statut** : lot 0.9.2 sur `feat/final-stabilization-0.9.2` (PR brouillon #11, base : lot 0.9.1 ; PR #1 à #10 non
 > fusionnées). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
 > [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais

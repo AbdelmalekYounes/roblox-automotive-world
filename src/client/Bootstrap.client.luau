@@ -45,6 +45,8 @@ statusLabel.Parent = screenGui
 screenGui.Parent = playerGui
 
 VehicleController.start()
+-- Phase 1 de l'Aster (D3) : pose assise du jeu, appliquée seulement aux sièges marqués AWSeatPose.
+require(script.Parent:WaitForChild("Vehicles"):WaitForChild("SeatPoseController")).start()
 
 -- Lot 0.7 : interface commune (gestionnaire d'écrans, raccourcis, notifications,
 -- HUD, GPS, carte, téléphone, groupes, paramètres). Les panneaux des lots 0.4 à
@@ -91,6 +93,8 @@ EconomyPanel.start()
 RacePanel.start()
 -- Lot 0.8 : parcours d'arrivée (passable) et exercices de formation.
 task.spawn(OnboardingController.start)
+-- Avatars humains (2026-11-04) : choix de la silhouette à la première apparition.
+require(UI:WaitForChild("BodyChoice")).start()
 PhotoMode.setRacingCheck(RacePanel.racing)
 PhotoMode.start()
 

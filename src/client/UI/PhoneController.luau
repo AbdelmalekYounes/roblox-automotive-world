@@ -36,6 +36,7 @@ local SettingsController = require(script.Parent.SettingsController)
 local MapController = require(script.Parent.MapController)
 local OnboardingController = require(script.Parent.OnboardingController)
 local PhotoMode = require(script.Parent.PhotoMode)
+local BodyChoice = require(script.Parent.BodyChoice)
 local RadioController = require(script.Parent.Parent:WaitForChild("Audio"):WaitForChild("RadioController"))
 
 local PhoneController = {}
@@ -597,6 +598,20 @@ local function renderSettings()
         set(Localization.t("settings.devHud", { state = onoff(prefs.Hud.DevHud) }), function(p)
             p.Hud.DevHud = not p.Hud.DevHud
         end)
+        -- Silhouette (avatars humains) : état tenu par le serveur, pas une préférence.
+        local worn = BodyChoice.current()
+        button(
+            Localization.t(
+                "settings.avatarBody",
+                { body = if worn then Localization.t("avatar.body." .. worn) else "…" }
+            ),
+            function()
+                task.spawn(function()
+                    BodyChoice.choose(BodyChoice.next())
+                    render()
+                end)
+            end
+        )
     elseif settingsPage == "Controls" then
         for _, binding in InputMap.Defaults do
             if binding.Rebindable then
