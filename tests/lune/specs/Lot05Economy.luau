@@ -195,7 +195,7 @@ return function(T: any, H: any)
         T.equal(first.Status, "Confirmed")
         T.equal(second.Status, "Duplicate")
         T.equal(second.Result.VehicleId, first.Result.VehicleId)
-        T.equal(s.Data.Wallet.Balance, 50_000 - 18_500)
+        T.equal(s.Data.Wallet.Balance, 50_000 - VehicleCatalog.get("brio").Price)
         local count = 0
         for _ in s.Data.Vehicles do
             count += 1
@@ -209,7 +209,7 @@ return function(T: any, H: any)
             T.equal(#VehicleCatalog.Entries, 18)
             local working = 0
             for _, entry in VehicleCatalog.Entries do
-                if entry.Availability == "Working" then
+                if entry.Availability == "Working" or entry.Availability == "PendingApproval" then
                     working += 1
                     T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id)
                     T.truthy(
@@ -225,7 +225,7 @@ return function(T: any, H: any)
                     "pas de prototype"
                 )
             end
-            T.equal(working, 6)
+            T.equal(working, 18) -- lot 0.8 : gamme proposée complète, en attente d'approbation
             local profile = ProfileSchema.new(5, 0, "Prod")
             Wallet.credit(profile, 100_000, "Seed", "s", 0)
             T.equal(
@@ -243,7 +243,7 @@ return function(T: any, H: any)
         Customization.setPart(profile, bought.VehicleId, "Tires", "TIRE-SPORT", Definitions.get("wk_brio"), PUBLIC, 0)
         local ok, quote = Commerce.tradeInQuote(profile, bought.VehicleId, 0)
         T.truthy(ok)
-        T.equal(quote.Amount, math.floor(18_500 * 0.6), "neuf : 60 %")
+        T.equal(quote.Amount, math.floor(VehicleCatalog.get("brio").Price * 0.6), "neuf : 60 %")
         local balance = profile.Wallet.Balance
         T.truthy((Commerce.tradeIn(profile, bought.VehicleId, 0)), "reprise")
         T.equal(profile.Wallet.Balance, balance + quote.Amount)

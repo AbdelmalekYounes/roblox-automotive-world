@@ -21,10 +21,11 @@
 ]]
 
 local Preferences = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.UI.Preferences)
+local OnboardingRules = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.Onboarding.OnboardingRules)
 
 local ProfileSchema = {}
 
-ProfileSchema.Version = 4
+ProfileSchema.Version = 5
 -- Taille maximale visée d'un enregistrement (le DataStore accepte 4 Mo).
 -- Au-delà, les nouvelles acquisitions sont refusées par une limite TECHNIQUE
 -- explicite, à arbitrer (§4.2) ; stratégie de fractionnement : rapport du lot.
@@ -240,6 +241,8 @@ export type Profile = {
     Racing: Racing,
     -- Lot 0.7 (schéma 4) : préférences d'interface (aucune donnée sensible).
     Preferences: Preferences.Prefs,
+    -- Lot 0.8 (schéma 5) : première connexion et exercices (aucun crédit).
+    Onboarding: OnboardingRules.State,
 }
 
 function ProfileSchema.new(userId: number, now: number, environment: string): Profile
@@ -266,6 +269,7 @@ function ProfileSchema.new(userId: number, now: number, environment: string): Pr
         Services = {},
         Racing = ProfileSchema.newRacing(),
         Preferences = Preferences.defaults(),
+        Onboarding = OnboardingRules.new(),
     }
 end
 
@@ -330,6 +334,7 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
             "Services",
             "Racing",
             "Preferences",
+            "Onboarding",
         }
     do
         check(type(profile[key]) == "table", "Missing:" .. key)

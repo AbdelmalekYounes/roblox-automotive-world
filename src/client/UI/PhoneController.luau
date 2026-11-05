@@ -33,10 +33,26 @@ local NotificationService = require(script.Parent.NotificationService)
 local SocialController = require(script.Parent.SocialController)
 local SettingsController = require(script.Parent.SettingsController)
 local MapController = require(script.Parent.MapController)
+local OnboardingController = require(script.Parent.OnboardingController)
+local PhotoMode = require(script.Parent.PhotoMode)
+local RadioController = require(script.Parent.Parent:WaitForChild("Audio"):WaitForChild("RadioController"))
 
 local PhoneController = {}
 
-local APPS = { "Map", "Vehicles", "Properties", "Missions", "Races", "Market", "Social", "Settings", "Notifications" }
+local APPS = {
+    "Map",
+    "Vehicles",
+    "Properties",
+    "Missions",
+    "Races",
+    "Market",
+    "Social",
+    "Radio",
+    "Photo",
+    "Guide",
+    "Settings",
+    "Notifications",
+}
 local ICONS = {
     Map = "🗺",
     Vehicles = "🚗",
@@ -45,6 +61,9 @@ local ICONS = {
     Races = "🏁",
     Market = "$",
     Social = "☺",
+    Radio = "♪",
+    Photo = "◎",
+    Guide = "?",
     Settings = "⚙",
     Notifications = "🔔",
 }
@@ -237,6 +256,62 @@ local function renderVehicles()
     end
     button(Localization.t("ui.panel.garage"), function()
         openPanel("Garage")
+    end)
+end
+
+-- Lot 0.8 : radio (AUD-RADIO-01). Le conducteur choisit ; chacun règle ou coupe son écoute.
+local function renderRadio()
+    local seat = RadioController.seat()
+    local current = RadioController.current()
+    line(Localization.t("radio.seat." .. seat), true)
+    line(Localization.t("radio.current", { station = Localization.t("radio.station." .. current) }))
+    for _, station in RadioController.stations() do
+        local label = Localization.t("radio.station." .. station.Id)
+        if not station.Available then
+            line(Localization.t("radio.unavailable", { station = label }))
+        elseif seat == "Driver" then
+            button(label, function()
+                RadioController.setStation(station.Id)
+                render()
+            end)
+        else
+            line(label)
+        end
+    end
+    if seat == "Driver" and current ~= "Off" then
+        button(Localization.t("radio.station.Off"), function()
+            RadioController.setStation("Off")
+            render()
+        end)
+    end
+    local audio = UIState.prefs().Audio
+    button(Localization.t("radio.mute", { state = onoff(audio.RadioMuted) }), function()
+        SettingsController.update(function(p)
+            p.Audio.RadioMuted = not p.Audio.RadioMuted
+        end)
+        render()
+    end)
+    button(
+        Localization.t("settings.volume", { category = Localization.t("settings.volume.Radio"), value = audio.Radio }),
+        function()
+            SettingsController.update(function(p)
+                p.Audio.Radio = if p.Audio.Radio >= 100 then 0 else p.Audio.Radio + 10
+            end)
+            render()
+        end
+    )
+    line(Localization.t("radio.note"))
+end
+
+-- Lot 0.8 : introduction consultable à tout moment et exercices de formation.
+local function renderGuide()
+    for _, step in { "Welcome", "World", "Controls", "Phone" } do
+        line(Localization.t("onb.title." .. step), true)
+        line(Localization.t("onb.text." .. step))
+    end
+    button(Localization.t("onb.training"), function()
+        UIManager.close("Phone")
+        OnboardingController.openTraining()
     end)
 end
 
@@ -468,7 +543,7 @@ end
 
 local function renderSettings()
     local prefs = UIState.prefs()
-    for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio" } do
+    for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio", "Graphics" } do
         button(Localization.t("settings." .. string.lower(string.sub(page, 1, 1)) .. string.sub(page, 2)), function()
             settingsPage = page
             render()
@@ -571,8 +646,21 @@ local function renderSettings()
             p.Notifications.Warning = not p.Notifications.Warning
         end)
         line(Localization.t("notif.level.Critical") .. " : " .. Localization.t("ui.on"), false, true)
+    elseif settingsPage == "Graphics" then
+        -- Lot 0.8 : qualité (habillage, détails, lumières, effets ; ArtDirection.Profiles).
+        set(
+            Localization.t("settings.quality", { value = Localization.t("quality." .. prefs.Graphics.Quality) }),
+            function(p)
+                local qualities = { "Low", "Medium", "High" }
+                p.Graphics.Quality = qualities[(table.find(qualities, p.Graphics.Quality) or 2) % 3 + 1]
+            end
+        )
+        line(Localization.t("settings.quality.note"))
     else
-        for _, category in { "Master", "Vehicles", "Interface", "World" } do
+        set(Localization.t("radio.mute", { state = onoff(prefs.Audio.RadioMuted) }), function(p)
+            p.Audio.RadioMuted = not p.Audio.RadioMuted
+        end)
+        for _, category in { "Master", "Engine", "Environment", "Interface", "Effects", "Radio", "Voice" } do
             set(
                 Localization.t("settings.volume", {
                     category = Localization.t("settings.volume." .. category),
@@ -657,6 +745,16 @@ render = function()
         renderMarket()
     elseif app == "Social" then
         renderSocial()
+    elseif app == "Guide" then
+        renderGuide()
+    elseif app == "Radio" then
+        renderRadio()
+    elseif app == "Photo" then
+        line(Localization.t("photo.rules"))
+        button(Localization.t("photo.open"), function()
+            UIManager.close("Phone")
+            PhotoMode.request()
+        end)
     elseif app == "Settings" then
         renderSettings()
     else

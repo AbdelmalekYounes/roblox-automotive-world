@@ -12,7 +12,8 @@
 --   PERSISTANTS (toujours chargés : les collisions des routes sont disponibles
 --   avant qu'un véhicule rapide les atteigne, AUD-WORLD-02) ;
 -- - Decor/<secteur>, Relief/<secteur>, Sol : chargés selon la distance ;
--- - Services/<id> : modèles atomiques (un service arrive en entier).
+-- - Services/<id> : modèles atomiques (un service arrive en entier) ;
+-- - Habillage/<zone>/<secteur> (lot 0.8) : accessoires par zone, visibilité réglée par le client.
 --
 -- Usage : lune run tools/world/build-world.luau <place.rbxlx> <sortie.rbxm>
 
@@ -947,6 +948,418 @@ for _ = 1, 900 do
     end
 end
 
+-- ============================== HABILLAGE (lot 0.8) ==============================
+-- Mobilier et accessoires propres à chaque zone, le long des routes, générés de
+-- façon déterministe (graine par zone). Habillage/<zone>/<secteur> : modèles en
+-- streaming normal ; le client règle leur visibilité selon la distance et la
+-- qualité graphique (DetailLod). Accessoires non bloquants (aucune collision)
+-- et sans ombre : ils ne gênent ni la conduite ni les performances. Lampadaires :
+-- une source de lumière désactivée, allumée la nuit par le client (nombre limité).
+
+local dressingRoot = folder(root, "Habillage")
+root:SetAttribute("DressingVersion", "0.8.0")
+local dressingCounts: { [string]: number } = {}
+
+local function dressingModel(zone: string, x: number, z: number): any
+    local i, j = math.floor(x / SECTOR), math.floor(z / SECTOR)
+    local zoneFolder = folder(dressingRoot, zone)
+    local name = string.format("Habillage_%d_%d", i, j)
+    local existing = zoneFolder:FindFirstChild(name)
+    if existing then
+        return existing
+    end
+    local model = Instance.new("Model")
+    model.Name = name
+    model.ModelStreamingMode = Enum.ModelStreamingMode.Default
+    model:SetAttribute("Sector", string.format("%d:%d", i, j))
+    model:SetAttribute("AWDecorZone", zone)
+    model:SetAttribute("Center", Vector3.new((i + 0.5) * SECTOR * S, 0, (j + 0.5) * SECTOR * S))
+    model.Parent = zoneFolder
+    return model
+end
+
+-- Pièce d'habillage : jamais bloquante, sans ombre portée.
+local function prop(parent: any, name: string, size: any, cf: any, color: any, material: any?, shape: any?): any
+    local p = part(parent, {
+        Name = name,
+        Size = size,
+        CFrame = cf,
+        Color = color,
+        Material = material,
+        Collide = false,
+        Shape = shape,
+    })
+    p.CastShadow = false
+    return p
+end
+
+-- Repère local d'un accessoire : position (m), cap (rad), altitude (m).
+type Spot = { X: number, Z: number, Y: number, Heading: number }
+
+local function at(spot: Spot, du: number, dy: number, dv: number): any
+    -- du : latéral, dv : longitudinal (m) ; dy : hauteur au-dessus du sol (m).
+    local c, s = math.cos(spot.Heading), math.sin(spot.Heading)
+    local x = spot.X + du * c + dv * s
+    local z = spot.Z - du * s + dv * c
+    return CFrame.new(x * S, (spot.Y + dy) * S, z * S) * CFrame.Angles(0, spot.Heading, 0)
+end
+
+local CYL = Enum.PartType.Cylinder
+local BALL = Enum.PartType.Ball
+local UPRIGHT = CFrame.Angles(0, 0, math.rad(90)) -- cylindre debout
+
+local function streetLamp(m: any, spot: Spot, warm: boolean)
+    prop(m, "Mat", v3(0.25, 6, 0.25), at(spot, 0, 3, 0), rgb(70, 74, 80), Enum.Material.Metal)
+    prop(m, "Potence", v3(1.6, 0.15, 0.2), at(spot, -0.8, 6, 0), rgb(70, 74, 80), Enum.Material.Metal)
+    local head = prop(m, "Lanterne", v3(0.6, 0.2, 0.4), at(spot, -1.5, 5.9, 0), rgb(240, 236, 220), Enum.Material.Glass)
+    head:SetAttribute("AWStreetLight", true)
+    local light = Instance.new("PointLight")
+    light.Name = "Lumiere"
+    light.Enabled = false
+    light.Range = 40
+    light.Brightness = 1.4
+    light.Color = if warm then rgb(255, 214, 160) else rgb(225, 235, 255)
+    light.Shadows = false
+    light.Parent = head
+end
+
+local function tree(m: any, spot: Spot, trunk: number, crown: number, color: any)
+    prop(m, "Tronc", v3(0.4, trunk, 0.4), at(spot, 0, trunk / 2, 0), rgb(95, 70, 50), Enum.Material.Wood)
+    prop(
+        m,
+        "Feuillage",
+        v3(crown, crown, crown),
+        at(spot, 0, trunk + crown * 0.35, 0),
+        color,
+        Enum.Material.Grass,
+        BALL
+    )
+end
+
+-- Accessoires par zone : (modèle, repère, aléa). Teintes : ArtDirection (palette).
+local ZONE_PROPS: { [string]: { Spacing: number, Max: number, Build: (any, Spot, any) -> () } } = {
+    Metropole = {
+        Spacing = 34,
+        Max = 900,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.55 then
+                streetLamp(m, spot, true)
+            elseif roll < 0.75 then
+                -- Abri de bus.
+                prop(m, "AbriToit", v3(3.2, 0.12, 1.4), at(spot, 0, 2.4, 0), rgb(60, 64, 70), Enum.Material.Metal)
+                prop(m, "AbriVitre", v3(3.2, 2.2, 0.06), at(spot, 0.6, 1.2, 0), rgb(190, 215, 230), Enum.Material.Glass).Transparency =
+                    0.6
+                prop(m, "AbriBanc", v3(2.4, 0.1, 0.4), at(spot, 0.3, 0.45, 0), rgb(150, 110, 70), Enum.Material.Wood)
+            elseif roll < 0.9 then
+                prop(
+                    m,
+                    "Jardiniere",
+                    v3(1.6, 0.6, 0.8),
+                    at(spot, 0, 0.3, 0),
+                    rgb(120, 118, 112),
+                    Enum.Material.Concrete
+                )
+                prop(m, "Massif", v3(1.4, 0.5, 0.6), at(spot, 0, 0.8, 0), rgb(80, 135, 70), Enum.Material.Grass)
+            else
+                for k = -1, 1 do
+                    prop(
+                        m,
+                        "Potelet",
+                        v3(0.6, 0.15, 0.15),
+                        at(spot, 0, 0.3, k * 1.2) * UPRIGHT,
+                        rgb(40, 42, 46),
+                        Enum.Material.Metal,
+                        CYL
+                    )
+                end
+            end
+        end,
+    },
+    Banlieues = {
+        Spacing = 30,
+        Max = 900,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.3 then
+                streetLamp(m, spot, true)
+            elseif roll < 0.6 then
+                prop(m, "Haie", v3(0.8, 1.1, 4), at(spot, 0.5, 0.55, 0), rgb(70, 120, 60), Enum.Material.Grass)
+            elseif roll < 0.8 then
+                prop(
+                    m,
+                    "BoiteAuxLettres",
+                    v3(0.35, 0.3, 0.5),
+                    at(spot, 0, 1, 0),
+                    rgb(200, 190, 60),
+                    Enum.Material.Metal
+                )
+                prop(m, "Piquet", v3(0.08, 0.9, 0.08), at(spot, 0, 0.45, 0), rgb(90, 90, 90), Enum.Material.Metal)
+            else
+                tree(m, spot, 2.6, 3, rgb(85, 140, 70))
+            end
+        end,
+    },
+    Docks = {
+        Spacing = 40,
+        Max = 400,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.5 then
+                -- Conteneurs empilés (teintes industrielles).
+                local palette = { rgb(170, 60, 45), rgb(40, 90, 150), rgb(60, 120, 70), rgb(200, 150, 40) }
+                local stack = 1 + math.floor(Geometry.randomRange(random, 0, 2.99))
+                for level = 0, stack - 1 do
+                    local color = palette[1 + math.floor(Geometry.randomRange(random, 0, 3.99))]
+                    prop(
+                        m,
+                        "Conteneur",
+                        v3(2.44, 2.59, 6.06),
+                        at(spot, 3, 1.3 + level * 2.6, 0),
+                        color,
+                        Enum.Material.CorrodedMetal
+                    )
+                end
+            elseif roll < 0.75 then
+                prop(m, "Caisse", v3(1.2, 1.2, 1.2), at(spot, 1, 0.6, 0), rgb(150, 115, 70), Enum.Material.WoodPlanks)
+                prop(m, "Caisse", v3(1, 1, 1), at(spot, 1, 1.7, 0.1), rgb(140, 105, 65), Enum.Material.WoodPlanks)
+            else
+                streetLamp(m, spot, false)
+            end
+        end,
+    },
+    Montagnes = {
+        Spacing = 28,
+        Max = 500,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.5 then
+                -- Conifère : tronc et étages de feuillage.
+                prop(m, "Tronc", v3(0.4, 3, 0.4), at(spot, 1.5, 1.5, 0), rgb(85, 60, 45), Enum.Material.Wood)
+                for k = 0, 2 do
+                    local size = 3.4 - k * 0.9
+                    prop(
+                        m,
+                        "Aiguilles",
+                        v3(size, 1.6, size),
+                        at(spot, 1.5, 2.6 + k * 1.3, 0),
+                        rgb(40, 85, 55),
+                        Enum.Material.Grass
+                    )
+                end
+            elseif roll < 0.8 then
+                local size = Geometry.randomRange(random, 1, 2.5)
+                prop(
+                    m,
+                    "Rocher",
+                    v3(size, size * 0.7, size * 1.2),
+                    at(spot, 2, size * 0.3, 0),
+                    rgb(120, 118, 115),
+                    Enum.Material.Slate
+                )
+            else
+                -- Jalon à neige (rouge et blanc).
+                prop(
+                    m,
+                    "Jalon",
+                    v3(0.1, 1.8, 0.1),
+                    at(spot, 0.2, 0.9, 0),
+                    rgb(220, 50, 40),
+                    Enum.Material.SmoothPlastic
+                )
+            end
+        end,
+    },
+    Campagne = {
+        Spacing = 36,
+        Max = 600,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.35 then
+                -- Botte de foin couchée.
+                prop(
+                    m,
+                    "BotteDeFoin",
+                    v3(1.2, 1.5, 1.5),
+                    at(spot, 4, 0.75, 0),
+                    rgb(215, 185, 105),
+                    Enum.Material.Fabric,
+                    CYL
+                )
+            elseif roll < 0.65 then
+                for k = -2, 2 do
+                    prop(
+                        m,
+                        "Piquet",
+                        v3(0.12, 1, 0.12),
+                        at(spot, 0.5, 0.5, k * 2),
+                        rgb(120, 95, 65),
+                        Enum.Material.Wood
+                    )
+                end
+                prop(m, "Lisse", v3(0.06, 0.08, 8), at(spot, 0.5, 0.8, 0), rgb(130, 100, 70), Enum.Material.Wood)
+            else
+                -- Peuplier élancé.
+                prop(m, "Tronc", v3(0.35, 4, 0.35), at(spot, 2, 2, 0), rgb(110, 90, 70), Enum.Material.Wood)
+                prop(m, "Feuillage", v3(1.8, 5, 1.8), at(spot, 2, 5.5, 0), rgb(95, 145, 70), Enum.Material.Grass)
+            end
+        end,
+    },
+    Motorsport = {
+        Spacing = 22,
+        Max = 300,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.5 then
+                -- Pile de pneus (protection).
+                for level = 0, 2 do
+                    prop(
+                        m,
+                        "Pneu",
+                        v3(0.3, 0.65, 0.65),
+                        at(spot, 1.2, 0.15 + level * 0.3, 0) * UPRIGHT,
+                        rgb(30, 30, 32),
+                        Enum.Material.Rubber,
+                        CYL
+                    )
+                end
+            elseif roll < 0.8 then
+                -- Banderole aux couleurs du circuit (sans marque).
+                prop(
+                    m,
+                    "Banderole",
+                    v3(0.06, 0.8, 4),
+                    at(spot, 1.4, 0.8, 0),
+                    if roll < 0.65 then rgb(230, 230, 235) else rgb(220, 60, 50),
+                    Enum.Material.Fabric
+                )
+            else
+                -- Poste de commissaire.
+                prop(
+                    m,
+                    "Poste",
+                    v3(1.2, 2.2, 1.2),
+                    at(spot, 2.5, 1.1, 0),
+                    rgb(240, 240, 240),
+                    Enum.Material.SmoothPlastic
+                )
+                prop(m, "PosteToit", v3(1.5, 0.12, 1.5), at(spot, 2.5, 2.25, 0), rgb(230, 120, 40), Enum.Material.Metal)
+            end
+        end,
+    },
+    Littoral = {
+        Spacing = 32,
+        Max = 400,
+        Build = function(m, spot, random)
+            local roll = Geometry.randomRange(random, 0, 1)
+            if roll < 0.45 then
+                -- Palmier : stipe incliné et palmes.
+                prop(
+                    m,
+                    "Stipe",
+                    v3(0.35, 5, 0.35),
+                    at(spot, 2, 2.5, 0) * CFrame.Angles(0, 0, math.rad(6)),
+                    rgb(140, 110, 80),
+                    Enum.Material.Wood
+                )
+                for k = 0, 3 do
+                    local frond = at(spot, 2.3, 5.1, 0) * CFrame.Angles(0, k * math.pi / 2, math.rad(18))
+                    prop(
+                        m,
+                        "Palme",
+                        v3(0.1, 0.4, 2.6),
+                        frond * CFrame.new(0, 0, 1.2 * S),
+                        rgb(70, 140, 60),
+                        Enum.Material.Grass
+                    )
+                end
+            elseif roll < 0.75 then
+                streetLamp(m, spot, false)
+            else
+                prop(m, "Parasol", v3(0.08, 2.2, 0.08), at(spot, 3, 1.1, 0), rgb(230, 230, 230), Enum.Material.Metal)
+                prop(
+                    m,
+                    "Toile",
+                    v3(0.2, 2.2, 2.2),
+                    at(spot, 3, 2.2, 0) * UPRIGHT,
+                    if roll < 0.87 then rgb(230, 90, 70) else rgb(60, 140, 200),
+                    Enum.Material.Fabric,
+                    CYL
+                )
+            end
+        end,
+    },
+}
+
+-- Vrai si un point est trop près d'une chaussée (autre que la sienne).
+local function onRoad(x: number, z: number, margin: number): boolean
+    for _, p in samples[cellKey(math.floor(x / CELL), math.floor(z / CELL))] or {} do
+        if math.sqrt((x - p.X) ^ 2 + (z - p.Z) ^ 2) < p.Half + margin then
+            return true
+        end
+    end
+    return false
+end
+
+local ZONE_ORDER = { "Metropole", "Banlieues", "Docks", "Montagnes", "Campagne", "Motorsport", "Littoral" }
+for zoneIndex, zone in ZONE_ORDER do
+    local spec = ZONE_PROPS[zone]
+    local random = Geometry.random(8000 + zoneIndex)
+    local count = 0
+    for _, edge in layout.Edges do
+        if edge.Zone ~= zone or count >= spec.Max then
+            continue
+        end
+        local polyline = edge.Polyline
+        local carried = Geometry.randomRange(random, 0, spec.Spacing)
+        local side = 1
+        for k = 2, #polyline do
+            local a, b = polyline[k - 1], polyline[k]
+            local length = Geometry.distance(a, b)
+            if length < 0.01 then
+                continue
+            end
+            local dx, dz = (b.X - a.X) / length, (b.Z - a.Z) / length
+            local heading = math.atan2(dx, dz)
+            local distance = carried
+            while distance < length and count < spec.Max do
+                local t = distance / length
+                local offset = edge.CorridorM / 2 + 1.5
+                -- Normale à gauche / à droite selon le côté, en alternance.
+                local x = a.X + (b.X - a.X) * t + dz * offset * side
+                local z = a.Z + (b.Z - a.Z) * t - dx * offset * side
+                local y = a.Y + (b.Y - a.Y) * t
+                local spot = { X = x, Z = z, Y = y, Heading = heading + (if side > 0 then 0 else math.pi) }
+                if
+                    not onRoad(x, z, 0.5)
+                    and not insideReserved({ X = x, Z = z })
+                    and (zone == "Littoral" or not inSea(x, z))
+                then
+                    spec.Build(dressingModel(zone, x, z), spot, random)
+                    count += 1
+                end
+                side = -side
+                distance += spec.Spacing
+            end
+            carried = distance - length
+        end
+    end
+    dressingCounts[zone] = count
+end
+local dressingTotal = 0
+for _, n in dressingCounts do
+    dressingTotal += n
+end
+root:SetAttribute("DressingProps", dressingTotal)
+do
+    local parts = {}
+    for _, zone in ZONE_ORDER do
+        table.insert(parts, string.format("%s %d", zone, dressingCounts[zone] or 0))
+        dressingRoot:SetAttribute("Props_" .. zone, dressingCounts[zone] or 0)
+    end
+    print("Habillage par zone : " .. table.concat(parts, ", "))
+end
+
 -- ============================== SERVICES ==============================
 
 local SERVICE_COLORS = {
@@ -1253,12 +1666,13 @@ end
 fs.writeFile(outputPath :: string, data)
 print(
     string.format(
-        "Carte %s générée : %d pièces (%d bâtiments, %d cellules de relief, %d arbres), %d services, %.1f Mo → %s",
+        "Carte %s générée : %d pièces (%d bâtiments, %d cellules de relief, %d arbres, %d accessoires d'habillage), %d services, %.1f Mo → %s",
         WorldConfig.MapVersion,
         stats.Parts,
         buildings,
         reliefCells,
         trees,
+        dressingTotal,
         #layout.Placements,
         #data / 1e6,
         outputPath :: string

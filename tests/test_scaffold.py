@@ -50,6 +50,9 @@ DATASTORE_ADAPTER = "DataStoreProfileRepository.luau"
 # de classement (OrderedDataStore) isolés dans un adaptateur instancié seulement
 # si une expérience de test isolée ou de production est déclarée (aucune).
 CROSS_SERVER_ADAPTER = "CrossServerAdapter.luau"
+# Lot 0.8 : seul le manifeste des ressources forme une URL de contenu, à partir
+# d'un identifiant RÉEL qu'il déclare (aucun aujourd'hui : voir test_lot08.py).
+ASSET_MANIFEST = "AssetManifest.luau"
 
 
 def test_no_premature_datastore_economy_or_external_code():
@@ -68,6 +71,8 @@ def test_no_premature_datastore_economy_or_external_code():
         source = script.read_text(encoding="utf-8")
         for token in forbidden:
             if script.name == CROSS_SERVER_ADAPTER and token == "SetAsync(":
+                continue
+            if script.name == ASSET_MANIFEST and token == "rbxassetid://":
                 continue
             assert token not in source, f"{token} interdit dans {script.name}"
         if any(token in source for token in datastore_tokens):

@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.7 (interface, GPS, smartphone et social)
+# Automotive World — Lot 0.8 (rendu, gamme proposée, audio, radio, mode photo, arrivée)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -13,10 +13,13 @@
 > dans le monde ouvert et 6 en zone d'essai, salons, modes protégé et réaliste, réservation exclusive du véhicule,
 > classement et saisons de huit semaines, matchmaking (repli local ; inter-serveurs écrit mais non exécuté). Lot 0.7 :
 > interface commune, HUD contextuel, mini-carte, carte, GPS, smartphone, groupes et partage de position volontaire,
-> notifications, accessibilité, français et anglais, préférences sauvegardées. Aucune
+> notifications, accessibilité, français et anglais, préférences sauvegardées. Lot 0.8 : gamme PROPOSÉE de 18 modèles
+> fictifs (en attente d'approbation), carrosseries par silhouette, habillage des sept zones, feux de nuit, qualité
+> graphique, audio modulaire et radio (contrôleurs ; sons originaux synthétisés mais non téléversés), mode photo,
+> parcours d'arrivée et exercices de formation. Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.7 en développement sur `feat/ui-gps-social-0.7` (PR brouillon, base : lot 0.6 ;
-> PR #1 à #6 non fusionnées). Rapport : [docs/lot-0.7/RAPPORT_LOT_0.7.md](docs/lot-0.7/RAPPORT_LOT_0.7.md).
+> **Statut** : lot 0.8 en développement sur `feat/art-audio-onboarding-0.8` (PR brouillon #8, base : lot 0.7 ;
+> PR #1 à #7 non fusionnées). Rapport : [docs/lot-0.8/RAPPORT_LOT_0.8.md](docs/lot-0.8/RAPPORT_LOT_0.8.md).
 > Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
 > (**NON TESTÉS** à ce jour).
 
@@ -88,9 +91,9 @@ sur la dalle violette d'inscription du parcours (ou à son départ), au volant d
 
 | Action | Clavier | Manette |
 |---|---|---|
-| Téléphone (applications, mode rapide en roulant) | T | X |
+| Téléphone (applications, mode rapide en roulant) | T | Select (lot 0.8 ; X reste à l'invite d'entrée) |
 | Carte complète (destination, filtres) | M | via le téléphone |
-| Garage et collection | P | Select |
+| Garage et collection | P | via le téléphone |
 | Économie et métiers | J | clic du stick droit |
 | Courses | K | clic du stick gauche |
 | Niveau du HUD (minimal, standard, complet) | H | via le téléphone |
@@ -99,6 +102,25 @@ sur la dalle violette d'inscription du parcours (ou à son départ), au volant d
 
 Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le téléphone passe en mode rapide. Paramètres
 (langue FR/EN, HUD, mini-carte, accessibilité, notifications, audio, raccourcis) : application Paramètres.
+
+## Gamme, audio, radio, photo et arrivée (lot 0.8)
+
+| Action | Clavier | Manette |
+|---|---|---|
+| Mode photo (à pied ou véhicule arrêté, jamais en course) | O | application Photo du téléphone |
+| Dans le mode photo : déplacer / monter-descendre / orienter / interface | W A S D / Q E / flèches / I | stick gauche / — / stick droit / — |
+| Monter en passager (propriétaire ou groupe) | E près de la portière droite | X |
+| Radio (le conducteur choisit, chacun règle ou coupe son écoute) | application Radio du téléphone | idem |
+
+- **Gamme proposée** : 18 modèles fictifs, achetables en développement seulement
+  ([catalogue](docs/lot-0.8/CATALOGUE_18_VEHICULES.md)). Trois véhicules de départ proposés (Brio, Fil, Aster) :
+  la liste officielle reste vide jusqu'à l'approbation du propriétaire.
+- **Sons** : `python tools/audio/synth.py` produit 30 sons originaux dans `build/audio/` ; rien n'est téléversé, donc
+  rien n'est joué en jeu et les stations de radio sont indisponibles
+  ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).
+- **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute
+  ([direction artistique](docs/lot-0.8/DIRECTION_ARTISTIQUE.md)).
+- **Parcours d'arrivée** : s'ouvre à la première connexion, passable ; consultable ensuite (application Guide).
 
 ## Commandes de conduite
 
@@ -162,7 +184,10 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `src/shared/Economy` | Catalogue commercial (18 emplacements), barème provisoire, métiers, réputation, protocole économique |
 | `src/server/Economy` | Portefeuille, commerce, marché et transferts multiprofils, missions, rémunération, service économique |
 | `src/shared/Racing` | Disciplines, types et modes d'épreuve, parcours versionnés, rangs et saisons, protocole des courses |
-| `src/shared/UI` | Localisation FR/EN, préférences, pile des écrans, raccourcis, conduite et interfaces, notifications |
+| `src/shared/UI` | Localisation FR/EN (dont textes du lot 0.8 et traductions des panneaux), préférences, pile des écrans, raccourcis, conduite et interfaces, notifications |
+| `src/shared/Assets`, `src/shared/Art` | Manifeste des ressources ; direction artistique (qualité, étalonnage, feux) |
+| `src/shared/Audio`, `src/shared/Photo`, `src/shared/Onboarding` | Règles **pures** : audio moteur et ambiances, radio, mode photo, parcours d'arrivée et exercices |
+| `src/server/Onboarding`, `src/server/Audio` | Parcours d'arrivée (essais, choix, protection d'apparition) ; radio (choix du conducteur) |
 | `src/shared/Navigation` | Index et projection de la carte, itinéraires et guidage du GPS |
 | `src/server/Social` | Groupes, partage de position, communications, préférences, points d'intérêt, téléphone tenu en main |
 | `src/server/Racing` | Socle de compétition : parcours, salons, sessions, règles, drift, validation, classement, réservation, récompenses, classement compétitif, saisons, récupération, matchmaking, service des courses |
@@ -171,10 +196,11 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `src/shared/Vehicles` | Types, définitions, dynamique **pure** (pneu, suspension, moteurs, boîtes, différentiels, aides, énergie, dégâts), adaptateur Roblox `VehicleSimulator`, codec réseau, mesures |
 | `src/server` | Monde ouvert (parc, météo, trafic PNJ), zone d'essai, fabrique des véhicules, service autoritaire (embarquement, propriété réseau vérifiée, validation des mouvements, énergie, aides, dégâts confirmés serveur, médiation des collisions entre joueurs), limiteur de débit |
 | `src/client` | Commandes clavier/manette (arbitrage des périphériques), caméras, animation des roues, HUD de développement, ambiance, feux, piétons, chargement anticipé |
-| `tools/world` | Générateur hors ligne de la carte (Lune) |
+| `tools/world` | Générateur hors ligne de la carte (Lune), habillage des sept zones |
+| `tools/audio`, `tools/vehicles` | Synthèse des sons originaux (Python) ; banc d'essai de la gamme (Lune) |
 | `places` | Configuration des deux places (développement, monde ouvert) |
 | `tests/lune` | Tests exécutés par Lune sur la place construite par Rojo (modules purs + structure) |
-| `tests/test_scaffold.py` | Contrôles statiques Python |
+| `tests/test_scaffold.py`, `tests/test_lot08.py` | Contrôles statiques Python ; manifeste et synthèse audio |
 | `docs/lot-0.1` | Rapport de validation, rapport de tests, analyse des écarts et arbitrages, proposition du lot 0.2 |
 | `docs/lot-0.2` | Rapport du lot 0.2 (mesures réelles), écarts, changements d'architecture |
 | `docs/lot-0.3` | Rapport du lot 0.3, architecture du monde ouvert |
@@ -182,6 +208,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.5` | Rapport du lot 0.5, architecture de l'économie |
 | `docs/lot-0.6` | Rapport du lot 0.6, architecture des courses et de la compétition |
 | `docs/lot-0.7` | Rapport du lot 0.7, architecture de l'interface, du GPS et du social |
+| `docs/lot-0.8` | Rapport du lot 0.8, architecture, catalogue des 18 modèles, ressources et licences, direction artistique |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

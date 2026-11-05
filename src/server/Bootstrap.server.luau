@@ -22,6 +22,8 @@ local SocialFolder = script.Parent:WaitForChild("Social")
 local InterfaceService = require(SocialFolder:WaitForChild("InterfaceService"))
 local SocialService = require(SocialFolder:WaitForChild("SocialService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
+local OnboardingService = require(script.Parent:WaitForChild("Onboarding"):WaitForChild("OnboardingService"))
+local RadioService = require(script.Parent:WaitForChild("Audio"):WaitForChild("RadioService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
 assert(Settings.RequirementsVersion == "1.0", "Version du cahier des charges non conforme")
@@ -49,6 +51,15 @@ else
 end
 -- Lot 0.7 : groupes, partage de position, canaux de communication.
 SocialService.start()
+-- Lot 0.8 : place passager ouverte au groupe du propriétaire ou du conducteur.
+local GroupRules = require(SocialFolder:WaitForChild("GroupRules"))
+VehicleService.setGroupCheck(function(a: number, b: number): boolean
+    local group = GroupRules.groupOf(SocialService.registry(), a)
+    return group ~= nil and group == GroupRules.groupOf(SocialService.registry(), b)
+end)
+-- Lot 0.8 : parcours de première connexion et formation (les deux modes).
+OnboardingService.start()
+RadioService.start()
 -- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
 ProfileService.start()
 ReplicatedStorage:SetAttribute("AutomotiveWorldMode", PlaceConfig.Mode)

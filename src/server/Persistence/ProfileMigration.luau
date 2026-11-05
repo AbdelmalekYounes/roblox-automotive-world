@@ -13,6 +13,7 @@
 
 local ProfileSchema = require(script.Parent.ProfileSchema)
 local Preferences = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.UI.Preferences)
+local OnboardingRules = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.Onboarding.OnboardingRules)
 
 local ProfileMigration = {}
 
@@ -91,6 +92,17 @@ local MIGRATIONS: { Migration } = {
         Apply = function(data: any): any
             data.Preferences = Preferences.sanitize(data.Preferences)
             data.SchemaVersion = 4
+            return data
+        end,
+    },
+    {
+        -- Lot 0.8 : première connexion (terminée si le véhicule de départ est déjà choisi).
+        From = 4,
+        Describe = "première connexion (lot 0.8)",
+        Apply = function(data: any): any
+            local chosen = type(data.Starter) == "table" and data.Starter.State == "Chosen"
+            data.Onboarding = data.Onboarding or OnboardingRules.migrate(chosen, data.UpdatedAt or 0)
+            data.SchemaVersion = 5
             return data
         end,
     },

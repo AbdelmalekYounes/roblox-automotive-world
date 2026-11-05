@@ -28,7 +28,8 @@ function StarterSelection.choose(
     modelId: any,
     candidates: { string },
     now: number,
-    prepare: (string) -> (number?, { [string]: any }?)
+    prepare: (string) -> (number?, { [string]: any }?),
+    synthetic: boolean?
 ): (boolean, any)
     if #candidates == 0 then
         return false, "StarterCatalogUnavailable"
@@ -47,7 +48,8 @@ function StarterSelection.choose(
         ModelId = modelId,
         Origin = "Starter",
         Untransferable = true,
-        Synthetic = false,
+        -- Lot 0.8 : candidats proposés (Dev seulement) → donnée de développement.
+        Synthetic = synthetic == true,
         EnergyFraction = energy,
         Cosmetics = cosmetics,
     }, now)

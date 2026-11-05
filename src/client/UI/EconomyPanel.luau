@@ -10,6 +10,9 @@
     serveur (confirmée, en attente / récupérable, refusée). Aucune réussite
     n'est affichée avant la réponse. Confirmations bloquées en mouvement, sans
     jamais freiner la voiture. Touche : J (manette : clic du stick droit).
+    Lot 0.8 : libellés traduits à l'affichage (Localization.tr, dictionnaire
+    PanelTexts), montants et distances au format de la langue ; identifiants
+    d'onglet inchangés (français) ; redessin au changement de langue.
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -22,6 +25,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EconomyProtocol = require(Shared:WaitForChild("Economy"):WaitForChild("EconomyProtocol"))
 local Jobs = require(Shared:WaitForChild("Economy"):WaitForChild("Jobs"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
+local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
 
 local Text = require(script.Parent.ProgressionMessages)
 local UIManager = require(script.Parent.UIManager)
@@ -30,8 +34,12 @@ local GPSController = require(script.Parent.GPSController)
 
 local EconomyPanel = {}
 
+-- Texte joueur : le français sert de clé, l'anglais vient de PanelTexts.
+local tr = Localization.tr
+
 local player = Players.LocalPlayer
 local S = 1 / Constants.MetersPerStud
+-- Identifiants d'onglet (français, aussi envoyés par le serveur) : affichés via tr().
 local TABS = { "Portefeuille", "Métiers", "Concession", "Marché", "Immobilier", "Services" }
 
 local request: RemoteFunction
@@ -40,6 +48,7 @@ local body: ScrollingFrame
 local footer: TextLabel
 local missionLabel: TextLabel
 local tabButtons: { [string]: TextButton } = {}
+local closeButton: TextButton? = nil
 local state: any = nil
 local tab = "Portefeuille"
 local busy = false
@@ -66,9 +75,11 @@ local function credits(amount: number?): string
     if amount == nil then
         return "—"
     end
-    local text = tostring(math.floor(amount))
-    local formatted = string.reverse((string.gsub(string.reverse(text), "(%d%d%d)", "%1 ")))
-    return (string.gsub(formatted, "^%s+", "")) .. " cr"
+    -- Séparateur de milliers selon la langue (espace en français, virgule en
+    -- anglais) ; le signe est traité à part pour ne jamais produire « -,500 ».
+    local value = math.floor(amount)
+    local sign = if value < 0 then "-" else ""
+    return sign .. Localization.amount(math.abs(value)) .. " cr"
 end
 
 local render: () -> ()
@@ -93,6 +104,7 @@ local function invoke(action: string, payload: any?): any
     return response
 end
 
+-- Libellés français, traduits au moment de l'affichage (table évaluée une fois).
 local STATUS_TEXT = {
     Confirmed = "Confirmée (écriture durable).",
     Pending = "En attente de confirmation — l'opération est suivie et récupérable.",
@@ -102,9 +114,9 @@ local STATUS_TEXT = {
 
 local function describe(response: any): string
     if response.Status == "Rejected" or response.Status == "Unavailable" or response.Status == "Error" then
-        return "Refusée : " .. Text.text(response.Error)
+        return tr("Refusée : %s", Text.text(response.Error))
     end
-    return STATUS_TEXT[response.Status] or tostring(response.Status)
+    return tr(STATUS_TEXT[response.Status] or tostring(response.Status))
 end
 
 -- Exécute une opération sensible (identifiant de demande unique).
@@ -124,7 +136,7 @@ local function execute(action: string, payload: any)
     end
     busy = true
     payload.RequestId = HttpService:GenerateGUID(false)
-    footer.Text = "Demande envoyée…"
+    footer.Text = tr("Demande envoyée…")
     local response = invoke(action, payload)
     busy = false
     pending = nil
@@ -221,13 +233,13 @@ end
 
 local function renderWallet()
     local wallet = state.Wallet
-    line(string.format("Solde : %s  •  réservé : %s", credits(wallet.Balance), credits(wallet.Reserved)), true)
-    line(string.format("Total gagné %s  •  total dépensé %s", credits(wallet.Earned), credits(wallet.Spent)))
+    line(tr("Solde : %s  •  réservé : %s", credits(wallet.Balance), credits(wallet.Reserved)), true)
+    line(tr("Total gagné %s  •  total dépensé %s", credits(wallet.Earned), credits(wallet.Spent)))
     local rep = state.Reputation
     line(
-        string.format(
+        tr(
             "Réputation : %s (niveau %d/5) — %d points, %d %% vers le niveau suivant",
-            rep.Name,
+            tr(rep.Name),
             rep.Level,
             rep.Points,
             math.floor(rep.Progress * 100)
@@ -235,16 +247,16 @@ local function renderWallet()
     )
     if (state.PendingTransfers or 0) > 0 then
         line(
-            string.format(
+            tr(
                 "%d achat(s) sur le marché en cours de finalisation (fonds réservés, récupérables).",
                 state.PendingTransfers
             )
         )
     end
-    line("Historique récent", true)
+    line(tr("Historique récent"), true)
     for _, entry in state.Ledger or {} do
         line(
-            string.format(
+            tr(
                 "%s  %s%s  (%s)  solde %s",
                 os.date("%H:%M", entry.At),
                 if entry.Amount >= 0 then "+" else "",
@@ -259,52 +271,68 @@ end
 -- Nom affiché d'un métier (le serveur envoie l'identifiant technique).
 local function jobLabel(id: any): string
     local job = if type(id) == "string" then Jobs.get(id) else nil
-    return if job then job.Label else tostring(id)
+    return if job then tr(job.Label) else tostring(id)
+end
+
+-- Libellé d'étape de mission (texte français du serveur, parfois suivi d'un numéro).
+local function stepLabel(text: any): string
+    if type(text) ~= "string" then
+        return tostring(text)
+    end
+    local prefix, number = string.match(text, "^(.-) (%d+)$")
+    if prefix == "Livraison" then
+        return tr("Livraison %s", number)
+    elseif prefix == "Porte" then
+        return tr("Porte %s", number)
+    elseif prefix == "Point d'exploration" then
+        return tr("Point d'exploration %s", number)
+    end
+    return tr(text)
 end
 
 local function renderJobs()
     local mission = state.Mission
     if mission then
         line(
-            string.format(
+            tr(
                 "Mission en cours : %s — étape %d/%d : %s",
                 jobLabel(mission.Job),
                 mission.StepIndex,
                 mission.Steps,
-                mission.Label
+                stepLabel(mission.Label)
             ),
             true
         )
         line(
-            string.format(
+            tr(
                 "Temps restant %d s%s%s",
                 math.floor(mission.TimeLeft),
-                if mission.Premium then " • premium" else "",
-                if mission.Professional then " • véhicule professionnel prêté" else ""
+                if mission.Premium then tr(" • premium") else "",
+                if mission.Professional then tr(" • véhicule professionnel prêté") else ""
             )
         )
         local actions = row()
-        button(actions, "Abandonner (sans paiement)", 260, function()
+        button(actions, tr("Abandonner (sans paiement)"), 260, function()
             simple("AbandonMission")
         end)
         return
     end
-    line("Choisissez un métier : la mission est générée par le serveur.", true)
+    line(tr("Choisissez un métier : la mission est générée par le serveur."), true)
     for _, job in state.Jobs or {} do
         local item = row()
-        button(item, job.Label, 260, function()
+        button(item, tr(job.Label), 260, function()
             simple("StartMission", { Job = job.Id })
         end)
         label(
             item,
-            string.format(
+            tr(
                 "%s • %d réussie(s) • %s",
                 if job.Vehicle == "Own"
-                    then "votre véhicule"
-                    elseif job.Vehicle == "Provided" then "véhicule fourni"
-                    else "véhicule pro si besoin",
+                    then tr("votre véhicule")
+                    elseif job.Vehicle == "Provided" then tr("véhicule fourni")
+                    else tr("véhicule pro si besoin"),
                 job.Completed,
-                job.Description
+                tr(job.Description)
             ),
             560
         )
@@ -315,11 +343,11 @@ local function renderDealer()
     local context = state.Context or {}
     line(
         if context.Kind == "Dealership"
-            then "Concession : " .. context.Label
-            else "Rendez-vous dans une concession pour acheter ou faire reprendre un véhicule.",
+            then tr("Concession : %s", context.Label)
+            else tr("Rendez-vous dans une concession pour acheter ou faire reprendre un véhicule."),
         true
     )
-    line("Catalogue de travail (modèles PROVISOIRES) — 18 emplacements", true)
+    line(tr("Catalogue de travail (modèles PROVISOIRES) — 18 emplacements"), true)
     for _, entry in state.Catalog or {} do
         local item = row()
         label(
@@ -327,20 +355,20 @@ local function renderDealer()
             string.format(
                 "%s (%s) — %s%s",
                 entry.Name,
-                entry.Category,
+                tr(entry.Category),
                 credits(entry.Price),
                 if entry.Availability == "Reserved"
-                    then " • emplacement réservé"
-                    elseif not entry.Purchasable then " • non achetable ici"
+                    then tr(" • emplacement réservé")
+                    elseif not entry.Purchasable then tr(" • non achetable ici")
                     else ""
             ),
             520
         )
-        button(item, "Devis d'achat", 160, function()
-            quote("Achat de " .. entry.Name, "BuyVehicle", { CatalogId = entry.Id })
+        button(item, tr("Devis d'achat"), 160, function()
+            quote(tr("Achat de %s", entry.Name), "BuyVehicle", { CatalogId = entry.Id })
         end, entry.Purchasable and context.Kind == "Dealership")
     end
-    line("Reprise de vos véhicules (≈ 60 % du prix neuf, selon l'état)", true)
+    line(tr("Reprise de vos véhicules (≈ 60 % du prix neuf, selon l'état)"), true)
     for _, vehicle in state.Vehicles or {} do
         local item = row()
         label(
@@ -352,137 +380,135 @@ local function renderDealer()
             ),
             520
         )
-        button(item, "Devis de reprise", 160, function()
-            quote("Reprise de " .. vehicle.Name, "TradeIn", { VehicleId = vehicle.Id })
+        button(item, tr("Devis de reprise"), 160, function()
+            quote(tr("Reprise de %s", vehicle.Name), "TradeIn", { VehicleId = vehicle.Id })
         end, vehicle.TradeIn ~= nil and context.Kind == "Dealership")
     end
 end
 
 local function renderMarket()
-    line("Annonces (commission de 5 % à la charge du vendeur)", true)
+    line(tr("Annonces (commission de 5 % à la charge du vendeur)"), true)
     for _, listing in state.Listings or {} do
         local item = row()
         label(
             item,
-            string.format(
+            tr(
                 "%s — %s • %.0f km • état %d %%%s",
                 listing.Model,
                 credits(listing.Price),
                 listing.OdometerKm,
                 math.floor(listing.Condition * 100),
-                if listing.Mine then " • votre annonce" else ""
+                if listing.Mine then tr(" • votre annonce") else ""
             ),
             520
         )
         if listing.Mine then
-            button(item, "Retirer l'annonce", 160, function()
+            button(item, tr("Retirer l'annonce"), 160, function()
                 simple("CancelListing", { ListingId = listing.Id })
             end)
         else
-            button(item, "Devis d'achat", 160, function()
-                quote("Achat d'occasion : " .. listing.Model, "BuyListing", { ListingId = listing.Id })
+            button(item, tr("Devis d'achat"), 160, function()
+                quote(tr("Achat d'occasion : %s", listing.Model), "BuyListing", { ListingId = listing.Id })
             end)
         end
     end
-    line("Mettre en vente (exemplaire cessible, non sorti)", true)
+    line(tr("Mettre en vente (exemplaire cessible, non sorti)"), true)
     local priceRow = row()
     button(priceRow, "− 1 000", 90, function()
         listPrice = math.max(500, listPrice - 1000)
         render()
     end)
-    label(priceRow, "Prix demandé : " .. credits(listPrice), 220)
+    label(priceRow, tr("Prix demandé : %s", credits(listPrice)), 220)
     button(priceRow, "+ 1 000", 90, function()
         listPrice += 1000
         render()
     end)
     for _, vehicle in state.Vehicles or {} do
         local item = row()
-        label(item, vehicle.Name .. (if vehicle.Listed then " • en vente" else ""), 520)
-        button(item, "Devis de mise en vente", 200, function()
-            quote("Mise en vente de " .. vehicle.Name, "ListVehicle", { VehicleId = vehicle.Id, Price = listPrice })
+        label(item, vehicle.Name .. (if vehicle.Listed then tr(" • en vente") else ""), 520)
+        button(item, tr("Devis de mise en vente"), 200, function()
+            quote(tr("Mise en vente de %s", vehicle.Name), "ListVehicle", { VehicleId = vehicle.Id, Price = listPrice })
         end, not vehicle.Listed and vehicle.TradeIn ~= nil)
     end
 end
 
 local function renderRealEstate()
-    line("Vos propriétés (revente : 70 % du prix payé, 40 % des agrandissements, 60 % des modules)", true)
+    line(tr("Vos propriétés (revente : 70 % du prix payé, 40 % des agrandissements, 60 % des modules)"), true)
     for _, property in state.Properties or {} do
         local item = row()
         label(
             item,
-            string.format(
-                "%s (%s) • niveau %d/%d",
-                property.Label,
-                property.Category,
-                property.GarageLevel,
-                property.MaxLevel
-            ),
+            tr("%s (%s) • niveau %d/%d", property.Label, property.Category, property.GarageLevel, property.MaxLevel),
             380
         )
-        button(item, "Agrandir", 110, function()
-            quote("Agrandissement : " .. property.Label, "UpgradeGarage", { PropertyId = property.Id })
+        button(item, tr("Agrandir"), 110, function()
+            quote(tr("Agrandissement : %s", property.Label), "UpgradeGarage", { PropertyId = property.Id })
         end, property.GarageLevel < property.MaxLevel)
-        button(item, "Revendre", 110, function()
-            quote("Revente : " .. property.Label, "SellProperty", { PropertyId = property.Id })
+        button(item, tr("Revendre"), 110, function()
+            quote(tr("Revente : %s", property.Label), "SellProperty", { PropertyId = property.Id })
         end, property.Sellable)
         local modules = row()
         for _, module in state.Modules or {} do
             if property.Modules[module.Id] == nil then
-                button(modules, module.Label .. " " .. credits(module.Price), 210, function()
-                    quote("Module " .. module.Label, "BuyModule", { PropertyId = property.Id, ModuleId = module.Id })
+                button(modules, tr(module.Label) .. " " .. credits(module.Price), 210, function()
+                    quote(
+                        tr("Module %s", tr(module.Label)),
+                        "BuyModule",
+                        { PropertyId = property.Id, ModuleId = module.Id }
+                    )
                 end)
             end
         end
     end
-    line("Biens en vente (achat sur place, à l'entrée du bien ; prix provisoires)", true)
+    line(tr("Biens en vente (achat sur place, à l'entrée du bien ; prix provisoires)"), true)
     for _, offer in state.Offers or {} do
         local item = row()
         label(item, string.format("%s (%s) — %s", offer.Label, offer.Category, credits(offer.Price)), 520)
-        button(item, "Devis d'achat", 160, function()
-            quote("Achat : " .. offer.Label, "BuyProperty", { OfferId = offer.Id })
+        button(item, tr("Devis d'achat"), 160, function()
+            quote(tr("Achat : %s", offer.Label), "BuyProperty", { OfferId = offer.Id })
         end)
     end
 end
 
 local function renderServices()
     local context = state.Context or {}
-    line("Lieu : " .. (context.Label or "aucun service à proximité"), true)
+    line(tr("Lieu : %s", context.Label or tr("aucun service à proximité")), true)
     local actions = row()
-    button(actions, "Faire le plein / recharger", 220, function()
+    button(actions, tr("Faire le plein / recharger"), 220, function()
         execute("StartEnergy", {})
     end, context.Kind == "Service" and state.Energy == nil)
-    button(actions, "Arrêter et payer", 160, function()
+    button(actions, tr("Arrêter et payer"), 160, function()
         simple("StopEnergy")
     end, state.Energy ~= nil)
-    button(actions, "Devis de lavage", 160, function()
-        quote("Lavage", "Wash", {})
+    button(actions, tr("Devis de lavage"), 160, function()
+        quote(tr("Lavage"), "Wash", {})
     end, context.Kind == "Service")
-    button(actions, "Devis de réparation", 180, function()
-        quote("Réparation", "Repair", {})
+    button(actions, tr("Devis de réparation"), 180, function()
+        quote(tr("Réparation"), "Repair", {})
     end, context.Kind == "PublicGarage")
     if state.Energy then
         line(
-            string.format(
+            tr(
                 "Livraison en cours : %.1f / %.1f unités (paiement au réel à la fin)",
                 state.Energy.Delivered,
                 state.Energy.MaxUnits
             )
         )
     end
-    line("Pièces (garage public) — revente à 75 % du prix payé", true)
+    line(tr("Pièces (garage public) — revente à 75 % du prix payé"), true)
     for _, part in state.Parts or {} do
         local item = row()
-        label(item, part.Label .. " — " .. credits(part.Price), 420)
-        button(item, "Devis d'achat", 160, function()
-            quote("Achat : " .. part.Label, "BuyPart", { PartId = part.Id })
+        label(item, tr(part.Label) .. " — " .. credits(part.Price), 420)
+        button(item, tr("Devis d'achat"), 160, function()
+            quote(tr("Achat : %s", tr(part.Label)), "BuyPart", { PartId = part.Id })
         end, context.Kind == "PublicGarage")
     end
     for _, owned in state.OwnedParts or {} do
         if not owned.Installed and owned.Resale > 0 then
             local item = row()
-            label(item, owned.PartId .. " (détachée) — reprise " .. credits(owned.Resale), 420)
-            button(item, "Devis de revente", 160, function()
-                quote("Revente : " .. owned.PartId, "SellPart", { PartItemId = owned.Id })
+            label(item, tr("%s (détachée) — reprise %s", owned.PartId, credits(owned.Resale)), 420)
+            button(item, tr("Devis de revente"), 160, function()
+                quote(tr("Revente : %s", owned.PartId), "SellPart", { PartItemId = owned.Id })
             end, context.Kind == "PublicGarage")
         end
     end
@@ -490,21 +516,21 @@ end
 
 local function renderConfirmation()
     local q = pending.Quote or {}
-    line("Confirmation : " .. pending.Label, true)
+    line(tr("Confirmation : %s", pending.Label), true)
     if q.Debit then
-        line("Montant débité : " .. credits(q.Debit))
+        line(tr("Montant débité : %s", credits(q.Debit)))
     end
     if q.Credit then
-        line("Montant crédité : " .. credits(q.Credit))
+        line(tr("Montant crédité : %s", credits(q.Credit)))
     end
     if q.Fee then
-        line(string.format("Prix %s • commission %s • net %s", credits(q.Price), credits(q.Fee), credits(q.Net)))
+        line(tr("Prix %s • commission %s • net %s", credits(q.Price), credits(q.Fee), credits(q.Net)))
     end
     local actions = row()
-    button(actions, "Confirmer", 160, function()
+    button(actions, tr("Confirmer"), 160, function()
         execute(pending.Action, table.clone(pending.Payload))
     end, not seatedAndMoving())
-    button(actions, "Annuler", 120, function()
+    button(actions, tr("Annuler"), 120, function()
         pending = nil
         render()
     end)
@@ -552,11 +578,9 @@ end
 -- 1 km). Hauteur en studs ; le sol est retrouvé par lancer de rayon.
 local BEACON_HEIGHT = 400
 
+-- Distance arrondie à 10 m ; virgule décimale en français seulement (Localization.distance).
 local function distanceText(meters: number): string
-    if meters < 1000 then
-        return string.format("%d m", math.floor(meters / 10 + 0.5) * 10)
-    end
-    return (string.gsub(string.format("%.1f km", meters / 1000), "%.", ","))
+    return Localization.distance(meters)
 end
 
 -- Altitude du sol sous le point (studs). Sans réponse (zone pas encore
@@ -635,7 +659,7 @@ local function updateMission()
         missionLabel.Text = string.format(
             "%s — %s (%d/%d) • %d s",
             jobLabel(mission.Job),
-            mission.Label,
+            stepLabel(mission.Label),
             mission.StepIndex,
             mission.Steps,
             math.floor(mission.TimeLeft)
@@ -650,7 +674,7 @@ local function updateMission()
         or point.Z ~= (missionPoint :: any).Z
     missionPoint = point
     -- Lot 0.7 : l'objectif de mission est suivi par le GPS.
-    GPSController.missionTarget(point, if mission then mission.Label else nil)
+    GPSController.missionTarget(point, if mission then stepLabel(mission.Label) else nil)
     if point then
         if changed or beacon == nil then
             placeBeacon(point)
@@ -679,7 +703,7 @@ local function updateGuide()
     local angle = math.atan2(dx * right.X + dz * right.Z, dx * look.X + dz * look.Z)
     guideFrame.Visible = true
     guideArrow.Rotation = math.deg(angle)
-    guideText.Text = "Objectif à " .. distanceText(meters)
+    guideText.Text = tr("Objectif à %s", distanceText(meters))
     if beaconTag then
         (beaconTag:FindFirstChild("Distance") :: TextLabel).Text = distanceText(meters)
     end
@@ -761,7 +785,7 @@ function EconomyPanel.start()
             TextColor3 = Color3.fromRGB(255, 255, 255),
             Font = Enum.Font.GothamMedium,
             TextSize = 14,
-            Text = name,
+            Text = tr(name),
             LayoutOrder = index,
         }, tabs)
         item.Activated:Connect(function()
@@ -777,10 +801,11 @@ function EconomyPanel.start()
         TextColor3 = Color3.fromRGB(255, 255, 255),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
-        Text = "Fermer",
+        Text = tr("Fermer"),
         LayoutOrder = 99,
     }, tabs)
     close.Activated:Connect(toggle)
+    closeButton = close
     body = make("ScrollingFrame", {
         Position = UDim2.fromOffset(8, 52),
         Size = UDim2.new(1, -16, 1, -96),
@@ -810,13 +835,13 @@ function EconomyPanel.start()
             end
         elseif kind == "MissionEnded" and type(data) == "table" then
             footer.Text = if data.Completed
-                then string.format(
+                then tr(
                     "Mission réussie : %s, +%d réputation (%s).",
                     credits(data.Credits),
                     data.Reputation,
-                    STATUS_TEXT[data.Status] or data.Status
+                    tr(STATUS_TEXT[data.Status] or tostring(data.Status))
                 )
-                else "Mission échouée ou abandonnée : " .. Text.text(data.Reason)
+                else tr("Mission échouée ou abandonnée : %s", Text.text(data.Reason))
         elseif kind == "Open" and type(data) == "table" then
             if type(data.Tab) == "string" then
                 tab = data.Tab
@@ -827,13 +852,24 @@ function EconomyPanel.start()
                 UIManager.open("Economy")
             end
         elseif kind == "EnergyEnded" and type(data) == "table" then
-            footer.Text = string.format(
+            footer.Text = tr(
                 "Énergie livrée : %.1f unités, payé %s (%s).",
                 data.Delivered,
                 credits(data.Cost),
-                STATUS_TEXT[data.Status] or data.Status
+                tr(STATUS_TEXT[data.Status] or tostring(data.Status))
             )
         end
+    end)
+    -- Changement de langue à chaud : onglets, bandeau de mission et contenu redessinés.
+    Localization.changed(function()
+        for name, item in tabButtons do
+            item.Text = tr(name)
+        end
+        if closeButton then
+            closeButton.Text = tr("Fermer")
+        end
+        updateMission()
+        render()
     end)
     -- Rafraîchissement léger de la mission en cours (temps restant).
     task.spawn(function()

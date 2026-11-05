@@ -701,6 +701,10 @@ local function engage(
     if RaceLobby.sessionOf(lobby, player.UserId) then
         return rejected("RaceAlreadyEngaged")
     end
+    -- Lot 0.8 : les essais du parcours d'arrivée ne donnent accès à aucune épreuve (aucune récompense).
+    if model:GetAttribute("AWTestDrive") == true then
+        return rejected("TestDriveNoRewards")
+    end
     if session.Kind.Id == "Training" then
         mode = "Protected"
     end

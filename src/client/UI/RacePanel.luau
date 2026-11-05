@@ -14,6 +14,10 @@
     Tous les temps affichés sont calculés à partir de l'horloge SERVEUR
     répliquée ; les résultats officiels viennent seulement du serveur.
     Ouvrir ce panneau ne freine jamais la voiture.
+    Lot 0.8 : libellés traduits à l'affichage (Localization.tr, dictionnaire
+    PanelTexts), y compris les libellés français reçus du serveur (discipline,
+    type d'épreuve, zone, conditions, rang) ; identifiants d'onglet inchangés
+    (français) ; redessin au changement de langue.
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -26,6 +30,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RacingShared = Shared:WaitForChild("Racing")
 local RaceProtocol = require(RacingShared:WaitForChild("RaceProtocol"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
+local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
 
 local Text = require(script.Parent.ProgressionMessages)
 local UIManager = require(script.Parent.UIManager)
@@ -33,8 +38,12 @@ local InputRouter = require(script.Parent.InputRouter)
 
 local RacePanel = {}
 
+-- Texte joueur : le français sert de clé, l'anglais vient de PanelTexts.
+local tr = Localization.tr
+
 local player = Players.LocalPlayer
 local S = 1 / Constants.MetersPerStud
+-- Identifiants d'onglet (français) : affichés via tr(), jamais traduits ici.
 local TABS = { "Épreuves", "Mon épreuve", "Classements", "Résultats" }
 
 local request: RemoteFunction
@@ -47,6 +56,7 @@ local hudMain: TextLabel
 local hudInfo: TextLabel
 local toast: TextLabel
 local tabButtons: { [string]: TextButton } = {}
+local closeButton: TextButton? = nil
 local tab = "Épreuves"
 local busy = false
 local catalog: any = nil
@@ -83,11 +93,14 @@ local function chrono(seconds: number?): string
     return string.format("%d:%06.3f", minutes, value - minutes * 60)
 end
 
+-- Longueur exacte au mètre (pas d'arrondi : 402 m reste 402 m) ; virgule
+-- décimale en français seulement.
 local function km(meters: number): string
     if meters < 1000 then
         return string.format("%d m", meters)
     end
-    return (string.gsub(string.format("%.1f km", meters / 1000), "%.", ","))
+    local text = string.format("%.1f km", meters / 1000)
+    return if Localization.language() == "fr" then (string.gsub(text, "%.", ",")) else text
 end
 
 local function invoke(action: string, payload: any?): any
@@ -104,9 +117,9 @@ local render: () -> ()
 
 local function describe(response: any): string
     if response.Status == "Ok" or response.Status == "Confirmed" or response.Status == "Pending" then
-        return "Fait."
+        return tr("Fait.")
     end
-    return "Refusé : " .. Text.text(response.Error)
+    return tr("Refusé : %s", Text.text(response.Error))
 end
 
 local function send(action: string, payload: any?)
@@ -123,7 +136,7 @@ local function send(action: string, payload: any?)
     if RaceProtocol.Sensitive[action] then
         data.RequestId = HttpService:GenerateGUID(false)
     end
-    footer.Text = "Demande envoyée…"
+    footer.Text = tr("Demande envoyée…")
     local response = invoke(action, data)
     busy = false
     footer.Text = describe(response)
@@ -188,6 +201,7 @@ local function button(parent: Instance, text: string, width: number, callback: (
     return item
 end
 
+-- Libellés français, traduits au moment de l'affichage (tables évaluées une fois).
 local KIND_LABEL = { Official = "Officielle", Ranked = "Classée", Private = "Privée", Training = "Entraînement" }
 local MODE_LABEL = { Protected = "Protégé", Realistic = "Réaliste" }
 local OUTCOME_LABEL = {
@@ -217,59 +231,61 @@ end
 
 local function renderCatalog()
     if catalog == nil then
-        line("Chargement…")
+        line(tr("Chargement…"))
         return
     end
     local actions = row()
-    button(actions, "Mode : " .. MODE_LABEL[mode], 170, function()
+    button(actions, tr("Mode : %s", tr(MODE_LABEL[mode])), 170, function()
         mode = if mode == "Protected" then "Realistic" else "Protected"
         render()
     end)
-    button(actions, "Actualiser", 110, function()
+    button(actions, tr("Actualiser"), 110, function()
         refresh()
         render()
     end)
     local course = courseById(selected)
     if course then
-        line(string.format("%s — %s (%s)", course.Name, course.DisciplineLabel, course.Zone), true)
+        line(string.format("%s — %s (%s)", course.Name, tr(course.DisciplineLabel), tr(course.Zone)), true)
         line(
-            string.format(
+            tr(
                 "%s%s • difficulté %d/3 • %s • %s",
                 km(course.LengthM),
-                if course.Laps > 1 then string.format(" (%d tours)", course.Laps) else "",
+                if course.Laps > 1 then tr(" (%d tours)", course.Laps) else "",
                 course.Difficulty,
-                if course.Traffic then "route ouverte (circulation)" else "parcours fermé",
-                if course.RecordEligible then "records éligibles (conditions normalisées)" else "pas de record"
+                if course.Traffic then tr("route ouverte (circulation)") else tr("parcours fermé"),
+                if course.RecordEligible
+                    then tr("records éligibles (conditions normalisées)")
+                    else tr("pas de record")
             )
         )
         line(
-            string.format(
+            tr(
                 "Point d'inscription à %s. Présentez-vous-y arrêté, au volant de votre voiture.",
                 km(course.DistanceM)
             )
         )
         local kinds = row()
         if table.find(course.Kinds, "Official") then
-            button(kinds, "Officielle", 120, function()
+            button(kinds, tr("Officielle"), 120, function()
                 send("Join", { CourseId = course.Id, Kind = "Official", Mode = mode })
             end)
         end
         if table.find(course.Kinds, "Ranked") then
-            button(kinds, "File classée", 130, function()
+            button(kinds, tr("File classée"), 130, function()
                 send("Queue", { Discipline = course.Discipline, Mode = mode })
             end)
         end
         if table.find(course.Kinds, "Private") then
-            button(kinds, string.format("Salon privé (%d t.)", privateLaps), 170, function()
+            button(kinds, tr("Salon privé (%d t.)", privateLaps), 170, function()
                 send("CreatePrivate", { CourseId = course.Id, Kind = "Private", Mode = mode, Laps = privateLaps })
             end)
-            button(kinds, "Tours ±", 80, function()
+            button(kinds, tr("Tours ±"), 80, function()
                 privateLaps = privateLaps % 10 + 1
                 render()
             end)
         end
         if table.find(course.Kinds, "Training") then
-            button(kinds, "Entraînement", 130, function()
+            button(kinds, tr("Entraînement"), 130, function()
                 send("CreatePrivate", { CourseId = course.Id, Kind = "Training", Laps = privateLaps })
             end)
         end
@@ -277,7 +293,7 @@ local function renderCatalog()
             local item = row()
             button(
                 item,
-                string.format("Rejoindre (%s, %d/%d)", KIND_LABEL[open.Kind] or open.Kind, open.Count, open.Max),
+                tr("Rejoindre (%s, %d/%d)", tr(KIND_LABEL[open.Kind] or open.Kind), open.Count, open.Max),
                 260,
                 function()
                     send("Join", { SessionId = open.SessionId, Mode = mode })
@@ -285,11 +301,11 @@ local function renderCatalog()
             )
         end
         local back = row()
-        button(back, "Tous les parcours", 160, function()
+        button(back, tr("Tous les parcours"), 160, function()
             selected = nil
             render()
         end)
-        button(back, "Records du parcours", 180, function()
+        button(back, tr("Records du parcours"), 180, function()
             local response = invoke("Leaderboard", { CourseId = course.Id })
             leaderboard = if response.Status == "Ok" then response.Result else nil
             tab = "Classements"
@@ -297,7 +313,7 @@ local function renderCatalog()
         end)
         return
     end
-    line("Parcours (du plus proche au plus lointain)", true)
+    line(tr("Parcours (du plus proche au plus lointain)"), true)
     for _, item in catalog.Courses do
         local r = row()
         button(r, item.Name, 300, function()
@@ -311,13 +327,13 @@ local function renderCatalog()
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
-            Text = string.format(
+            Text = tr(
                 "%s • %s • %s • à %s%s",
-                item.DisciplineLabel,
-                item.Zone,
+                tr(item.DisciplineLabel),
+                tr(item.Zone),
                 km(item.LengthM),
                 km(item.DistanceM),
-                if #item.Open > 0 then " • épreuve ouverte" else ""
+                if #item.Open > 0 then tr(" • épreuve ouverte") else ""
             ),
         }, r)
     end
@@ -325,46 +341,46 @@ end
 
 local function renderCurrent()
     if current == nil or current.None then
-        line("Aucune épreuve en cours. Rendez-vous à un point d'inscription (dalle violette).")
+        line(tr("Aucune épreuve en cours. Rendez-vous à un point d'inscription (dalle violette)."))
         if proposal then
-            line(string.format("Match classé trouvé (%s, %d joueurs).", proposal.Discipline, proposal.Players), true)
+            line(tr("Match classé trouvé (%s, %d joueurs).", proposal.Discipline, proposal.Players), true)
             local r = row()
-            button(r, "Confirmer", 140, function()
+            button(r, tr("Confirmer"), 140, function()
                 send("ConfirmMatch", { MatchId = proposal.MatchId })
                 proposal = nil
             end)
         end
         if rejoinOffer then
-            line(string.format("Reprise possible : %s.", rejoinOffer.Name), true)
+            line(tr("Reprise possible : %s.", rejoinOffer.Name), true)
             local r = row()
-            button(r, "Reprendre la course", 200, function()
+            button(r, tr("Reprendre la course"), 200, function()
                 send("Rejoin", {})
                 rejoinOffer = nil
             end)
         end
         if catalog and catalog.Queue then
-            line("File classée : " .. tostring(catalog.Queue.State))
+            line(tr("File classée : %s", tostring(catalog.Queue.State)))
             local r = row()
-            button(r, "Quitter la file", 150, function()
+            button(r, tr("Quitter la file"), 150, function()
                 send("Unqueue", {})
             end)
         end
         return
     end
-    line(string.format("%s — %s (%s)", current.Name, current.DisciplineLabel, current.KindLabel), true)
+    line(string.format("%s — %s (%s)", current.Name, tr(current.DisciplineLabel), tr(current.KindLabel)), true)
     line(
-        string.format(
+        tr(
             "État : %s • %d/%d participants (minimum %d) • conditions : %s",
             current.State,
             current.Count,
             current.Max,
             current.Min,
-            if current.Normalized then current.Conditions .. " (normalisées)" else "météo du monde"
+            if current.Normalized then tr("%s (normalisées)", tr(current.Conditions)) else tr("météo du monde")
         )
     )
     local me = current.Me
     if me then
-        line(string.format("Votre mode : %s • place %d", MODE_LABEL[me.Mode] or me.Mode, me.Slot))
+        line(tr("Votre mode : %s • place %d", tr(MODE_LABEL[me.Mode] or me.Mode), me.Slot))
     end
     for _, participant in current.Participants do
         line(
@@ -372,22 +388,24 @@ local function renderCurrent()
                 "  %s — %s%s",
                 participant.Name,
                 participant.Status,
-                if current.State == "Open" then (if participant.Ready then " (prêt)" else " (pas prêt)") else ""
+                if current.State == "Open"
+                    then (if participant.Ready then tr(" (prêt)") else tr(" (pas prêt)"))
+                    else ""
             )
         )
     end
     local actions = row()
     if current.State == "Open" then
         local ready = me and me.Ready
-        button(actions, if ready then "Pas prêt" else "Je suis prêt", 140, function()
+        button(actions, if ready then tr("Pas prêt") else tr("Je suis prêt"), 140, function()
             send("Ready", { Ready = not ready })
         end)
-        button(actions, "Se désinscrire", 150, function()
+        button(actions, tr("Se désinscrire"), 150, function()
             send("Leave", {})
             current = nil
         end)
     elseif current.State == "Countdown" or current.State == "Running" then
-        button(actions, "Abandonner", 140, function()
+        button(actions, tr("Abandonner"), 140, function()
             send("Abandon", {})
         end)
     end
@@ -397,35 +415,30 @@ local function renderRanking()
     local profile = catalog and catalog.Profile
     if catalog then
         local days = math.max(0, math.floor((catalog.Season.EndsAt - os.time()) / 86400))
-        line(
-            string.format("Saison %d — fin dans %d jour(s) (saisons de 8 semaines)", catalog.Season.Index, days),
-            true
-        )
+        line(tr("Saison %d — fin dans %d jour(s) (saisons de 8 semaines)", catalog.Season.Index, days), true)
     end
     if profile then
         for _, name in { "Race", "Drift" } do
             local ladder = profile.Ladders[name]
             line(
-                string.format(
+                tr(
                     "%s : %s — %d points • %d épreuve(s) classée(s), %d victoire(s)",
-                    if name == "Race" then "Sprint et circuit" else "Drift",
-                    ladder.Rank,
+                    if name == "Race" then tr("Sprint et circuit") else tr("Drift"),
+                    tr(ladder.Rank),
                     ladder.Points,
                     ladder.Played,
                     ladder.Wins
                 )
             )
         end
-        line("Rang de compétition (Bronze → Diamant) indépendant de la réputation générale.")
+        line(tr("Rang de compétition (Bronze → Diamant) indépendant de la réputation générale."))
         for _, entry in profile.History or {} do
-            line(
-                string.format("  Saison %d — %s : %s (%d pts)", entry.Season, entry.Ladder, entry.Rank, entry.Points)
-            )
+            line(tr("  Saison %d — %s : %s (%d pts)", entry.Season, entry.Ladder, tr(entry.Rank), entry.Points))
         end
     end
     local boards = row()
     for _, name in { "Race", "Drift" } do
-        button(boards, "Tableau " .. (if name == "Race" then "sprint/circuit" else "drift"), 200, function()
+        button(boards, if name == "Race" then tr("Tableau sprint/circuit") else tr("Tableau drift"), 200, function()
             local response = invoke("Leaderboard", { Board = name })
             leaderboard = if response.Status == "Ok" then response.Result else nil
             render()
@@ -437,39 +450,37 @@ local function renderRanking()
             line(string.format("  %d. %s — %s", index, item.Name, tostring(item.Value)))
         end
         if #leaderboard.Entries == 0 then
-            line("  (vide)")
+            line(tr("  (vide)"))
         end
     end
 end
 
 local function renderResults()
     if lastResults then
-        line(string.format("%s — résultats (%s)", lastResults.Name, lastResults.Conditions), true)
+        line(tr("%s — résultats (%s)", lastResults.Name, tr(lastResults.Conditions)), true)
         for _, entry in lastResults.Entries do
             line(
                 string.format(
                     "  %s %s — %s%s%s",
                     if entry.Position then tostring(entry.Position) .. "." else "–",
                     entry.Name,
-                    OUTCOME_LABEL[entry.Outcome] or entry.Outcome,
+                    tr(OUTCOME_LABEL[entry.Outcome] or entry.Outcome),
                     if lastResults.Ranking == "Score" and entry.Score
-                        then string.format(" • %d pts", entry.Score)
+                        then tr(" • %d pts", entry.Score)
                         elseif entry.OfficialS then " • " .. chrono(entry.OfficialS)
                         else "",
-                    if (entry.PenaltyS or 0) > 0
-                        then string.format(" (dont %.1f s de pénalité)", entry.PenaltyS)
-                        else ""
+                    if (entry.PenaltyS or 0) > 0 then tr(" (dont %.1f s de pénalité)", entry.PenaltyS) else ""
                 )
             )
         end
         local mine = lastResults.Mine
         line(
-            string.format(
+            tr(
                 "Vous : %s • %d crédits%s%s • état : %s",
-                OUTCOME_LABEL[mine.Outcome] or mine.Outcome,
+                tr(OUTCOME_LABEL[mine.Outcome] or mine.Outcome),
                 mine.Credits or 0,
-                if mine.RankedDelta then string.format(" • classement %+d (%s)", mine.RankedDelta, mine.Rank) else "",
-                if mine.Record then " • record personnel" else "",
+                if mine.RankedDelta then tr(" • classement %+d (%s)", mine.RankedDelta, tr(mine.Rank)) else "",
+                if mine.Record then tr(" • record personnel") else "",
                 tostring(mine.Status)
             ),
             true
@@ -477,7 +488,7 @@ local function renderResults()
     end
     local profile = catalog and catalog.Profile
     if profile then
-        line("Historique personnel", true)
+        line(tr("Historique personnel"), true)
         for _, item in profile.Results do
             local result = item.Result
             line(
@@ -485,7 +496,7 @@ local function renderResults()
                     "  %s %s — %s%s • %d cr",
                     result.Discipline,
                     result.CourseId,
-                    OUTCOME_LABEL[result.Outcome] or result.Outcome,
+                    tr(OUTCOME_LABEL[result.Outcome] or result.Outcome),
                     if result.Position then string.format(" (%d/%d)", result.Position, result.Field) else "",
                     result.Credits
                 )
@@ -582,6 +593,7 @@ local function updateBeacons()
     end
 end
 
+-- Libellés français, traduits au moment de l'affichage.
 local EVENT_TEXT = {
     Locked = "Inscriptions fermées : rejoignez votre place.",
     Started = "Départ !",
@@ -615,57 +627,54 @@ local function updateHud()
         return
     end
     hud.Visible = true
-    hudTitle.Text = string.format("%s — %s", current.DisciplineLabel, current.Name)
+    hudTitle.Text = string.format("%s — %s", tr(current.DisciplineLabel), current.Name)
     local t = now()
     local main = ""
     local info = {}
     if current.State == "Open" then
-        main = if me.Ready then "Prêt — en attente" else "Inscrit — confirmez « prêt » (K)"
-        table.insert(info, string.format("%d/%d participants", current.Count, current.Max))
+        main = if me.Ready then tr("Prêt — en attente") else tr("Inscrit — confirmez « prêt » (K)")
+        table.insert(info, tr("%d/%d participants", current.Count, current.Max))
     elseif me.Status == "Waiting" and me.StartT then
         local remaining = me.StartT - t
         if remaining > 5 then
-            main = string.format("Rejoignez votre place (%d) — %d s", me.Slot or 0, math.ceil(remaining))
+            main = tr("Rejoignez votre place (%d) — %d s", me.Slot or 0, math.ceil(remaining))
         else
-            main = string.format("DÉPART DANS %d", math.ceil(remaining))
+            main = tr("DÉPART DANS %d", math.ceil(remaining))
         end
     elseif me.Status == "Racing" and me.StartT then
         if current.Discipline == "Drift" and me.Drift then
             main = string.format("%d pts  (+%d × %.2f)", me.Drift.Total, me.Drift.Combo, me.Drift.Multiplier)
-            table.insert(info, string.format("Reste %d s", math.max(0, math.ceil(me.StartT + 90 - t))))
+            table.insert(info, tr("Reste %d s", math.max(0, math.ceil(me.StartT + 90 - t))))
         else
             main = chrono(t - me.StartT)
         end
     elseif me.Status == "Finished" then
-        main = if me.OfficialS then "Arrivée " .. chrono(me.OfficialS) else "Terminé"
+        main = if me.OfficialS then tr("Arrivée %s", chrono(me.OfficialS)) else tr("Terminé")
     else
-        main = OUTCOME_LABEL[me.Status] or me.Status
+        main = tr(OUTCOME_LABEL[me.Status] or me.Status)
     end
     if current.Discipline ~= "Drift" and current.State ~= "Open" then
         if me.Position and (current.Discipline == "Sprint" or current.Discipline == "Circuit") then
-            table.insert(info, string.format("Position %d/%d", me.Position, current.Count))
+            table.insert(info, tr("Position %d/%d", me.Position, current.Count))
         end
         if current.Laps > 1 then
-            table.insert(info, string.format("Tour %d/%d", math.min(me.Lap, current.Laps), current.Laps))
+            table.insert(info, tr("Tour %d/%d", math.min(me.Lap, current.Laps), current.Laps))
         end
-        table.insert(
-            info,
-            string.format("Point %d/%d", math.min(me.Next, current.CheckpointsTotal), current.CheckpointsTotal)
-        )
+        table.insert(info, tr("Point %d/%d", math.min(me.Next, current.CheckpointsTotal), current.CheckpointsTotal))
         local laps = me.LapTimes or {}
         if #laps > 0 then
-            table.insert(info, "Dernier tour " .. chrono(laps[#laps]))
-            table.insert(info, "Meilleur " .. chrono(me.BestLapS))
+            table.insert(info, tr("Dernier tour %s", chrono(laps[#laps])))
+            table.insert(info, tr("Meilleur %s", chrono(me.BestLapS)))
         end
         if me.ReactionS then
-            table.insert(info, string.format("Réaction %.3f s", me.ReactionS))
+            table.insert(info, tr("Réaction %.3f s", me.ReactionS))
         end
     end
     if me.FalseStart then
-        table.insert(info, "FAUX DÉPART")
+        table.insert(info, tr("FAUX DÉPART"))
     end
     if (me.PenaltyS or 0) > 0 then
-        table.insert(info, string.format("Pénalités +%.1f s", me.PenaltyS))
+        table.insert(info, tr("Pénalités +%.1f s", me.PenaltyS))
     end
     hudMain.Text = main
     hudInfo.Text = table.concat(info, "  •  ")
@@ -767,7 +776,7 @@ function RacePanel.start()
             TextColor3 = Color3.fromRGB(255, 255, 255),
             Font = Enum.Font.GothamMedium,
             TextSize = 14,
-            Text = name,
+            Text = tr(name),
             LayoutOrder = index,
         }, tabs)
         item.Activated:Connect(function()
@@ -782,10 +791,11 @@ function RacePanel.start()
         TextColor3 = Color3.fromRGB(255, 255, 255),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
-        Text = "Fermer",
+        Text = tr("Fermer"),
         LayoutOrder = 99,
     }, tabs)
     close.Activated:Connect(toggle)
+    closeButton = close
     body = make("ScrollingFrame", {
         Position = UDim2.fromOffset(8, 52),
         Size = UDim2.new(1, -16, 1, -96),
@@ -823,16 +833,16 @@ function RacePanel.start()
         elseif kind == "Event" and type(data) == "string" then
             local text = EVENT_TEXT[data]
             if text then
-                showToast(text)
+                showToast(tr(text))
             end
         elseif kind == "Results" and type(data) == "table" then
             lastResults = data
             current = nil
             clearBeacons()
             showToast(
-                string.format(
+                tr(
                     "Résultat : %s — %d crédits",
-                    OUTCOME_LABEL[data.Mine.Outcome] or data.Mine.Outcome,
+                    tr(OUTCOME_LABEL[data.Mine.Outcome] or data.Mine.Outcome),
                     data.Mine.Credits or 0
                 ),
                 5
@@ -844,13 +854,13 @@ function RacePanel.start()
             showToast(Text.text(data), 4)
         elseif kind == "MatchProposed" and type(data) == "table" then
             proposal = data
-            showToast("Match classé trouvé : confirmez (K)", 6)
+            showToast(tr("Match classé trouvé : confirmez (K)"), 6)
         elseif kind == "MatchReady" and type(data) == "table" then
             selected = data.CourseId
-            showToast("Match prêt : rejoignez « " .. tostring(data.Name) .. " »", 8)
+            showToast(tr("Match prêt : rejoignez « %s »", tostring(data.Name)), 8)
         elseif kind == "Rejoin" and type(data) == "table" then
             rejoinOffer = data
-            showToast("Reprise de course possible (K)", 8)
+            showToast(tr("Reprise de course possible (K)"), 8)
         elseif kind == "Open" and type(data) == "table" then
             selected = data.CourseId
             tab = "Épreuves"
@@ -863,6 +873,17 @@ function RacePanel.start()
         end
     end)
     RunService.RenderStepped:Connect(updateHud)
+    -- Changement de langue à chaud : onglets et contenu (l'affichage de course
+    -- se met à jour à chaque image).
+    Localization.changed(function()
+        for name, item in tabButtons do
+            item.Text = tr(name)
+        end
+        if closeButton then
+            closeButton.Text = tr("Fermer")
+        end
+        render()
+    end)
     -- Raccourci K (manette : stick gauche) : InputRouter, lot 0.7.
     UIManager.register({
         Name = "Races",

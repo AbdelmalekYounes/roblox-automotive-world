@@ -258,6 +258,8 @@ export type VehicleAppearance = {
     AccentRgb: { number },
     TrimRgb: { number },
     Label: string,
+    -- Lot 0.8 : silhouette construite par VehicleFactory (absente : prototype technique).
+    BodyStyle: string?,
 }
 
 export type VehicleDefinition = {

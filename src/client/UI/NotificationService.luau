@@ -113,6 +113,14 @@ end
     Publie une notification (clé de traduction et paramètres). `group`
     regroupe les répétitions d'une même alerte.
 ]]
+-- Lot 0.8 : signal sonore par niveau (AudioController) ; l'alerte reste toujours
+-- VISUELLE, même son coupé ou ressource non téléversée.
+local soundSink: (string) -> () = function(_level: string) end
+
+function NotificationService.setSoundSink(sink: (string) -> ())
+    soundSink = sink
+end
+
 function NotificationService.notify(
     key: string,
     level: NotificationQueue.Level?,
@@ -129,6 +137,7 @@ function NotificationService.notify(
             showCritical(item)
         end
         showToast(item, display == "Compact")
+        soundSink(string.lower(item.Level))
     end
     for _, listener in listeners do
         task.spawn(listener)
