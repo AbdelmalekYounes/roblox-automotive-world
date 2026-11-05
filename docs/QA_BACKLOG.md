@@ -314,7 +314,7 @@ Les 17 modèles, les prototypes, le parc d'essai et les carrosseries provisoires
 
 | Id | Priorité | Constat | État |
 |---|---|---|---|
-| QA-M01 | P2 | Les 22 actions du menu en jeu (`docs/lot-admin-01/RAPPORT_ADMIN_01.md` §5) | **Validé en jeu par le propriétaire le 2026-11-05** (rapport ADMIN-01 §7) ; menu latéral : NON TESTÉ |
+| QA-M01 | P2 | Les 22 actions du menu en jeu (`docs/lot-admin-01/RAPPORT_ADMIN_01.md` §5) | **Validé en jeu par le propriétaire le 2026-11-05** (rapport ADMIN-01 §7), menu latéral compris |
 | QA-M02 | P2 | Menu absent pour un joueur non administrateur ; demande forcée refusée et consignée | Contrôlé par Lune (droits avant validation) ; **NON TESTÉ** à deux joueurs |
 | QA-M03 | P3 | Invisibilité : accessoire ajouté après l'activation visible jusqu'à la réapparition | Limite connue |
 | QA-M04 | P3 | Réparation : déformations d'une coque de repli non annulées (sans objet pour la Comète) | Limite connue |

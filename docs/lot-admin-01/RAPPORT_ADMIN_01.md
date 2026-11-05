@@ -171,4 +171,6 @@ n'est pas administrateur ». **Cause établie** : le compte Studio du propriéta
     On peut rouler ou voler avec le menu ouvert.
 - Contenu et actions inchangés.
 - `verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK, Lune 398/398. **Nouvel aspect non essayé en jeu.**
+- **Menu latéral validé en jeu par le propriétaire le 2026-11-05** (« c'est bon », 5 points vérifiés sur la place
+  `build/AutomotiveWorld-admin01d.rbxlx`, commit `84e836d`). Clôture et fusion autorisées par le propriétaire.
 
