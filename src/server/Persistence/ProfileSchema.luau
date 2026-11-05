@@ -22,7 +22,7 @@
 
 local ProfileSchema = {}
 
-ProfileSchema.Version = 2
+ProfileSchema.Version = 3
 -- Taille maximale visée d'un enregistrement (le DataStore accepte 4 Mo).
 -- Au-delà, les nouvelles acquisitions sont refusées par une limite TECHNIQUE
 -- explicite, à arbitrer (§4.2) ; stratégie de fractionnement : rapport du lot.
@@ -33,6 +33,10 @@ ProfileSchema.MaxActiveInvitations = 20
 -- Lot 0.5 : historique économique borné et identifiants de transferts conservés.
 ProfileSchema.MaxLedger = 60
 ProfileSchema.AppliedRetentionS = 30 * 24 * 3600
+-- Lot 0.6 : résultats de course récents (bornés) et identifiants déjà appliqués.
+ProfileSchema.MaxRaceResults = 40
+ProfileSchema.MaxSeasonHistory = 20
+ProfileSchema.RaceAppliedRetentionS = 90 * 24 * 3600
 
 export type StorageState = "Stored" | "Displayed" | "Out"
 
@@ -146,6 +150,67 @@ export type TransferEntry = { Role: string, State: string, Amount: number, At: n
 -- Service progressif (carburant, recharge) : fonds réservés, réglés à la fin.
 export type ServiceEntry = { Kind: string, VehicleId: string, Reserved: number, UnitPrice: number, At: number }
 
+-- Lot 0.6 (schéma 3) : courses, classement et saisons.
+-- Engagement en cours : réservation exclusive de l'exemplaire (AUD-RACE-02),
+-- état durable initial en mode protégé (restauré exactement à la sortie).
+export type RaceSnapshot = { Energy: number, Damage: Damage, OdometerKm: number, Dirt: number }
+export type RaceActive = {
+    EntryId: string, -- identifiant d'engagement (= transaction de la réservation)
+    RaceId: string,
+    CourseId: string,
+    Discipline: string,
+    Kind: string,
+    Mode: string, -- "Protected" | "Realistic"
+    VehicleId: string,
+    Snapshot: RaceSnapshot?,
+    Since: number,
+    ExpiresAt: number,
+}
+export type RaceResult = {
+    RaceId: string,
+    CourseId: string,
+    Discipline: string,
+    Kind: string,
+    Mode: string,
+    Outcome: string,
+    Position: number?,
+    Field: number,
+    TimeS: number?,
+    Score: number?,
+    Credits: number,
+    RankedDelta: number?,
+    Conditions: string,
+    At: number,
+}
+export type Ladder = { Points: number, Played: number, Wins: number, Peak: number }
+export type Racing = {
+    Active: RaceActive?,
+    Results: { [string]: RaceResult },
+    Applied: { [string]: number },
+    Ranked: {
+        Season: number,
+        Ladders: { [string]: Ladder },
+        Pairs: { [string]: { Count: number, Since: number } },
+        History: { { Season: number, Ladder: string, Points: number, Rank: string, Played: number } },
+        Rewarded: { [string]: number },
+    },
+    Records: { [string]: { TimeS: number?, Score: number?, At: number, ResultId: string } },
+    Recent: { [string]: { Count: number, Since: number } },
+    Stats: { [string]: number },
+}
+
+function ProfileSchema.newRacing(): Racing
+    return {
+        Active = nil,
+        Results = {},
+        Applied = {},
+        Ranked = { Season = 0, Ladders = {}, Pairs = {}, History = {}, Rewarded = {} },
+        Records = {},
+        Recent = {},
+        Stats = { Started = 0, Finished = 0, Abandoned = 0, Disconnected = 0, Unconfirmed = 0 },
+    }
+end
+
 export type Profile = {
     SchemaVersion: number,
     UserId: number,
@@ -169,6 +234,8 @@ export type Profile = {
     Transfers: { [string]: TransferEntry },
     Applied: { [string]: number }, -- transferts déjà appliqués à CE profil → instant
     Services: { [string]: ServiceEntry },
+    -- Lot 0.6 (schéma 3)
+    Racing: Racing,
 }
 
 function ProfileSchema.new(userId: number, now: number, environment: string): Profile
@@ -193,6 +260,7 @@ function ProfileSchema.new(userId: number, now: number, environment: string): Pr
         Transfers = {},
         Applied = {},
         Services = {},
+        Racing = ProfileSchema.newRacing(),
     }
 end
 
@@ -255,6 +323,7 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
             "Transfers",
             "Applied",
             "Services",
+            "Racing",
         }
     do
         check(type(profile[key]) == "table", "Missing:" .. key)
@@ -348,6 +417,39 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
         check(isInteger(vehicle.PaidPrice) and vehicle.PaidPrice >= 0, "Vehicle:" .. tostring(id) .. ":PaidPrice")
         check(fraction(vehicle.Dirt), "Vehicle:" .. tostring(id) .. ":Dirt")
     end
+    -- Courses : un engagement en cours correspond à la réservation de l'exemplaire.
+    local racing = profile.Racing
+    for _, key in { "Results", "Applied", "Ranked", "Records", "Recent", "Stats" } do
+        check(type(racing[key]) == "table", "Racing:" .. key)
+    end
+    local active = racing.Active
+    if type(active) == "table" then
+        local vehicle = profile.Vehicles[active.VehicleId or ""]
+        check(vehicle ~= nil, "Racing:ActiveVehicle")
+        if vehicle then
+            local reservation = vehicle.Reservation
+            check(
+                reservation ~= nil and reservation.Kind == "Race" and reservation.TxId == active.EntryId,
+                "Racing:ActiveReservation"
+            )
+        end
+        check(active.Mode == "Protected" or active.Mode == "Realistic", "Racing:ActiveMode")
+        check(active.Mode ~= "Protected" or type(active.Snapshot) == "table", "Racing:ActiveSnapshot")
+    end
+    for id, vehicle in profile.Vehicles do
+        local reservation = vehicle.Reservation
+        if reservation and reservation.Kind == "Race" then
+            check(
+                type(active) == "table" and active.VehicleId == id and active.EntryId == reservation.TxId,
+                "Racing:OrphanReservation:" .. tostring(id)
+            )
+        end
+    end
+    local resultCount = 0
+    for _ in racing.Results or {} do
+        resultCount += 1
+    end
+    check(resultCount <= ProfileSchema.MaxRaceResults, "Racing:Results")
     return #errors == 0, errors
 end
 

@@ -67,6 +67,10 @@ local VehicleConstants = {
     -- Attribut de Workspace : humidité de chaussée due à la météo (0 à 1), écrit
     -- par le serveur seul (WeatherService, lot 0.3).
     RoadWetnessAttribute = "AWRoadWetness",
+    -- Attribut d'un VÉHICULE engagé dans une épreuve à conditions normalisées
+    -- (AUD-WEATHER-01, lot 0.6) : humidité standardisée qui remplace celle de
+    -- la météo du monde pour CE véhicule seulement (écrit par le serveur seul).
+    RaceWetnessAttribute = "AWRaceWetness",
 
     -- Ordre canonique des roues : avant gauche, avant droite, arrière gauche, arrière droite.
     WheelNames = table.freeze({ "FL", "FR", "RL", "RR" }),

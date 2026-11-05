@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.5 (économie, métiers et marché)
+# Automotive World — Lot 0.6 (courses, compétition et saisons)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -8,10 +8,13 @@
 > configurations de validation des boîtes double embrayage, séquentielle et CVT). Lot 0.4 : profils versionnés
 > (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
 > invitations. Lot 0.5 : crédits, réputation, huit métiers, concessions (catalogue de travail provisoire), marché
-> d'occasion à transferts multiprofils récupérables, immobilier, pièces, énergie, réparation, lavage. Aucune
+> d'occasion à transferts multiprofils récupérables, immobilier, pièces, énergie, réparation, lavage. Lot 0.6 : six
+> disciplines de course sur un socle commun (sprint, circuit, contre-la-montre, drift, drag, rallye), 16 parcours
+> dans le monde ouvert et 6 en zone d'essai, salons, modes protégé et réaliste, réservation exclusive du véhicule,
+> classement et saisons de huit semaines, matchmaking (repli local ; inter-serveurs écrit mais non exécuté). Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.5 en développement sur `feat/economy-progression-0.5` (PR brouillon, base : lot 0.4 ;
-> PR #1 à #4 non fusionnées). Rapport : [docs/lot-0.5/RAPPORT_LOT_0.5.md](docs/lot-0.5/RAPPORT_LOT_0.5.md).
+> **Statut** : lot 0.6 en développement sur `feat/racing-competition-0.6` (PR brouillon, base : lot 0.5 ;
+> PR #1 à #5 non fusionnées). Rapport : [docs/lot-0.6/RAPPORT_LOT_0.6.md](docs/lot-0.6/RAPPORT_LOT_0.6.md).
 > Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
 > (**NON TESTÉS** à ce jour).
 
@@ -69,6 +72,15 @@ et services. Chaque opération financière affiche un devis, demande une confirm
 par le serveur. En développement : 150 000 crédits synthétiques ; concession (repère jaune) et station-service
 (repère vert) d'essai à l'ouest du point d'apparition. Simulation des revenus :
 `lune run tools/economy/simulate.luau build/AutomotiveWorld.rbxlx`.
+
+## Courses (lot 0.6)
+
+Touche **K** (manette : clic du stick gauche) : parcours (du plus proche au plus lointain), épreuves ouvertes, salon
+privé, entraînement, file classée, mon épreuve, classements, résultats. On rejoint une épreuve **sur place** : arrêté
+sur la dalle violette d'inscription du parcours (ou à son départ), au volant de sa voiture sortie du garage
+(entraînement : tout véhicule). Zone d'essai : une épreuve par discipline. Contrôle des parcours :
+`lune run tools/racing/courses.luau build/AutomotiveWorld.rbxlx` ; simulation des gains :
+`lune run tools/economy/simulate-races.luau build/AutomotiveWorld.rbxlx`.
 
 ## Commandes de conduite
 
@@ -131,6 +143,8 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `src/server/Persistence` | Profils versionnés, verrou de session, transactions, migrations, environnements, adaptateurs mémoire et DataStore |
 | `src/shared/Economy` | Catalogue commercial (18 emplacements), barème provisoire, métiers, réputation, protocole économique |
 | `src/server/Economy` | Portefeuille, commerce, marché et transferts multiprofils, missions, rémunération, service économique |
+| `src/shared/Racing` | Disciplines, types et modes d'épreuve, parcours versionnés, rangs et saisons, protocole des courses |
+| `src/server/Racing` | Socle de compétition : parcours, salons, sessions, règles, drift, validation, classement, réservation, récompenses, classement compétitif, saisons, récupération, matchmaking, service des courses |
 | `src/server/Progression` | Règles de collection, starter, propriétés, garages, préparation, invitations ; lieux, intérieurs, service des demandes |
 | `src/shared/World` | Données de carte versionnées, réseau routier, mise en page, graphe (A*), feux, météo, trafic et piétons **purs** |
 | `src/shared/Vehicles` | Types, définitions, dynamique **pure** (pneu, suspension, moteurs, boîtes, différentiels, aides, énergie, dégâts), adaptateur Roblox `VehicleSimulator`, codec réseau, mesures |
@@ -145,6 +159,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.3` | Rapport du lot 0.3, architecture du monde ouvert |
 | `docs/lot-0.4` | Rapport du lot 0.4, architecture de la persistance et des garages |
 | `docs/lot-0.5` | Rapport du lot 0.5, architecture de l'économie |
+| `docs/lot-0.6` | Rapport du lot 0.6, architecture des courses et de la compétition |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

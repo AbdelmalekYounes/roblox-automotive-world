@@ -305,6 +305,12 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
     local grounded, wetWheels, queries = 0, 0, 0
     -- Humidité météo de la chaussée (attribut serveur ; 0 hors monde ouvert).
     local wetAttribute = workspace:GetAttribute(Constants.RoadWetnessAttribute)
+    -- Lot 0.6 : épreuve à conditions normalisées : humidité standardisée du
+    -- véhicule (une seule source, jamais cumulée avec la météo du monde).
+    local raceWet = self.Model:GetAttribute(Constants.RaceWetnessAttribute)
+    if type(raceWet) == "number" then
+        wetAttribute = raceWet
+    end
     local roadWetness = if type(wetAttribute) == "number" then math.clamp(wetAttribute, 0, 1) else 0
     local queryTime = 0
     local tireRadius = definition.Tires.RadiusM

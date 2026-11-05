@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.5. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.6. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03, lot 0.5 (branche `feat/economy-progression-0.5`).
+Dernière mise à jour : 2026-11-03, lot 0.6 (branche `feat/racing-competition-0.6`).
 
 ## 1. Anomalies ouvertes
 
@@ -34,6 +34,7 @@ Dernière mise à jour : 2026-11-03, lot 0.5 (branche `feat/economy-progression-
 | Id | Lot | Système | Priorité | Défaut | Correction | Preuve |
 |---|---|---|---|---|---|---|
 | QA-F01 | 0.4 | Garages | P1 | Une sortie répétée (même demande) pendant l'attente de sauvegarde matérialisait une seconde copie conduisible du véhicule (`20261103-025318`) | `5da05aa` | `20261103-025600`, `20261103-030408` : 1 exemplaire, aucun véhicule restant |
+| QA-F04 | 0.6 | Démarrage des courses | P1 | `RaceService` lisait l'environnement des profils avant le démarrage de `ProfileService` : amorçage du serveur interrompu (`20261103-110953`, 7 échecs) | Adaptateur inter-serveurs créé à la première utilisation (commit du lot 0.6) | `20261103-111939` (65 / 0), `20261103-112132` (35 / 0) |
 | QA-F03 | 0.5 | Lieux économiques | P2 | Les 13 lieux économiques recevaient l'invite « Préparer / Garage public » de la progression (29 invites au lieu de 16, `20261103-035626`) | `2caf0c9` | `20261103-035902` : 16 + 13 invites, aucune erreur |
 | QA-F02 | 0.3 | Carte | P1 | 195 pièces dépassaient 2 048 studs et étaient raccourcies par le moteur : trous aux bouts des longues chaussées droites (P-01 sur l'herbe, 37,8 km/h, `20261103-025743`) | `b41e0f1` | `20261103-030159` : 133,4 km/h sur A6-2, toujours sur la route |
 
@@ -136,6 +137,33 @@ Cela ne valide PAS la persistance Roblox ni les transferts entre serveurs réels
 | QA-E11 | Équilibrage | P2 | Revenus horaires réels par métier contre la simulation (`tools/economy/simulate.luau`) | Écarts compris et documentés | **NON TESTÉ** |
 | QA-E12 | Lavage | P3 | Salissure visible et lavage | Teinte rendue à la prochaine sortie ; aucune réparation | **NON TESTÉ** |
 | QA-E13 | Bornes | P3 | Occupation d'une borne par plusieurs joueurs | Pas de blocage abusif (session limitée à 180 s) ; réservation par borne non implémentée | **NON TESTÉ** |
+
+## 3 quater. Essais reportés du lot 0.6 (courses, matchmaking, compétition, saisons)
+
+Les règles (départs, faux départs, points de contrôle, tours, temps, drift, classement, abandons), les réservations,
+les modes protégé et réaliste, les récompenses, le classement, les saisons et la récupération sont vérifiés par
+Lune sur des échantillons SYNTHÉTIQUES et l'adaptateur MÉMOIRE (`tests/lune/specs/Lot06Racing.luau`). Cela ne valide
+ni la conduite réelle en course, ni la persistance Roblox, ni l'inter-serveurs.
+
+| Id | Système | Priorité | Essai | Attendu | État |
+|---|---|---|---|---|---|
+| QA-R01 | Matchmaking inter-serveurs | P1 | `CrossServerAdapter` dans une expérience de test isolée : file MemoryStore, serveur réservé, téléportation des participants confirmés | Match formé entre serveurs, transition explicite, réservations conservées | **NON TESTÉ** (code jamais exécuté) |
+| QA-R02 | Reconnexion après transfert | P1 | Déconnexion pendant une épreuve puis retour (même serveur, autre serveur, après téléportation) | Reprise dans ~90 s au dernier point validé ; sinon issue « Disconnected » ; aucun double paiement | **NON TESTÉ** (logique Lune seulement) |
+| QA-R03 | Résilience DataStore | P1 | Résultats et réservations sur DataStore réel : arrêt du serveur de course entre la publication `Race_<id>` et l'application, profil verrouillé ailleurs | Résultat appliqué une fois par le serveur du profil ; engagement échu résolu (mode protégé restauré) | **NON TESTÉ** |
+| QA-R04 | Tableaux durables | P2 | Tableaux de saison et records sur OrderedDataStore (`CrossServerAdapter`) | Valeurs correctes, records conservés au meilleur | **NON TESTÉ** |
+| QA-R05 | Collisions en course sous latence | P1 | Départ groupé de grille, dépassements et contacts à 2–8 joueurs, latences différentes (anomalies QA-A01 à A04) | Résultats confirmés ou « non confirmés » à réconcilier, jamais de sanction d'une anomalie réseau | **NON TESTÉ** |
+| QA-R06 | Charge | P1 | 24 joueurs dont plusieurs épreuves simultanées (échantillonnage à 10 Hz, instantanés à 2 Hz) | Fréquence serveur stable, coût par participant mesuré | **NON TESTÉ** |
+| QA-R07 | Équilibrage réel | P2 | Gains réels par discipline et mode contre `tools/economy/simulate-races.luau` et les métiers ; coûts réels du mode réaliste contre l'estimation (énergie, usure) | Écarts mesurés et documentés ; métiers toujours compétitifs | **NON TESTÉ** |
+| QA-R08 | Exploitabilité du classement | P2 | Arrangements entre comptes, abandons volontaires, déconnexions répétées en classé | Gains réduits face aux mêmes adversaires, signalement, aucune sanction automatique | **NON TESTÉ** |
+| QA-R09 | Anti-triche en situation réelle | P1 | Raccourcis, sorties de tracé, véhicule de quelqu'un d'autre, faux départs, vitesse invraisemblable | Points manqués non validés, pénalités, arrivées non confirmées | **NON TESTÉ** (logique Lune seulement) |
+| QA-R10 | Six disciplines en jeu | P1 | Sprint, circuit, contre-la-montre, drift, drag, rallye joués de bout en bout (place de développement et monde ouvert), modes protégé et réaliste | Départs, points, tours, arrivées, résultats confirmés, récompenses, véhicule libéré | **NON TESTÉ** |
+| QA-R11 | Drift en jeu | P2 | Score sur une vraie conduite (angles, transitions), rotation à l'arrêt, chocs, sortie de zone | Pas de gros score sans dérive maîtrisée | **NON TESTÉ** (modèle Lune seulement) |
+| QA-R12 | Drag en jeu | P2 | Arbre de départ, faux départ réel, boîtes manuelle et automatique, temps de réaction | Feux synchronisés sur l'horloge serveur, aucune assistance imposée | **NON TESTÉ** |
+| QA-R13 | Météo normalisée | P2 | Course classée sous la pluie du monde : adhérence du véhicule engagé, puis retour aux conditions du monde après l'épreuve | Adhérence sèche standardisée pendant l'épreuve seulement ; météo du monde inchangée | **NON TESTÉ** |
+| QA-R14 | Interface courses | P1 | Panneau K / stick gauche au clavier, souris et manette ; affichage de course lisible sans masquer la conduite ; repères | Utilisable, aucune action de conduite bloquée | **NON TESTÉ** (humain) |
+| QA-R15 | Ressenti | P2 | Ressenti des départs, de la grille, des pénalités et du drift par le propriétaire | Avis consigné | **NON TESTÉ** (humain) |
+| QA-R16 | Installations | P3 | Portiques, places et dalles d'inscription posés au sol sur les 16 parcours (relief, ponts) | Aucun élément flottant ni enterré, aucun obstacle sur la trajectoire | **NON TESTÉ** |
+| QA-R17 | Mode protégé en jeu | P1 | Course protégée avec dégâts antérieurs, chocs pendant la course, sortie brutale du jeu | Dégâts antérieurs conservés, dégâts de course effacés, rien réparé gratuitement | **NON TESTÉ** (logique Lune seulement) |
 
 ## 4. Charge, performance et stabilité
 

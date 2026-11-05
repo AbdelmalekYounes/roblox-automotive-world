@@ -37,6 +37,7 @@ local DevSeed = require(Progression.DevSeed)
 local Economy = script.Parent.Parent.Economy
 local Commerce = require(Economy.Commerce)
 local Market = require(Economy.Market)
+local RaceRecovery = require(script.Parent.Parent.Racing.RaceRecovery)
 local ProfileAccess = require(script.Parent.ProfileAccess)
 
 local VehicleDefinitions =
@@ -103,11 +104,14 @@ end
 -- Préparation d'un profil chargé (verrou détenu) : exemplaires sortis rangés,
 -- réservations échues levées, services d'énergie interrompus annulés (fonds
 -- restitués), transferts terminés anciens retirés.
+-- Lot 0.6 : engagement de course échu résolu AVANT la levée des réservations
+-- échues (restauration exacte en mode protégé, jamais une simple suppression).
 local function normalize(profile: any, now: number): boolean
+    local race = RaceRecovery.recover(profile, now)
     local garage = GarageRules.normalize(profile, now)
     local services = Commerce.recoverServices(profile, now)
     local pruned = Market.prune(profile, now)
-    return garage or services or pruned
+    return race or garage or services or pruned
 end
 
 local function newSession(player: Player): ProfileSession.Session

@@ -34,6 +34,7 @@ for _, spec in
         require("./specs/Lot04Persistence"),
         require("./specs/Lot04Progression"),
         require("./specs/Lot05Economy"),
+        require("./specs/Lot06Racing"),
     }
 do
     spec(TestKit, Harness)

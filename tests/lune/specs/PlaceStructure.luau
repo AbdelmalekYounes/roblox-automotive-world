@@ -8,6 +8,19 @@ local DATASTORE_ADAPTER = "ServerScriptService.AutomotiveWorldServer.Persistence
 local ADAPTER_ALLOWED = { DataStore = true, ["requête HTTP / stockage"] = true }
 -- Lot 0.5 : les crédits existent, mais seulement dans l'économie serveur.
 local ECONOMY_PREFIX = "ServerScriptService.AutomotiveWorldServer.Economy."
+-- Lot 0.6 : récompenses de course (serveur) ; coordination inter-serveurs
+-- (MemoryStore, serveur réservé, téléportation) et tableaux de classement
+-- (OrderedDataStore) isolés dans UN adaptateur, instancié seulement si une
+-- expérience de test isolée ou de production est déclarée (aucune ne l'est).
+local RACING_PREFIX = "ServerScriptService.AutomotiveWorldServer.Racing."
+local CROSS_SERVER_ADAPTER = "ServerScriptService.AutomotiveWorldServer.Racing.CrossServerAdapter"
+local CROSS_SERVER_ALLOWED = {
+    DataStore = true,
+    MemoryStore = true,
+    ["téléportation inter-serveurs"] = true,
+    ["requête HTTP / stockage"] = true,
+    ["crédits"] = true,
+}
 
 local FORBIDDEN_PATTERNS = {
     { Pattern = "DataStoreService", Label = "DataStore" },
@@ -88,6 +101,10 @@ return function(T: any, H: any)
                     local fullName = descendant:GetFullName()
                     local allowed: { [string]: boolean } = if fullName == DATASTORE_ADAPTER then ADAPTER_ALLOWED else {}
                     if string.sub(fullName, 1, #ECONOMY_PREFIX) == ECONOMY_PREFIX then
+                        allowed = { ["crédits"] = true }
+                    elseif fullName == CROSS_SERVER_ADAPTER then
+                        allowed = CROSS_SERVER_ALLOWED
+                    elseif string.sub(fullName, 1, #RACING_PREFIX) == RACING_PREFIX then
                         allowed = { ["crédits"] = true }
                     end
                     for _, rule in FORBIDDEN_PATTERNS do

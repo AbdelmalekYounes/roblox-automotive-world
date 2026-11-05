@@ -123,6 +123,16 @@ local loaded = waitFor(function()
     return true
 end, 40)
 record("lot04.serveur.profils_actifs", loaded)
+-- Lot 0.6 : six épreuves d'essai (une par discipline), profils au schéma 3.
+local racePrompts = 0
+local coursesFolder = Workspace:FindFirstChild("Courses")
+for _, item in (coursesFolder and coursesFolder:GetDescendants()) or {} do
+    if item:IsA("ProximityPrompt") and item.Name == "AWRacePrompt" then
+        racePrompts += 1
+    end
+end
+record("lot04.serveur.points_inscription_courses", racePrompts == 6, racePrompts)
+record("lot04.serveur.canal_courses", ReplicatedStorage:FindFirstChild("AWRacing") ~= nil)
 for _, player in Players:GetPlayers() do
     local profileSession = ProfileService.get(player)
     local data = profileSession and profileSession.Data

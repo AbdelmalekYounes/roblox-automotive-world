@@ -322,6 +322,13 @@ end
 
 -- ============================== Entretien ==============================
 
+-- Lot 0.6 : un exemplaire engagé en course (réservation « Race ») ne reçoit
+-- aucun service qui modifierait son état enregistré pour l'épreuve.
+local function inRace(vehicle: ProfileSchema.Vehicle, now: number): boolean
+    local reservation = vehicle.Reservation
+    return reservation ~= nil and reservation.Kind == "Race" and reservation.ExpiresAt > now
+end
+
 function Commerce.repairQuote(profile: ProfileSchema.Profile, vehicleId: any): (boolean, any)
     local vehicle = VehicleOwnership.get(profile, vehicleId)
     if vehicle == nil then
@@ -332,6 +339,10 @@ end
 
 -- Réparation payée : remet l'état durable à neuf, une seule fois.
 function Commerce.repair(profile: ProfileSchema.Profile, vehicleId: any, now: number): (boolean, any)
+    local target = VehicleOwnership.get(profile, vehicleId)
+    if target and inRace(target, now) then
+        return fail("VehicleInRace")
+    end
     local ok, quote = Commerce.repairQuote(profile, vehicleId)
     if not ok then
         return false, quote
@@ -354,6 +365,9 @@ function Commerce.wash(profile: ProfileSchema.Profile, vehicleId: any, now: numb
     local vehicle = VehicleOwnership.get(profile, vehicleId)
     if vehicle == nil then
         return fail("VehicleNotOwned")
+    end
+    if inRace(vehicle, now) then
+        return fail("VehicleInRace")
     end
     if vehicle.Dirt < 0.05 then
         return fail("WashNotNeeded")
@@ -384,6 +398,9 @@ function Commerce.startEnergy(
     local vehicle = VehicleOwnership.get(profile, vehicleId)
     if vehicle == nil then
         return fail("VehicleNotOwned")
+    end
+    if inRace(vehicle, now) then
+        return fail("VehicleInRace")
     end
     if profile.Services[sessionId] ~= nil then
         return fail("ServiceExists")
