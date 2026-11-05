@@ -562,8 +562,11 @@ reciblée sur `main`, non fusionnée.
 fusionnées dans `main` par commit de fusion ; `git diff origin/main c83b3de` vide ; `verify.ps1` toutes étapes OK sur
 `main`. **Étape 8 faite** : PR #15 reciblée sur `main`, brouillon, non fusionnée.
 
-**Non fait, en attente d'accord** : étape 7 (ouverture des PR des branches v2, fusion dans `main`, fermeture de #16 et
-#17), protection de `main`, étiquettes de sauvegarde.
+**Étape 7 le 2026-11-05** (validation du propriétaire après revérification en jeu de la place v2) : PR #18 (Comète
+v2) fusionnée (`74b581e`, arbre identique à la branche, `verify.ps1` OK sur `main`) ; PR #19 (UI v2) fusionnée à la suite ;
+#16 et #17 fermées avec renvoi.
+
+**Non fait, à la main du propriétaire** : protection de `main`, étiquettes de sauvegarde.
 Validations du propriétaire du 2026-11-05 : reportées sur les branches v2 par l'identité du code ; **une courte
 revérification en jeu reste conseillée** avant fusion.
 

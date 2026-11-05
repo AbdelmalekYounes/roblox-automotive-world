@@ -254,4 +254,9 @@ archive suspendue. **Aucune fusion sans l'accord du propriétaire.**
 - **Étape 3 faite le 2026-11-05** (accord du propriétaire : « Oui, étape 3 ») : PR #12 (AVATAR-01), #13 (références 3D)
   et #14 (phase 1 de l'Aster) fusionnées dans `main` par commit de fusion (dernier : `106c811`) ; arbre de `main`
   identique à `c83b3de` ; `verify.ps1` toutes étapes OK sur `main`. PR #15 (ASTER-02, suspendu) reciblée sur `main`,
-  brouillon, non fusionnée. Suite : étape 7 (branches v2 de la Comète puis de l'UI), sur accord.
+  brouillon, non fusionnée.
+- **Étape 7 le 2026-11-05** (revérification en jeu de la place v2 et validation du propriétaire : « c'est bon je valide ») :
+  PR #18 (Comète v2) fusionnée dans `main` (`74b581e`, arbre identique à `feat/veh3d-01-comete-v2`, `verify.ps1` OK) ;
+  PR #19 (UI v2, cette branche) fusionnée à la suite ; PR #16 et #17 fermées avec renvoi. **Intégration de l'option B
+  terminée** : `main` contient les lots 0.1 à 0.9.2, AVATAR-01, les références 3D, la phase 1 de l'Aster, la Comète et
+  l'UI V1.2 ; ASTER-02 reste sur la PR #15 (suspendu). Blocages de la V1.0 : `docs/audit/AUDIT_INTEGRATION_V1.0.md` §7.
