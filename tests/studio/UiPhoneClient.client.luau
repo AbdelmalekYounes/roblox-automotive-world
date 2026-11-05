@@ -54,10 +54,26 @@ if skip then
     Gui.click(skip, "Passer l'introduction")
     task.wait(1.5)
 end
-local masculin = Gui.findButton(playerGui, "Masculin")
-if masculin and Gui.shown(masculin) then
+-- La fenêtre de silhouette d'un profil neuf apparaît quelques secondes après l'arrivée : on l'attend (sans cela elle
+-- restait ouverte par-dessus les écrans testés, VM 20261105-123345).
+local masculin = nil
+waitFor(function()
+    masculin = Gui.findButton(playerGui:FindFirstChild("AWBodyChoice"), "Masculin")
+    return masculin ~= nil
+end, 10)
+-- Un clic pendant le chargement de l'apparence est refusé par le serveur (« apparence en chargement ») et la
+-- fenêtre reste ouverte : on reclique, comme un joueur, jusqu'à sa fermeture.
+for _ = 1, 4 do
+    local dialog = playerGui:FindFirstChild("AWBodyChoice")
+    if dialog == nil then
+        break
+    end
+    masculin = Gui.findButton(dialog, "Masculin")
+    if masculin == nil or not Gui.shown(masculin) then
+        break
+    end
     Gui.click(masculin, "Masculin")
-    task.wait(2)
+    task.wait(2.5)
 end
 for _ = 1, 4 do
     if not UIState.capturesDriving() then
@@ -152,20 +168,104 @@ record(
 record("ui_phone.icones_teinte", tintOk, "carte cyan 92,200,214 ; autres ambre 232,163,61")
 Gui.shot("ui_phone_accueil", { lot = "UI-02" })
 
--- 3. Applications : vrai clic sur la tuile, titre de l'en-tête, retour par l'en-tête.
+-- 3. Les 12 applications (vrai clic sur la tuile, titre, retour par l'en-tête) ; structure de la maquette : titres de
+-- section, cartes à filet, boutons à valeur ; aucun texte ne dépasse la largeur de l'écran du téléphone.
 local title = phone:FindFirstChild("Titre", true) :: TextLabel?
-for _, app in { "Carte", "Véhicules", "Notifications", "Paramètres" } do
+local screenBody = phone:FindFirstChild("Contenu", true)
+local function census(): (number, number, number, number)
+    local cards, valued, overflow, texts = 0, 0, 0, 0
+    if screenBody == nil then
+        return 0, 0, 0, 0
+    end
+    local right = (screenBody :: GuiObject).AbsolutePosition.X + (screenBody :: GuiObject).AbsoluteSize.X + 1
+    for _, item in screenBody:GetDescendants() do
+        if item:IsA("Frame") and item:FindFirstChild("Filet") and item:FindFirstChild("Titre", true) then
+            cards += 1
+        elseif item:IsA("TextLabel") and item.Name == "Valeur" and item.Parent and item.Parent:IsA("TextButton") then
+            valued += 1
+        end
+        if (item:IsA("TextLabel") or item:IsA("TextButton")) and item.Visible and item.Text ~= "" then
+            texts += 1
+            if item.AbsolutePosition.X + item.AbsoluteSize.X > right then
+                overflow += 1
+            end
+        end
+    end
+    return cards, valued, overflow, texts
+end
+local APPS = {
+    "Carte",
+    "Véhicules",
+    "Propriétés",
+    "Missions",
+    "Courses",
+    "Marché",
+    "Social",
+    "Radio",
+    "Photo",
+    "Guide",
+    "Notifications",
+    "Paramètres",
+}
+for _, app in APPS do
     local ok = Gui.click(phoneButton(app), app)
-    task.wait(0.6)
+    task.wait(1.2)
     local shown = title ~= nil and title.Text == app
-    record("ui_phone.app_" .. app, ok and shown, if title then "titre « " .. title.Text .. " »" else "titre absent")
+    local cards, valued, overflow, texts = census()
+    record(
+        "ui_phone.app_" .. app,
+        ok and shown and overflow == 0 and texts > 0,
+        string.format(
+            "titre « %s », %d carte(s), %d bouton(s) à valeur, %d texte(s), %d débordant(s)",
+            if title then title.Text else "absent",
+            cards,
+            valued,
+            texts,
+            overflow
+        )
+    )
+    Gui.shot("ui_phone_" .. app, { lot = "UI-02" })
+    if app == "Véhicules" then
+        local garageButton = phone:FindFirstChild("OuvrirGarage", true) :: TextButton?
+        local vehicleCards = 0
+        for _, item in phone:GetDescendants() do
+            if item:IsA("Frame") and string.sub(item.Name, 1, 9) == "Vehicule_" and item:FindFirstChild("Filet") then
+                vehicleCards += 1
+            end
+        end
+        record(
+            "ui_phone.vehicules_cartes",
+            vehicleCards >= 3 and garageButton ~= nil and garageButton:FindFirstChild("Valeur") ~= nil,
+            string.format(
+                "%d carte(s) de véhicule ; bouton du garage %s",
+                vehicleCards,
+                if garageButton then "présent (valeur P)" else "absent"
+            )
+        )
+    end
     if app ~= "Paramètres" then
-        Gui.shot("ui_phone_" .. app, { lot = "UI-02" })
         local back = phoneButton("Retour")
         local okBack = Gui.click(back, "Retour")
         task.wait(0.5)
         record("ui_phone.retour_" .. app, okBack and title ~= nil and title.Text == "Accueil")
     end
+end
+-- Paramètres : réglages présentés « libellé | valeur » (maquette).
+do
+    local pairs, total = 0, 0
+    for _, item in phone:GetDescendants() do
+        if item:IsA("TextButton") and item.Name == "Reglage" then
+            total += 1
+            if item:FindFirstChild("Valeur") then
+                pairs += 1
+            end
+        end
+    end
+    record(
+        "ui_phone.parametres_valeurs",
+        total > 0 and pairs == total,
+        string.format("%d réglage(s), %d avec valeur à droite", total, pairs)
+    )
 end
 
 -- 4. Paramètres › Crédits et licences : attribution de la Comète (auteur, licence).
@@ -213,6 +313,135 @@ record(
         return not phone.Enabled
     end, 3)
 )
+
+-- 7. Mode rapide EN CONDUITE (demande du propriétaire) : montée réelle (E) dans le prototype P-01 (boîte automatique),
+-- accélérateur maintenu (W), puis T : écran rapide (étiquette « mode rapide », aucune grille d'applications, aucun
+-- bouton sélectionnable), garage refusé (P) ; à l'arrêt, le téléphone revient à l'écran complet.
+local client = player:WaitForChild("PlayerScripts"):WaitForChild("AutomotiveWorldClient")
+local VehicleController = require(client:WaitForChild("Vehicles"):WaitForChild("VehicleController", 10)) :: any
+local function speed(): number
+    local ok, snapshot = pcall(VehicleController.getTestSnapshot)
+    return if ok and type(snapshot) == "table" then snapshot.SpeedKmh or 0 else 0
+end
+local function seated(): boolean
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    return humanoid ~= nil and humanoid.SeatPart ~= nil and humanoid.SeatPart.Name == "DriverSeat"
+end
+local fleet = Workspace:FindFirstChild("VehiculesEssai")
+local car: Model? = nil
+if fleet then
+    for _, item in fleet:GetChildren() do
+        if
+            item:IsA("Model")
+            and item:GetAttribute("DriverUserId") == 0
+            and item:GetAttribute("DefinitionId") == "proto_p01"
+            and item:FindFirstChild("DriverSeat", true)
+        then
+            car = item
+            break
+        end
+    end
+end
+if car then
+    local door = car:FindFirstChild("DriverDoor", true) :: Attachment?
+    local target = if door then door.WorldPosition else car:GetPivot().Position
+    for _ = 1, 3 do
+        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+        if root then
+            local from = target + Vector3.new(3, 3, 0)
+            root.CFrame = CFrame.lookAt(from, Vector3.new(target.X, from.Y, target.Z))
+            root.AssemblyLinearVelocity = Vector3.zero
+        end
+        task.wait(1.2)
+        Gui.key("E", 800)
+        if waitFor(seated, 4) then
+            break
+        end
+    end
+end
+record("ui_phone.conduite.embarquement_touche_E", seated(), if car then car.Name else "aucun P-01 libre")
+if seated() then
+    task.wait(1.5)
+    Gui.keyDown("W")
+    local moving = waitFor(function()
+        return speed() > 15
+    end, 8)
+    record("ui_phone.conduite.accelerateur_W", moving, string.format("%.1f km/h", speed()))
+    if moving then
+        Gui.key("T")
+        local quickOpened = waitFor(function()
+            return phone.Enabled
+        end, 3)
+        task.wait(0.4)
+        local tag = phone:FindFirstChild("ModeRapide", true) :: GuiObject?
+        local grid = phone:FindFirstChild("Grille", true)
+        local selectable = 0
+        for _, item in phone:GetDescendants() do
+            if
+                item:IsA("GuiButton")
+                and item.Selectable
+                and Gui.shown(item)
+                and item:IsDescendantOf(screenBody :: Instance)
+            then
+                selectable += 1
+            end
+        end
+        local warnBox = phone:FindFirstChild("Avertissement", true)
+        -- Étiquette « mode rapide » et titre contenus dans la coque (débordement constaté, VM 20261105-123345).
+        local shell = phone:FindFirstChild("Coque") :: GuiObject?
+        local inDevice = shell ~= nil
+            and tag ~= nil
+            and tag.AbsolutePosition.X >= shell.AbsolutePosition.X
+            and tag.AbsolutePosition.X + tag.AbsoluteSize.X <= shell.AbsolutePosition.X + shell.AbsoluteSize.X
+        record(
+            "ui_phone.conduite.mode_rapide",
+            quickOpened
+                and inDevice
+                and tag ~= nil
+                and tag.Visible
+                and grid == nil
+                and selectable == 0
+                and warnBox ~= nil,
+            string.format(
+                "%.1f km/h, étiquette %s, grille %s, %d bouton(s) sélectionnable(s) dans l'écran, avertissement %s",
+                speed(),
+                tostring(tag and tag.Visible),
+                tostring(grid ~= nil),
+                selectable,
+                tostring(warnBox ~= nil)
+            )
+        )
+        Gui.shot("ui_phone_mode_rapide_conduite", { lot = "UI-02", kmh = speed() })
+        Gui.key("P")
+        task.wait(1)
+        local garage = playerGui:FindFirstChild("AWProgression")
+        local garagePanel = garage and garage:FindFirstChild("Garage") :: GuiObject?
+        record(
+            "ui_phone.conduite.garage_refuse",
+            garagePanel == nil or not garagePanel.Visible,
+            string.format("%.1f km/h", speed())
+        )
+    end
+    Gui.keyUp("W")
+    Gui.keyDown("S")
+    waitFor(function()
+        return speed() < 2
+    end, 12)
+    Gui.keyUp("S")
+    Gui.key("Space", 1200)
+    task.wait(1.5)
+    local tag = phone:FindFirstChild("ModeRapide", true) :: GuiObject?
+    local fullAgain = phone.Enabled and (tag == nil or not tag.Visible)
+    record(
+        "ui_phone.conduite.retour_ecran_complet_arret",
+        fullAgain,
+        string.format("%.1f km/h, téléphone ouvert %s", speed(), tostring(phone.Enabled))
+    )
+    Gui.shot("ui_phone_arret_ecran_complet", { lot = "UI-02" })
+    if phone.Enabled then
+        Gui.key("T")
+    end
+end
 
 local shots = Gui.report().shots
 record("ui_phone.captures", #shots > 0, #shots)
