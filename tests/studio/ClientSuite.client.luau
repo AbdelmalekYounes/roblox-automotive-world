@@ -63,6 +63,10 @@ if
     or currentSession == "lot02"
     or currentSession == "monde"
     or currentSession == "lot04"
+    or currentSession == "lot05"
+    or currentSession == "lot06"
+    or currentSession == "lot08"
+    or currentSession == "perf"
 then
     return
 end
@@ -235,6 +239,12 @@ local camera = Workspace.CurrentCamera
 -- Lot 0.7 : le HUD de conduite est « AWHud » (le panneau de diagnostic est facultatif).
 local hud = player.PlayerGui:FindFirstChild("AWHud")
 local panel = hud and hud:FindFirstChild("Tableau")
+-- Le tableau s'affiche à la première image de conduite (données du véhicule) :
+-- on lui laisse 3 s au lieu d'un relevé immédiat (lot 0.9, échec de cadence en multijoueur).
+local hudStart = os.clock()
+while not (panel and (panel :: any).Visible) and os.clock() - hudStart < 3 do
+    task.wait(0.1)
+end
 record(
     "client.session_conduite",
     camera.CameraType == Enum.CameraType.Scriptable and panel ~= nil and panel.Visible,

@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.8 (rendu, gamme proposée, audio, radio, mode photo, arrivée)
+# Automotive World — Lot 0.9 (intégration et validation globale)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -16,12 +16,14 @@
 > notifications, accessibilité, français et anglais, préférences sauvegardées. Lot 0.8 : gamme PROPOSÉE de 18 modèles
 > fictifs (en attente d'approbation), carrosseries par silhouette, habillage des sept zones, feux de nuit, qualité
 > graphique, audio modulaire et radio (contrôleurs ; sons originaux synthétisés mais non téléversés), mode photo,
-> parcours d'arrivée et exercices de formation. Aucune
+> parcours d'arrivée et exercices de formation. Lot 0.9 : version intégrée des lots 0.1 à 0.8, campagnes VM étendues
+> (économie, courses, arrivée, banc des 18 modèles, mesures), corrections (courses, marché, rendu de nuit), audit de
+> sécurité, préparation des essais DataStore. **Pas une autorisation de lancement public.** Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.8 en développement sur `feat/art-audio-onboarding-0.8` (PR brouillon #8, base : lot 0.7 ;
-> PR #1 à #7 non fusionnées). Rapport : [docs/lot-0.8/RAPPORT_LOT_0.8.md](docs/lot-0.8/RAPPORT_LOT_0.8.md).
-> Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
-> (**NON TESTÉS** à ce jour).
+> **Statut** : lot 0.9 sur `feat/integration-qa-0.9` (PR brouillon #9, base : lot 0.8 ; PR #1 à #8 non fusionnées).
+> Rapport : [docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
+> humains : [checklist](docs/lot-0.9/CHECKLIST_TESTS_HUMAINS.md) ; DataStore, charge et appareils réels : **NON
+> TESTÉS** ([docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)).
 
 ## Prérequis (Windows)
 
@@ -209,6 +211,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.6` | Rapport du lot 0.6, architecture des courses et de la compétition |
 | `docs/lot-0.7` | Rapport du lot 0.7, architecture de l'interface, du GPS et du social |
 | `docs/lot-0.8` | Rapport du lot 0.8, architecture, catalogue des 18 modèles, ressources et licences, direction artistique |
+| `docs/lot-0.9` | Validation globale, anomalies et corrections, performances, sécurité, checklist humaine, dépendances externes |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

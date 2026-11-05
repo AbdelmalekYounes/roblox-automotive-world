@@ -84,6 +84,10 @@ local T: { [string]: { string } } = {
         "Choose your starter vehicle first.",
     },
     ExerciseUnknown = { "Exercice inconnu.", "Unknown exercise." },
+    StationFull = {
+        "Toutes les pompes ou bornes de cette station sont occupées : réessayez dans un instant.",
+        "Every pump or charger at this station is in use: try again in a moment.",
+    },
     TestDriveNoRewards = {
         "Véhicule d'essai : aucune course ni mission avec lui.",
         "Test-drive vehicle: no races or jobs with it.",

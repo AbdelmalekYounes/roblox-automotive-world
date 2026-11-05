@@ -426,6 +426,49 @@ return function(T: any, H: any)
         return clock, repo, ctx, online, session, profileOf, vehicleId, result.ListingId
     end
 
+    T.test("lot 0.9 : annonce créée même si la réservation du vendeur en ligne est « en attente »", function()
+        local clock, repo, ctx, online, _, seed, profileOf = world()
+        local vehicleId = seed(SELLER, 0, true) :: string
+        seed(BUYER, 60_000)
+        -- Vendeur EN LIGNE, budget d'écriture par clé (6 s) : la réservation est appliquée
+        -- en mémoire puis écrite plus tard (« Pending »), comme dans la session VM lot05.
+        local s = ProfileSession.new({
+            Repository = repo,
+            Key = ProfileRepository.keyFor(SELLER),
+            UserId = SELLER,
+            Session = "vendeur",
+            Server = "srv",
+            Environment = "Dev",
+            Clock = function()
+                return clock.Now
+            end,
+            Token = function()
+                return "t-vendeur"
+            end,
+            MinWriteInterval = 6,
+        })
+        s:load()
+        online[SELLER] = s
+        s:commit("warm", "Seed", function()
+            return true, nil
+        end)
+        local status, result = Market.createListing(ctx, SELLER, vehicleId, 20_000, "listing-pending-01")
+        T.truthy(status == "Pending" or status == "Confirmed", "réservation appliquée : " .. tostring(status))
+        local found = false
+        for _, listing in Market.search(ctx, 50) do
+            if listing.Id == (result and result.ListingId) then
+                found = true
+            end
+        end
+        T.truthy(found, "l'annonce existe et est trouvable (défaut : exemplaire réservé sans annonce)")
+        T.equal(s.Data.Vehicles[vehicleId].Reservation.Kind, "Listing", "exemplaire réservé pour cette annonce")
+        clock.Now += 7
+        s:save(true)
+        local state = Market.purchase(ctx, BUYER, result.ListingId, "purchase-pending-01")
+        T.truthy(state ~= "Rejected", "achat possible une fois l'écriture faite : " .. tostring(state))
+        T.truthy(profileOf(BUYER) ~= nil)
+    end)
+
     T.test(
         "10. vente : commission de 5 %, aucun crédit créé ni détruit hors commission, un seul véhicule",
         function()

@@ -21,6 +21,24 @@ local KNOWN_SESSIONS = {
     monde = { Name = "monde", Players = 1 },
     -- Lot 0.4 : progression, place de développement, deux joueurs.
     lot04 = { Name = "lot04", Players = 2 },
+    -- Lot 0.9 : économie et marché (2 joueurs), courses (2 joueurs), arrivée et gamme (1 joueur).
+    lot05 = { Name = "lot05", Players = 2 },
+    lot06 = { Name = "lot06", Players = 2 },
+    lot08 = { Name = "lot08", Players = 1 },
+    -- Lot 0.9 : mesures de référence (place MONDE OUVERT, -Place OpenWorld).
+    perf = { Name = "perf", Players = 1 },
+}
+
+-- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
+local EXTRA = {
+    { "AW_TestLot05Server", "Lot05Server.server.luau", false },
+    { "AW_TestLot05Client", "Lot05Client.client.luau", true },
+    { "AW_TestLot06Server", "Lot06Server.server.luau", false },
+    { "AW_TestLot06Client", "Lot06Client.client.luau", true },
+    { "AW_TestLot08Server", "Lot08Server.server.luau", false },
+    { "AW_TestLot08Client", "Lot08Client.client.luau", true },
+    { "AW_TestPerfServer", "PerfServer.server.luau", false },
+    { "AW_TestPerfClient", "PerfClient.client.luau", true },
 }
 
 local output = process.args[1]
@@ -94,6 +112,25 @@ driver = replace(driver, "@@MONDE_CLIENT@@", mondeClient)
 driver = replace(driver, "@@LOT04_SERVER@@", lot04Server)
 driver = replace(driver, "@@LOT04_CLIENT@@", lot04Client)
 driver = replace(driver, "@@SESSIONS@@", serde.encode("json", sessions))
+local extras = {}
+for _, entry in EXTRA do
+    local path = base .. entry[2]
+    if fs.isFile(path) then
+        local source = fs.readFile(path)
+        assert(not string.find(source, "]==]", 1, true), "La suite " .. entry[2] .. " ne doit pas contenir « ]==] »")
+        luau.compile(source)
+        table.insert(
+            extras,
+            string.format(
+                "table.insert(EXTRA_SUITES, { %q, [==[%s]==], %s })",
+                entry[1],
+                source,
+                if entry[3] then "true" else "false"
+            )
+        )
+    end
+end
+driver = replace(driver, "-- @@EXTRA_SUITES@@", table.concat(extras, "\n"))
 luau.compile(driver)
 
 fs.writeFile(output, driver)

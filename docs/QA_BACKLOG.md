@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.8. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.9. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,14 +15,15 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03, lot 0.8 (branche `feat/art-audio-onboarding-0.8`).
+Dernière mise à jour : 2026-11-03, lot 0.9 (branche `feat/integration-qa-0.9`). Classement complet (type, criticité,
+probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALIES_ET_CORRECTIONS.md` §4.
 
 ## 1. Anomalies ouvertes
 
 | Id | Lot | Système | Priorité | Description | Conditions de reproduction | État |
 |---|---|---|---|---|---|---|
-| QA-A01 | 0.1 | Propriété réseau / réplication | P1 | Client propriétaire et simulant (`ReceiveAge` = 0) mais le serveur ne voit pas le véhicule avancer, puis voit un saut (correction « Teleport »). Détail : `docs/lot-0.1/RAPPORT_VALIDATION.md` §5.1 | Sessions `collision`, `collision_latence` ; surtout après sortie puis réembarquement rapide suivant un repositionnement par le serveur de test. Intermittent (≈ 1 essai sur 6 dans certaines campagnes) | **Ouverte**, cause non établie ; réobservée le 2026-11-03 (réattributions en `collision`, `collision_latence`, une correction « Teleport »), voir `docs/QA_CAMPAGNE_2026-11-03.md` §4 |
-| QA-A02 | 0.2 | Sortie du véhicule | P1 | Sortie non effective après la collision contre un véhicule garé, puis étape suivante faussée (« Teleport », « propriété refusée »). Détail : `docs/lot-0.2/RAPPORT_LOT_0.2.md` §3.10 | Session `scenarios` : 2 exécutions sur 5 (`225205`, `233800`) | **Ouverte**, intermittente ; 2026-11-03 : 1 occurrence en `collision_latence` (`030408`) avec diagnostic : demande de sortie à 27,3 km/h en marche arrière (refus ExitTooFast), personnage resté assis ; cause non établie |
+| QA-A01 | 0.1 | Propriété réseau / réplication | P1 | Client propriétaire et simulant (`ReceiveAge` = 0) mais le serveur ne voit pas le véhicule avancer, puis voit un saut (correction « Teleport »). Détail : `docs/lot-0.1/RAPPORT_VALIDATION.md` §5.1 | Sessions `collision`, `collision_latence` ; surtout après sortie puis réembarquement rapide suivant un repositionnement par le serveur de test. Intermittent (≈ 1 essai sur 6 dans certaines campagnes) | **Ouverte, P2** (lot 0.9) — le symptôme visible (véhicule immobile puis « Teleport ») venait du scénario de test (voir QA-A02) : 0 occurrence sur 4 sessions de collision après correction (`20261103-155713`). Reste : 0 à 2 « réattribution (1) » par session, corrigées à la première vérification, sans effet mesuré ; cause moteur non établie |
+| QA-A02 | 0.2 | Sortie du véhicule | P1 | Sortie non effective après la collision contre un véhicule garé, puis étape suivante faussée (« Teleport », « propriété refusée »). Détail : `docs/lot-0.2/RAPPORT_LOT_0.2.md` §3.10 | Session `scenarios` : 2 exécutions sur 5 (`225205`, `233800`) | **Expliquée (lot 0.9), faux défaut du test** — l'arrêt du scénario maintenait « freiner » à l'arrêt : marche arrière (arbitrage A3), sortie refusée à juste titre (`ExitTooFast`, 21 à 35 km/h mesurés). Test corrigé (`dcf47c8`) : 0 sortie non effective sur 4 sessions (`20261103-155713`) |
 | QA-A03 | 0.2 | Propriété réseau (attribut) | P2 | `SimulationOwnerUserId` vu à 0 alors que le joueur était propriétaire effectif | 1 contrôle sur 7 101 (`224147`), 1 sur 1 706 (`235945`), 1 sur 2 340 (`023510`), 1 sur 7 092 (`030408`) | **Ouverte** |
 | QA-A04 | 0.1 | Collisions entre joueurs | P2 | Le percuteur s'arrête net contre le véhicule d'un autre joueur (`docs/lot-0.1/ECARTS.md` §4.5) | Session `collision` | **Limite connue** |
 | QA-A05 | 0.1 | Véhicule ancré | P3 | Personnage resté assis côté client après refus, sans pouvoir conduire | Cas provoqué par le test (véhicule ancré) | **Limite connue** |
@@ -37,17 +38,30 @@ Dernière mise à jour : 2026-11-03, lot 0.8 (branche `feat/art-audio-onboarding
 | QA-F04 | 0.6 | Démarrage des courses | P1 | `RaceService` lisait l'environnement des profils avant le démarrage de `ProfileService` : amorçage du serveur interrompu (`20261103-110953`, 7 échecs) | Adaptateur inter-serveurs créé à la première utilisation (commit du lot 0.6) | `20261103-111939` (65 / 0), `20261103-112132` (35 / 0) |
 | QA-F03 | 0.5 | Lieux économiques | P2 | Les 13 lieux économiques recevaient l'invite « Préparer / Garage public » de la progression (29 invites au lieu de 16, `20261103-035626`) | `2caf0c9` | `20261103-035902` : 16 + 13 invites, aucune erreur |
 | QA-F02 | 0.3 | Carte | P1 | 195 pièces dépassaient 2 048 studs et étaient raccourcies par le moteur : trous aux bouts des longues chaussées droites (P-01 sur l'herbe, 37,8 km/h, `20261103-025743`) | `b41e0f1` | `20261103-030159` : 133,4 km/h sur A6-2, toujours sur la route |
+| QA-F05 | 0.6 | Zone d'essai / drag | P1 | Mât solide de l'arbre de départ au centre de la ligne droite d'essai : bancs du lot 0.2 bloqués (`20261103-151033`) | `708331e` | `20261103-155713` : `lot02` réussi |
+| QA-F07 | 0.6 | Courses | P1 | Inscription impossible en jeu (`VehicleSeat` exigé, siège `Seat`) (`20261103-155713`) | `38e3b3b` | `20261103-170323`, `-184407` : épreuve officielle de bout en bout |
+| QA-F08 | 0.5 | Marché | P1 | Annonce jamais publiée quand la réservation est « Pending » : exemplaire bloqué (`20261103-155713`) | `e097815` | `20261103-163722` : vente concurrente réglée ; test Lune (échoue sans la correction) |
+| QA-F10 | 0.5 | Stations | P2 | Pleins simultanés illimités par station | `12b632e` | Lune |
+| QA-F12 | 0.8 | Rendu de nuit | P2 | Lampadaires et niveau de détail de l'habillage jamais suivis (carte reçue après le démarrage) (`20261103-174932`) | `f2fe391` | `20261103-175506` : 12 lampadaires allumés de nuit |
 
-## 2. Essais humains (aucun n'a été réalisé)
+## 2. Essais humains
+
+**Déclaration du propriétaire** (brief du lot 0.2, 2026-11-02) : « Le propriétaire a terminé ses neuf vérifications
+manuelles du lot 0.1 sans signaler de problème. » Ces essais n'ont laissé ni étapes, ni résultats chiffrés, ni
+journal : ils sont classés **DÉCLARÉ (propriétaire)**, une origine distincte des essais automatisés et des essais
+consignés. Écart à lever : le rapport du lot 0.1 ne liste que **sept** essais humains (H1 à H7 de
+`docs/lot-0.1/RAPPORT_VALIDATION.md` §4, repris en QA-H01 à QA-H06 ; H7 « ressenti » n'a pas de ligne propre) ; la
+correspondance exacte des neuf vérifications reste à confirmer par le propriétaire. Aucun autre essai humain n'a été
+déclaré ou consigné.
 
 | Id | Lot | Système | Priorité | Essai | Attendu | État |
 |---|---|---|---|---|---|---|
-| QA-H01 | 0.1 | Commandes | P1 | Conduite au clavier (Z/W, S, Q/A/D, Espace, V, R, F) | Réponse progressive, marche arrière en maintenant S à l'arrêt, sortie refusée au-dessus de 20 km/h | **NON TESTÉ** |
-| QA-H02 | 0.1 | Commandes | P1 | Conduite à la manette (RT, LT, stick, A, croix, Y) | Idem, aide du HUD en mode manette | **NON TESTÉ** |
-| QA-H03 | 0.1 | Commandes | P2 | Clavier et manette ensemble | Le dernier périphérique sollicité pilote, pas de cumul | **NON TESTÉ** |
-| QA-H04 | 0.1 | Commandes | P2 | Taper dans le chat en conduisant | Aucune commande ni sortie | **NON TESTÉ** |
-| QA-H05 | 0.1 | Commandes | P2 | Débrancher / rebrancher la manette gâchette enfoncée | Relâchement, message, pas de redémarrage avant un nouvel appui | **NON TESTÉ** |
-| QA-H06 | 0.1 | Commandes | P3 | Perte de focus de la fenêtre en conduisant | Relâchement, touche « bloquée » ignorée au retour | **NON TESTÉ** |
+| QA-H01 | 0.1 | Commandes | P1 | Conduite au clavier (Z/W, S, Q/A/D, Espace, V, R, F) | Réponse progressive, marche arrière en maintenant S à l'arrêt, sortie refusée au-dessus de 20 km/h | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H02 | 0.1 | Commandes | P1 | Conduite à la manette (RT, LT, stick, A, croix, Y) | Idem, aide du HUD en mode manette | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H03 | 0.1 | Commandes | P2 | Clavier et manette ensemble | Le dernier périphérique sollicité pilote, pas de cumul | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H04 | 0.1 | Commandes | P2 | Taper dans le chat en conduisant | Aucune commande ni sortie | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H05 | 0.1 | Commandes | P2 | Débrancher / rebrancher la manette gâchette enfoncée | Relâchement, message, pas de redémarrage avant un nouvel appui | **DÉCLARÉ (propriétaire)** — non consigné en détail |
+| QA-H06 | 0.1 | Commandes | P3 | Perte de focus de la fenêtre en conduisant | Relâchement, touche « bloquée » ignorée au retour | **DÉCLARÉ (propriétaire)** — non consigné en détail |
 | QA-H07 | 0.2 | Commandes | P1 | Clavier : Maj / Ctrl gauche (rapports), C (embrayage), 1/2/3 (aides), G (récupération), V (caméras) | Effet immédiat, affiché au HUD | **NON TESTÉ** |
 | QA-H08 | 0.2 | Commandes | P1 | Manette : RB / LB, B, croix gauche / droite, croix haut | Idem | **NON TESTÉ** |
 | QA-H09 | 0.2 | Boîte manuelle | P2 | Démarrage en côte et calage au clavier et à la manette | Rampe d'embrayage de 0,6 s utilisable | **NON TESTÉ** |
@@ -128,10 +142,10 @@ Cela ne valide PAS la persistance Roblox ni les transferts entre serveurs réels
 | QA-E03 | Marché | P2 | Recherche d'annonces avec beaucoup d'annonces (index `Market_Index` borné à 500) | Résultats corrects ; montée en charge à revoir (MemoryStore ou index paginé) | **NON TESTÉ** |
 | QA-E04 | Missions en jeu | P1 | Les 8 métiers joués de bout en bout (Dev et monde ouvert), avec véhicule personnel, professionnel et fourni | Étapes reconnues, paiement unique, véhicule temporaire retiré | **NON TESTÉ** |
 | QA-E05 | AUD-ECO-01 | P1 | Joueur sans crédit ni véhicule personnel : mission de livraison avec véhicule professionnel | Paiement normal, aucun véhicule acquis, aucun débit | **NON TESTÉ** (logique Lune seulement) |
-| QA-E06 | Énergie en jeu | P1 | Plein, recharge, interruption (départ, véhicule déplacé, serveur arrêté) | Paiement au réel, aucune énergie gratuite, fonds restitués | **NON TESTÉ** |
-| QA-E07 | Concessions | P2 | Achat et reprise dans les deux concessions de la carte ; refus à distance | Exemplaire unique, débit confirmé, reprise ≈ 60 % | **NON TESTÉ** |
+| QA-E06 | Énergie en jeu | P1 | Plein, recharge, interruption (départ, véhicule déplacé, serveur arrêté) | Paiement au réel, aucune énergie gratuite, fonds restitués | **PARTIEL (lot 0.9)** — `lot05` : plein facturé au réel, plein inutile refusé ; capacité des pompes (`StationRules`, Lune) ; recharge électrique et interruption en jeu : NON TESTÉ |
+| QA-E07 | Concessions | P2 | Achat et reprise dans les deux concessions de la carte ; refus à distance | Exemplaire unique, débit confirmé, reprise ≈ 60 % | **PARTIEL (lot 0.9)** — `lot05` : achat à la concession d'essai, refus à distance, prix du catalogue malgré un prix forgé ; concessions de la carte et reprise : NON TESTÉ |
 | QA-E08 | Immobilier | P2 | Achat à l'entrée d'un bien, agrandissement, module, revente avec visiteurs présents | Ratios 70/40/60 %, véhicules exposés rangés, revente refusée si occupée | **NON TESTÉ** |
-| QA-E09 | Garage public | P2 | Main-d'œuvre facturée (pièce, esthétique, réglages) ; solde insuffisant | Intervention annulée en entier si le paiement échoue | **NON TESTÉ** |
+| QA-E09 | Garage public | P2 | Main-d'œuvre facturée (pièce, esthétique, réglages) ; solde insuffisant | Intervention annulée en entier si le paiement échoue | **PARTIEL (lot 0.9)** — `lot05` : pièce achetée puis revendue (75 %) une seule fois ; main-d'œuvre et solde insuffisant au garage : NON TESTÉ |
 | QA-E10 | Interface économie | P1 | Panneau J / stick droit au clavier, souris et manette ; devis, confirmation, état réel ; blocage en mouvement | Jamais de réussite affichée avant confirmation | **NON TESTÉ** (humain) |
 | QA-E14 | Guidage de mission | P1 | Mission lancée loin de son départ (Essais dans le monde ouvert : piste de drag à ~4 km) : flèche, distance, étiquette du repère, colonne posée au sol | Objectif trouvé sans connaître la carte ; flèche juste quel que soit l'angle de caméra | **NON TESTÉ** (humain) |
 | QA-E11 | Équilibrage | P2 | Revenus horaires réels par métier contre la simulation (`tools/economy/simulate.luau`) | Écarts compris et documentés | **NON TESTÉ** |
@@ -156,9 +170,9 @@ ni la conduite réelle en course, ni la persistance Roblox, ni l'inter-serveurs.
 | QA-R07 | Équilibrage réel | P2 | Gains réels par discipline et mode contre `tools/economy/simulate-races.luau` et les métiers ; coûts réels du mode réaliste contre l'estimation (énergie, usure) | Écarts mesurés et documentés ; métiers toujours compétitifs | **NON TESTÉ** |
 | QA-R08 | Exploitabilité du classement | P2 | Arrangements entre comptes, abandons volontaires, déconnexions répétées en classé | Gains réduits face aux mêmes adversaires, signalement, aucune sanction automatique | **NON TESTÉ** |
 | QA-R09 | Anti-triche en situation réelle | P1 | Raccourcis, sorties de tracé, véhicule de quelqu'un d'autre, faux départs, vitesse invraisemblable | Points manqués non validés, pénalités, arrivées non confirmées | **NON TESTÉ** (logique Lune seulement) |
-| QA-R10 | Six disciplines en jeu | P1 | Sprint, circuit, contre-la-montre, drift, drag, rallye joués de bout en bout (place de développement et monde ouvert), modes protégé et réaliste | Départs, points, tours, arrivées, résultats confirmés, récompenses, véhicule libéré | **NON TESTÉ** |
+| QA-R10 | Six disciplines en jeu | P1 | Sprint, circuit, contre-la-montre, drift, drag, rallye joués de bout en bout (place de développement et monde ouvert), modes protégé et réaliste | Départs, points, tours, arrivées, résultats confirmés, récompenses, véhicule libéré | **FAIT en Studio (lot 0.9)** — `20261103-185530` : les six disciplines jouées jusqu'au résultat par un pilote automatique (sprint officiel à deux, drag, contre-la-montre, circuit 3 tours, rallye, drift) ; place de développement seulement ; jeu humain et monde ouvert : NON TESTÉ |
 | QA-R11 | Drift en jeu | P2 | Score sur une vraie conduite (angles, transitions), rotation à l'arrêt, chocs, sortie de zone | Pas de gros score sans dérive maîtrisée | **NON TESTÉ** (modèle Lune seulement) |
-| QA-R12 | Drag en jeu | P2 | Arbre de départ, faux départ réel, boîtes manuelle et automatique, temps de réaction | Feux synchronisés sur l'horloge serveur, aucune assistance imposée | **NON TESTÉ** |
+| QA-R12 | Drag en jeu | P2 | Arbre de départ, faux départ réel, boîtes manuelle et automatique, temps de réaction | Feux synchronisés sur l'horloge serveur, aucune assistance imposée | **PARTIEL (lot 0.9)** — drag d'entraînement : réaction 1,65 s, 11,9 s, 113 km/h ; faux départ réel au sprint pénalisé de 5 s (`20261103-184407`) ; boîte manuelle et faux départ au drag : NON TESTÉ |
 | QA-R13 | Météo normalisée | P2 | Course classée sous la pluie du monde : adhérence du véhicule engagé, puis retour aux conditions du monde après l'épreuve | Adhérence sèche standardisée pendant l'épreuve seulement ; météo du monde inchangée | **NON TESTÉ** |
 | QA-R14 | Interface courses | P1 | Panneau K / stick gauche au clavier, souris et manette ; affichage de course lisible sans masquer la conduite ; repères | Utilisable, aucune action de conduite bloquée | **NON TESTÉ** (humain) |
 | QA-R15 | Ressenti | P2 | Ressenti des départs, de la grille, des pénalités et du drift par le propriétaire | Avis consigné | **NON TESTÉ** (humain) |
@@ -199,13 +213,13 @@ réel, ni le ressenti, ni le comportement multijoueur.
 | Id | Système | Priorité | Essai | Attendu | État |
 |---|---|---|---|---|---|
 | QA-V01 | Direction artistique | P2 | Validation artistique humaine : carrosseries des 10 silhouettes, habitacles, habillage des 7 zones, étalonnage jour/nuit, effets par qualité | Cohérent, lisible, conforme à `DIRECTION_ARTISTIQUE.md` | **NON TESTÉ** (humain) |
-| QA-V02 | Gamme de 18 | P1 | Essais réels des 18 modèles (accélération, freinage, virage, vitesse de pointe, boîtes, aides) dans Studio puis par un humain | Comportement conforme aux fiches ; valeurs du banc planaire confirmées ou corrigées | **NON TESTÉ** (banc planaire hors Studio seulement) |
+| QA-V02 | Gamme de 18 | P1 | Essais réels des 18 modèles (accélération, freinage, virage, vitesse de pointe, boîtes, aides) dans Studio puis par un humain | Comportement conforme aux fiches ; valeurs du banc planaire confirmées ou corrigées | **PARTIEL (lot 0.9)** — banc en jeu 18 / 18 (`20261103-170323`) : 0–100 km/h à +2–6 % du banc planaire (boîtes non manuelles), +15–24 % (manuelles, pilote du test) ; ressenti : NON TESTÉ (humain) |
 | QA-V03 | Carrosseries et collisions | P1 | Coque, boucliers et habitacle collidables des 10 silhouettes : chocs, sortie, dommages du lot 0.2, place passager | Aucune pièce coinçante, sortie possible, dommages visibles | **NON TESTÉ** |
 | QA-V04 | Sons moteur | P2 | Ressenti des moteurs et des sons (après téléversement par le propriétaire) : fondus de couches, électrique, calage | Sons crédibles, fondus sans saut | **NON TESTÉ** (aucun son téléversé : rien n'est joué en jeu) |
 | QA-V05 | Audio spatial | P2 | Atténuation par distance, nombre de véhicules sonorisés par qualité, ambiances par zone et pluie | Spatialisation correcte, aucune saturation | **NON TESTÉ** |
 | QA-V06 | Radio multijoueur | P1 | Conducteur et deux passagers : changer de station, couper chez un passager, régler les volumes, sortir du véhicule ; joueur extérieur | Station commune pilotée par le conducteur ; coupure et volume individuels ; rien entendu dehors (SCN-19) | **NON TESTÉ** (stations indisponibles tant que les pistes ne sont pas téléversées) |
-| QA-V07 | Mode photo complet | P1 | À pied, conducteur arrêté, passager ; caméra contre un mur et près d'une propriété ; ouverture en course ; masquage et restauration ; capture et enregistrement | Caméra bornée, aucun mur traversé, refus en course, restauration exacte, capture proposée (SCN-20) | **NON TESTÉ** |
-| QA-V08 | Parcours d'arrivée | P1 | Onboarding avec des comptes réels : nouveau joueur, passage de l'introduction, essai, choix confirmé, reconnexion pendant le choix, joueur existant (migration 4 → 5) | Un seul véhicule, propriété unique, parcours non imposé aux anciens joueurs | **NON TESTÉ** (Dev, candidats synthétiques ; aucune attribution en test ou production avant approbation) |
+| QA-V07 | Mode photo complet | P1 | À pied, conducteur arrêté, passager ; caméra contre un mur et près d'une propriété ; ouverture en course ; masquage et restauration ; capture et enregistrement | Caméra bornée, aucun mur traversé, refus en course, restauration exacte, capture proposée (SCN-20) | **PARTIEL (lot 0.9)** — `lot08` : ouverture à pied et caméra restaurée à l'identique ; mur, propriété, capture : NON TESTÉ |
+| QA-V08 | Parcours d'arrivée | P1 | Onboarding avec des comptes réels : nouveau joueur, passage de l'introduction, essai, choix confirmé, reconnexion pendant le choix, joueur existant (migration 4 → 5) | Un seul véhicule, propriété unique, parcours non imposé aux anciens joueurs | **PARTIEL (lot 0.9)** — `lot08` (Dev, candidats synthétiques) : 11 étapes, essai, refus en course, choix unique, propriété, exercices ; comptes réels : NON TESTÉ |
 | QA-V09 | Protection d'apparition | P2 | Véhicule lancé sur un nouveau joueur pendant 60 s ; fin à la montée en voiture | Aucun choc subi ; protection levée ensuite | **NON TESTÉ** |
 | QA-V10 | Exercices | P3 | Les 8 exercices en jeu, dont stationnement et changement de rapport en boîte automatique | Réussite détectée, aucun crédit | **NON TESTÉ** |
 | QA-V11 | Performances du rendu | P1 | Images par seconde et mémoire avec l'habillage (≈ 47 650 pièces), nuit avec sources de lumière, qualités basse à haute | Mesure réelle ; aucun objectif déclaré atteint | **NON TESTÉ** |

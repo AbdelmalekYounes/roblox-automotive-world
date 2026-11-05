@@ -193,8 +193,10 @@ runStage("abs_off", p03, ground(p03, -470, 280), 90)
 runStage("abs_on", p03, ground(p03, -470, 280), 90)
 runStage("tc_off", p02, ground(p02, -470, 80), 90)
 runStage("tc_on", p02, ground(p02, -470, 80), 90)
-runStage("esc_off", p03, ground(p03, -490, 95), 90)
-runStage("esc_on", p03, ground(p03, -490, 95), 90)
+-- Lot 0.9 : décalé à l'ouest ; à x = −490 la voiture passait sur un poteau du portique de
+-- départ du rallye d'essai (lot 0.6, x ≈ −488 st, z ≈ 71 st) et restait sans dérive mesurable.
+runStage("esc_off", p03, ground(p03, -560, 95), 90)
+runStage("esc_on", p03, ground(p03, -560, 95), 90)
 runStage("freinage_sec", p03, ground(p03, 0, 0), 90)
 
 -- P3 : maintien en pente (rampe à 10 %, milieu de la montée, cap nord).

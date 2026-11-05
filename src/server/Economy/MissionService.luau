@@ -34,6 +34,7 @@ local MissionEngine = require(script.Parent.MissionEngine)
 local MissionGenerator = require(script.Parent.MissionGenerator)
 local MissionPlaces = require(script.Parent.MissionPlaces)
 local RewardModel = require(script.Parent.RewardModel)
+local MissionCargo = require(script.Parent.MissionCargo)
 
 local MissionService = {}
 
@@ -48,6 +49,9 @@ type Active = {
     Props: { Instance },
     LastCorrections: number,
     Finishing: boolean,
+    -- Lot 0.9 : chargement visible (colis, passager, pièce) soudé au véhicule conduit.
+    Cargo: Model?,
+    CargoKey: string,
 }
 
 local active: { [Player]: Active } = {}
@@ -169,6 +173,9 @@ local function cleanup(player: Player)
     for _, prop in entry.Props do
         prop:Destroy()
     end
+    if entry.Cargo then
+        (entry.Cargo :: Model):Destroy()
+    end
     active[player] = nil
 end
 
@@ -266,6 +273,8 @@ function MissionService.start(player: Player, jobId: any): (string, any)
         Props = props,
         LastCorrections = corrections,
         Finishing = false,
+        Cargo = nil,
+        CargoKey = "",
     }
     return "Ok", { MissionId = id, Professional = vehicle ~= nil }
 end
@@ -314,6 +323,99 @@ function MissionService.snapshot(player: Player): any
     }
 end
 
+-- Pièce décorative du chargement : sans masse, sans collision, soudée au châssis.
+local function cargoPart(
+    parent: Model,
+    root: BasePart,
+    name: string,
+    size: Vector3,
+    offset: CFrame,
+    color: Color3,
+    shape: Enum.PartType?
+)
+    local part = Instance.new("Part")
+    part.Name = name
+    part.Size = size
+    part.CFrame = root.CFrame * offset
+    part.Color = color
+    part.Material = Enum.Material.SmoothPlastic
+    part.Massless = true
+    part.CanCollide = false
+    part.CanQuery = false
+    part.CanTouch = false
+    part.CastShadow = false
+    if shape then
+        part.Shape = shape
+    end
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = root
+    weld.Part1 = part
+    weld.Parent = part
+    part.Parent = parent
+end
+
+-- Représente le chargement de l'étape en cours sur le véhicule conduit (purement visuel).
+local function refreshCargo(entry: Active, model: Model?)
+    local load = MissionCargo.load(entry.Mission.Job, #entry.Mission.Steps, entry.State.StepIndex)
+    local key = MissionCargo.key(load) .. "@" .. (if model then model.Name else "")
+    if key == entry.CargoKey then
+        return
+    end
+    entry.CargoKey = key
+    if entry.Cargo then
+        (entry.Cargo :: Model):Destroy()
+        entry.Cargo = nil
+    end
+    local root = if model then model.PrimaryPart else nil
+    if load == nil or root == nil or model == nil then
+        return
+    end
+    local holder = Instance.new("Model")
+    holder.Name = "ChargementMission"
+    local m = 1 / Constants.MetersPerStud
+    local passenger = model:FindFirstChild("PassengerSeat")
+    if load.Kind == "Passenger" then
+        -- Silhouette assise à la place passager (ou au centre de l'habitacle).
+        local seat = if passenger and passenger:IsA("BasePart")
+            then root.CFrame:ToObjectSpace(passenger.CFrame)
+            else CFrame.new(0.4 * m, 0.6 * m, 0)
+        cargoPart(
+            holder,
+            root,
+            "PassagerBuste",
+            Vector3.new(0.45 * m, 0.6 * m, 0.25 * m),
+            seat * CFrame.new(0, 0.45 * m, 0),
+            Color3.fromRGB(70, 90, 140)
+        )
+        cargoPart(
+            holder,
+            root,
+            "PassagerTete",
+            Vector3.new(0.24 * m, 0.24 * m, 0.24 * m),
+            seat * CFrame.new(0, 0.95 * m, 0),
+            Color3.fromRGB(205, 160, 125),
+            Enum.PartType.Ball
+        )
+    else
+        -- Colis ou pièce : caisses rangées à l'arrière, sur le plancher.
+        local rear = CFrame.new(0, 0.55 * m, (model:GetExtentsSize().Z / 2) * 0.55)
+        for i = 1, math.min(load.Count, 6) do
+            local row = (i - 1) % 3 - 1
+            local layer = math.floor((i - 1) / 3)
+            cargoPart(
+                holder,
+                root,
+                if load.Kind == "Part" then "PieceMission" else "Colis",
+                Vector3.new(0.35 * m, 0.3 * m, 0.35 * m),
+                rear * CFrame.new(row * 0.38 * m, layer * 0.31 * m, 0),
+                if load.Kind == "Part" then Color3.fromRGB(90, 95, 105) else Color3.fromRGB(176, 132, 82)
+            )
+        end
+    end
+    holder.Parent = model
+    entry.Cargo = holder
+end
+
 local function sample(player: Player, entry: Active)
     local root = rootOf(player)
     if root == nil then
@@ -350,6 +452,7 @@ local function sample(player: Player, entry: Active)
         Damage = wear,
         Corrected = corrected,
     })
+    refreshCargo(entry, if inVehicle then model else nil)
 end
 
 function MissionService.start_(openWorld: boolean, notifier: (Player, string, any) -> ())

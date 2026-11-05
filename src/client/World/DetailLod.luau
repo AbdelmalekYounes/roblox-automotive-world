@@ -99,13 +99,17 @@ local function update(dressing: Instance?)
 end
 
 function DetailLod.start()
-    local world = Workspace:FindFirstChild("OpenWorld")
-    local dressing = if world then world:FindFirstChild("Habillage") else nil
+    -- Dossier d'habillage cherché tant qu'il manque (arrivée par streaming après le démarrage).
+    local dressing: Instance? = nil
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         timer += dt
         if timer >= UPDATE_S then
             timer = 0
+            if dressing == nil then
+                local world = Workspace:FindFirstChild("OpenWorld")
+                dressing = if world then world:FindFirstChild("Habillage") else nil
+            end
             update(dressing)
         end
     end)

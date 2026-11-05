@@ -23,6 +23,9 @@ local MONDE_CLIENT_SOURCE = [==[@@MONDE_CLIENT@@]==]
 local LOT04_SERVER_SOURCE = [==[@@LOT04_SERVER@@]==]
 local LOT04_CLIENT_SOURCE = [==[@@LOT04_CLIENT@@]==]
 local SESSIONS = HttpService:JSONDecode([==[@@SESSIONS@@]==])
+-- Lot 0.9 : suites supplémentaires { nom, source, client? } insérées par build-driver.
+local EXTRA_SUITES: { { any } } = {}
+-- @@EXTRA_SUITES@@
 
 local function emit(kind: string, data: any)
     print("@@AW@@ " .. HttpService:JSONEncode({ kind = kind, data = data }))
@@ -75,6 +78,7 @@ for _, entry in
         { "AW_TestMondeClient", MONDE_CLIENT_SOURCE, true },
         { "AW_TestLot04Server", LOT04_SERVER_SOURCE, false },
         { "AW_TestLot04Client", LOT04_CLIENT_SOURCE, true },
+        table.unpack(EXTRA_SUITES),
     }
 do
     local item = Instance.new(if entry[3] then "LocalScript" else "Script")
