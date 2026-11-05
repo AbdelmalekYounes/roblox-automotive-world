@@ -17,6 +17,8 @@ sur Roblox par l'assistant.**
 | Performances | `-Sessions comete_perf` | `20261105-013629` | triangles et appels de dessin mesurés ; temps de rendu non mesurables (§3.D) |
 | Morphologies R15 | `-Sessions comete_avatar` | `20261105-015804`, puis `20261105-023349` | 16 sorties sur 16 en échec avant correction ; après : sorties 16 / 16, pose de jeu 16 / 16 (§3.E) |
 | Contrôle final | `-Sessions comete_avatar,comete -GuiInput` | `20261105-023349` | **189 réussis, 1 échec (touche Ctrl)** |
+| Choc avant intermittent | `-Sessions comete` | `20261105-024819`, puis `-025226` et `-025503` | non confirmé 1 fois sur 7 ; après correction : 3 / 3 (`-025226`, `-025503`, `-030115`), 0 choc écarté |
+| Revue du propriétaire | Studio, son poste | 2026-11-05 | « tout fonctionne correctement » (`VEH3D_01_REVUE.md`) |
 | 2 joueurs | `-Sessions comete2` | `20261105-015804` | contrôles de réplication tous réussis ; 1 échec du compte des captures du conducteur (corrigé) |
 | Vitrage | `-Sessions comete_vitres`, puis `comete` | `20261105-003353`, `20261105-005339` | réglage C retenu et vérifié |
 
@@ -33,6 +35,8 @@ donc engagée par l'appel de test du contrôleur, ce qui est signalé dans chaqu
 | Aucun feu stop dans le jeu | freinage non répliqué | attribut `VisualBrake` publié par le serveur (comme le braquage) | VM : solo et joueur 2 |
 | Marques de dégâts cachées dans la caisse | placées d'après les cotes de la carrosserie provisoire | surface visible mesurée dans Blender (`DamageMarks`) | VM : 15 marques, captures |
 | Pieds sous le plancher et sous la caisse | assise de la Comète très basse (coussin à 0,28 st du plancher) | pose « Sportive » propre à ses sièges, réglée par mesures successives | VM : 8 morphologies, pieds posés, têtes sous le pavillon mesuré |
+| Choc avant à 42 km/h parfois non confirmé (1 passage sur 7) | recherche d'obstacle aux cotes du châssis (±8,13 st, marge 1,2) alors que le bouclier du kit va à 8,83 st : mur peut-être hors de la boîte après le rebond (cause probable, non démontrée) | recherche étendue aux boîtes de collision du kit | VM : 3 passages sur 3, 0 choc écarté |
+| Voiture qui ne roule pas en revue | boîte séquentielle au neutre, touche Maj attendue | l'accélérateur engage le 1er à l'arrêt (décision du propriétaire) | Lune (test 10) ; VM `20261105-030115` : W seul, 1er engagé au premier essai |
 | Sorties : conducteur couché, passager sur le toit (16 sur 16) | l'occupant assis est dans le volume de collision de l'habitacle ; libéré, il en était expulsé | groupe de collision `AWSortie` (sans collision avec les véhicules) de l'assise au placement ; passager placé côté droit (QA-A15) ; accord du propriétaire | VM : 16 sorties sur 16 |
 
 ## 3. État par point demandé
@@ -154,7 +158,8 @@ capture ; finition du garage appliquée à aucun véhicule ; essai humain.
 
 ## 6. Recommandation
 
-**GO pour la revue du propriétaire ; clôture possible après elle.** Le code est complet et testé dans le périmètre qui
+**Revue faite le 2026-11-05 : « tout fonctionne correctement ». GO pour la clôture de VEH3D-01**, envoi groupé et crédits
+reportés par le propriétaire (`VEH3D_01_REVUE.md`). Recommandation initiale : GO pour la revue ; clôture possible après elle. Le code est complet et testé dans le périmètre qui
 ne demande pas d'envoi d'actifs ; les sorties sont corrigées (16 / 16) ; le contrôle final donne 189 réussis sur 190
 (le seul échec est la touche Ctrl, limite de Studio). Avant de clôturer :
 1. ta revue visuelle et une conduite ;

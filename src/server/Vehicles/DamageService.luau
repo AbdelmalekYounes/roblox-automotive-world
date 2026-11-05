@@ -67,6 +67,11 @@ export type Entry = {
     Event: ImpactEvent?,
     Visual: { [string]: number }, -- niveau visuel appliqué par zone
     Smoke: boolean,
+    -- Demi-longueur et demi-largeur de la recherche d'obstacle (studs, hors marge) : cotes du châssis, ou étendue des
+    -- boîtes de collision d'un kit de maillages si elle les dépasse (lot VEH3D-01 : nez de la Comète à 8,83 st du
+    -- centre pour 8,13 st de châssis ; choc avant à 42 km/h parfois non confirmé, tâche 20261105-024819).
+    HalfLength: number,
+    HalfWidth: number,
 }
 
 export type ImpactRecord = {
@@ -120,6 +125,15 @@ local function publish(entry: Entry)
 end
 
 function DamageService.register(self: Service, model: Model, definition: Types.VehicleDefinition): Entry
+    local halfLength = definition.Chassis.LengthM * STUDS_PER_METER / 2
+    local halfWidth = definition.Chassis.WidthM * STUDS_PER_METER / 2
+    local kit = MeshKitData.Kits[definition.Id]
+    if kit then
+        for _, box in kit.Collisions do
+            halfLength = math.max(halfLength, math.abs(box.Center.Z) + box.Size.Z / 2)
+            halfWidth = math.max(halfWidth, math.abs(box.Center.X) + box.Size.X / 2)
+        end
+    end
     local entry: Entry = {
         Model = model,
         Root = model.PrimaryPart :: BasePart,
@@ -131,6 +145,8 @@ function DamageService.register(self: Service, model: Model, definition: Types.V
         Event = nil,
         Visual = { Front = 0, Rear = 0, Left = 0, Right = 0 },
         Smoke = false,
+        HalfLength = halfLength,
+        HalfWidth = halfWidth,
     }
     table.insert(self.Entries, entry)
     self.ByModel[model] = entry
@@ -446,9 +462,9 @@ local function findObstacle(self: Service, entry: Entry, pushDirection: Vector3)
     local bottom = -0.5
     local top = height - cgHeight
     local size = Vector3.new(
-        chassis.WidthM * STUDS_PER_METER + 2 * CONTACT_MARGIN_STUDS,
+        2 * (entry.HalfWidth + CONTACT_MARGIN_STUDS),
         top - bottom,
-        chassis.LengthM * STUDS_PER_METER + 2 * CONTACT_MARGIN_STUDS
+        2 * (entry.HalfLength + CONTACT_MARGIN_STUDS)
     )
     local center = root.CFrame * CFrame.new(0, (top + bottom) / 2, 0)
     local excluded: { Instance } = { entry.Model }
