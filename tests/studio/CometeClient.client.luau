@@ -365,16 +365,25 @@ handlers.drive = function()
     end
     -- Boîte séquentielle au neutre : passage de la 1re par la vraie touche Maj, puis W.
     local attempts = 0
+    -- Décision du propriétaire (2026-11-05) : W seul engage le 1er au neutre et à l'arrêt ; Maj en repli au 2e essai.
+    local gearBefore = VehicleController.getTestSnapshot().Gear
     repeat
         attempts += 1
-        Gui.key("Shift")
-        task.wait(0.5)
+        if attempts > 1 then
+            Gui.key("Shift")
+            task.wait(0.5)
+        end
         Gui.keyDown("W")
         waitFor(function()
             return speed() >= 30
         end, 7)
         Gui.keyUp("W")
     until speed() >= 3 or attempts >= 2
+    record(
+        "comete.k03.premier_engage_par_l_accelerateur",
+        gearBefore == 0 and attempts == 1 and maxKmh >= 15,
+        string.format("rapport avant %s ; essais %d ; vitesse max %.1f km/h", tostring(gearBefore), attempts, maxKmh)
+    )
     local releaseKmh = speed()
     -- Roue libre jusqu'au mur ou à l'arrêt.
     local stopped = waitFor(function()

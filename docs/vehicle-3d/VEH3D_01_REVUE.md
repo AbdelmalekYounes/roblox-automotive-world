@@ -10,10 +10,11 @@ Essai humain : à remplir par le propriétaire. Rien ici n'a été coché par l'
 2. Lancer **Play** (F5).
 3. La Comète n'est pas dans le parc de la zone d'essai, et la concession la marque « en attente d'approbation ». Pour la
    faire apparaître à côté de toi : onglet **Test**, bouton **Current: Client** basculé sur **Server**, puis coller dans
-   la barre de commande :
+   la barre de commande (accès de revue propre à Studio ; un `require` depuis la barre de commande charge une autre
+   copie des modules et répond « VehicleService non démarré ») :
 
    ```lua
-   require(game.ServerScriptService.AutomotiveWorldServer.Economy.MissionService).spawnBeside(game.Players:GetPlayers()[1], "wk_comete", "REVUE")
+   print(game.ServerStorage.AWRevue:Invoke("wk_comete"))
    ```
 
    Revenir ensuite sur **Client** pour jouer.
@@ -31,7 +32,7 @@ la conduite reste bloquée, comportement normal du jeu).
 | 3 | Montée | maintenir **E** à la porte conducteur ; place passager côté droit | |
 | 4 | Pose assise | vue extérieure par la vitre ; pieds, tête, mains | |
 | 5 | Caméras | **V** : poursuite, cockpit, capot, bouclier | |
-| 6 | Conduite | **Maj** pour passer la 1re (boîte séquentielle au neutre), **W/S/A/D** | |
+| 6 | Conduite | **Z/W** engage le 1er à l'arrêt (depuis le 2026-11-05 ; avant : **Maj** obligatoire), **Maj/Ctrl** pour monter et descendre, **S/A/D** | |
 | 7 | Roues | rotation et braquage des roues du modèle | |
 | 8 | Feux stop | freiner (**S**) en roulant, regarder l'arrière | |
 | 9 | Nuit | phares et feux arrière : sources allumées, optiques non lumineuses (limite connue) | |
@@ -50,3 +51,21 @@ la conduite reste bloquée, comportement normal du jeu).
 | Crédits : afficher le titre de l'œuvre ? le lien ? | |
 | Risque lié au dessin commercial : accepté / avis juridique / autre | |
 | Clôture de VEH3D-01 | |
+
+## Résultat de la revue (2026-11-05)
+
+Revue faite par le propriétaire dans Studio, sur son poste. Verdict, dans ses mots : **« tout fonctionne
+correctement »**. Les 15 points n'ont pas été notés un par un.
+
+Pendant la revue : la voiture ne roulait pas au premier essai. Cause : la boîte séquentielle partait au neutre et
+attendait la touche Maj. Le propriétaire a demandé que l'accélérateur engage le 1er rapport (voir ci-dessous).
+L'accès de revue d'abord indiqué (`require` depuis la barre de commande) répondait « VehicleService non démarré » ; il
+est remplacé par `ServerStorage.AWRevue`.
+
+| Décision | Choix du propriétaire |
+|---|---|
+| Envoi groupé (feux séparés, carte de peinture neutre, LOD, panneaux) | **plus tard** ; limites gardées pour cette version |
+| Crédits : titre et lien de l'œuvre | **plus tard** ; masqués d'ici là |
+| Risque lié au dessin commercial | **gardé** : « dans tous les cas il n'y aura aucun problème » (décision du propriétaire, non vérifiée juridiquement) |
+| Boîte séquentielle | **l'accélérateur engage le 1er** au neutre et à l'arrêt, comme le double embrayage (toutes les boîtes séquentielles) |
+

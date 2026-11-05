@@ -658,6 +658,8 @@ if driverSeated then
     -- Braquage à l'arrêt puis départ vers le mur de choc (−250, 3, 200), choc avant.
     local frontBefore = model:GetAttribute("DmgZoneFront") or 0
     local impactsBefore = model:GetAttribute("DmgImpacts") or 0
+    local hooks = game:GetService("ServerStorage"):FindFirstChild("AWTestHooks") :: BindableFunction?
+    local statsBefore = if hooks then hooks:Invoke("Impacts") else nil
     local drive = ask(player, "drive", { WallZ = 198 }, 60)
     record(
         "comete.k03.rapport_conduite",
@@ -666,6 +668,18 @@ if driverSeated then
     )
     task.wait(2)
     local total, bad, names = opaqueBoxes(model)
+    local statsAfter = if hooks then hooks:Invoke("Impacts") else nil
+    record(
+        "comete.k06.info_chocs_non_confirmes_pendant_la_conduite",
+        true,
+        if type(statsBefore) == "table" and type(statsAfter) == "table"
+            then string.format(
+                "sans obstacle au contact : %d ; requêtes : %d",
+                statsAfter.Unconfirmed - statsBefore.Unconfirmed,
+                statsAfter.Queries - statsBefore.Queries
+            )
+            else "accès de test absent"
+    )
     record(
         "comete.k06.choc_avant_confirme",
         (model:GetAttribute("DmgImpacts") or 0) > impactsBefore
@@ -867,6 +881,11 @@ end
 if model.Parent then
     VehicleService.despawnPersonal(model)
 end
+
+-- Accès de revue du propriétaire (Studio) : même appel que la fiche VEH3D_01_REVUE.md.
+local review = game:GetService("ServerStorage"):FindFirstChild("AWRevue")
+local reviewReply = if review and review:IsA("BindableFunction") then review:Invoke("wk_comete") else "absent"
+record("comete.revue.acces_studio", string.sub(tostring(reviewReply), 1, 6) == "Apparu", tostring(reviewReply))
 
 -- ======================== Fin ========================
 

@@ -293,4 +293,30 @@ return function(T: any, H: any)
             T.truthy(string.find(service, "Protected then", 1, true) ~= nil, "protection d'arrivée jamais rendue")
         end
     )
+
+    T.test(
+        "10. boîte séquentielle : accélérer au neutre et à l'arrêt engage le 1er (décision du propriétaire)",
+        function()
+            local Transmission = H.require(SHARED .. "Vehicles.Physics.Transmission")
+            local definition = Definitions.get("wk_comete")
+            T.equal(definition.Powertrain.Transmission.Kind, "Sequential", "Comète : boîte séquentielle")
+            local function state(): any
+                return { Gear = 0, ShiftTimer = 0, ManualHoldTimer = 0, ClutchPedal = 0 }
+            end
+            local press = { Throttle = 0.6, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+            local idle = { Throttle = 0, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+            local s1 = state()
+            Transmission.update(s1, definition.Powertrain, idle, 0, 0, 1 / 60)
+            T.equal(s1.Gear, 0, "au repos : reste au neutre")
+            Transmission.update(s1, definition.Powertrain, press, 0, 0, 1 / 60)
+            T.equal(s1.Gear, 1, "accélérer à l'arrêt : 1er engagé")
+            local s2 = state()
+            Transmission.update(s2, definition.Powertrain, press, 6, 20, 1 / 60)
+            T.equal(s2.Gear, 0, "en roue libre au neutre (6 m/s) : pas d'engagement imposé")
+            local s3 = state()
+            s3.Gear = -1
+            Transmission.update(s3, definition.Powertrain, press, 0, 0, 1 / 60)
+            T.equal(s3.Gear, -1, "marche arrière conservée")
+        end
+    )
 end

@@ -461,6 +461,22 @@ function MissionService.start_(openWorld: boolean, notifier: (Player, string, an
     folder = Instance.new("Folder")
     folder.Name = "Missions"
     folder.Parent = Workspace
+    -- Revue humaine dans Studio SEULEMENT (lot VEH3D-01) : la barre de commande charge sa propre copie des modules ;
+    -- cet accès s'exécute dans le jeu lui-même. `game.ServerStorage.AWRevue:Invoke("wk_comete")` fait apparaître un
+    -- véhicule temporaire protégé à côté du premier joueur (même chemin que les essais). Absent hors de Studio.
+    if RunService:IsStudio() then
+        local review = Instance.new("BindableFunction")
+        review.Name = "AWRevue"
+        review.OnInvoke = function(modelId: any): string
+            local player = Players:GetPlayers()[1]
+            if player == nil or type(modelId) ~= "string" then
+                return "Aucun joueur ou identifiant invalide"
+            end
+            local model = spawnBeside(player, modelId, "REVUE-" .. modelId)
+            return if model then "Apparu : " .. model.Name else "Échec (modèle inconnu ou place libre introuvable)"
+        end
+        review.Parent = game:GetService("ServerStorage")
+    end
     local accumulator = 0
     RunService.Heartbeat:Connect(function(dt)
         accumulator += dt
