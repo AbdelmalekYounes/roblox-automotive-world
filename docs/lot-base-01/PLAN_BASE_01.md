@@ -107,3 +107,20 @@ cité, **sans réécrire** le cahier des charges validé.
 - Aucune session VM automatique (arrêt demandé par le propriétaire le 2026-11-05) : liste de vérification en jeu
   fournie au propriétaire.
 - PR à la fin de la partie A, fusion sur son accord (`main` protégé : PR obligatoire).
+
+## 7. Décisions du propriétaire sur les points ouverts (2026-11-05)
+
+- **P1** : prototypes P-01 à P-03 et variantes de validation **supprimés du jeu**, gardés comme **jeux d'essai dans
+  `tests/`** (jamais livrés), pour que la couverture du moteur physique reste entière.
+- **P2** : **aucun véhicule provisoire**. Tant que la citadine n'est pas intégrée, l'arrivée ne propose pas de véhicule de
+  départ, les métiers qui exigent un véhicule professionnel sont indisponibles avec une raison affichée, et les crédits de
+  développement ne donnent plus de véhicule.
+- **Ordre des lots** : BASE-01, puis ADMIN-01 (expérience privée et menu admin), puis VEH3D-02 (citadine) dès que le
+  modèle est téléchargé.
+- **Citadine** : **Milano '95** de Daniel Zhabotinsky (CC BY 4.0, 18,1 k triangles ; `docs/vehicle-3d/VEH3D_02_CANDIDATS.md`).
+  Ressemblance avec la Fiat Punto mk1 acceptée par ce choix ; insigne de calandre et plaque à retirer.
+- **Par défaut, sauf avis contraire du propriétaire** :
+  - P5 : documents des 17 modèles archivés dans `docs/archive/` ;
+  - P6 : migration du schéma de profil qui **retire** les 17 modèles des profils de test existants ;
+  - P4 : marques fictives conservées dans les documents, sans usage en jeu.
+
