@@ -212,4 +212,73 @@ return function(T: any, H: any)
             "taille compacte 330 × 600"
         )
     end)
+
+    T.suite("UI-03 — aperçu 3D du garage (ViewportFrame)")
+
+    T.test("1. cadrage : le véhicule entier tient dans la zone, quel que soit son format", function()
+        local Framing = H.require("ReplicatedStorage.Shared.UI.PreviewFraming")
+        local fov = Framing.Fov
+        for _, aspect in { 0.6, 1, 1.6, 2.4 } do
+            local radius = 12
+            local d = Framing.distance(radius, fov, aspect, 1)
+            -- Angle sous lequel la sphère est vue, comparé au plus petit demi-champ (vertical ou horizontal).
+            local seen = math.asin(radius / d)
+            local half = math.rad(fov) / 2
+            local limiting = math.min(half, math.atan(math.tan(half) * aspect))
+            T.truthy(math.abs(seen - limiting) < 1e-6, "tangente aux bords, rapport " .. aspect)
+        end
+        T.truthy(
+            Framing.distance(12, fov, 0.6) > Framing.distance(12, fov, 1.6),
+            "zone étroite : caméra plus loin (limite horizontale)"
+        )
+        T.equal(Framing.distance(12, fov, 2.4), Framing.distance(12, fov, 4), "zone large : limite verticale seule")
+        T.truthy(Framing.distance(12, fov, 1.5) > Framing.distance(12, fov, 1.5, 1), "marge appliquée")
+        T.equal(Framing.distance(-1, fov, 1), 0, "rayon négatif ramené à 0")
+    end)
+
+    T.test("2. demandes au serveur : seul un identifiant de modèle bien formé passe", function()
+        local Framing = H.require("ReplicatedStorage.Shared.UI.PreviewFraming")
+        T.truthy(Framing.validModelId("wk_comete"), "wk_comete")
+        T.truthy(Framing.validModelId("proto_p01"), "proto_p01")
+        for _, bad in { "", string.rep("a", 65), "../x", "a b", "Comète", 12, nil, {} } do
+            T.truthy(not Framing.validModelId(bad), "refusé : " .. tostring(bad))
+        end
+        T.truthy(Framing.RequestInterval > 0, "délai minimal entre deux demandes")
+    end)
+
+    T.test("3. rotation : automatique, glisser, stick, réduite à [0, 360[", function()
+        local Framing = H.require("ReplicatedStorage.Shared.UI.PreviewFraming")
+        T.equal(Framing.step(0, 1, true, 0, 0), Framing.AutoSpeed, "rotation automatique")
+        T.equal(Framing.step(10, 1, false, 0, 0), 10, "sans rotation automatique (réduire les animations)")
+        T.equal(Framing.step(100, 0, false, 10, 0), 100 - 10 * Framing.DragSpeed, "glisser")
+        T.equal(Framing.step(100, 1, false, 0, 0.1), 100, "stick dans la zone morte")
+        T.equal(Framing.step(100, 0.5, false, 0, 1), (100 - Framing.StickSpeed * 0.5) % 360, "stick à fond")
+        T.equal(Framing.step(350, 1, true, 0, 0), (350 + Framing.AutoSpeed) % 360, "retour sous 360")
+    end)
+
+    T.test("4. service serveur : copie inerte, lecture seule, branché au démarrage et au garage", function()
+        local service = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehiclePreviewService")
+        for _, needle in
+            {
+                "RemoveTag(model, Constants.VehicleTag)",
+                "item.Anchored = true",
+                "item.CanCollide = false",
+                "item.CanQuery = false",
+                "PreviewFraming.validModelId(modelId)",
+                "VehicleDefinitions.get(modelId)",
+                "PreviewFraming.RequestInterval",
+            }
+        do
+            T.truthy(string.find(service, needle, 1, true) ~= nil, needle)
+        end
+        for _, forbidden in { "ProfileService", "DataStore", "SetAsync", "UpdateAsync" } do
+            T.truthy(string.find(service, forbidden, 1, true) == nil, "absent : " .. forbidden)
+        end
+        local boot = source("ServerScriptService.AutomotiveWorldServer.Bootstrap")
+        T.truthy(string.find(boot, "VehiclePreviewService.start()", 1, true) ~= nil, "démarré par le serveur")
+        local garage = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.GaragePanel")
+        for _, needle in { "VehiclePreview.attach(stage)", "VehiclePreview.show(", "VehiclePreview.setActive(" } do
+            T.truthy(string.find(garage, needle, 1, true) ~= nil, needle)
+        end
+    end)
 end

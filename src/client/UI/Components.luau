@@ -442,8 +442,8 @@ function Components.stateBadge(parent: Instance, state: string, detail: string?)
     return box
 end
 
--- Zone 3D du véhicule (§4) : dégradé #2A2E34 → #0E0F11 ; rien ne couvre le centre. Le rendu (ViewportFrame ou caméra
--- de présentation) est arbitré au lot UI-03.
+-- Zone 3D du véhicule (§4) : dégradé #2A2E34 → #0E0F11 ; rien ne couvre le centre. Rendu du véhicule par ViewportFrame
+-- (choix du propriétaire, 2026-11-05 : VehiclePreview), posé au-dessus de ce dégradé.
 function Components.stage(parent: Instance): Frame
     local stage = UITheme.make("Frame", {
         Name = "Zone3D",

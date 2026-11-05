@@ -34,6 +34,7 @@ local Text = require(script.Parent.ProgressionMessages)
 local UIManager = require(script.Parent.UIManager)
 local UITheme = require(script.Parent.UITheme)
 local Components = require(script.Parent.Components)
+local VehiclePreview = require(script.Parent.VehiclePreview)
 local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
 
 local GaragePanel = {}
@@ -236,8 +237,19 @@ local function layoutPanels()
     local height = -(Tokens.Garage.TopBar + Tokens.Garage.Tabs + Tokens.Garage.HelpBar)
     side.Size = UDim2.new(0, width, 1, height)
     stage.Size = UDim2.new(1, -width, 1, height)
+    -- Zone 3D : exemplaire sélectionné, sinon le premier de la collection ; teinte du brouillon en Préparation.
     local vehicle = if state and selected then vehicleById(selected) else nil
+    if vehicle == nil and state and state.Vehicles then
+        vehicle = state.Vehicles[1]
+    end
     stageTitle.Text = if vehicle then vehicle.DisplayName else ""
+    local cosmetics = if vehicle
+            and tab == "Préparation"
+            and draftCosmetics
+        then draftCosmetics
+        elseif vehicle then vehicle.Cosmetics
+        else nil
+    VehiclePreview.show(if vehicle then vehicle.ModelId else nil, cosmetics)
     panel:SetAttribute("AWSidePanelWidth", width)
 end
 
@@ -732,11 +744,13 @@ end
 -- Lot 0.7 : ouverture, fermeture et focus par le gestionnaire commun (UIManager).
 local function show()
     panel.Visible = true
+    VehiclePreview.setActive(true)
     send("Snapshot")
 end
 
 local function hide()
     panel.Visible = false
+    VehiclePreview.setActive(false)
 end
 
 local function open(which: string?)
@@ -847,15 +861,17 @@ function GaragePanel.start()
         end)
         tabButtons[name] = item
     end
-    -- Zone 3D (rendu du véhicule arbitré après essai : ViewportFrame ou caméra de présentation) : nom du véhicule.
+    -- Zone 3D : aperçu du véhicule par ViewportFrame (choix du propriétaire, 2026-11-05) et nom du véhicule.
     stage = make("Frame", {
         Name = "Scene",
         Position = UDim2.fromOffset(0, Tokens.Garage.TopBar + Tokens.Garage.Tabs),
         BackgroundTransparency = 1,
     }, panel)
     Components.stage(stage)
+    VehiclePreview.attach(stage)
     stageTitle =
         Components.text(stage, "", "H1", { Position = UDim2.fromOffset(Tokens.PanelPadding, Tokens.PanelPadding) })
+    stageTitle.ZIndex = 3
     side = make("Frame", {
         Name = "PanneauLateral",
         AnchorPoint = Vector2.new(1, 0),

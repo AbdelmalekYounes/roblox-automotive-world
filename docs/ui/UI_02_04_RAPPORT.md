@@ -80,7 +80,7 @@ seule change.
 - **Observation, non corrigée** : sur les captures des deux passages, la fenêtre « Choisissez votre silhouette »
   d'un profil neuf est encore affichée par-dessus le téléphone après le clic sur « Masculin » (les clics suivants du
   téléphone réussissent). Hors périmètre de cet envoi ; à examiner avec l'écran d'arrivée.
-- **Zone 3D du garage** : pas de rendu du véhicule (arbitrage ViewportFrame ou caméra de présentation à faire).
+- **Zone 3D du garage** : faite par ViewportFrame (choix du propriétaire, 2026-11-05), voir `UI_03_APERCU_3D_RAPPORT.md`.
 - **Échelle 1440 p** : non appliquée aux écrans du jeu. Les écrans pleins sont dimensionnés en proportion de l'écran, et
   un UIScale de 1,333 les ferait déborder ; une mise en page dédiée est nécessaire.
 - **Contenu des onglets du garage** : restylé, pas recomposé selon la maquette (cartes de collection, fiche à droite,
