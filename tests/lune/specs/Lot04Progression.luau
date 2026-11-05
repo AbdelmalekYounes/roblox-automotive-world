@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.4 — progression : starter, propriétés, garages, collection,
 -- personnalisation, configurations, invitations, état durable, contrats
 -- économiques et cohérence avec les identifiants de la carte du lot 0.3.
@@ -31,15 +32,16 @@ return function(T: any, H: any)
     local Infrastructure = H.require(SHARED .. "World.Data.Infrastructure")
 
     local USER = 777
-    local P01 = Definitions.get("proto_p01")
-    local P03 = Definitions.get("proto_p03")
+    local P01 = Fixtures.get("proto_p01")
+    local P03 = Fixtures.get("proto_p03")
     local PUBLIC = GarageModules.publicCapabilities()
     local PRIVATE = GarageModules.privateCapabilities({})
     -- Liste SYNTHÉTIQUE pour éprouver le processus (jamais utilisée en jeu).
     local SYNTHETIC_STARTERS = { "proto_p01", "proto_p02", "proto_p03" }
 
     local function prepare(modelId: string): (number?, any)
-        local definition = Definitions.get(modelId)
+        -- Jeux d'essai (lot BASE-01) : les prototypes ne sont plus dans le registre du jeu.
+        local definition = Definitions.get(modelId) or Fixtures.get(modelId)
         if definition == nil then
             return nil, nil
         end
@@ -310,7 +312,7 @@ return function(T: any, H: any)
     )
 
     T.test("combinaison irréalisable refusée (ressorts souples + caisse abaissée)", function()
-        local P02 = Definitions.get("proto_p02")
+        local P02 = Fixtures.get("proto_p02")
         local ok, errors = TuningRules.validate(P02, { SpringFront = 0.85, SpringRear = 0.85, RideHeight = -0.02 }, {})
         T.truthy(not ok, "refusée")
         T.equal(errors[1], "TuningUnrealizable")
@@ -600,10 +602,9 @@ return function(T: any, H: any)
             return Definitions.get(id)
         end)
         T.truthy(ok)
-        T.equal(result.Vehicles, 3)
-        for _, vehicle in profile.Vehicles do
-            T.truthy(vehicle.Synthetic and vehicle.Origin == "DevSynthetic", vehicle.Id)
-        end
+        -- Lot BASE-01 (point P2) : plus aucun véhicule synthétique ; propriété, pièces et solde restent.
+        T.equal(result.Vehicles, 0)
+        T.equal(next(profile.Vehicles), nil, "aucun véhicule")
         T.equal(profile.Starter.State, "Pending", "aucun starter attribué")
         T.equal(select(2, DevSeed.apply(profile, 1, Definitions.get)), "DevSeedAlreadyApplied")
         T.truthy((ProfileSchema.validate(profile)), "cohérent")

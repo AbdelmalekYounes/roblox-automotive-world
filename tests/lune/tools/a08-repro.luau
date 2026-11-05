@@ -4,12 +4,14 @@
 -- Affiche la vitesse des roues motrices et du moteur pas à pas.
 local process = require("@lune/process")
 local Harness = require("../Harness")
+-- Lot BASE-01 : prototypes et variantes retirés du jeu, conservés comme jeux d'essai.
+local Fixtures = require("../fixtures/Fixtures")
 Harness.loadPlace(process.args[1] or "build/AutomotiveWorld.rbxlx")
 local SHARED = "ReplicatedStorage.Shared."
 local Dynamics = Harness.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
 local Definitions = Harness.require(SHARED .. "Vehicles.VehicleDefinitions")
 local id = process.args[2] or "proto_p01"
-local definition = Definitions.get(id)
+local definition = (Definitions.get(id) or Fixtures.get(id))
 local state = Dynamics.createState(definition)
 Dynamics.startEngine(state, definition)
 local function contacts()

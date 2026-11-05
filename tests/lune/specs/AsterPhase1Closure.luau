@@ -145,52 +145,7 @@ return function(T: any, H: any)
         waitIdle(queue, "lente", 1)
     end)
 
-    T.test("Gabarit final : plancher abaissé sous les pieds mesurés, garde au sol conservée", function()
-        local AsterTemplate = require("../../studio/AsterTemplate")
-        local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-        local Dynamics = H.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
-        local Constants = H.require("ReplicatedStorage.Shared.Vehicles.VehicleConstants")
-        local definition = Definitions.get("wk_aster")
-        local params = table.clone(AsterTemplate.Defaults) :: any
-        params.FloorTopSt = -1.30
-        params.HeadroomSt = 4.20 -- décision du propriétaire (2026-11-04)
-        params.Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 }
-        params.PedalZ = -1.4
-        local template =
-            AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
-        local boxes = {}
-        for _, item in template.Boxes do
-            boxes[item.Name] = item
-        end
-        local floor = boxes.Plancher
-        local floorTop = floor.Center[2] + floor.Size[2] / 2
-        local floorBottom = floor.Center[2] - floor.Size[2] / 2
-        T.near(floorTop, -1.30, 1e-6, "dessus du plancher au paramètre")
-        -- Pieds mesurés jusqu'à y −1,23 st (pose du jeu, tâche VM 20261104-162124).
-        T.truthy(floorTop <= -1.23 - 0.05, "pieds au-dessus du plancher avec 0,05 st de marge")
-        T.truthy(floorBottom - template.Ground >= 0.35, "garde au sol ≥ 0,35 st (≈ 0,10 m)")
-        local side = boxes.PortiereGauche
-        T.truthy(side.Center[2] - side.Size[2] / 2 <= floorBottom + 1e-6, "bas de caisse qui masque le plancher")
-        local pedal = boxes.Pedalier
-        T.truthy(pedal.Center[2] - pedal.Size[2] / 2 >= floorTop - 1e-6, "pédalier posé sur le plancher")
-        T.near(template.HeightAboveGroundM, 1.72, 0.01, "hauteur hors tout : 1,72 m avec 4,20 st sous le toit")
-        -- Vue de conduite : point CameraCockpit de la règle du jeu (VehicleFactory : yeux à
-        -- assise − 0,35 st, haut du volant = centre + 0,55), haut du volant ≥ 10° sous la visée,
-        -- yeux ≥ 0,6 st sous le pavillon.
-        local CockpitGeometry = H.require("ReplicatedStorage.Shared.Vehicles.CockpitGeometry")
-        local seat = boxes.SiegeConducteur
-        local wheel = boxes.Volant
-        local eyeZ = seat.Center[3] - 0.35
-        local wheelTop = wheel.Center[2] + 0.55
-        local eyeY = CockpitGeometry.eyeY(seat.Center[2], wheelTop, eyeZ - wheel.Center[3], template.RoofUnder)
-        T.near(eyeY, 2.24, 0.005, "CameraCockpit à y 2,24 (dossier ASTER-02)")
-        T.near(eyeZ, 2.07, 1e-6, "CameraCockpit à z 2,07")
-        T.truthy(
-            CockpitGeometry.wheelDropDeg(eyeY, wheelTop, eyeZ - wheel.Center[3]) >= 10 - 1e-6,
-            "haut du volant au moins 10° sous la ligne de visée"
-        )
-        T.truthy(template.RoofUnder - eyeY >= CockpitGeometry.RoofClearance, "yeux à 0,6 st au moins sous le pavillon")
-    end)
+    -- Gabarit final de l'Aster : retiré avec le modèle (lot BASE-01).
 
     T.test("AvatarService : toutes les applications passent par la file", function()
         local node = H.game()

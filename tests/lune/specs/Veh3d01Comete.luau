@@ -184,7 +184,7 @@ return function(T: any, H: any)
         T.equal(tail, 2, "deux feux arrière")
     end)
 
-    T.test("6. fabrique : kit seulement pour la Comète, repli sur la carrosserie provisoire", function()
+    T.test("6. fabrique : kit seulement pour la Comète, repli sur la coque générée par code", function()
         for _, definition in Definitions.all() do
             T.truthy((Data.Kits[definition.Id] ~= nil) == (definition.Id == "wk_comete"), definition.Id)
         end
@@ -193,10 +193,8 @@ return function(T: any, H: any)
             string.find(factory, "MeshKits.template(definition.Id)", 1, true) ~= nil,
             "kit demandé par la fabrique"
         )
-        T.truthy(
-            string.find(factory, "elseif styleName and BodyKits.has(styleName) then", 1, true) ~= nil,
-            "repli provisoire"
-        )
+        T.truthy(string.find(factory, "BodyKits", 1, true) == nil, "carrosseries provisoires supprimées (lot BASE-01)")
+        T.truthy(string.find(factory, "Carrosserie de REPLI", 1, true) ~= nil, "repli : coque générée par code")
         local meshKits = source("ServerScriptService.AutomotiveWorldServer.Vehicles.MeshKits")
         T.truthy(string.find(meshKits, '"MaillageNonAutorise"', 1, true) ~= nil, "maillage hors manifeste refusé")
         -- Boîtes de collision du kit jamais copiées en panneau déformé (bloc opaque, VEH3D-01 §7).

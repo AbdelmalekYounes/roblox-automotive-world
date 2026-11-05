@@ -1,0 +1,182 @@
+{
+  "Aids": {
+    "Abs": true,
+    "StabilityControl": true,
+    "TractionControl": true
+  },
+  "Appearance": {
+    "AccentRgb": [
+      20,
+      20,
+      22
+    ],
+    "BodyRgb": [
+      255,
+      120,
+      0
+    ],
+    "BodyStyle": "Supercar",
+    "Label": "COMèTE",
+    "TrimRgb": [
+      20,
+      20,
+      22
+    ]
+  },
+  "Brakes": {
+    "HandbrakeTorqueNm": 1855.9999999999998,
+    "MaxTorqueFrontNm": 1948.8,
+    "MaxTorqueRearNm": 974.4
+  },
+  "Chassis": {
+    "CgHeightM": 0.42,
+    "DragAreaM2": 0.6,
+    "FrontWeightFraction": 0.42,
+    "HeightM": 1.18,
+    "LengthM": 4.55,
+    "MassKg": 1450,
+    "TrackFrontM": 1.74,
+    "TrackRearM": 1.76,
+    "WheelbaseM": 2.7,
+    "WidthM": 2
+  },
+  "DisplayName": "Comète",
+  "Id": "wk_comete",
+  "IsTestPrototype": false,
+  "Limits": {
+    "ExitMaxSpeedKmh": 20,
+    "MaxPlausibleSpeedKmh": 400
+  },
+  "Powertrain": {
+    "Drivetrain": {
+      "FrontDifferential": {
+        "CoastLockRatio": 0,
+        "Kind": "Open",
+        "PowerLockRatio": 0,
+        "PreloadNm": 0
+      },
+      "FrontTorqueShare": 0,
+      "Layout": "RWD",
+      "RearDifferential": {
+        "CoastLockRatio": 0.15,
+        "Kind": "LimitedSlip",
+        "PowerLockRatio": 0.3,
+        "PreloadNm": 40
+      }
+    },
+    "Energy": {
+      "Capacity": 80,
+      "InitialFraction": 0.6,
+      "Kind": "Petrol"
+    },
+    "Engine": {
+      "BsfcGPerKWh": 250,
+      "EngineBrakeTorqueNm": 112.5,
+      "IdleControlTorqueNm": 62.5,
+      "IdleFuelLph": 0.8,
+      "IdleRpm": 850,
+      "InertiaKgM2": 0.3,
+      "LimiterRpm": 7200,
+      "PartLoadPenalty": 1.2,
+      "RedlineRpm": 7000,
+      "StallRpm": 450,
+      "TorqueCurve": [
+        {
+          "Rpm": 1000,
+          "TorqueNm": 453
+        },
+        {
+          "Rpm": 2000,
+          "TorqueNm": 622
+        },
+        {
+          "Rpm": 3000,
+          "TorqueNm": 717
+        },
+        {
+          "Rpm": 4000,
+          "TorqueNm": 773
+        },
+        {
+          "Rpm": 5000,
+          "TorqueNm": 784
+        },
+        {
+          "Rpm": 6000,
+          "TorqueNm": 735
+        },
+        {
+          "Rpm": 6800,
+          "TorqueNm": 660
+        },
+        {
+          "Rpm": 7200,
+          "TorqueNm": 603
+        }
+      ]
+    },
+    "Transmission": {
+      "Clutch": {
+        "MaxTorqueNm": 1020
+      },
+      "Efficiency": 0.93,
+      "FinalDrive": 3,
+      "ForwardRatios": [
+        3.2,
+        2.2,
+        1.65,
+        1.3,
+        1.08,
+        0.92
+      ],
+      "Kind": "Sequential",
+      "LaunchRpm": 3002,
+      "ReverseRatio": 3.3,
+      "ShiftDownRpm": 2856,
+      "ShiftDurationS": 0.06,
+      "ShiftUpRpm": 6800
+    }
+  },
+  "Steering": {
+    "HighSpeedAngleDeg": 9,
+    "HighSpeedReferenceKmh": 140,
+    "MaxAngleDeg": 30,
+    "RackSpeedDegPerS": 110
+  },
+  "Suspension": {
+    "ContactProbe": "Sphere",
+    "Front": {
+      "AntiRollNpm": 18660.679245283016,
+      "BumpDampingNsPm": 3065.683018867924,
+      "BumpStopRateNpm": 250000,
+      "ReboundDampingNsPm": 4798.46037735849,
+      "RestLengthM": 0.2,
+      "SpringRateNpm": 64745.89245283019,
+      "TravelM": 0.2
+    },
+    "Rear": {
+      "AntiRollNpm": 18680.936170212768,
+      "BumpDampingNsPm": 4566.451063829788,
+      "BumpStopRateNpm": 250000,
+      "ReboundDampingNsPm": 7057.2425531914905,
+      "RestLengthM": 0.2,
+      "SpringRateNpm": 99320.31063829789,
+      "TravelM": 0.2
+    }
+  },
+  "Tires": {
+    "LoadSensitivity": 0.1,
+    "PeakFrictionLateral": 1.2,
+    "PeakFrictionLongitudinal": 1.26,
+    "PeakSlipAngleDeg": 7,
+    "PeakSlipRatio": 0.1,
+    "RadiusM": 0.34,
+    "RelaxationLengthM": 0.35,
+    "RollingResistance": 0.013,
+    "SlidingFrictionRatio": 0.8,
+    "WetGripRatio": 0.72,
+    "WetSlidingFrictionRatio": 0.7,
+    "WheelInertiaKgM2": 1.8587572674418604,
+    "WidthM": 0.295
+  }
+}

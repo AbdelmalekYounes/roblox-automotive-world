@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.2 — motorisations et boîtes de vitesses (modules purs, banc planaire).
 -- Les chiffres notés sont des sorties du modèle hors Roblox, PAS des mesures en jeu.
 
@@ -15,12 +16,12 @@ return function(T: any, H: any)
     local Engine = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Engine")
     local Transmission = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Transmission")
     local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-    local P01 = Definitions.get("proto_p01")
-    local P02 = Definitions.get("proto_p02")
-    local P03 = Definitions.get("proto_p03")
-    local DCT = Definitions.get("proto_p01_dct")
-    local SEQ = Definitions.get("proto_p01_seq")
-    local CVT = Definitions.get("proto_p01_cvt")
+    local P01 = Fixtures.get("proto_p01")
+    local P02 = Fixtures.get("proto_p02")
+    local P03 = Fixtures.get("proto_p03")
+    local DCT = Fixtures.get("proto_p01_dct")
+    local SEQ = Fixtures.get("proto_p01_seq")
+    local CVT = Fixtures.get("proto_p01_cvt")
 
     -- Pilote « conducteur » des boîtes à sélecteur : passe au rapport supérieur
     -- au régime donné ; pour la manuelle, embrayage enfoncé puis relâché en 0,6 s.

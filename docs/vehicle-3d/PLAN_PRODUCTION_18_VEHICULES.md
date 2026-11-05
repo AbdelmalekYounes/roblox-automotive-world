@@ -1,5 +1,9 @@
 # Plan de production des 18 véhicules 3D
 
+> **ARCHIVE (lot BASE-01, 2026-11-05)** : décision du propriétaire — la gamme se réduit à la Comète et à une citadine
+> (VEH3D-02) ; les 17 autres modèles, les prototypes et le parc d'essai sont **retirés du jeu**. Ce document reste comme
+> historique (`docs/AMENDEMENTS_CAHIER_DES_CHARGES.md`, `docs/lot-base-01/PLAN_BASE_01.md`).
+
 Statut : **proposition**. Aucune production 3D définitive avant validation du propriétaire. Le catalogue des 18 modèles
 reste **proposé** (`docs/lot-0.8/CATALOGUE_18_VEHICULES.md`, `PendingApproval`) ; ce plan ne l'approuve pas.
 

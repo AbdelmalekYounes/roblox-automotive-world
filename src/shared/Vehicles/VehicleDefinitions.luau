@@ -9,11 +9,7 @@
 -- au chargement, jamais simulée en silence.
 
 local Types = require(script.Parent.VehicleTypes)
-local PrototypeP01 = require(script.Parent.Definitions.PrototypeP01)
-local PrototypeP02 = require(script.Parent.Definitions.PrototypeP02)
-local PrototypeP03 = require(script.Parent.Definitions.PrototypeP03)
-local ValidationVariants = require(script.Parent.Definitions.ValidationVariants)
-local WorkingCatalog = require(script.Parent.Definitions.WorkingCatalog)
+local Comete = require(script.Parent.Definitions.Comete)
 
 local VehicleDefinitions = {}
 
@@ -424,32 +420,13 @@ local function register(definition: Types.VehicleDefinition)
     table.insert(ordered, definition)
 end
 
-register(PrototypeP01)
-register(PrototypeP02)
-register(PrototypeP03)
-for _, definition in ValidationVariants do
-    register(definition)
-end
--- Lot 0.8 : gamme PROPOSÉE de 18 modèles (en attente d'approbation, voir Economy/VehicleCatalog).
-for _, definition in WorkingCatalog.Definitions do
-    register(definition)
-end
+-- Lot BASE-01 (décision du propriétaire du 2026-11-05) : la gamme se réduit à la Comète, puis à la citadine
+-- (VEH3D-02). Les 17 autres modèles sont retirés ; les prototypes P-01 à P-03 et les variantes de validation ne sont
+-- plus dans le jeu : ce sont des jeux d'essai des tests (tests/lune/fixtures), jamais livrés.
+register(Comete)
 
-VehicleDefinitions.DefaultTestVehicleId = PrototypeP01.Id
-
--- Parc de la zone d'essai, plot par plot : les plots 1 à 4 gardent le P-01 du
--- lot 0.1 (essais de non-régression), les suivants accueillent le lot 0.2.
-VehicleDefinitions.TestFleet = table.freeze({
-    "proto_p01",
-    "proto_p01",
-    "proto_p01",
-    "proto_p01",
-    "proto_p02",
-    "proto_p03",
-    "proto_p01_dct",
-    "proto_p01_seq",
-    "proto_p01_cvt",
-})
+-- Véhicule des bancs de mesure réservés à Studio (SpawnBench) : le seul modèle du jeu.
+VehicleDefinitions.DefaultTestVehicleId = Comete.Id
 
 function VehicleDefinitions.get(id: string): Types.VehicleDefinition?
     return registry[id]

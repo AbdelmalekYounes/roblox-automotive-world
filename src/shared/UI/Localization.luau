@@ -252,6 +252,11 @@ local E: { [string]: Entry } = {
         "Descendez du véhicule pour recevoir le véhicule professionnel.",
         "Get out of your vehicle to receive the work vehicle.",
     },
+    -- Lot BASE-01 : métier à véhicule fourni, sans modèle disponible tant que la citadine n'est pas intégrée.
+    NoProfessionalVehicle = {
+        "Aucun véhicule de service n'est disponible pour ce métier pour le moment.",
+        "No service vehicle is available for this job for now.",
+    },
     NoSpaceForVehicle = {
         "Pas de place libre à côté de vous pour le véhicule.",
         "No free space next to you for the vehicle.",

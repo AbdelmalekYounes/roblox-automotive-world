@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot UI-01 : système de conception UI PREMIUM V1.2. Contrôles hors Studio des jetons (valeurs des maquettes du
 -- propriétaire, contrastes calculés, tailles, résolutions, animations). Le rendu (polices, focus, captures) relève de
 -- la VM (session « ui_design »).
@@ -373,7 +374,7 @@ return function(T: any, H: any)
         local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
         local Catalog = H.require("ReplicatedStorage.Shared.Economy.VehicleCatalog")
         for _, id in { "wk_comete", "proto_p01" } do
-            local definition = Definitions.get(id)
+            local definition = Definitions.get(id) or Fixtures.get(id) -- prototype : jeu d'essai (lot BASE-01)
             T.truthy(definition ~= nil, id)
             local entry = Catalog.forDefinition(id)
             local specs = View.specs(definition, entry)
@@ -411,7 +412,7 @@ return function(T: any, H: any)
             local kw = View.peakPowerKw(definition)
             T.truthy(kw ~= nil and kw > 20 and kw < 1200, id .. " : puissance plausible " .. tostring(kw))
         end
-        T.equal(View.category(Definitions.get("proto_p01"), nil), "Prototype technique", "prototype hors catalogue")
+        T.equal(View.category(Fixtures.get("proto_p01"), nil), "Prototype technique", "prototype hors catalogue")
         T.equal(View.category(nil, { Category = "Supercar" }), "Supercar", "catégorie du catalogue")
         local badge = View.availability(nil, { Availability = "PendingApproval" })
         T.equal(badge, "Proposé · en attente d'approbation", "gamme non approuvée signalée")

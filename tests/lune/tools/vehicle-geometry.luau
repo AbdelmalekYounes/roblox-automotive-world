@@ -5,15 +5,12 @@
 -- Usage : lune run tests/lune/tools/vehicle-geometry.luau build/AutomotiveWorld.rbxlx <id> <sortie.json>
 local fs = require("@lune/fs")
 local process = require("@lune/process")
-local roblox = require("@lune/roblox")
 local serde = require("@lune/serde")
-local Color3 = roblox.Color3
 local Harness = require("../Harness")
 Harness.loadPlace(process.args[1] or "build/AutomotiveWorld.rbxlx")
 local Definitions = Harness.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
 local Dynamics = Harness.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
 local Constants = Harness.require("ReplicatedStorage.Shared.Vehicles.VehicleConstants")
-local BodyKits = Harness.require("ServerScriptService.AutomotiveWorldServer.Vehicles.BodyKits")
 
 local M = Constants.MetersPerStud
 local function studs(meters: number): number
@@ -21,9 +18,6 @@ local function studs(meters: number): number
 end
 local function round(v: number): number
     return math.floor(v * 1000 + 0.5) / 1000
-end
-local function vec(v: any): { number }
-    return { round(v.X), round(v.Y), round(v.Z) }
 end
 
 local id = process.args[2] or "wk_comete"
@@ -52,47 +46,7 @@ local result: any = {
     TireWidthSt = round(studs(tire.WidthM)),
     Wheels = wheels,
 }
-local style = definition.Appearance and definition.Appearance.BodyStyle
-if style and BodyKits.has(style) then
-    local collisions = {}
-    local frontZ = -studs(layout[1].Longitudinal)
-    local kit = BodyKits.build(
-        style,
-        {
-            GroundY = groundY,
-            HubY = hubY,
-            FrontAxleZ = frontZ,
-            RearAxleZ = -studs(layout[3].Longitudinal),
-            TireRadius = studs(tire.RadiusM),
-            TireWidth = studs(tire.WidthM),
-            Width = studs(chassis.WidthM),
-            Length = studs(chassis.LengthM),
-            Height = studs(chassis.HeightM),
-        },
-        { Body = Color3.new(), Accent = Color3.new(), Trim = Color3.new() },
-        studs,
-        function(props: any): any
-            if props.CanCollide then
-                table.insert(
-                    collisions,
-                    { Name = props.Name, Center = vec(props.Offset.Position), Size = vec(props.Size) }
-                )
-            end
-            return nil
-        end
-    )
-    result.Style = style
-    result.ProvisionalBody = {
-        SeatDriver = vec(kit.SeatOffset.Position),
-        SeatPassenger = if kit.PassengerOffset then vec((kit.PassengerOffset :: any).Position) else nil,
-        FloorY = round(kit.FloorY),
-        RoofY = if kit.RoofY then round(kit.RoofY) else nil,
-        FrontEnd = round(kit.FrontEnd),
-        Collisions = collisions,
-        CameraHood = { 0, round(kit.HoodY + 0.8), round(frontZ + studs(0.45)) },
-        CameraBumper = { 0, round(kit.FloorY + 0.2), round(kit.FrontEnd - 0.65) },
-    }
-end
+-- Lot BASE-01 : carrosseries provisoires (BodyKits) supprimées ; l'outil ne donne plus que roues et dimensions.
 local out = process.args[3] or ("build/" .. id .. "-geometry.json")
 fs.writeFile(out, serde.encode("json", result, true))
 print("AW_GEOMETRIE", id, #wheels, "roues", out)

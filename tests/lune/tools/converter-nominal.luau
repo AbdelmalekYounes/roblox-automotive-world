@@ -5,12 +5,20 @@
 -- Usage : lune run tests/lune/tools/converter-nominal.luau build/AutomotiveWorld.rbxlx
 local process = require("@lune/process")
 local Harness = require("../Harness")
+-- Lot BASE-01 : prototypes et variantes retirés du jeu, conservés comme jeux d'essai.
+local Fixtures = require("../fixtures/Fixtures")
+local function withFixtures(list: { any }): { any }
+    for _, fixture in Fixtures.all() do
+        table.insert(list, fixture)
+    end
+    return list
+end
 local PlanarSim = require("../PlanarSim")
 Harness.loadPlace(process.args[1] or "build/AutomotiveWorld.rbxlx")
 local Dynamics = Harness.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
 local Definitions = Harness.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
 local total = 0
-for _, definition in Definitions.all() do
+for _, definition in withFixtures(Definitions.all()) do
     if definition.Powertrain.Transmission.Converter then
         local before = Dynamics.converterLimits()
         local snaps = PlanarSim.run(Dynamics, definition, {

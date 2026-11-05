@@ -46,11 +46,9 @@ return function(T: any, H: any)
         end
     end)
 
-    T.test("Pose du jeu : sans effet sur les carrosseries provisoires, client démarré", function()
+    T.test("Pose du jeu : posée par le kit de maillages seulement, client démarré", function()
         local factory = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleFactory")
-        local kits = source("ServerScriptService.AutomotiveWorldServer.Vehicles.BodyKits")
         T.truthy(string.find(factory, "AWSeatPose", 1, true) == nil, "aucun siège du jeu n'est marqué")
-        T.truthy(string.find(kits, "AWSeatPose", 1, true) == nil, "aucune carrosserie provisoire n'est marquée")
         local bootstrap = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Bootstrap")
         T.truthy(string.find(bootstrap, "SeatPoseController", 1, true) ~= nil, "contrôleur démarré")
         local controller =
@@ -58,58 +56,5 @@ return function(T: any, H: any)
         T.truthy(string.find(controller, "PreSimulation", 1, true) ~= nil, "appliquée après l'animation")
         T.truthy(string.find(controller, '"AWPhoneRaised"', 1, true) ~= nil, "bras laissés au téléphone (QA-A10)")
     end)
-
-    T.test("Gabarit de l'Aster : cotes D1, roues de la définition, physique inchangée", function()
-        local definition = Definitions.get("wk_aster")
-        local layout = Dynamics.wheelLayout(definition)
-        local template = AsterTemplate.build(definition, layout, Constants.MetersPerStud, nil)
-        local S = 1 / Constants.MetersPerStud
-        T.near(template.RoofUnder - template.SeatTop, 4.30, 1e-6, "assise → pavillon : 4,30 st")
-        T.near(template.SeatTop, 0.36 - 0.4, 1e-6, "assise abaissée de 0,4 st")
-        T.truthy(template.Belt > template.SeatTop + 1.5, "ligne de caisse haute")
-        local wheels = 0
-        for _, item in template.Boxes do
-            if string.sub(item.Name, 1, 4) == "Roue" then
-                wheels += 1
-                local place = layout[tonumber(string.sub(item.Name, 5)) :: number]
-                T.near(item.Center[1], place.Lateral * S, 1e-6, item.Name .. " : voie")
-                T.near(item.Center[3], -place.Longitudinal * S, 1e-6, item.Name .. " : empattement")
-            end
-        end
-        T.equal(wheels, 4, "quatre roues")
-        T.near(definition.Chassis.HeightM, 1.47, 1e-9, "hauteur physique de la définition inchangée")
-        T.near(definition.Chassis.LengthM, 4.25, 1e-9, "longueur inchangée")
-        local seats = 0
-        for _, item in template.Boxes do
-            if item.Seat then
-                seats += 1
-                T.truthy(SeatPose.poseFor(item.Seat) ~= nil, item.Name .. " : pose du jeu")
-            end
-        end
-        T.equal(seats, 2, "deux sièges marqués")
-    end)
-
-    T.test("Gabarit de l'Aster : volant incliné vers le conducteur, rotation de la maquette", function()
-        -- Composition de la maquette VM : CFrame.Angles(x, 0, z) * CFrame.Angles(0, y, 0).
-        local axis = AsterTemplate.rotate({ -15, 90, 0 }, { 1, 0, 0 })
-        T.near(axis[1], 0, 1e-9, "axe du volant sans composante latérale")
-        T.near(axis[2], -math.sin(math.rad(15)), 1e-9, "axe incliné de 15°")
-        T.near(axis[3], -math.cos(math.rad(15)), 1e-9, "axe vers l'avant (haut du volant vers le conducteur)")
-        local same = AsterTemplate.rotate({ 0, 0, 0 }, { 0.3, -0.2, 0.5 })
-        T.near(same[1], 0.3, 1e-12)
-        T.near(same[3], 0.5, 1e-12)
-        local definition = Definitions.get("wk_aster")
-        local params = table.clone(AsterTemplate.Defaults) :: any
-        params.Wheel = { Center = { -1.4, 1.52, 1.1 }, Radius = 0.55, TiltDeg = 15 }
-        params.PedalZ = -1.4
-        local template =
-            AsterTemplate.build(definition, Dynamics.wheelLayout(definition), Constants.MetersPerStud, params)
-        for _, item in template.Boxes do
-            if item.Name == "Volant" then
-                T.equal(item.Rotation[1], -15, "inclinaison appliquée autour de l'axe latéral")
-                T.equal(item.Rotation[2], 90, "disque face au conducteur")
-                T.equal(item.Center[3], 1.1, "centre du volant au paramètre")
-            end
-        end
-    end)
+    -- Gabarit de l'Aster (wk_aster) : tests retirés avec le modèle (lot BASE-01, décision du propriétaire du 2026-11-05).
 end

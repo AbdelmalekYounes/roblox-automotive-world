@@ -3,7 +3,8 @@
 -- et originale (blocs et cylindres primitifs) à partir de la définition.
 -- Exception (lot VEH3D-01, accord du propriétaire) : un véhicule doté d'un kit de maillages validé
 -- (MeshKits : gabarit présent, maillages inscrits au manifeste) reçoit sa carrosserie 3D à la place ;
--- sinon, la carrosserie provisoire est construite comme avant. La physique est la même dans les deux cas.
+-- sinon, une coque de repli générée par code (lot BASE-01 : carrosseries provisoires supprimées). La physique est
+-- la même dans les deux cas.
 --
 -- Structure produite :
 --   Model (PrimaryPart = Chassis, étiquette AWVehicle, attributs d'identité)
@@ -27,7 +28,6 @@ local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDynamics = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("VehicleDynamics"))
 local CockpitGeometry = require(VehiclesShared:WaitForChild("CockpitGeometry"))
-local BodyKits = require(script.Parent.BodyKits)
 local MeshKits = require(script.Parent.MeshKits)
 local SeatPose = require(VehiclesShared:WaitForChild("SeatPose"))
 
@@ -235,18 +235,17 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     bodyForce.Force = Vector3.zero
     bodyForce.Parent = root
 
-    -- Carrosserie : silhouette propre au modèle (lot 0.8) ou carrosserie de
-    -- prototype technique (lots 0.1–0.2). Les deux exposent les mêmes repères.
+    -- Carrosserie : kit de maillages du modèle (VEH3D-01) ou, à défaut, coque de repli générée par code (lots
+    -- 0.1-0.2). Les deux exposent les mêmes repères.
     local body = Instance.new("Folder")
     body.Name = "Carrosserie"
     body.Parent = model
     local bodyColor = rgb(appearance.BodyRgb)
     local accent = rgb(appearance.AccentRgb)
     local trim = rgb(appearance.TrimRgb)
-    local styleName = appearance.BodyStyle
     local seatOffset: CFrame
     local passengerOffset: CFrame?
-    local cabinZ: number, dashZ: number, dashTop: number, sideHalf: number
+    local cabinZ: number, dashZ: number, sideHalf: number
     local cameraHoodY: number, cameraBumperY: number, frontEnd: number
     -- Volant (centre, en studs du repère du châssis) et pavillon (nil : véhicule ouvert),
     -- pour placer les yeux de la vue cockpit au-dessus du volant (QA-F15).
@@ -258,51 +257,17 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
         meshWheels = MeshKits.build(meshKit, meshTemplate, root, body, bodyColor)
         seatOffset = CFrame.new(meshKit.SeatDriver)
         passengerOffset = CFrame.new(meshKit.SeatPassenger)
-        cabinZ, dashZ, dashTop = meshKit.SeatDriver.Z, meshKit.SeatDriver.Z - 1.6, meshKit.CameraCockpit.Y - 0.5
+        cabinZ, dashZ = meshKit.SeatDriver.Z, meshKit.SeatDriver.Z - 1.6
         sideHalf = meshKit.SideHalf
         cameraHoodY, cameraBumperY = meshKit.CameraHood.Y, meshKit.CameraBumper.Y
         frontEnd = meshKit.CameraBumper.Z + 0.65
         -- Repères mesurés sur le modèle : posés tels quels après la règle générique (plus bas).
         wheelY, wheelZ, roofY = 0, 0, nil
-    elseif styleName and BodyKits.has(styleName) then
-        local kit = BodyKits.build(
-            styleName :: string,
-            {
-                GroundY = groundY,
-                HubY = hubY,
-                FrontAxleZ = frontZ,
-                RearAxleZ = rearZ,
-                TireRadius = studs(tire.RadiusM),
-                TireWidth = tireWidth,
-                Width = studs(chassis.WidthM),
-                Length = studs(chassis.LengthM),
-                Height = studs(chassis.HeightM),
-            },
-            { Body = bodyColor, Accent = accent, Trim = trim },
-            studs,
-            function(props: any): BasePart
-                return addVisual(root, body, props)
-            end
-        )
-        seatOffset = kit.SeatOffset
-        passengerOffset = kit.PassengerOffset
-        cabinZ, dashZ, dashTop = kit.CabinZ, kit.DashZ, kit.DashY + 0.25
-        sideHalf = kit.BodyWidth / 2
-        cameraHoodY = kit.HoodY + 0.8
-        cameraBumperY = kit.FloorY + 0.2
-        frontEnd = kit.FrontEnd
-        wheelY, wheelZ, roofY = dashTop + 0.2, dashZ + 0.75, kit.RoofY
-        addVisual(root, body, {
-            Name = "Volant",
-            Size = Vector3.new(0.15, 1.1, 1.1),
-            Offset = CFrame.new(seatOffset.X, wheelY, wheelZ) * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
-            Color = trim,
-            Shape = "Cylinder",
-        })
-        addSideLabel(body:FindFirstChild("Coque") :: BasePart, Enum.NormalId.Left, appearance.Label, accent)
     else
-        -- Carrosserie de prototype : coque centrale étroite, ailes au-dessus des
-        -- roues apparentes, habitacle vitré et arceau. Silhouette originale.
+        -- Carrosserie de REPLI (lot BASE-01) : si le kit de maillages d'un modèle est absent ou non autorisé, le
+        -- véhicule reste conduisible avec la coque de prototype des lots 0.1-0.2, générée par code.
+        -- Coque centrale étroite, ailes au-dessus des roues apparentes, habitacle vitré et arceau. Silhouette
+        -- originale.
         frontEnd = frontZ - studs(0.85)
         local rearEnd = rearZ + studs(0.9)
         local tubLength = rearEnd - frontEnd
@@ -396,7 +361,6 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
 
         seatOffset = CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
         dashZ = cabinZ - cabinLength / 2 + 0.35
-        dashTop = tubTop + 0.2
         sideHalf = tubWidth / 2
         cameraHoodY = tubTop + 0.8
         cameraBumperY = tubBottom + 0.35

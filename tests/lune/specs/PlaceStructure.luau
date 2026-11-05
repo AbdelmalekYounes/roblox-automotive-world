@@ -62,7 +62,7 @@ return function(T: any, H: any)
         { "ReplicatedStorage.Shared.ProjectSettings", "ModuleScript" },
         { "ReplicatedStorage.Shared.Vehicles.VehicleSimulator", "ModuleScript" },
         { "ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics", "ModuleScript" },
-        { "ReplicatedStorage.Shared.Vehicles.Definitions.PrototypeP01", "ModuleScript" },
+        { "ReplicatedStorage.Shared.Vehicles.Definitions.Comete", "ModuleScript" },
         { "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Bootstrap", "LocalScript" },
         { "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.VehicleController", "ModuleScript" },
         { "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.DevHud", "ModuleScript" },

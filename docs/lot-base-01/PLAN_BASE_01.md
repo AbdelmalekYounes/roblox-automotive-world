@@ -124,3 +124,13 @@ cité, **sans réécrire** le cahier des charges validé.
   - P6 : migration du schéma de profil qui **retire** les 17 modèles des profils de test existants ;
   - P4 : marques fictives conservées dans les documents, sans usage en jeu.
 
+## 8. Écarts d'exécution par rapport aux valeurs par défaut du §7 (2026-11-05)
+
+- **P5** : les documents des 17 modèles **ne sont pas déplacés**. Le déplacement casserait les liens des rapports de lots
+  historiques. Ils portent à la place un bandeau « ARCHIVE » : `CATALOGUE_18_VEHICULES.md`, `CATALOGUE_REFERENCES.md`,
+  `PLAN_PRODUCTION_18_VEHICULES.md`, `DIRECTION_ARTISTIQUE_VEHICULES.md`. Les dossiers `docs/vehicle-3d/references/`
+  restent en place.
+- **P6** : **aucune migration du schéma**. Aucun profil persistant n'existe : le DataStore n'a jamais tourné, et tout est
+  en mémoire en Dev. L'expérience de test (ADMIN-01) démarrera avec des profils neufs. Une migration ne serait utile que
+  si des profils de test étaient créés avant BASE-01.
+

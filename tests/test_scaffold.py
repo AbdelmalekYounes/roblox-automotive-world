@@ -111,8 +111,11 @@ def test_server_authority_on_network_ownership():
 
 
 def test_test_vehicle_is_declared_as_prototype_without_aids():
-    """Le véhicule d'essai est fictif, marqué prototype et sans aides déclarées."""
-    definition = (SRC / "shared/Vehicles/Definitions/PrototypeP01.luau").read_text(encoding="utf-8")
+    """Le véhicule d'essai P-01 est fictif, marqué prototype et sans aides déclarées.
+
+    Lot BASE-01 : retiré du jeu, il reste un jeu d'essai des tests (tests/lune/fixtures).
+    """
+    definition = (ROOT / "tests/lune/fixtures/PrototypeP01.luau").read_text(encoding="utf-8")
     assert "IsTestPrototype = true" in definition
     assert "Abs = false" in definition
     assert "TractionControl = false" in definition

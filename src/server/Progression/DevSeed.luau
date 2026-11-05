@@ -24,9 +24,12 @@ local CosmeticCatalog = require(Shared.Garage.CosmeticCatalog)
 local DevSeed = {}
 
 DevSeed.TxId = "Grant:DevSeed"
-DevSeed.Models = table.freeze({ "proto_p01", "proto_p02", "proto_p03" })
+-- Lot BASE-01 (point P2) : aucun véhicule synthétique ; propriété, pièces et solde de développement restent.
+DevSeed.Models = table.freeze({}) :: { string }
 DevSeed.PropertyOffer = "RES-METRO-LOFTS"
-DevSeed.SyntheticBalance = 150_000
+-- Lot BASE-01 : 250 000 (au lieu de 150 000) pour pouvoir acheter le seul modèle du jeu, la Comète (185 000), en
+-- développement, maintenant qu'aucun véhicule synthétique n'est donné.
+DevSeed.SyntheticBalance = 250_000
 
 function DevSeed.apply(profile: ProfileSchema.Profile, now: number, lookup: (string) -> any): (boolean, any)
     if profile.Grants.DevSeed ~= nil then

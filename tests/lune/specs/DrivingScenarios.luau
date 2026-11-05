@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Scénarios de conduite sur banc planaire hors Roblox.
 -- Objectif : vérifier le comportement QUALITATIF de la dynamique (progressivité,
 -- bornes physiques, signes, stabilité numérique). Les chiffres imprimés sont
@@ -25,7 +26,7 @@ end
 
 return function(T: any, H: any)
     local Dynamics = H.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
-    local P01 = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions").get("proto_p01")
+    local P01 = Fixtures.get("proto_p01")
     local muMax = math.max(P01.Tires.PeakFrictionLongitudinal, P01.Tires.PeakFrictionLateral)
 
     T.suite("Scénarios de conduite (banc planaire)")

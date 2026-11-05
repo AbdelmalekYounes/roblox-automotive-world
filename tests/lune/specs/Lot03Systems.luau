@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.3 — systèmes du monde ouvert testables hors Studio : météo et horloge,
 -- humidité de chaussée appliquée UNE seule fois, feux déterministes, trafic PNJ
 -- (modèle pur) et piétons. Ce sont des sorties de modèles, pas des essais en
@@ -21,7 +22,7 @@ return function(T: any, H: any)
     local WorldConfig = H.require("ReplicatedStorage.Shared.World.WorldConfig")
     local Dynamics = H.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
     local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-    local P02 = Definitions.get("proto_p02")
+    local P02 = Fixtures.get("proto_p02")
 
     T.suite("Lot 0.3 — météo et cycle jour/nuit")
 

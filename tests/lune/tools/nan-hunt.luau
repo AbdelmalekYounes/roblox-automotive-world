@@ -7,6 +7,14 @@
 
 local process = require("@lune/process")
 local Harness = require("../Harness")
+-- Lot BASE-01 : prototypes et variantes retirés du jeu, conservés comme jeux d'essai.
+local Fixtures = require("../fixtures/Fixtures")
+local function withFixtures(list: { any }): { any }
+    for _, fixture in Fixtures.all() do
+        table.insert(list, fixture)
+    end
+    return list
+end
 local NanHunt = require("../NanHunt")
 
 Harness.loadPlace(process.args[1] or "build/AutomotiveWorld.rbxlx")
@@ -17,7 +25,7 @@ local Definitions = Harness.require(SHARED .. "Vehicles.VehicleDefinitions")
 
 local scenarios = tonumber(process.args[2] or "") or 400
 local baseSeed = tonumber(process.args[3] or "") or 1
-local definitions = Definitions.all()
+local definitions = withFixtures(Definitions.all())
 if process.args[4] then
     definitions = { Definitions.get(process.args[4]) }
 end

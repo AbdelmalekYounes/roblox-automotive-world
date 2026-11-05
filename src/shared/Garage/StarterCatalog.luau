@@ -19,11 +19,13 @@ local StarterCatalog = {}
 -- Identifiants des trois modèles officiels (catalogue de lancement), à fournir par le propriétaire.
 local CANDIDATES: { string } = {}
 StarterCatalog.Candidates = table.freeze(CANDIDATES)
-StarterCatalog.RequiredCount = 3
+StarterCatalog.RequiredCount = 1 -- la citadine (lot BASE-01)
 
 -- Proposition (PendingApproval) : trois caractères de conduite différents,
 -- valeurs comparables (16 500 à 19 500 crédits).
-StarterCatalog.Proposed = table.freeze({ "wk_brio", "wk_fil", "wk_aster" })
+-- Lot BASE-01 (décision du propriétaire du 2026-11-05, point P2) : aucun véhicule de départ tant que la
+-- citadine (VEH3D-02) n'est pas intégrée ; le choix est refusé dans tous les environnements.
+StarterCatalog.Proposed = table.freeze({}) :: { string }
 StarterCatalog.ProposalStatus = "PendingApproval"
 
 function StarterCatalog.available(): boolean

@@ -120,7 +120,7 @@ return function(T: any, H: any)
         return {
             UserId = userId,
             VehicleId = "V-" .. userId,
-            ModelId = "wk_brio",
+            ModelId = "wk_comete",
             Mode = "Protected",
             Rating = rating,
             MaxPlausibleKmh = 260,
@@ -148,9 +148,9 @@ return function(T: any, H: any)
     -- Profil avec un exemplaire sorti (conduit), dégâts antérieurs possibles.
     local function profileWithCar(userId: number, damaged: boolean?): (any, string)
         local profile = ProfileSchema.new(userId, NOW, "Dev")
-        local definition = Definitions.get("wk_brio")
+        local definition = Definitions.get("wk_comete")
         local vehicleId = VehicleOwnership.add(profile, {
-            ModelId = "wk_brio",
+            ModelId = "wk_comete",
             Origin = "Purchase",
             Untransferable = false,
             Synthetic = false,
@@ -538,7 +538,7 @@ return function(T: any, H: any)
         -- Exemplaire rangé : refusé (départ physique uniquement).
         local stored = ProfileSchema.new(602, NOW, "Dev")
         local id = VehicleOwnership.add(stored, {
-            ModelId = "wk_brio",
+            ModelId = "wk_comete",
             Origin = "Purchase",
             Untransferable = false,
             Synthetic = false,
@@ -564,7 +564,7 @@ return function(T: any, H: any)
         local profile, vehicleId = profileWithCar(611, true)
         assert(VehicleRaceReservation.reserve(profile, reserveArgs(vehicleId, "Realistic"), NOW))
         local caps = GarageModules.publicCapabilities()
-        local definition = Definitions.get("wk_brio")
+        local definition = Definitions.get("wk_comete")
         T.equal(select(2, Commerce.tradeInQuote(profile, vehicleId, NOW)), "VehicleReserved", "reprise")
         T.equal(
             Commerce.transferable(profile.Vehicles[vehicleId], NOW),
@@ -714,7 +714,7 @@ return function(T: any, H: any)
         local vehicleId: string = ""
         s:commit("seed", "Seed", function(profile)
             vehicleId = VehicleOwnership.add(profile, {
-                ModelId = "wk_brio",
+                ModelId = "wk_comete",
                 Origin = "Purchase",
                 Untransferable = false,
                 Synthetic = false,
@@ -879,7 +879,7 @@ return function(T: any, H: any)
             local vehicleId = ""
             s:commit("seed", "Seed", function(profile)
                 vehicleId = VehicleOwnership.add(profile, {
-                    ModelId = "wk_brio",
+                    ModelId = "wk_comete",
                     Origin = "Purchase",
                     Untransferable = false,
                     Synthetic = false,
@@ -908,7 +908,7 @@ return function(T: any, H: any)
             local v3 = ""
             s3:commit("seed", "Seed", function(profile)
                 v3 = VehicleOwnership.add(profile, {
-                    ModelId = "wk_brio",
+                    ModelId = "wk_comete",
                     Origin = "Purchase",
                     Untransferable = false,
                     Synthetic = false,
