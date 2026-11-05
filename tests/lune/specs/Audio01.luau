@@ -158,6 +158,9 @@ return function(T: any, H: any)
             string.find(audio, "updateDriven(dt)", 1, true) ~= nil,
             "véhicule conduit mis à jour à chaque image"
         )
+        -- Rétrogradages : coup de gaz SONORE bref (aucun effet physique), sinon inaudibles en décélération.
+        T.truthy(string.find(audio, "DOWNSHIFT_BLIP_LOAD = 0.35", 1, true) ~= nil, "coup de gaz au rétrogradage")
+        T.truthy(string.find(audio, "gear < lastGear", 1, true) ~= nil, "détecté sur la baisse de rapport")
         -- Pendant la coupure (charge 0), la boucle « en décharge » prend le relais au régime courant.
         local cut = volumes(Model.profileLayers(PROFILE, state(4400, 0), "High"))
         T.truthy(cut["audio.engine.essai.on.3900"] < 1e-9, "aucune boucle en charge pendant la coupure")

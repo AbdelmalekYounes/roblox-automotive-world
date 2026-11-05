@@ -181,3 +181,33 @@ Correction, approuvée par le propriétaire (« Oui, corrige ») :
   Creux mesuré à chaque passage : 6 à 8 dB pendant ~0,2 s.
 - **Non traité :** les véhicules des autres joueurs gardent la charge de la pédale, mais la chute de régime y est déjà
   transmise. C'est une option, à décider par le propriétaire.
+
+## 11. Rétrogradages (2026-11-05, demande du propriétaire : « il faut aussi le faire pour les rapports descendants »)
+
+Vérification :
+- la boîte coupe aussi le couple aux rétrogradages (0,15 s, `Transmission.autoShift`), et la charge sonore du §10 s'y
+  applique déjà ;
+- relevé de la VRAIE dynamique de la Brio, par le nouvel outil `tests/lune/tools/engine-sound-trace.luau` (banc
+  planaire, pas de 1/240 s) :
+  - montées 1-2 à 53 km/h et 2-3 à 87 km/h ;
+  - au lever de pied, 3-4 puis 4-5 ;
+  - rétrogradages 5-4 en décélération (~1 570 tr/min) ;
+  - rétrogradage forcé 4-3-2 à 40 km/h (régime 1 600 → 4 200 tr/min en 0,5 s) ;
+  - 3-2-1 au freinage.
+
+Constat : en décélération, la charge est déjà nulle et le convertisseur déverrouillé garde le régime presque constant
+(1 550 → 1 610 tr/min). Le rétrogradage était donc presque inaudible.
+
+Correction :
+- **Coup de gaz sonore :** à chaque rétrogradage, la charge est portée à au moins 0,35 pendant 0,15 s, comme
+  l'égalisation de régime de nombreuses boîtes. Effet uniquement sonore, aucune incidence physique
+  (`AudioController`).
+- **Démo `demo_conduite_<variante>.wav` :** tirée du relevé de la dynamique du jeu
+  (`engine_loops.py --trace build/audio/engines/brio_trace.csv`). Montée de 4 à 5 dB pendant ~0,15 s à chaque
+  rétrogradage.
+
+**Constat hors son, à arbitrer par le propriétaire :** en 1ʳᵉ et en 2ᵉ pied au plancher, le moteur reste au rupteur
+(7 200 tr/min) jusqu'à 1,5 s avant de passer le rapport (de 10,75 à 12,3 s dans le relevé). Le passage se décide sur
+le régime côté roues (`ShiftUpRpm` 6 800), alors que le glissement du convertisseur porte le moteur au rupteur avant.
+Cela s'entendra en jeu comme un moteur bloqué au rupteur. Une correction de la boîte (physique) ne relève pas de ce lot
+sans accord.

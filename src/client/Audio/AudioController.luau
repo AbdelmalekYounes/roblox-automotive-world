@@ -106,6 +106,13 @@ local EVENT_COOLDOWN_S = { Limiter = 0.15, Pops = 0.8, BlowOff = 1.2, Shift = 0.
 -- constante de temps courte, pour un creux net mais sans claquement à chaque passage.
 local LOAD_SMOOTHING_S = 0.06
 local drivenLoad = 0
+-- Rétrogradage (demande du propriétaire : rendre les descentes de rapport audibles) : en décélération, la charge est
+-- déjà nulle et le convertisseur garde le régime presque constant ; un bref coup de gaz SONORE (aucun effet physique),
+-- comme l'égalisation de régime de nombreuses boîtes, signale le passage.
+local DOWNSHIFT_BLIP_LOAD = 0.35
+local DOWNSHIFT_BLIP_S = 0.15
+local lastGear: number? = nil
+local blipUntil = 0
 
 local function engineState(model: Model, data: any?): EngineAudioModel.State?
     if data then
@@ -265,6 +272,14 @@ local lastCockpit: boolean? = nil
 local function updateDriven(dt: number)
     local data = DevHud.latest()
     local target = if data then (data.EngineLoad or data.Throttle) else 0
+    local gear = if data then data.Gear else nil
+    if gear and lastGear and gear >= 1 and gear < lastGear then
+        blipUntil = os.clock() + DOWNSHIFT_BLIP_S
+    end
+    lastGear = gear
+    if os.clock() < blipUntil then
+        target = math.max(target, DOWNSHIFT_BLIP_LOAD)
+    end
     drivenLoad += (target - drivenLoad) * (1 - math.exp(-dt / LOAD_SMOOTHING_S))
     local cockpit = data ~= nil and data.CameraName == "Cockpit"
     if cockpit ~= lastCockpit then

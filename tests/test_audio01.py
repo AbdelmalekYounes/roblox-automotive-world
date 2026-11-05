@@ -97,3 +97,19 @@ def test_shift_demo_cuts_load_and_drops_rpm_by_the_gear_ratio():
         expected = box["shift_up"] * box["ratios"][n + 1] / box["ratios"][n]
         assert abs(rpm[window].min() - expected) / expected < 0.05, "régime du rapport suivant"
     assert rpm[-1] == el.BRIO["idle_rpm"] and load[-1] < 0.01
+
+
+def test_trace_adds_a_sound_blip_on_downshifts(tmp_path):
+    """Relevé de conduite : charge nulle en décélération, mais coup de gaz sonore (≥ 0,35 pendant 0,15 s) à chaque
+    rétrogradage, lissé comme dans le jeu ; rien aux montées de rapport."""
+    lines = ["temps_s,regime,rapport,charge,vitesse_kmh,phase"]
+    for i in range(240):  # 1 s à 240 Hz : 3e, rétrogradage en 2e à 0,5 s, charge nulle
+        t = i / 240
+        lines.append(f"{t:.5f},1600,{3 if t < 0.5 else 2},0,40,decel")
+    path = tmp_path / "trace.csv"
+    path.write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
+    times, rpm, load = el.trace_trajectory(path)
+    assert load[times < 0.5].max() < 1e-9
+    window = (times > 0.55) & (times < 0.65)
+    assert load[window].max() > 0.25
+    assert load[times > 0.9].max() < 0.05

@@ -20,6 +20,7 @@ Mesure du régime : raie d'allumage d'un 4 cylindres (fréquence × 30 = tr/min)
 (points d'ancrage relevés à l'analyse) pour écarter les raies d'ordre 1, 2,5 ou 4.
 
 Usage : python -I tools/audio/engine_loops.py brio <dossier des enregistrements> [--out build/audio/engines]
+        [--trace build/audio/engines/brio_trace.csv]   (relevé : lune run tests/lune/tools/engine-sound-trace.luau)
 L'assistant ne peut pas écouter : le jugement à l'oreille (démos et boucles) revient au propriétaire.
 """
 
@@ -393,6 +394,31 @@ def shift_trajectory(profile: dict, step: float = 0.005) -> tuple[np.ndarray, np
     return times, np.array(rpm_t), smooth
 
 
+def trace_trajectory(path: Path, smoothing: float = 0.06) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Relevé de conduite produit par la VRAIE dynamique du jeu (tests/lune/tools/engine-sound-trace.luau) : temps,
+    régime et charge réelle (0 pendant un passage de rapport), plus le coup de gaz sonore des rétrogradages. La charge
+    est lissée comme dans le jeu (AudioController, constante de temps 0,06 s)."""
+    import csv
+
+    rows = list(csv.DictReader(path.open(encoding="utf-8")))
+    times = np.array([float(r["temps_s"]) for r in rows])
+    rpm = np.array([float(r["regime"]) for r in rows])
+    raw = np.array([float(r["charge"]) for r in rows])
+    gears = np.array([int(r["rapport"]) for r in rows])
+    # Coup de gaz SONORE à chaque rétrogradage (même règle que AudioController : charge au moins 0,35 pendant 0,15 s).
+    blip_until = -1.0
+    for i in range(1, len(raw)):
+        if 1 <= gears[i] < gears[i - 1]:
+            blip_until = times[i] + 0.15
+        if times[i] < blip_until:
+            raw[i] = max(raw[i], 0.35)
+    load = np.zeros_like(raw)
+    for i in range(1, len(raw)):
+        k = 1 - np.exp(-(times[i] - times[i - 1]) / smoothing)
+        load[i] = load[i - 1] + (raw[i] - load[i - 1]) * k
+    return times, rpm, load
+
+
 def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=None) -> np.ndarray:
     """Démo d'écoute : par défaut ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et descente
     en 4 s, ralenti 2 s ; ou une trajectoire (temps, régime, charge) fournie. Volumes interpolés linéairement dans
@@ -436,7 +462,7 @@ def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=Non
 # ============================== Programme ==============================
 
 
-def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path) -> dict:
+def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path, trace: Path | None = None) -> dict:
     report: dict = {"variante": name, "description": variant["label"], "sources": {}, "boucles": {}, "evenements": {}}
     signals: dict = {}
     for key, spec in variant["sources"].items():
@@ -505,14 +531,21 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
             f"demo_passages_{name}.wav : ralenti, départ pied au plancher, passages 1-2, 2-3, 3-4 à 6 800 tr/min "
             "(couple coupé 0,25 s), lever de pied en 4e, ralenti"
         )
+    if trace is not None:
+        drive = level(render_demo(profile, loops, trajectory=trace_trajectory(trace)), -16.0)
+        write_wav(out / f"demo_conduite_{name}.wav", drive)
+        report["demo_conduite"] = (
+            f"demo_conduite_{name}.wav : relevé de la dynamique du jeu ({trace.name}) — départ à fond, montées de "
+            "rapports, lever de pied et rétrogradages, rétrogradage forcé, freinage, ralenti"
+        )
     (out / "rapport.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     return report
 
 
-def build(name: str, refs: Path, out_root: Path) -> dict:
+def build(name: str, refs: Path, out_root: Path, trace: Path | None = None) -> dict:
     profile = PROFILES[name]
     return {
-        variant: build_variant(profile, variant, spec, refs, out_root / name / variant)
+        variant: build_variant(profile, variant, spec, refs, out_root / name / variant, trace)
         for variant, spec in profile["variants"].items()
     }
 
@@ -522,8 +555,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("profile", choices=sorted(PROFILES))
     parser.add_argument("refs", type=Path, help="dossier des enregistrements d'origine")
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "audio" / "engines")
+    parser.add_argument(
+        "--trace", type=Path, default=None, help="relevé de conduite (tests/lune/tools/engine-sound-trace.luau)"
+    )
     args = parser.parse_args(argv)
-    report = build(args.profile, args.refs, args.out)
+    report = build(args.profile, args.refs, args.out, args.trace)
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     print(json.dumps(report, ensure_ascii=False, indent=1))
     return 0
