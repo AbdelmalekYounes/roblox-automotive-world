@@ -141,8 +141,12 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   [rapport](docs/vehicle-3d/VEH3D_02_BRIO.md)), achetables en développement seulement ; la Brio est le véhicule de service
   des métiers. Aucun véhicule de départ (décision du propriétaire).
   Gamme de 18 modèles du lot 0.8 : [archive](docs/lot-0.8/CATALOGUE_18_VEHICULES.md).
-- **Sons** : `python tools/audio/synth.py` produit 30 sons originaux dans `build/audio/` ; rien n'est téléversé, donc
-  rien n'est joué en jeu et les stations de radio sont indisponibles
+- **Sons** : moteur de la **Brio** joué en jeu (lot AUDIO-01, [plan et rapport](docs/lot-audio-01/PLAN_AUDIO_01.md)).
+  Il s'appuie sur des enregistrements libres CC0 ([registre](docs/audio/SONS_TIERS.md)), transformés par
+  `tools/audio/engine_loops.py`, puis envoyés sur Roblox par le propriétaire. Le son suit le régime et la charge
+  (passages de rapport audibles), étouffé en vue cockpit, avec effet Doppler et régime transmis aux autres joueurs.
+  La Comète reste muette pour l'instant. Les 30 sons synthétiques du lot 0.8 (`tools/audio/synth.py`) ne sont pas
+  téléversés : les ambiances et la radio restent indisponibles
   ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute
   ([direction artistique](docs/lot-0.8/DIRECTION_ARTISTIQUE.md)).
