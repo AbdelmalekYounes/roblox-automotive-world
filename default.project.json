@@ -19,6 +19,11 @@
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
+      "$properties": {
+        "GameSettingsAvatar": "R15",
+        "LoadCharacterAppearance": true,
+        "AllowCustomAnimations": true
+      },
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
         "AutomotiveWorldClient": {

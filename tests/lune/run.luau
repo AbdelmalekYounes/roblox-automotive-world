@@ -40,6 +40,7 @@ for _, spec in
         require("./specs/Lot09Integration"),
         require("./specs/Lot091Interactive"),
         require("./specs/Lot092Stabilization"),
+        require("./specs/AvatarFoundation"),
     }
 do
     spec(TestKit, Harness)

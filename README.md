@@ -26,6 +26,9 @@
 > cause de QA-A08 corrigée (convertisseur de couple), moteur calé relancé sur boîte automatique, bras du téléphone
 > levé, focus à la manette seulement, QA-A09 expliquée (scénario de test), campagne finale classée
 > ([rapport](docs/lot-0.9.2/RAPPORT_STABILISATION.md)).
+> Lot AVATAR-01 (branche `feat/avatar-r15-foundation`, PR brouillon #12) : R15 seul, apparence du joueur conservée,
+> fondation des tenues, compatibilité avec les véhicules mesurée
+> ([rapport](docs/lot-avatar-01/RAPPORT_AVATAR_R15.md)).
 > **Statut** : lot 0.9.2 sur `feat/final-stabilization-0.9.2` (PR brouillon #11, base : lot 0.9.1 ; PR #1 à #10 non
 > fusionnées). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
 > [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
@@ -220,6 +223,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.8` | Rapport du lot 0.8, architecture, catalogue des 18 modèles, ressources et licences, direction artistique |
 | `docs/lot-0.9` | Validation globale, anomalies et corrections, performances, sécurité, checklist humaine, dépendances externes ; lot 0.9.1 : tests interactifs autonomes, couverture QA par fonction |
 | `docs/lot-0.9.2` | Rapport de stabilisation finale (QA-A08 à A12, GPS, interfaces, campagne finale classée) |
+| `docs/lot-avatar-01` | Rapport du lot AVATAR-01 (R15, morphologies dans les véhicules, fondation des tenues), captures |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

@@ -150,6 +150,18 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   4 anomalies connues ; 10 défauts du test ; 1 limite de Studio), 1 limite connue.
 - Rapport : `docs/lot-0.9.2/RAPPORT_STABILISATION.md`. **La V1.0 n'est pas commencée.**
 
+## État du lot AVATAR-01 (branche `feat/avatar-r15-foundation`, PR brouillon #12, base : lot 0.9.2)
+
+- R15 exclusivement (réglage des deux places, contrôle au serveur sans conversion), apparence du joueur conservée,
+  échelles au choix du joueur (aucune limitation justifiée par les essais).
+- Fondation des tenues indépendante des cosmétiques automobiles : emplacements classiques, superposés et rigides ;
+  essayage, équipement, retrait, restauration ; identifiants invalides ; FR/EN ; cinq catégories en emplacements vides
+  (aucune ressource, aucun identifiant, aucune boutique).
+- Essais VM (8 morphologies, 5 véhicules puis les 18 modèles) : vue cockpit, téléphone, marche et bras vus par un autre
+  joueur corrects ; **habitacles trop bas et trop étroits pour un R15 standard** (QA-A13, A14), **sortie passager sans
+  placement** (QA-A15), conducteur parfois couché après la sortie (QA-A16) : à arbitrer.
+- Rapport : `docs/lot-avatar-01/RAPPORT_AVATAR_R15.md`. Production graphique des tenues non engagée.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.

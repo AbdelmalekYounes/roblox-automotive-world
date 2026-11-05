@@ -82,6 +82,12 @@ Activated / KeyCode reçus par le jeu ◀──────────── cl
   tâche. Placée en 7ᵉ position après six sessions à deux clients (`20261104-031015`), la session `ui` a obtenu un
   étalonnage faux (échelle 1,763) et aucun clic n'est arrivé ; en tête (`20261104-035727`, `-042820`), l'étalonnage
   est juste.
+- **Longueur d'une ligne de résultat (lot AVATAR-01)** : la sortie de Studio tronque une ligne au-delà de **100 000
+  caractères** (tâche `20261104-104818` : session `avatar` illisible par le rapport) ; garder les résultats d'une session
+  compacts (détails courts, aucun journal d'entrées dans le rapport) et écrire les mesures détaillées sur des lignes
+  séparées.
+- **Captures au volant** : le contrôleur du véhicule replace la caméra à chaque image (`PreRender`) ; une capture cadrée
+  par script doit réimposer la caméra à chaque étape de rendu (voir `AvatarClient.client.luau`).
 - **Touche O** : jamais reçue par le jeu dans Studio (ni code virtuel ni code de balayage) ; le mode photo s'ouvre par
   le téléphone. Limite de l'environnement, connue depuis le lot 0.9.1.
 Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.

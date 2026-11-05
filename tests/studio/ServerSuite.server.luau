@@ -31,6 +31,8 @@ if
     or sessionName == "gps2"
     or sessionName == "drift"
     or sessionName == "social"
+    or sessionName == "avatar"
+    or sessionName == "avatar2"
 then
     return
 end

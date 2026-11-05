@@ -39,6 +39,9 @@ local KNOWN_SESSIONS = {
     drift = { Name = "drift", Players = 1 },
     -- Lot 0.9.1 : social et permissions, deux clients (Dev).
     social = { Name = "social", Players = 2 },
+    -- Lot AVATAR-01 : avatars R15 dans les véhicules (vraies entrées), vue par un autre joueur.
+    avatar = { Name = "avatar", Players = 1 },
+    avatar2 = { Name = "avatar2", Players = 2 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -61,6 +64,8 @@ local EXTRA = {
     { "AW_TestSocialServer", "SocialServer.server.luau", false },
     { "AW_TestSocialClient", "SocialClient.client.luau", true },
     { "AW_TestUiMondeClient", "UiMondeClient.client.luau", true },
+    { "AW_TestAvatarServer", "AvatarServer.server.luau", false },
+    { "AW_TestAvatarClient", "AvatarClient.client.luau", true },
 }
 
 local output = process.args[1]

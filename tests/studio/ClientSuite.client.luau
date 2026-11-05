@@ -75,6 +75,8 @@ if
     or currentSession == "gps2"
     or currentSession == "drift"
     or currentSession == "social"
+    or currentSession == "avatar"
+    or currentSession == "avatar2"
 then
     return
 end
