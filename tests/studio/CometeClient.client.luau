@@ -22,7 +22,12 @@ while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - se
     task.wait()
 end
 local cometeSession = ReplicatedStorage:GetAttribute("AWTestSession")
-if cometeSession ~= "comete" and cometeSession ~= "comete_vitres" then
+if
+    cometeSession ~= "comete"
+    and cometeSession ~= "comete_vitres"
+    and cometeSession ~= "comete_perf"
+    and cometeSession ~= "comete2"
+then
     return
 end
 
@@ -459,6 +464,236 @@ handlers.reverse = function()
     return { Detail = detail }
 end
 
+-- QA-K04 : montée par la vraie touche E maintenue sur l'invite la plus proche (porte conducteur).
+handlers.board = function(_id, data)
+    local h = humanoid()
+    local hold = 0
+    local shown = waitFor(function()
+        local me = character():FindFirstChild("HumanoidRootPart") :: BasePart?
+        for _, item in Workspace:GetDescendants() do
+            if item:IsA("ProximityPrompt") and item.Name == "EnterPrompt" and item.Enabled then
+                local parent = item.Parent
+                local at = if parent and parent:IsA("Attachment")
+                    then parent.WorldPosition
+                    elseif parent and parent:IsA("BasePart") then parent.Position
+                    else nil
+                if me and at and (at - me.Position).Magnitude < item.MaxActivationDistance + 2 then
+                    hold = item.HoldDuration
+                    return true
+                end
+            end
+        end
+        return false
+    end, 6)
+    Gui.keyDown("E")
+    local seated = waitFor(function()
+        return h ~= nil and h.SeatPart ~= nil and h.SeatPart.Name == tostring(data.Seat)
+    end, hold + 3)
+    Gui.keyUp("E")
+    task.wait(1)
+    local detail = string.format(
+        "invite %s (maintien %.1f s) ; assis %s",
+        if shown then "visible" else "absente",
+        hold,
+        tostring(seated)
+    )
+    record("comete.client.embarquement_touche_e", seated, detail)
+    return { Detail = detail }
+end
+
+-- QA-K04 : téléphone au volant (vraie touche T), capture, fermeture.
+handlers.phone = function()
+    local function shownPhone(): boolean
+        local gui = playerGui:FindFirstChild("AWPhone") :: ScreenGui?
+        return gui ~= nil and gui.Enabled
+    end
+    Gui.key("T")
+    local opened = waitFor(shownPhone, 4)
+    task.wait(1.2)
+    Gui.shot("comete_telephone_au_volant", { vue = "jeu" })
+    Gui.key("T")
+    local closed = waitFor(function()
+        return not shownPhone()
+    end, 4)
+    local detail = string.format("ouvert %s ; refermé %s", tostring(opened), tostring(closed))
+    record("comete.k04.telephone_au_volant", opened and closed, detail)
+    return { Detail = detail }
+end
+
+-- QA-K07 : feux stop. Élan (W) puis freinage (vraie touche S) : attribut publié par le serveur, sources arrière
+-- renforcées ; capture de l'arrière pendant le freinage.
+handlers.brake = function()
+    local model, root = seatedVehicle()
+    if model == nil or root == nil then
+        record("comete.k07.feux_stop", false, "non assis")
+        return { Detail = "non assis" }
+    end
+    closeModals("avant_freinage")
+    local body = root :: BasePart
+    local function speed(): number
+        return body.AssemblyLinearVelocity.Magnitude * M * 3.6
+    end
+    if VehicleController.getTestSnapshot().Gear == 0 then
+        Gui.key("Shift")
+        task.wait(0.5)
+    end
+    local brakingBefore = model:GetAttribute(Constants.Attributes.VisualBrake) == true
+    Gui.keyDown("W")
+    waitFor(function()
+        return speed() >= 25
+    end, 6)
+    Gui.keyUp("W")
+    local kmh = speed()
+    Gui.keyDown("S")
+    local published = waitFor(function()
+        return model:GetAttribute(Constants.Attributes.VisualBrake) == true
+    end, 2)
+    task.wait(0.6) -- passage de VehicleLights (0,5 s)
+    local brighter, lit, tails = 0, 0, 0
+    for _, item in model:GetDescendants() do
+        if item:IsA("BasePart") and item:GetAttribute("AWLight") == "Tail" then
+            local light = item:FindFirstChild("Lumiere")
+            if light and light:IsA("Light") then
+                tails += 1
+                lit += if light.Enabled then 1 else 0
+                brighter += if light.Brightness >= 2.5 then 1 else 0
+            end
+        end
+    end
+    local view =
+        CFrame.lookAt((body.CFrame * CFrame.new(6, 3.5, 22)).Position, (body.CFrame * CFrame.new(0, 0.8, 6)).Position)
+    withView(view, function()
+        Gui.shot("comete_feux_stop", { vitesse = math.floor(kmh) })
+    end)
+    Gui.keyUp("S")
+    -- Arrêt par le frein à main (Espace) : le frein maintenu à l'arrêt enclenche la marche arrière (A3).
+    Gui.keyDown("Space")
+    waitFor(function()
+        return speed() < 1
+    end, 4)
+    Gui.keyUp("Space")
+    task.wait(0.8)
+    local released = model:GetAttribute(Constants.Attributes.VisualBrake) ~= true
+    local detail = string.format(
+        "élan %.0f km/h ; freinage publié %s (avant %s, relâché %s) ; feux arrière allumés %d / %d, renforcés %d",
+        kmh,
+        tostring(published),
+        tostring(brakingBefore),
+        tostring(released),
+        lit,
+        tails,
+        brighter
+    )
+    record("comete.k07.feux_stop", published and tails > 0 and lit == tails and brighter == tails, detail)
+    return { Detail = detail }
+end
+
+-- Session « comete2 », joueur 1 : braquage, élan, freinage par le point d'accès de test (instrumenté).
+handlers.demo = function()
+    local model, root = seatedVehicle()
+    if model == nil or root == nil then
+        record("comete2.conducteur.assis", false)
+        return { Detail = "non assis" }
+    end
+    local phase = { Throttle = 0, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+    VehicleController.setTestInputProvider(function()
+        return table.clone(phase) :: any
+    end)
+    VehicleController.invokeActionForTest("AWVehicleShiftUp") -- boîte séquentielle au neutre
+    phase.Steer = 1
+    task.wait(1.5)
+    phase.Steer, phase.Throttle = 0, 0.6
+    task.wait(2.5)
+    phase.Throttle, phase.Brake = 0, 1
+    task.wait(1.5)
+    phase.Brake, phase.Handbrake = 0, true
+    task.wait(1.5)
+    VehicleController.setTestInputProvider(nil)
+    local detail = string.format(
+        "rapport %s ; position z %.1f",
+        tostring(VehicleController.getTestSnapshot().Gear),
+        (root :: BasePart).Position.Z
+    )
+    record("comete2.conducteur.demonstration", true, detail)
+    return { Detail = detail }
+end
+
+-- Session « comete2 », joueur 2 : ce que ce client reçoit du véhicule du joueur 1.
+handlers.observe = function(_id, data)
+    local model, driver = data.Model, data.Driver
+    if typeof(model) ~= "Instance" or typeof(driver) ~= "Instance" then
+        record("comete2.observateur.vehicule_recu", false)
+        return { Detail = "véhicule absent" }
+    end
+    local car = model :: Model
+    local root = car.PrimaryPart :: BasePart
+    local meshes = 0
+    for _, item in car:GetDescendants() do
+        if item:IsA("MeshPart") then
+            meshes += 1
+        end
+    end
+    local wheel = car:FindFirstChild("WheelFL")
+    local rim = wheel and wheel:FindFirstChild(KIT.Wheels.FL[2]) :: BasePart?
+    local tyre = wheel and wheel:FindFirstChild(KIT.Wheels.FL[1]) :: BasePart?
+    local spin, maxSteer, maxYaw, braked, moved = 0, 0, 0, false, 0
+    local start = root.Position
+    local previous = if rim then root.CFrame:VectorToObjectSpace(rim.CFrame.UpVector) else nil
+    local yaw0 = if tyre then root.CFrame:VectorToObjectSpace(tyre.CFrame.RightVector) else nil
+    local connection = RunService.Heartbeat:Connect(function()
+        if rim and previous then
+            local now = root.CFrame:VectorToObjectSpace(rim.CFrame.UpVector)
+            spin += math.deg(math.acos(math.clamp(previous:Dot(now), -1, 1)))
+            previous = now
+        end
+        if tyre and yaw0 then
+            local right = root.CFrame:VectorToObjectSpace(tyre.CFrame.RightVector)
+            maxYaw = math.max(maxYaw, math.deg(math.acos(math.clamp(right:Dot(yaw0), -1, 1))))
+        end
+        maxSteer = math.max(maxSteer, math.abs(tonumber(car:GetAttribute(Constants.Attributes.VisualSteer)) or 0))
+        braked = braked or car:GetAttribute(Constants.Attributes.VisualBrake) == true
+        moved = math.max(moved, (root.Position - start).Magnitude)
+    end)
+    task.wait(tonumber(data.Seconds) or 9)
+    connection:Disconnect()
+    local other = (driver :: Player).Character
+    local head = other and other:FindFirstChild("Head") :: BasePart?
+    local headVisible = head ~= nil and head.Transparency < 1 and head.LocalTransparencyModifier < 1
+    local view = CFrame.lookAt(
+        (root.CFrame * CFrame.new(-9, 2.4, -1.4)).Position,
+        (root.CFrame * CFrame.new(-1.2, 0.8, -1.45)).Position
+    )
+    withView(view, function()
+        Gui.shot("comete2_vu_par_le_joueur_2", { joueur = 2 })
+    end)
+    record("comete2.observateur.maillages_recus", meshes == 28, meshes .. " / 28")
+    record("comete2.observateur.jante_tourne", spin > 180, string.format("%.0f°", spin))
+    record(
+        "comete2.observateur.braquage_recu",
+        maxSteer >= 0.5 and maxYaw > 5,
+        string.format("attribut %.2f, pneu %.1f°", maxSteer, maxYaw)
+    )
+    record("comete2.observateur.feux_stop_recus", braked)
+    record(
+        "comete2.observateur.conducteur_visible",
+        headVisible,
+        if head
+            then string.format("tête %.2f / %.2f", head.Transparency, head.LocalTransparencyModifier)
+            else "tête absente"
+    )
+    local detail = string.format(
+        "maillages %d ; jante %.0f° ; braquage %.2f (pneu %.1f°) ; stop %s ; déplacement %.1f st ; tête visible %s",
+        meshes,
+        spin,
+        maxSteer,
+        maxYaw,
+        tostring(braked),
+        moved,
+        tostring(headVisible)
+    )
+    return { Detail = detail }
+end
+
 handlers.exit = function(_id, data)
     local h = humanoid()
     Gui.key(tostring(data.Key))
@@ -477,33 +712,51 @@ handlers.night = function(_id, data)
         return { Detail = "véhicule absent" }
     end
     task.wait(1.5) -- passage de VehicleLights (0,5 s)
-    local sources, enabled, glassOk, glass = 0, 0, 0, 0
+    local sources, enabled, glassOk, glass, brokenLit = 0, 0, 0, 0, 0
     for _, item in model:GetDescendants() do
         if item:IsA("BasePart") and item:GetAttribute("AWLight") ~= nil then
             local light = item:FindFirstChild("Lumiere")
             if light and light:IsA("Light") then
                 sources += 1
                 enabled += if light.Enabled then 1 else 0
+                if item:GetAttribute("AWLightBroken") == true and light.Enabled then
+                    brokenLit += 1
+                end
             end
         elseif item:IsA("MeshPart") and string.find(string.lower(item.Name), KIT.GlassPattern, 1, true) then
             glass += 1
             glassOk += if item.Transparency >= 0.3 then 1 else 0
         end
     end
-    local detail =
-        string.format("sources allumées %d / %d ; vitrage transparent %d / %d", enabled, sources, glassOk, glass)
-    record("comete.k07.feux_allumes_la_nuit", sources == 4 and enabled == 4, detail)
+    local detail = string.format(
+        "sources allumées %d / %d (cassées allumées %d) ; vitrage transparent %d / %d",
+        enabled,
+        sources,
+        brokenLit,
+        glassOk,
+        glass
+    )
     record("comete.k07.vitrage_transparent_client", glass >= 1 and glassOk == glass, detail)
-    return { Detail = detail }
+    return { Detail = detail, Sources = sources, Enabled = enabled, BrokenLit = brokenLit }
 end
 
 -- QA-K08 : temps d'image (RenderStepped) pendant `Seconds`, cadrage fixe.
 handlers.frames = function(_id, data)
     local c = data.Cadrage
     local frames: { number } = {}
+    local cpu, gpu, draws, tris, samples = 0, 0, 0, 0, 0
+    local Stats = game:GetService("Stats")
     local function measure()
         local connection = RunService.RenderStepped:Connect(function(dt)
             table.insert(frames, dt * 1000)
+            -- Temps de rendu propres à l'image (indépendants du plafond de 60 images/s), lecture protégée.
+            pcall(function()
+                cpu += Stats.RenderCPUFrameTime
+                gpu += Stats.RenderGPUFrameTime
+                draws += Stats.SceneDrawcallCount
+                tris += Stats.SceneTriangleCount
+                samples += 1
+            end)
         end)
         task.wait(tonumber(data.Seconds) or 8)
         connection:Disconnect()
@@ -524,6 +777,10 @@ handlers.frames = function(_id, data)
         Mean = if mean then math.floor(mean * 100) / 100 else nil,
         P95 = if p95 then math.floor(p95 * 100) / 100 else nil,
         Frames = #frames,
+        Cpu = if samples > 0 then math.floor(cpu / samples * 1000) / 1000 else nil,
+        Gpu = if samples > 0 then math.floor(gpu / samples * 1000) / 1000 else nil,
+        Draws = if samples > 0 then math.floor(draws / samples) else nil,
+        Tris = if samples > 0 then math.floor(tris / samples) else nil,
     }
 end
 
@@ -561,5 +818,7 @@ while not finished and os.clock() - sessionStart < 1500 do
 end
 
 local shots = Gui.report().shots
-record("comete.client.captures", #shots > 0, #shots)
+if cometeSession ~= "comete_perf" then
+    record("comete.client.captures", #shots > 0, #shots)
+end
 reportEvent:FireServer({ vehicle = "comete", steps = steps, measures = { captures = #shots } })

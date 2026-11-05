@@ -594,6 +594,24 @@ local E: { [string]: Entry } = {
     ["settings.accessibility"] = { "Accessibilité", "Accessibility" },
     ["settings.notifications"] = { "Notifications", "Notifications" },
     ["settings.audio"] = { "Audio", "Audio" },
+    -- Lot VEH3D-01 : crédits des œuvres de tiers (CC BY 4.0), données dans Shared.Assets.Attributions.
+    ["settings.credits"] = { "Crédits et licences", "Credits and licences" },
+    ["credits.intro"] = {
+        "Œuvres de tiers utilisées dans le jeu, sous licence :",
+        "Third-party works used in the game, under licence:",
+    },
+    ["credits.entry"] = {
+        "{usage} : d'après une œuvre de {creator} ({source}), licence {licence}, modifiée : {changes}.",
+        "{usage}: based on a work by {creator} ({source}), licensed under {licence}, modified: {changes}.",
+    },
+    ["credits.title"] = { "Titre de l'œuvre : {title}", "Original title: {title}" },
+    ["credits.url"] = { "Œuvre : {url}", "Work: {url}" },
+    ["credits.licence"] = { "Licence {licence} : {url}", "{licence} licence: {url}" },
+    ["credits.usage.comete"] = { "Modèle 3D de la Comète", "Comète 3D model" },
+    ["credits.changes.comete"] = {
+        "logos et inscriptions retirés, mise à l'échelle, roues séparées, vitrage et feux adaptés",
+        "logos and lettering removed, rescaled, wheels separated, glazing and lights adapted",
+    },
     ["settings.language"] = { "Langue : {language}", "Language: {language}" },
     ["settings.language.fr"] = { "Français", "Français" },
     ["settings.language.en"] = { "English", "English" },

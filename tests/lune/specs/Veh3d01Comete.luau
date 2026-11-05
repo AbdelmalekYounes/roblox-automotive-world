@@ -207,4 +207,64 @@ return function(T: any, H: any)
         T.equal(Data.assetNumber("http://www.roblox.com/asset/?id=42"), 42)
         T.equal(Data.assetNumber(""), nil)
     end)
+
+    T.test("7. crédits CC BY : attribution pour chaque œuvre tierce, textes FR et EN", function()
+        local Attributions = H.require("ReplicatedStorage.Shared.Assets.Attributions")
+        local Localization = H.require("ReplicatedStorage.Shared.UI.Localization")
+        for _, entry in AssetManifest.Assets do
+            if type(entry.Licence) == "string" and string.find(entry.Licence, "CC BY", 1, true) then
+                T.truthy(Attributions.forManifest(entry.Id) ~= nil, entry.Id .. " : attribution affichée en jeu")
+            end
+        end
+        T.truthy(Attributions.forManifest(kit.ManifestId) ~= nil, "attribution de la Comète")
+        for _, item in Attributions.List do
+            T.truthy(AssetManifest.get(item.ManifestId) ~= nil, item.ManifestId .. " : entrée du manifeste")
+            T.truthy(item.Creator ~= "" and item.Licence == "CC BY 4.0", "auteur et licence")
+            T.equal(item.ShowTitle, false, "titre (nom de marque) masqué tant que le propriétaire n'a pas tranché")
+            T.equal(item.ShowUrl, false, "lien externe masqué tant que le propriétaire n'a pas tranché")
+            for _, key in { item.UsageKey, item.ChangesKey, "settings.credits", "credits.entry", "credits.licence" } do
+                local fr, en = Localization.t(key, nil, "fr"), Localization.t(key, nil, "en")
+                T.truthy(fr ~= key and en ~= key and fr ~= en, key .. " : FR et EN")
+            end
+        end
+        local phone = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneController")
+        T.truthy(string.find(phone, '"Credits"', 1, true) ~= nil, "page Crédits des paramètres du téléphone")
+    end)
+
+    T.test(
+        "8. dégâts et feux : marques sur la surface mesurée, feux stop répliqués, optique cassée éteinte",
+        function()
+            local marks = kit.DamageMarks
+            local front = kit.Collisions.BouclierAvant
+            local rear = kit.Collisions.BouclierArriere
+            for i = 1, 3 do
+                T.truthy(marks.Front[i] < front.Center.Z - front.Size.Z / 2 + 0.25, "avant : surface devant la boîte")
+                T.truthy(marks.Front[i] > kit.CameraBumper.Z, "avant : en retrait de la caméra bouclier")
+                T.truthy(
+                    marks.Rear[i] > rear.Center.Z + rear.Size.Z / 2 - 0.25,
+                    "arrière : surface derrière la boîte"
+                )
+                T.truthy(
+                    marks.Side[i] > 3 and marks.Side[i] <= kit.SideHalf,
+                    "flanc entre la coque et les rétroviseurs"
+                )
+            end
+            local damage = source("ServerScriptService.AutomotiveWorldServer.Vehicles.DamageService")
+            T.truthy(string.find(damage, "DamageMarks", 1, true) ~= nil, "dégâts : surface du kit")
+            T.truthy(
+                string.find(damage, '"AWLightBroken", true', 1, true) ~= nil,
+                "dégâts : optique marquée cassée"
+            )
+            local service = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleService")
+            T.truthy(string.find(service, "Attributes.VisualBrake, braking", 1, true) ~= nil, "freinage publié")
+            local lights = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.World.VehicleLights")
+            T.truthy(string.find(lights, "VisualBrake", 1, true) ~= nil, "feux stop lus par l'éclairage")
+            T.truthy(string.find(lights, "AWLightBroken", 1, true) ~= nil, "optique cassée laissée éteinte")
+            T.equal(
+                kit.Paint.NeutralColorMap,
+                nil,
+                "teinte du garage inactive tant que la texture neutre n'est pas envoyée"
+            )
+        end
+    )
 end

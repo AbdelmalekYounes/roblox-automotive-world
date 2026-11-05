@@ -102,7 +102,13 @@ end
     sans masse ; vitrage rendu transparent ; boîtes de collision invisibles aux noms des zones ; sources de lumière.
     Rend les pièces de roues (par roue du jeu) pour `attachWheels`.
 ]]
-function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instance): { [string]: { BasePart } }
+function MeshKits.build(
+    kit: Kit,
+    template: Model,
+    root: BasePart,
+    body: Instance,
+    bodyColor: Color3?
+): { [string]: { BasePart } }
     local copy = template:Clone()
     local reference = copy:FindFirstChild(kit.Reference, true) :: BasePart
     -- Décalage du gabarit : sa pièce de référence doit tomber sur son centre mesuré dans le repère du châssis.
@@ -117,6 +123,8 @@ function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instanc
     local details = Instance.new("Folder")
     details.Name = "Details"
     details.Parent = body
+    -- Peinture : « Teinte » (couleur du garage) seulement sur la carte de couleur neutre, sinon « Texture ».
+    local painted, paintable = 0, 0
     for _, item in copy:GetDescendants() do
         if item:IsA("MeshPart") then
             local local_ = CFrame.new(item.Position - shift) * item.CFrame.Rotation
@@ -130,6 +138,19 @@ function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instanc
                 item.Color = Color3.fromRGB(120, 135, 145)
                 item.Transparency = 0.6
             end
+            if string.sub(item.Name, -#kit.Paint.Pattern) == kit.Paint.Pattern then
+                paintable += 1
+                local appearance = item:FindFirstChildOfClass("SurfaceAppearance")
+                local map = appearance and MeshKitData.assetNumber(tostring((appearance :: any).ColorMapContent.Uri))
+                if bodyColor and appearance and kit.Paint.NeutralColorMap and map == kit.Paint.NeutralColorMap then
+                    appearance.Color = bodyColor
+                    painted += 1
+                end
+            end
+            local role = kit.LightMeshes[item.Name]
+            if role then
+                item:SetAttribute("AWLight", role)
+            end
             local wheel = wheelNames[item.Name]
             if wheel then
                 wheels[wheel] = wheels[wheel] or {}
@@ -142,6 +163,8 @@ function MeshKits.build(kit: Kit, template: Model, root: BasePart, body: Instanc
         end
     end
     copy:Destroy()
+    -- Lu par les essais : mode de peinture effectif (aucune teinte partielle).
+    body:SetAttribute("AWPaint", if painted > 0 and painted == paintable then "Teinte" else "Texture")
     for name, box in kit.Collisions do
         local part = Instance.new("Part")
         part.Name = name

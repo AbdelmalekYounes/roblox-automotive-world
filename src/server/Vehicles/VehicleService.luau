@@ -343,6 +343,7 @@ local function releaseDriver(record: VehicleRecord)
     record.AwayTimer = 0
     record.Model:SetAttribute(Constants.Attributes.DriverUserId, 0)
     record.Model:SetAttribute(Constants.Attributes.VisualSteer, 0)
+    record.Model:SetAttribute(Constants.Attributes.VisualBrake, false)
     record.Prompt.Enabled = true
     setOwner(record, nil)
 end
@@ -885,6 +886,11 @@ local function onInput(player: Player, payload: any)
     if steer ~= record.LastSteer then
         record.LastSteer = steer
         record.Model:SetAttribute(Constants.Attributes.VisualSteer, steer)
+    end
+    -- Feux stop (lot VEH3D-01) : même usage, affichage seulement (aucun effet physique ni économique).
+    local braking = input.Brake > 0.1
+    if braking ~= (record.Model:GetAttribute(Constants.Attributes.VisualBrake) == true) then
+        record.Model:SetAttribute(Constants.Attributes.VisualBrake, braking)
     end
 end
 

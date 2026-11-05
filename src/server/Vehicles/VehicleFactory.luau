@@ -253,7 +253,7 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     local meshKit, meshTemplate = MeshKits.template(definition.Id)
     local meshWheels: { [string]: { BasePart } }? = nil
     if meshKit and meshTemplate then
-        meshWheels = MeshKits.build(meshKit, meshTemplate, root, body)
+        meshWheels = MeshKits.build(meshKit, meshTemplate, root, body, bodyColor)
         seatOffset = CFrame.new(meshKit.SeatDriver)
         passengerOffset = CFrame.new(meshKit.SeatPassenger)
         cabinZ, dashZ, dashTop = meshKit.SeatDriver.Z, meshKit.SeatDriver.Z - 1.6, meshKit.CameraCockpit.Y - 0.5

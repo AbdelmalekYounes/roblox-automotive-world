@@ -50,6 +50,8 @@ local KNOWN_SESSIONS = {
     -- Lot VEH3D-01 : Comète 3D (kit de maillages), essais QA-K01 à QA-K08 (vraies entrées).
     comete = { Name = "comete", Players = 1 },
     comete_vitres = { Name = "comete_vitres", Players = 1 },
+    comete_perf = { Name = "comete_perf", Players = 1 },
+    comete2 = { Name = "comete2", Players = 2 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
