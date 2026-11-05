@@ -3,8 +3,8 @@
     Aperçu 3D du garage (lot UI-03, rendu par ViewportFrame choisi par le propriétaire le 2026-11-05) :
     règles PURES, testables hors Studio (Lune).
 
-    - cadrage : distance de caméra pour que le véhicule entier tienne dans la zone 3D, quelle que soit sa forme
-      (sphère englobante) et le rapport largeur / hauteur de la zone ;
+    - cadrage : distance de caméra pour que le véhicule entier tienne dans la zone 3D à toutes les orientations
+      de la rotation (boîte du véhicule, perspective comprise), quel que soit le rapport largeur / hauteur ;
     - demande au serveur : seul un identifiant de modèle bien formé est accepté (le serveur vérifie ensuite qu'il
       existe dans le catalogue) ;
     - rotation : vitesses et angle de plongée de la caméra.
@@ -17,8 +17,11 @@ local PreviewFraming = {}
 PreviewFraming.Fov = 30
 -- Plongée de la caméra (degrés sous l'horizontale) : on voit le capot et le pavillon sans écraser le profil.
 PreviewFraming.Pitch = 14
--- Marge autour de la sphère englobante (1 = véhicule tangent aux bords de la zone).
-PreviewFraming.Margin = 1.08
+-- Marge autour du véhicule (1 = tangent aux bords de la zone à son orientation la plus large).
+-- Demande du propriétaire (2026-11-05, « plus grand ») : cadrage serré sur la boîte du véhicule, 4 % de marge.
+PreviewFraming.Margin = 1.04
+-- Pas d'échantillonnage des orientations pour le cadrage (degrés) : 5° → 72 orientations par calcul.
+PreviewFraming.FitStep = 5
 -- Rotation automatique (degrés par seconde), coupée par « réduire les animations ».
 PreviewFraming.AutoSpeed = 12
 -- Glisser à la souris ou au doigt : degrés par pixel.
@@ -29,15 +32,42 @@ PreviewFraming.StickDeadZone = 0.2
 -- Délai minimal entre deux demandes d'un même joueur au serveur (secondes).
 PreviewFraming.RequestInterval = 0.15
 
--- Distance caméra → centre pour qu'une sphère de rayon `radius` tienne dans la vue (champ vertical `fovDeg`,
--- rapport largeur / hauteur `aspect`). Le champ horizontal se déduit du vertical : tan(h/2) = tan(v/2) × aspect ;
--- l'angle limitant est le plus petit des deux.
-function PreviewFraming.distance(radius: number, fovDeg: number, aspect: number, margin: number?): number
-    local half = math.rad(fovDeg) / 2
-    local safeAspect = if aspect > 0 then aspect else 1
-    local horizontalHalf = math.atan(math.tan(half) * safeAspect)
-    local limiting = math.min(half, horizontalHalf)
-    return math.max(radius, 0) * (margin or PreviewFraming.Margin) / math.sin(limiting)
+-- Cadrage serré : distance minimale pour que les 8 coins de la boîte du
+-- véhicule (demi-dimensions hx, hy, hz, centrée sur le point visé) restent dans le champ, perspective comprise, pour
+-- TOUTES les orientations de la rotation (pas FitStep) avec la plongée `pitchDeg`. La distance ne varie donc pas
+-- pendant la rotation (pas d'effet de zoom), et le véhicule remplit la zone à son orientation la plus large.
+-- Repère caméra : la caméra regarde vers -Z depuis (0, 0, d) ; un point (x, y, z) tient si
+-- |x| × marge ≤ (d - z) × tan(h/2) et |y| × marge ≤ (d - z) × tan(v/2).
+function PreviewFraming.fitDistance(
+    hx: number,
+    hy: number,
+    hz: number,
+    fovDeg: number,
+    aspect: number,
+    pitchDeg: number,
+    margin: number?
+): number
+    local m = margin or PreviewFraming.Margin
+    local tanV = math.tan(math.rad(fovDeg) / 2)
+    local tanH = tanV * (if aspect > 0 then aspect else 1)
+    local cp, sp = math.cos(math.rad(pitchDeg)), math.sin(math.rad(pitchDeg))
+    local best = 0
+    for step = 0, 359, PreviewFraming.FitStep do
+        local a = math.rad(step)
+        local ca, sa = math.cos(a), math.sin(a)
+        for _, sx in { -1, 1 } do
+            for _, sy in { -1, 1 } do
+                for _, sz in { -1, 1 } do
+                    local x, y, z = sx * hx, sy * hy, sz * hz
+                    -- Inverse de l'orbite : rotation autour de Y (-angle), puis autour de X (plongée).
+                    local x1, z1 = x * ca - z * sa, x * sa + z * ca
+                    local y2, z2 = y * cp - z1 * sp, y * sp + z1 * cp
+                    best = math.max(best, z2 + math.abs(x1) * m / tanH, z2 + math.abs(y2) * m / tanV)
+                end
+            end
+        end
+    end
+    return best
 end
 
 -- Identifiant de modèle acceptable dans une demande client : chaîne courte de lettres, chiffres et « _ ».
