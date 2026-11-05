@@ -12,6 +12,7 @@
 ]]
 
 local ProfileSchema = require(script.Parent.ProfileSchema)
+local Preferences = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.UI.Preferences)
 
 local ProfileMigration = {}
 
@@ -80,6 +81,16 @@ local MIGRATIONS: { Migration } = {
         Apply = function(data: any): any
             data.Racing = data.Racing or ProfileSchema.newRacing()
             data.SchemaVersion = 3
+            return data
+        end,
+    },
+    {
+        -- Lot 0.7 : préférences d'interface (valeurs par défaut ; rien n'existait).
+        From = 3,
+        Describe = "préférences d'interface (lot 0.7)",
+        Apply = function(data: any): any
+            data.Preferences = Preferences.sanitize(data.Preferences)
+            data.SchemaVersion = 4
             return data
         end,
     },

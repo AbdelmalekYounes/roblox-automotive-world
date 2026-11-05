@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.6 (courses, compétition et saisons)
+# Automotive World — Lot 0.7 (interface, GPS, smartphone et social)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -11,10 +11,12 @@
 > d'occasion à transferts multiprofils récupérables, immobilier, pièces, énergie, réparation, lavage. Lot 0.6 : six
 > disciplines de course sur un socle commun (sprint, circuit, contre-la-montre, drift, drag, rallye), 16 parcours
 > dans le monde ouvert et 6 en zone d'essai, salons, modes protégé et réaliste, réservation exclusive du véhicule,
-> classement et saisons de huit semaines, matchmaking (repli local ; inter-serveurs écrit mais non exécuté). Aucune
+> classement et saisons de huit semaines, matchmaking (repli local ; inter-serveurs écrit mais non exécuté). Lot 0.7 :
+> interface commune, HUD contextuel, mini-carte, carte, GPS, smartphone, groupes et partage de position volontaire,
+> notifications, accessibilité, français et anglais, préférences sauvegardées. Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.6 en développement sur `feat/racing-competition-0.6` (PR brouillon, base : lot 0.5 ;
-> PR #1 à #5 non fusionnées). Rapport : [docs/lot-0.6/RAPPORT_LOT_0.6.md](docs/lot-0.6/RAPPORT_LOT_0.6.md).
+> **Statut** : lot 0.7 en développement sur `feat/ui-gps-social-0.7` (PR brouillon, base : lot 0.6 ;
+> PR #1 à #6 non fusionnées). Rapport : [docs/lot-0.7/RAPPORT_LOT_0.7.md](docs/lot-0.7/RAPPORT_LOT_0.7.md).
 > Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
 > (**NON TESTÉS** à ce jour).
 
@@ -82,6 +84,22 @@ sur la dalle violette d'inscription du parcours (ou à son départ), au volant d
 `lune run tools/racing/courses.luau build/AutomotiveWorld.rbxlx` ; simulation des gains :
 `lune run tools/economy/simulate-races.luau build/AutomotiveWorld.rbxlx`.
 
+## Interface, GPS et smartphone (lot 0.7)
+
+| Action | Clavier | Manette |
+|---|---|---|
+| Téléphone (applications, mode rapide en roulant) | T | X |
+| Carte complète (destination, filtres) | M | via le téléphone |
+| Garage et collection | P | Select |
+| Économie et métiers | J | clic du stick droit |
+| Courses | K | clic du stick gauche |
+| Niveau du HUD (minimal, standard, complet) | H | via le téléphone |
+| Effacer l'itinéraire | X | via le téléphone |
+| Retour / fermer | Retour arrière | B (seulement quand un menu est ouvert) |
+
+Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le téléphone passe en mode rapide. Paramètres
+(langue FR/EN, HUD, mini-carte, accessibilité, notifications, audio, raccourcis) : application Paramètres.
+
 ## Commandes de conduite
 
 | Action | Clavier | Manette |
@@ -144,6 +162,9 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `src/shared/Economy` | Catalogue commercial (18 emplacements), barème provisoire, métiers, réputation, protocole économique |
 | `src/server/Economy` | Portefeuille, commerce, marché et transferts multiprofils, missions, rémunération, service économique |
 | `src/shared/Racing` | Disciplines, types et modes d'épreuve, parcours versionnés, rangs et saisons, protocole des courses |
+| `src/shared/UI` | Localisation FR/EN, préférences, pile des écrans, raccourcis, conduite et interfaces, notifications |
+| `src/shared/Navigation` | Index et projection de la carte, itinéraires et guidage du GPS |
+| `src/server/Social` | Groupes, partage de position, communications, préférences, points d'intérêt, téléphone tenu en main |
 | `src/server/Racing` | Socle de compétition : parcours, salons, sessions, règles, drift, validation, classement, réservation, récompenses, classement compétitif, saisons, récupération, matchmaking, service des courses |
 | `src/server/Progression` | Règles de collection, starter, propriétés, garages, préparation, invitations ; lieux, intérieurs, service des demandes |
 | `src/shared/World` | Données de carte versionnées, réseau routier, mise en page, graphe (A*), feux, météo, trafic et piétons **purs** |
@@ -160,6 +181,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.4` | Rapport du lot 0.4, architecture de la persistance et des garages |
 | `docs/lot-0.5` | Rapport du lot 0.5, architecture de l'économie |
 | `docs/lot-0.6` | Rapport du lot 0.6, architecture des courses et de la compétition |
+| `docs/lot-0.7` | Rapport du lot 0.7, architecture de l'interface, du GPS et du social |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

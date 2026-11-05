@@ -823,6 +823,10 @@ local function onPreRender(dt: number)
             LastLaunchSeconds = measures.LastLaunchSeconds,
             BestLaunchSeconds = measures.BestLaunchSeconds,
             LastBrakeDistanceM = measures.LastBrakeDistanceM,
+            TransmissionKind = powertrain.Transmission.Kind,
+            Electric = powertrain.Engine == nil,
+            Stalled = state.EngineStalled,
+            Model = current.Model,
         })
     end
     if cam then

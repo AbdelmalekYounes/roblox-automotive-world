@@ -17,6 +17,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Types = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("VehicleTypes"))
 local InputArbiter = require(script.Parent.InputArbiter)
+local UIState = require(script.Parent.Parent.UI.UIState)
 
 local DriverInput = {}
 DriverInput.__index = DriverInput
@@ -125,6 +126,8 @@ function DriverInput.poll(self: DriverInputReader, dt: number): Types.DriverInpu
         InputArbiter.step(self.Arbiter, readKeyboard(), readGamepad(self.Gamepad), {
             Typing = DriverInput.isTyping(),
             WindowFocused = self.WindowFocused,
+            -- Lot 0.7 : interface modale ouverte (à l'arrêt ou à pied).
+            UiCaptured = UIState.capturesDriving(),
         }, dt)
     local handler = self.OnEvent
     if event and handler then

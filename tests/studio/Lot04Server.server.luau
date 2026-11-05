@@ -133,6 +133,12 @@ for _, item in (coursesFolder and coursesFolder:GetDescendants()) or {} do
 end
 record("lot04.serveur.points_inscription_courses", racePrompts == 6, racePrompts)
 record("lot04.serveur.canal_courses", ReplicatedStorage:FindFirstChild("AWRacing") ~= nil)
+-- Lot 0.7 : canaux d'interface et des groupes ; profils au schéma 4 (préférences).
+record(
+    "lot04.serveur.interface_et_groupes",
+    ReplicatedStorage:FindFirstChild("AWInterface") ~= nil and ReplicatedStorage:FindFirstChild("AWSocial") ~= nil,
+    nil
+)
 for _, player in Players:GetPlayers() do
     local profileSession = ProfileService.get(player)
     local data = profileSession and profileSession.Data

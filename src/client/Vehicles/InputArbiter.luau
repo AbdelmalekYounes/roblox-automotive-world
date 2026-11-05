@@ -56,6 +56,11 @@ export type GamepadSample = {
 export type Context = {
     Typing: boolean,
     WindowFocused: boolean,
+    -- Lot 0.7 : une interface modale complète capture la navigation (clavier
+    -- et manette) ; comme pendant une saisie, les deux périphériques perdent
+    -- la main et devront être revus au repos. Jamais vrai en roulant
+    -- (AUD-UI-01 : les menus complets sont fermés en mouvement).
+    UiCaptured: boolean?,
 }
 
 export type Command = {
@@ -157,8 +162,9 @@ function InputArbiter.step(
     dt: number
 ): (Command, Event?)
     local event: Event? = nil
-    local keyboardReadable = context.WindowFocused and not context.Typing
-    local gamepadReadable = context.WindowFocused
+    local captured = context.UiCaptured == true
+    local keyboardReadable = context.WindowFocused and not context.Typing and not captured
+    local gamepadReadable = context.WindowFocused and not captured
     local keys = if keyboardReadable then rawKeys else InputArbiter.NeutralKeyboard
     local pad = InputArbiter.shapeGamepad(if gamepadReadable then rawPad else InputArbiter.DisconnectedGamepad)
 

@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.6. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.7. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03, lot 0.6 (branche `feat/racing-competition-0.6`).
+Dernière mise à jour : 2026-11-03, lot 0.7 (branche `feat/ui-gps-social-0.7`).
 
 ## 1. Anomalies ouvertes
 
@@ -164,6 +164,29 @@ ni la conduite réelle en course, ni la persistance Roblox, ni l'inter-serveurs.
 | QA-R15 | Ressenti | P2 | Ressenti des départs, de la grille, des pénalités et du drift par le propriétaire | Avis consigné | **NON TESTÉ** (humain) |
 | QA-R16 | Installations | P3 | Portiques, places et dalles d'inscription posés au sol sur les 16 parcours (relief, ponts) | Aucun élément flottant ni enterré, aucun obstacle sur la trajectoire | **NON TESTÉ** |
 | QA-R17 | Mode protégé en jeu | P1 | Course protégée avec dégâts antérieurs, chocs pendant la course, sortie brutale du jeu | Dégâts antérieurs conservés, dégâts de course effacés, rien réparé gratuitement | **NON TESTÉ** (logique Lune seulement) |
+
+## 3 quinquies. Essais reportés du lot 0.7 (interface, GPS, smartphone, social)
+
+Les règles (itinéraires, recalcul, projection, points d'intérêt, pile d'écrans, focus, blocage en conduite,
+raccourcis, confirmations, notifications, groupes, partage de position, filtrage, localisation, préférences) sont
+vérifiées par Lune (`tests/lune/specs/Lot07Interface.luau`). Cela ne valide ni l'affichage réel, ni l'ergonomie,
+ni les communications Roblox, ni la confidentialité en multijoueur réel.
+
+| Id | Système | Priorité | Essai | Attendu | État |
+|---|---|---|---|---|---|
+| QA-U01 | Parcours utilisateur | P1 | Parcours complet : à pied, téléphone, carte, destination, conduite guidée, mission, course, garage, marché | Navigation cohérente, une seule fenêtre à la fois, focus rendu | **NON TESTÉ** (humain) |
+| QA-U02 | GPS réel | P1 | Guidage sur plusieurs km avec trafic PNJ et streaming réel des secteurs ; sortie d'itinéraire et recalcul | Indications justes et à temps, recalcul sans saccade, aucun gel | **NON TESTÉ** |
+| QA-U03 | Clavier / manette | P1 | Navigation complète à la manette ; passage clavier ↔ manette pendant une confirmation ; touches personnalisées | Aucune accélération ni confirmation involontaire, focus toujours récupérable | **NON TESTÉ** (humain) |
+| QA-U04 | Lisibilité | P2 | Résolutions (720p à 4K, ultra-large), tailles de texte, contraste renforcé, opacité | HUD et téléphone lisibles sans masquer la route | **NON TESTÉ** |
+| QA-U05 | Conduite et menus | P1 | Ouvrir un panneau à l'arrêt puis démarrer ; ouvrir le téléphone en roulant | Mode rapide ou masquage avec brouillon, aucune validation, aucun freinage | **NON TESTÉ** (humain) |
+| QA-U06 | Charge sociale | P2 | 24 joueurs, 3 groupes de 8, partage de position actif | Envois par destinataire stables, aucune fuite de position | **NON TESTÉ** |
+| QA-U07 | Communications | P1 | Canaux texte de groupe et de proximité sous les règles Roblox (âge, confidentialité, modération), comptes restreints | Messages filtrés par Roblox, refus respectés, aucun contournement | **NON TESTÉ** |
+| QA-U08 | Confidentialité multijoueur | P1 | Deux joueurs dans un groupe : aucune vue du solde, de la collection, des propriétés ; partage désactivé par défaut puis révoqué | Rien de privé reçu (inspection des messages réseau) | **NON TESTÉ** (logique Lune seulement) |
+| QA-U09 | Préférences sur DataStore | P2 | Préférences sauvegardées puis retrouvées après reconnexion, sur une expérience de test isolée ; changements rapides répétés | Retrouvées ; aucune écriture par changement visuel | **NON TESTÉ** (mémoire seulement) |
+| QA-U10 | Téléphone en main | P2 | Modèle dans la main (R15, R6), bras levé, rangement, vu par les autres joueurs | Pose correcte, écran générique pour les autres | **NON TESTÉ** |
+| QA-U11 | Mini-carte et carte | P2 | Coût du dessin (mini-carte 5 Hz, carte), lisibilité des routes et des icônes, rotation | Images par seconde stables ; dessin lisible | **NON TESTÉ** |
+| QA-U12 | Localisation | P2 | Relecture FR/EN de tous les textes, longueur des textes anglais dans les cadres | Aucun débordement, traductions justes | **NON TESTÉ** (relecture lot 0.8) |
+| QA-U13 | Notifications en conduite | P2 | Différées, compactes et critiques pendant une conduite réelle ; aide visuelle | Route dégagée, alertes critiques perçues | **NON TESTÉ** (humain) |
 
 ## 4. Charge, performance et stabilité
 

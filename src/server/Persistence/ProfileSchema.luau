@@ -20,9 +20,11 @@
     Pur : aucune dépendance Roblox, testable par Lune.
 ]]
 
+local Preferences = require(script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared.UI.Preferences)
+
 local ProfileSchema = {}
 
-ProfileSchema.Version = 3
+ProfileSchema.Version = 4
 -- Taille maximale visée d'un enregistrement (le DataStore accepte 4 Mo).
 -- Au-delà, les nouvelles acquisitions sont refusées par une limite TECHNIQUE
 -- explicite, à arbitrer (§4.2) ; stratégie de fractionnement : rapport du lot.
@@ -236,6 +238,8 @@ export type Profile = {
     Services: { [string]: ServiceEntry },
     -- Lot 0.6 (schéma 3)
     Racing: Racing,
+    -- Lot 0.7 (schéma 4) : préférences d'interface (aucune donnée sensible).
+    Preferences: Preferences.Prefs,
 }
 
 function ProfileSchema.new(userId: number, now: number, environment: string): Profile
@@ -261,6 +265,7 @@ function ProfileSchema.new(userId: number, now: number, environment: string): Pr
         Applied = {},
         Services = {},
         Racing = ProfileSchema.newRacing(),
+        Preferences = Preferences.defaults(),
     }
 end
 
@@ -324,6 +329,7 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
             "Applied",
             "Services",
             "Racing",
+            "Preferences",
         }
     do
         check(type(profile[key]) == "table", "Missing:" .. key)
