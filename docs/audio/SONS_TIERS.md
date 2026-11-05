@@ -77,6 +77,18 @@ Contrôles de l'outil sur la variante `moteur` (2026-11-05) :
   (irrégularité naturelle) ;
 - démo : saut de niveau d'une trame de 60 ms à la suivante, médiane 0,54 dB.
 
+**Défaut de l'outil corrigé le 2026-11-05 (3ᵉ écoute du propriétaire : « on entend des coupures les deux premières et
+les deux dernières secondes »).**
+- **Cause :** le passage de 96 à 48 kHz calculait `indice × 96 000` en entiers 32 bits (type par défaut de numpy sous
+  Windows). Au-delà de ~0,47 s de son, le calcul débordait et lisait des positions fausses : des coupures périodiques
+  d'environ 0,4 s toutes les 0,9 s (−9 dB).
+- **Sons touchés :** ceux issus d'une prise stable de plus de 0,5 s, dans les versions 1 et 2 : boucles de ralenti,
+  `on.1300`, `on.1700` et `off.6300` de la variante échappement, `start`, `stop` et `stall`.
+- **Correction :** indices en flottants, plus le test `test_resampling_keeps_long_signals_intact`.
+- **Après correction :** aucune boucle ne présente de creux de plus de 8 dB sous sa médiane (trames de 50 ms). Démo
+  « moteur » : ralenti constant à −23 dBFS. La démo « échappement » garde un creux d'environ 4 dB vers 9,8 s, pendant
+  la descente.
+
 Limites connues :
 - le ralenti de la variante « moteur » tourne à ~1 420 tr/min sur le banc. Il est ramené à 1 000 tr/min (× 0,70),
   puis joué jusqu'à 850 tr/min ;

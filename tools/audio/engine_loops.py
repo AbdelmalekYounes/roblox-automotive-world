@@ -231,7 +231,10 @@ def to_out_rate(signal: np.ndarray, sr: int) -> np.ndarray:
     spec[np.fft.rfftfreq(len(signal), 1 / sr) > 0.45 * OUT_RATE] = 0
     smooth = np.fft.irfft(spec, len(signal))
     n_out = int(len(signal) * OUT_RATE / sr)
-    return np.interp(np.arange(n_out) * sr / OUT_RATE, np.arange(len(signal)), smooth)
+    # Indices en flottants : sous Windows, `np.arange` donne des entiers 32 bits et `indice × 96 000` débordait
+    # au-delà de ~0,47 s de son (positions fausses, donc coupures entendues par le propriétaire, versions 1 et 2).
+    positions = np.arange(n_out, dtype=np.float64) * (sr / OUT_RATE)
+    return np.interp(positions, np.arange(len(signal), dtype=np.float64), smooth)
 
 
 def highpass(signal: np.ndarray, sr: int, cutoff: float = 25.0) -> np.ndarray:

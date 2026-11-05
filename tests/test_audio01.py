@@ -69,3 +69,17 @@ def test_window_holds_enough_engine_cycles():
     anchors = [(0.0, 1500.0), (1.0, 2500.0)]
     t0, t1, _, _ = el.window_for(anchors, 1700)
     assert t1 - t0 >= 8 * 120 / 1700 - 1e-9 and 0.0 <= t0 < t1 <= 1.0
+
+
+def test_resampling_keeps_long_signals_intact():
+    """Régression (coupures entendues par le propriétaire) : 96 kHz → 48 kHz sur 3 s, le niveau reste constant
+    par trames de 100 ms et le signal suit l'original (aucun débordement d'entier dans les indices)."""
+    sr = 96000
+    t = np.arange(3 * sr, dtype=np.float64) / sr
+    signal = 0.3 * np.sin(2 * np.pi * 440 * t)
+    out = el.to_out_rate(signal, sr)
+    assert len(out) == 3 * el.OUT_RATE
+    frames = out[: len(out) // 4800 * 4800].reshape(-1, 4800)
+    rms = np.sqrt((frames**2).mean(axis=1))
+    assert rms.min() > 0.95 * rms.max()
+    assert np.max(np.abs(out - signal[::2])) < 0.01

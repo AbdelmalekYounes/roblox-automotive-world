@@ -150,3 +150,9 @@ mesurées et corrections : `docs/audio/SONS_TIERS.md` (§ « Sons produits — v
 
 Étape suivante : écoute des deux démos par le propriétaire et choix de la variante. Ensuite, envoi sur Roblox des
 19 sons de la variante choisie, puis identifiants au manifeste.
+
+## 9. Coupures au ralenti, défaut de l'outil (2026-11-05)
+
+Retour du propriétaire sur la version 2 : « on entend des coupures les deux premières et les deux dernières
+secondes », pour les deux variantes. La cause est un débordement d'entier dans le rééchantillonnage 96 → 48 kHz :
+voir `docs/audio/SONS_TIERS.md`. Correction et test de non-régression ; sons et démos reproduits.
