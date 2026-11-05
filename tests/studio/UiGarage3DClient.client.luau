@@ -155,7 +155,15 @@ local secondButton: GuiButton? = nil
 for _, modelId in { "proto_p02", "proto_p03", "proto_p01" } do
     local definition = VehicleDefinitions.get(modelId)
     if modelId ~= firstId and definition then
-        secondButton = Gui.findButton(panel, definition.DisplayName)
+        -- Collection en cartes (UI-03) : le nom est imbriqué dans la carte (Infos > Nom).
+        for _, item in panel:GetDescendants() do
+            if item:IsA("TextButton") and string.sub(item.Name, 1, 6) == "Carte_" then
+                local label = item:FindFirstChild("Nom", true) :: TextLabel?
+                if label and label.Text == definition.DisplayName then
+                    secondButton = item
+                end
+            end
+        end
         if secondButton then
             secondId = modelId
             break

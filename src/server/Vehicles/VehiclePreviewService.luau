@@ -11,7 +11,8 @@
     - lecture seule : aucune possession, aucune donnée de profil, aucune écriture ; seul l'identifiant de modèle est
       lu dans la demande, validé (forme, puis existence dans le catalogue) ;
     - la copie n'est PAS un véhicule : étiquette et attributs d'identité retirés (aucun système du jeu ne la prend
-      pour un véhicule), pièces ancrées, sans collision ni requête, joints, forces, invites et lumières supprimés ;
+      pour un véhicule), pièces ancrées, sans collision ni requête, joints, forces, invites, lumières et inscriptions
+      (SurfaceGui, non rendues dans un ViewportFrame) supprimés ;
     - au plus une copie par modèle du catalogue (18 au lancement) ; délai minimal entre deux demandes d'un joueur.
 ]]
 
@@ -62,6 +63,8 @@ local function makeInert(model: Model, definition: any)
             or item:IsA("ProximityPrompt")
             or item:IsA("Light")
             or item:IsA("BaseScript")
+            -- Inscriptions de carrosserie (SurfaceGui) : jamais rendues dans un ViewportFrame, retirées de la copie.
+            or item:IsA("LayerCollector")
         then
             item:Destroy()
         end

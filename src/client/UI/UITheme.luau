@@ -164,14 +164,20 @@ function UITheme.button(text: string, props: { [string]: any }, parent: Instance
         Thickness = 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
     }, button)
-    local base = button.BackgroundColor3
+    -- Couleur de repos relevée à l'entrée du pointeur (et non à la création) : un bouton recoloré après coup
+    -- (principal ambre, puce sélectionnée) retrouve sa couleur au départ du pointeur (défaut vu en VM, UI-03).
+    local base: Color3? = nil
     button.MouseEnter:Connect(function()
         if button.Active then
+            base = button.BackgroundColor3
             button.BackgroundColor3 = UITheme.color("Hover")
         end
     end)
     button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = base
+        if base then
+            button.BackgroundColor3 = base
+            base = nil
+        end
     end)
     -- Focus manette et clavier : contour ambre de 2 px (maquette §8).
     button.SelectionGained:Connect(function()

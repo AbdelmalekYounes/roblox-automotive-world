@@ -304,4 +304,209 @@ return function(T: any, H: any)
             T.truthy(string.find(garage, needle, 1, true) ~= nil, needle)
         end
     end)
+
+    T.suite("UI-03 — garage V1.2 recomposé (règles de présentation)")
+
+    local View = H.require("ReplicatedStorage.Shared.UI.GarageView")
+
+    T.test("1. navigation : six onglets en boucle, retour d'un niveau puis fermeture", function()
+        T.equal(#View.Tabs, 6, "six onglets")
+        T.equal(View.cycleTab("Collection", 1), "Véhicule", "suivant")
+        T.equal(View.cycleTab("Collection", -1), "Invitations", "précédent en boucle")
+        T.equal(View.cycleTab("Invitations", 1), "Collection", "suivant en boucle")
+        T.equal(View.backTab("Préparation"), "Véhicule", "Préparation → Véhicule")
+        T.equal(View.backTab("Configurations"), "Véhicule", "Configurations → Véhicule")
+        T.equal(View.backTab("Véhicule"), "Collection", "Véhicule → Collection")
+        T.equal(View.backTab("Propriétés"), "Collection", "Propriétés → Collection")
+        T.equal(View.backTab("Collection"), nil, "Collection → fermer")
+    end)
+
+    T.test(
+        "2. états du serveur : en attente, confirmé, refusé, hors ligne ; jamais confirmé par défaut",
+        function()
+            T.equal(View.statusKind("Pending"), "Pending")
+            T.equal(View.statusKind("Confirmed"), "Confirmed")
+            T.equal(View.statusKind("Rejected"), "Rejected")
+            T.equal(View.statusKind("Unavailable"), "Offline")
+            T.equal(View.statusKind(nil), "Offline", "appel échoué = hors ligne")
+            T.equal(View.statusKind("Ok"), "Info", "lecture : ni confirmé ni refusé")
+            local bg, fg = View.statusTokens("Confirmed")
+            T.truthy(bg == "OkBg" and fg == "OkText", "confirmé en vert")
+            bg, fg = View.statusTokens("Offline")
+            T.truthy(bg == "DangerBg" and fg == "DangerText", "hors ligne en rouge")
+            bg = View.statusTokens("Pending")
+            T.equal(bg, "AmberSoft", "en attente en ambre")
+            T.truthy(View.inGarage({ Kind = "Property" }) and View.inGarage({ Kind = "PublicGarage" }), "au garage")
+            T.truthy(not View.inGarage({ Kind = "Visit" }) and not View.inGarage(nil), "hors garage")
+        end
+    )
+
+    T.test("3. actions du véhicule : disponibilités et raisons conformes aux règles du serveur", function()
+        local property = { Id = "P1", Capacity = 2, Slots = { ["1"] = "V9" } }
+        local inProp = { Context = { Kind = "Property", PropertyId = "P1" } }
+        local stored = { Id = "V1", Storage = { State = "Stored" } }
+        local a = View.vehicleActions(stored, inProp, property)
+        T.truthy(a.TakeOut.Enabled, "sortir possible")
+        T.truthy(a.Display.Enabled and a.Display.Slot == 2, "exposer à la première place libre")
+        T.truthy(not a.Store.Enabled and a.Store.Reason == "Déjà rangé", "ranger : déjà rangé")
+        local displayed = { Id = "V1", Storage = { State = "Displayed" } }
+        a = View.vehicleActions(displayed, inProp, property)
+        T.truthy(a.Store.Enabled and a.Store.Kind == "Store", "ranger un véhicule exposé")
+        local out = { Id = "V1", Storage = { State = "Out" } }
+        a = View.vehicleActions(out, { Context = {} }, nil)
+        T.truthy(a.Store.Enabled and a.Store.Kind == "Return", "rentrer un véhicule sorti")
+        T.truthy(not a.TakeOut.Enabled, "déjà sorti")
+        a = View.vehicleActions(stored, { Context = {}, OutVehicle = "V2" }, nil)
+        T.truthy(not a.TakeOut.Enabled and a.TakeOut.Reason == "Un autre véhicule est déjà sorti", "un seul sorti")
+        T.truthy(
+            not a.Display.Enabled and a.Display.Reason == "Exige d'être dans votre propriété",
+            "exposer hors propriété"
+        )
+        local full = { Id = "P1", Capacity = 1, Slots = { ["1"] = "V9" } }
+        a = View.vehicleActions(stored, inProp, full)
+        T.truthy(not a.Display.Enabled and a.Display.Reason == "Aucune place libre", "aucune place libre")
+    end)
+
+    T.test("4. fiche technique : valeurs lues dans la définition et le catalogue, aucune mesure inventée", function()
+        local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
+        local Catalog = H.require("ReplicatedStorage.Shared.Economy.VehicleCatalog")
+        for _, id in { "wk_comete", "proto_p01" } do
+            local definition = Definitions.get(id)
+            T.truthy(definition ~= nil, id)
+            local entry = Catalog.forDefinition(id)
+            local specs = View.specs(definition, entry)
+            local keys = {}
+            for _, spec in specs do
+                keys[spec.Key] = spec.Value
+            end
+            for _, key in
+                {
+                    "Énergie",
+                    "Boîte",
+                    "Transmission",
+                    "Masse",
+                    "L × l × h (emp.) m",
+                    "Réservoir / batterie",
+                    "Aides",
+                }
+            do
+                T.truthy(keys[key] ~= nil, id .. " : " .. key)
+            end
+            T.equal(
+                keys["Masse"],
+                View.thousands(definition.Chassis.MassKg) .. " kg",
+                id .. " : masse de la définition"
+            )
+            T.truthy(
+                keys["0–100 (banc)"] == nil and keys["V. annoncée"] == nil,
+                id .. " : aucune mesure non fournie"
+            )
+            if entry then
+                T.equal(keys["Valeur catalogue"], View.thousands(entry.Price) .. " cr", id .. " : prix du catalogue")
+            else
+                T.equal(keys["Valeur catalogue"], nil, id .. " : pas de prix hors catalogue")
+            end
+            local kw = View.peakPowerKw(definition)
+            T.truthy(kw ~= nil and kw > 20 and kw < 1200, id .. " : puissance plausible " .. tostring(kw))
+        end
+        T.equal(View.category(Definitions.get("proto_p01"), nil), "Prototype technique", "prototype hors catalogue")
+        T.equal(View.category(nil, { Category = "Supercar" }), "Supercar", "catégorie du catalogue")
+        local badge = View.availability(nil, { Availability = "PendingApproval" })
+        T.equal(badge, "Proposé · en attente d'approbation", "gamme non approuvée signalée")
+    end)
+
+    T.test("5. réglages : pas, mise en forme et plage de la maquette", function()
+        local mult = { Min = 0.85, Max = 1.2, Default = 1, Unit = "×" }
+        T.equal(View.tuningStep(mult), 0.01)
+        T.equal(View.formatTuning(mult, 1.05), "1,05×")
+        T.equal(View.formatTuning({ Unit = "m" }, 0.01), "+0,010 m")
+        T.equal(View.formatTuning({ Unit = "m" }, -0.02), "-0,020 m")
+        T.equal(View.formatTuning({ Unit = "tr/min" }, 6500), "6500 tr/min")
+        T.equal(View.formatTuning({ Unit = "" }, 0.62), "62 %")
+        T.equal(View.snap(mult, 1.234), 1.2, "borné au maximum")
+        T.truthy(math.abs(View.snap(mult, 1.0449) - 1.04) < 1e-9, "arrondi au pas")
+        T.equal(View.snap({ Min = 5000, Max = 7000, Unit = "tr/min" }, 6024), 6000, "pas de 50 tr/min")
+    end)
+
+    T.test("6. brouillon : détecté seulement s'il diffère de l'enregistré ; accessoires bornés", function()
+        local vehicle = {
+            Tuning = { SpringFront = 1.1 },
+            Cosmetics = {
+                BodyColor = "Rouge",
+                AccentColor = "Noir",
+                Finish = "Gloss",
+                Wheels = "Stock",
+                ShowLabel = true,
+                BodyKit = { Front = "Stock" },
+                Accessories = {},
+            },
+        }
+        T.truthy(not View.hasDraft(vehicle, {}, nil), "rien")
+        T.truthy(not View.hasDraft(vehicle, { SpringFront = 1.1 }, nil), "valeur identique")
+        T.truthy(View.hasDraft(vehicle, { SpringFront = 1.12 }, nil), "réglage modifié")
+        local copy = table.clone(vehicle.Cosmetics)
+        T.truthy(not View.hasDraft(vehicle, {}, copy), "esthétique identique")
+        copy.BodyColor = "Bleu"
+        T.truthy(View.hasDraft(vehicle, {}, copy), "couleur modifiée")
+        local list = View.toggleAccessory({}, "RoofRack", 2)
+        list = View.toggleAccessory(list, "Stripes", 2)
+        list = View.toggleAccessory(list, "LightBar", 2)
+        T.equal(#list, 2, "deux accessoires au plus")
+        list = View.toggleAccessory(list, "RoofRack", 2)
+        T.equal(#list, 1, "retrait")
+    end)
+
+    T.test("7. configurations : enregistrer dans l'ordre, appliquer et supprimer s'il existe, au garage", function()
+        local configs = { { Name = "A", Realizable = true } }
+        local caps = { ApplyConfiguration = true }
+        local a = View.configActions(1, configs, true, caps)
+        T.truthy(a.Save.Enabled and a.Apply.Enabled and a.Delete.Enabled, "emplacement 1 rempli")
+        a = View.configActions(2, configs, true, caps)
+        T.truthy(
+            a.Save.Enabled and not a.Apply.Enabled and a.Apply.Reason == "Emplacement vide",
+            "emplacement 2 suivant"
+        )
+        a = View.configActions(3, configs, true, caps)
+        T.truthy(not a.Save.Enabled and a.Save.Reason == "Remplir dans l'ordre", "pas de trou")
+        a = View.configActions(1, configs, false, {})
+        T.truthy(not a.Save.Enabled and not a.Delete.Enabled and not a.Apply.Enabled, "hors garage")
+        T.equal(a.Delete.Reason, "Exige une propriété ou un garage public", "raison hors garage")
+    end)
+
+    T.test("8. collection : colonnes des cartes aux résolutions de référence", function()
+        local function cols(width: number, compactMode: boolean): number
+            local c = View.cardColumns(width, compactMode, 16)
+            return c
+        end
+        T.equal(cols(1920 - 56, false), 5, "1920 : 5 cartes de 300 px au moins")
+        T.equal(cols(1280 - 56, true), 4, "1280 compact : 4 cartes de 240 px au moins")
+        T.equal(cols(3440 - 56, false), 10, "ultralarge 3440 : 10 cartes")
+        local c, w = View.cardColumns(1864, false, 16)
+        T.truthy(w >= 300 and c * w + (c - 1) * 16 <= 1864, "largeur des cartes ≥ 300 px, rien ne déborde")
+        T.equal(cols(200, true), 1, "au moins une colonne")
+    end)
+
+    T.test("9. garage : confirmations des choix définitifs, anti double envoi, aucun glyphe en icône", function()
+        local garage = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.GaragePanel")
+        for _, needle in
+            {
+                'confirmThen(tr("Choisir %s comme véhicule de départ',
+                'confirmThen(tr("Revendre %s',
+                'confirmThen(tr("Supprimer la configuration %d',
+                "if busy then",
+                "data.RequestId = HttpService:GenerateGUID(false)",
+                "VehiclePreview.thumbnail(",
+                "Back = back,",
+                "GarageView.vehicleActions(",
+                "TuningRules.validate(",
+            }
+        do
+            T.truthy(string.find(garage, needle, 1, true) ~= nil, needle)
+        end
+        for _, glyph in { "◀", "▶", "←", "→", "‹", "›", "✓", "✕" } do
+            T.truthy(string.find(garage, glyph, 1, true) == nil, "glyphe absent : " .. glyph)
+        end
+        local manager = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.UIManager")
+        T.truthy(string.find(manager, "screen.Back()", 1, true) ~= nil, "retour d'un niveau avant fermeture")
+    end)
 end
