@@ -234,6 +234,95 @@ do
     end
 end
 
+-- Concession (invite, vraie touche E) : devis → confirmation → touche Entrée (sans effet) → Annuler → second devis
+-- → la confirmation doit réapparaître (reproduction de l'arrêt des clics vu dans la session « ui », 20261105-140137).
+do
+    local zone = workspace:FindFirstChild("AutomotiveTestZone")
+    local part = zone and zone:FindFirstChild("ConcessionEssai", true) :: BasePart?
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+    if part and root then
+        local from = part.Position + Vector3.new(6, 3, 0)
+        root.CFrame = CFrame.lookAt(from, Vector3.new(part.Position.X, from.Y, part.Position.Z))
+        root.AssemblyLinearVelocity = Vector3.zero
+        task.wait(1.2)
+        local prompt = part:FindFirstChildWhichIsA("ProximityPrompt", true)
+        Gui.key("E", math.floor(((prompt and prompt.HoldDuration) or 0.3) * 1000) + 500)
+        local economyGui = playerGui:FindFirstChild("AWEconomy") :: ScreenGui
+        local economy = economyGui and economyGui:FindFirstChild("Economie") :: Frame?
+        local opened = economy ~= nil
+            and waitFor(function()
+                return (economy :: Frame).Visible
+            end, 5)
+        record("ui_panels2.concession.ouverture_invite", opened)
+        if economy and opened then
+            task.wait(1)
+            local function quoteButton(): GuiButton?
+                for _, item in economy:GetDescendants() do
+                    if
+                        item:IsA("TextButton")
+                        and item.Text == "Devis d'achat"
+                        and item.Active
+                        and not item:GetAttribute("AWDisabled")
+                        and Gui.shown(item)
+                    then
+                        return item
+                    end
+                end
+                return nil
+            end
+            local function veilShown(): Instance?
+                return economyGui:FindFirstChild("VoileConfirmation")
+            end
+            local ok1 = Gui.click(quoteButton(), "Devis d'achat (1)")
+            local first = waitFor(function()
+                return veilShown() ~= nil
+            end, 5)
+            Gui.key("Return")
+            task.wait(1.2)
+            local veil = veilShown()
+            local okCancel = veil ~= nil and Gui.click(Gui.findButton(veil, "Annuler"), "Annuler")
+            task.wait(1)
+            local gone = veilShown() == nil
+            local ok2 = Gui.click(quoteButton(), "Devis d'achat (2)")
+            local second = waitFor(function()
+                return veilShown() ~= nil
+            end, 5)
+            record(
+                "ui_panels2.concession.devis_annuler_devis",
+                ok1 and first and okCancel and gone and ok2 and second,
+                string.format(
+                    "1er devis %s, confirmation %s, Annuler %s, voile retiré %s, 2e devis %s, confirmation %s",
+                    tostring(ok1),
+                    tostring(first),
+                    tostring(okCancel),
+                    tostring(gone),
+                    tostring(ok2),
+                    tostring(second)
+                )
+            )
+            Gui.shot("ui_panels2_concession_second_devis", { lot = "UI-04" })
+            local again = veilShown()
+            if again then
+                Gui.click(Gui.findButton(again, "Annuler"), "Annuler")
+                task.wait(0.8)
+            end
+            local fermer = economy:FindFirstChild("Fermer", true) :: GuiButton?
+            local okClose = Gui.click(fermer, "Fermer")
+            record(
+                "ui_panels2.concession.fermer_apres_devis",
+                okClose and waitFor(function()
+                    return not economy.Visible
+                end, 3),
+                if fermer
+                    then string.format("Fermer en (%.0f, %.0f)", fermer.AbsolutePosition.X, fermer.AbsolutePosition.Y)
+                    else "absent"
+            )
+        end
+    else
+        record("ui_panels2.concession.ouverture_invite", false, "ConcessionEssai ou personnage absent")
+    end
+end
+
 local shots = Gui.report().shots
 record("ui_panels2.captures", #shots > 0, #shots)
 reportEvent:FireServer({ vehicle = "ui_panels2", steps = steps, measures = { captures = #shots } })
