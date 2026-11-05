@@ -53,6 +53,41 @@ function WeatherService.force(newState: WeatherModel.State, roadWetness: number?
     end
 end
 
+-- Lot ADMIN-01 : réglage de l'horloge par le menu d'administration. L'horloge est réancrée à l'heure courante (ou à
+-- `hour`) à l'instant présent, avec la vitesse `speed` (0 = figée). Fonctionne aussi dans la place de développement,
+-- où le cycle n'est pas démarré : les clients appliquent l'heure dès que les attributs existent.
+function WeatherService.setClock(hour: number?, speed: number?)
+    local now = Workspace:GetServerTimeNow()
+    local epoch = Workspace:GetAttribute("AWClockEpoch")
+    local anchor = Workspace:GetAttribute("AWClockAnchor")
+    local current = Workspace:GetAttribute("AWClockSpeed")
+    local currentSpeed = if type(current) == "number" then current else 1
+    local currentHour = if type(epoch) == "number"
+        then WeatherModel.clockTime(now, epoch, if type(anchor) == "number" then anchor else nil, currentSpeed)
+        else WeatherModel.StartHour
+    Workspace:SetAttribute("AWClockAnchor", hour or currentHour)
+    Workspace:SetAttribute("AWClockSpeed", speed or currentSpeed)
+    Workspace:SetAttribute("AWClockEpoch", now)
+end
+
+-- Heure et vitesse courantes (menu d'administration).
+function WeatherService.clock(): (number, number)
+    local now = Workspace:GetServerTimeNow()
+    local epoch = Workspace:GetAttribute("AWClockEpoch")
+    local anchor = Workspace:GetAttribute("AWClockAnchor")
+    local speed = Workspace:GetAttribute("AWClockSpeed")
+    local s = if type(speed) == "number" then speed else 1
+    if type(epoch) ~= "number" then
+        return WeatherModel.StartHour, s
+    end
+    return WeatherModel.clockTime(now, epoch, if type(anchor) == "number" then anchor else nil, s), s
+end
+
+-- État météo courant (menu d'administration).
+function WeatherService.state(): string
+    return state
+end
+
 function WeatherService.start()
     assert(not started, "WeatherService déjà démarré")
     started = true

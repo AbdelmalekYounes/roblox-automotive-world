@@ -64,9 +64,23 @@ return function(T: any, H: any)
         T.equal(#EnvironmentConfig.ProdGameIds, 0)
         for _, studio in { true, false } do
             local resolved = Environment.resolve(123456, studio, EnvironmentConfig)
-            T.equal(resolved.Name, "Dev")
+            -- Lot ADMIN-01 (QA-D11) : hors Studio, une expérience non déclarée n'est plus « Dev ».
+            T.equal(resolved.Name, if studio then "Dev" else "Unconfigured")
             T.equal(resolved.Store, "Memory")
         end
+    end)
+
+    T.test("QA-D11 : place publiée non déclarée → ni crédits synthétiques ni achat de développement", function()
+        local resolved = Environment.resolve(987654, false, EnvironmentConfig)
+        T.equal(resolved.Name, "Unconfigured")
+        T.equal(resolved.Reason, "UndeclaredPublishedGame")
+        T.truthy(not Environment.allowsSynthetic(resolved), "aucune donnée synthétique")
+        local VehicleCatalog = H.require("ReplicatedStorage.Shared.Economy.VehicleCatalog")
+        for _, entry in VehicleCatalog.Entries do
+            T.truthy(not VehicleCatalog.purchasable(entry, resolved.Name), entry.Id .. " : non achetable")
+        end
+        local StarterCatalog = H.require("ReplicatedStorage.Shared.Garage.StarterCatalog")
+        T.equal(#StarterCatalog.candidates(resolved.Name), 0, "aucun véhicule de départ synthétique")
     end)
 
     T.test("test et production séparés ; Studio sur la production retombe en mémoire", function()

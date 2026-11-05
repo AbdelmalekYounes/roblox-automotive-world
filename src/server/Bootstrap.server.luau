@@ -26,10 +26,11 @@ local VehiclePreviewService = require(script.Parent:WaitForChild("Vehicles"):Wai
 local OnboardingService = require(script.Parent:WaitForChild("Onboarding"):WaitForChild("OnboardingService"))
 local RadioService = require(script.Parent:WaitForChild("Audio"):WaitForChild("RadioService"))
 local AvatarService = require(script.Parent:WaitForChild("Avatar"):WaitForChild("AvatarService"))
+local AdminService = require(script.Parent:WaitForChild("Admin"):WaitForChild("AdminService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
 assert(Settings.RequirementsVersion == "1.0", "Version du cahier des charges non conforme")
-assert(Settings.LaunchVehicleModelCount == 18, "Catalogue de lancement incohérent")
+assert(Settings.LaunchVehicleModelCount == 2, "Catalogue de lancement incohérent")
 assert(Settings.LaunchZoneCount == 7, "Nombre de zones incohérent")
 
 if PlaceConfig.Mode == "OpenWorld" then
@@ -66,6 +67,8 @@ OnboardingService.start()
 RadioService.start()
 -- Lot AVATAR-01 : contrôle R15, apparence initiale, tenues (catalogue sans ressource).
 AvatarService.start()
+-- Lot ADMIN-01 : menu d'administration (droits vérifiés côté serveur).
+AdminService.start()
 -- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
 ProfileService.start()
 ReplicatedStorage:SetAttribute("AutomotiveWorldMode", PlaceConfig.Mode)

@@ -350,7 +350,7 @@ return function(T: any, H: any)
             return table.concat(list, ",")
         end
         local missing, mismatched, total = {}, {}, 0
-        for _, name in { "GaragePanel", "EconomyPanel", "RacePanel" } do
+        for _, name in { "GaragePanel", "EconomyPanel", "RacePanel", "AdminPanel" } do
             local node = H.game()
             for segment in string.gmatch(CLIENT .. "UI." .. name, "[^%.]+") do
                 node = node:FindFirstChild(segment)

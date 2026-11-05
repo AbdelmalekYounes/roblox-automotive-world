@@ -37,7 +37,7 @@ def test_contract_values_and_bootstrap():
     config = (SRC / "shared/ProjectSettings.luau").read_text(encoding="utf-8")
     assert 'RequirementsVersion = "1.0"' in config
     assert 'DevelopmentVersion = "0.4.0-dev"' in config
-    assert "LaunchVehicleModelCount = 18" in config
+    assert "LaunchVehicleModelCount = 2" in config  # lot BASE-01, amendement A-01
     assert "LaunchZoneCount = 7" in config
     assert "MaximumPlayersTarget = 24" in config
     assert "TargetFps = 60" in config

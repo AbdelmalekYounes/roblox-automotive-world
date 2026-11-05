@@ -95,3 +95,16 @@ dans un magasin de test.
 - **A4** — Montant maximal de crédits par action (proposé : 1 000 000).
 - **A5** — Liste des propositions du §2 à retenir dans ce lot (le reste en lot suivant).
 - **A6** — Identifiant du compte administrateur : celui des essais VM est `youyou31110`, à confirmer.
+
+## 4. Décisions du propriétaire (2026-11-05)
+
+- **A1** : menu **actif pour les administrateurs dans tous les environnements**, Production comprise.
+- **A2** : ordre recommandé (BASE-01 clôturé et fusionné le 2026-11-05, PR #20), puis ADMIN-01, puis VEH3D-02.
+- **A3** : véhicules apparus **temporaires** seulement (aucune possession enregistrée).
+- **A4** : **100 000** crédits au plus par action.
+- **A5** : « fais tout » : toutes les propositions du §2 sont retenues.
+- **A6** : compte administrateur : celui des essais, `youyou31110` (UserId 941826283, relevé dans les rapports des tâches VM).
+
+Conséquence de A3 sur le §2 : « donner ou retirer un véhicule possédé » n'est **pas** réalisé ; les véhicules apparus
+restent temporaires.
+

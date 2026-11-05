@@ -895,6 +895,13 @@ local function installPrompts(map: Instance?, devZone: any)
     end
 end
 
+-- Lot ADMIN-01 : instantané renvoyé au joueur (solde, réputation) après une action d'administration.
+function EconomyService.refresh(player: Player)
+    if push then
+        push:FireClient(player, "Snapshot", snapshot(player))
+    end
+end
+
 function EconomyService.start(openWorld: boolean, map: Instance?, devZone: any)
     assert(not started, "EconomyService déjà démarré")
     started = true

@@ -234,6 +234,11 @@ local function breakLight(entry: Entry, name: string)
     -- Lu par VehicleLights (client) : optique éteinte jusqu'au remplacement du véhicule (lot VEH3D-01 ; sans cet
     -- attribut, l'éclairage de nuit rallumait l'optique cassée au passage suivant).
     light:SetAttribute("AWLightBroken", true)
+    -- Lot ADMIN-01 : aspect d'origine mémorisé pour la réparation du menu d'administration.
+    if light:GetAttribute("AWLightMaterial") == nil then
+        light:SetAttribute("AWLightMaterial", light.Material.Name)
+        light:SetAttribute("AWLightColor", light.Color)
+    end
     if light.Material == Enum.Material.Neon then
         light.Material = Enum.Material.Glass
         light.Color = Color3.fromRGB(60, 60, 64)
@@ -641,6 +646,49 @@ function DamageService.restore(self: Service, model: Model, state: any)
     entry.State = restored
     publish(entry)
     applyVisuals(entry)
+end
+
+--[[
+    Lot ADMIN-01 : réparation COMPLÈTE par le menu d'administration (le serveur seul l'appelle). État intact publié,
+    marques et fumée retirées, optiques cassées rétablies. Les dégâts d'un exemplaire possédé repartent intacts au
+    prochain rangement (lecture de l'état par ProgressionService). Renvoie false si le véhicule n'est pas suivi.
+]]
+function DamageService.repair(self: Service, model: Model): boolean
+    local entry = self.ByModel[model]
+    if entry == nil then
+        return false
+    end
+    entry.State = DamageModel.new()
+    entry.Visual = { Front = 0, Rear = 0, Left = 0, Right = 0 }
+    entry.Smoke = false
+    local folder = model:FindFirstChild("Degats")
+    if folder then
+        folder:ClearAllChildren()
+    end
+    local fume = entry.Root:FindFirstChild("FumeeMoteur")
+    if fume then
+        fume:Destroy()
+    end
+    for _, item in model:GetDescendants() do
+        if item:IsA("BasePart") and item:GetAttribute("AWLightBroken") == true then
+            item:SetAttribute("AWLightBroken", nil)
+            local material = item:GetAttribute("AWLightMaterial")
+            local tint = item:GetAttribute("AWLightColor")
+            if type(material) == "string" then
+                local ok, value = pcall(function()
+                    return (Enum.Material :: any)[material]
+                end)
+                if ok and value then
+                    item.Material = value
+                end
+            end
+            if typeof(tint) == "Color3" then
+                item.Color = tint
+            end
+        end
+    end
+    publish(entry)
+    return true
 end
 
 -- Retire un véhicule détruit (exemplaire personnel rangé).

@@ -2,8 +2,11 @@
 --[[
     Séparation STRICTE des environnements de stockage (AUD-ENV-01, §8.5).
 
-    - Dev  : stockage EN MÉMOIRE uniquement (rien n'est persisté). C'est le cas
-      par défaut, notamment dans Studio et dans toute expérience inconnue.
+    - Dev  : stockage EN MÉMOIRE uniquement (rien n'est persisté), DANS STUDIO.
+    - Unconfigured (lot ADMIN-01, QA-D11) : expérience PUBLIÉE dont l'identifiant
+      n'est déclaré dans aucune liste. Stockage en mémoire, mais JAMAIS de données
+      synthétiques (crédits de développement) ni d'achat réservé au développement :
+      une place publiée par erreur ne distribue rien.
     - Test : DataStore de l'expérience de TEST isolée (identifiant listé dans
       EnvironmentConfig.TestGameIds), nom de magasin « AW_TEST_… ».
     - Prod : DataStore de l'expérience de PRODUCTION (EnvironmentConfig.ProdGameIds),
@@ -16,7 +19,7 @@
 
 local Environment = {}
 
-export type Name = "Dev" | "Test" | "Prod"
+export type Name = "Dev" | "Test" | "Prod" | "Unconfigured"
 
 export type Resolved = {
     Name: Name,
@@ -54,6 +57,15 @@ function Environment.resolve(gameId: number, isStudio: boolean, config: Config):
             Store = "DataStore",
             StoreName = "AW_TEST_Profiles_" .. config.SchemaTag,
             Reason = "TestGame",
+        }
+    end
+    if not isStudio then
+        -- QA-D11 : publiée sans déclaration → ni Dev (crédits synthétiques), ni DataStore.
+        return {
+            Name = "Unconfigured",
+            Store = "Memory",
+            StoreName = "AW_UNCONFIGURED_Profiles_" .. config.SchemaTag,
+            Reason = "UndeclaredPublishedGame",
         }
     end
     return { Name = "Dev", Store = "Memory", StoreName = "AW_DEV_Profiles_" .. config.SchemaTag, Reason = "UnknownGame" }
