@@ -60,39 +60,84 @@ type Fields = {
 
 export type Renderer = typeof(setmetatable({} :: Fields, MapRenderer))
 
-function MapRenderer.new(root: Frame, maxLines: number, onMarker: ((Marker) -> ())?): Renderer
-    root.ClipsDescendants = true
-    -- Flèche du joueur : triangle BLANC dessiné (bandes empilées), contour sombre pour rester lisible sur les routes
-    -- claires ; tournée au cap (demande du propriétaire : « une flèche blanche pour le curseur du joueur »).
-    local arrow = UITheme.make("Frame", {
-        Name = "FlecheJoueur",
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Size = UDim2.fromOffset(22, 22),
-        BackgroundTransparency = 1,
-        ZIndex = 7,
-    }, root)
-    local function triangle(width: number, height: number, color: Color3, z: number)
-        local rows = math.floor(height / 2)
-        for row = 1, rows do
-            -- Pointe en haut ; base échancrée sur les deux dernières bandes (flèche de navigation).
-            local fraction = row / rows
-            local rowWidth = math.max(2, math.floor(width * fraction + 0.5))
-            local notch = if row > rows - 2 then math.floor(width * 0.28) else 0
-            local sides: { number } = if notch > 0 then { -1, 1 } else { 0 }
-            for _, side in sides do
+-- Flèche de navigation, en pixels autour de son centre (y vers le bas) : pointe, coin droit, échancrure, coin gauche.
+local ARROW_SHAPE: { { number } } = { { 0, -9 }, { 7, 8 }, { 0, 3.5 }, { -7, 8 } }
+local ARROW_OUTLINE = 1.75 -- épaisseur du contour sombre (px)
+
+-- Polygone agrandi de `d` pixels : chaque sommet glisse le long de la bissectrice (onglet), la pointe reste aiguë.
+local function inflatePolygon(points: { { number } }, d: number): { { number } }
+    local count = #points
+    local area = 0
+    for i = 1, count do
+        local a, b = points[i], points[i % count + 1]
+        area += a[1] * b[2] - b[1] * a[2]
+    end
+    -- Sens de parcours : il fixe le côté « extérieur » des normales.
+    local sign = if area > 0 then 1 else -1
+    local function normal(a: { number }, b: { number }): (number, number)
+        local dx, dy = b[1] - a[1], b[2] - a[2]
+        local length = math.sqrt(dx * dx + dy * dy)
+        return sign * dy / length, -sign * dx / length
+    end
+    local result: { { number } } = {}
+    for i = 1, count do
+        local previous, current, following = points[(i - 2) % count + 1], points[i], points[i % count + 1]
+        local n1x, n1y = normal(previous, current)
+        local n2x, n2y = normal(current, following)
+        local k = d / (1 + n1x * n2x + n1y * n2y)
+        result[i] = { current[1] + (n1x + n2x) * k, current[2] + (n1y + n2y) * k }
+    end
+    return result
+end
+
+-- Remplissage d'un polygone (même concave) par balayage : une bande horizontale de 1 px par ligne, haute de 1,5 px
+-- pour que les bandes se chevauchent (aucune couture visible une fois la flèche tournée). Moins de 40 cadres.
+local function fillPolygon(parent: Frame, points: { { number } }, color: Color3, z: number)
+    local top, bottom = math.huge, -math.huge
+    for _, point in points do
+        top = math.min(top, point[2])
+        bottom = math.max(bottom, point[2])
+    end
+    local y = math.floor(top)
+    while y < bottom do
+        local middle = y + 0.5
+        local crossings: { number } = {}
+        for i = 1, #points do
+            local a, b = points[i], points[i % #points + 1]
+            if (a[2] <= middle) ~= (b[2] <= middle) then
+                table.insert(crossings, a[1] + (middle - a[2]) / (b[2] - a[2]) * (b[1] - a[1]))
+            end
+        end
+        table.sort(crossings)
+        for k = 1, #crossings - 1, 2 do
+            local left, right = crossings[k], crossings[k + 1]
+            if right - left > 0.3 then
                 UITheme.make("Frame", {
                     BackgroundColor3 = color,
                     BorderSizePixel = 0,
-                    AnchorPoint = Vector2.new(if side == 0 then 0.5 elseif side < 0 then 1 else 0, 0),
-                    Position = UDim2.new(0.5, side * math.floor(notch / 2), 0.5, -height / 2 + (row - 1) * 2),
-                    Size = UDim2.fromOffset(if side == 0 then rowWidth else math.floor((rowWidth - notch) / 2), 2),
+                    Position = UDim2.new(0.5, left, 0.5, y),
+                    Size = UDim2.fromOffset(right - left, 1.5),
                     ZIndex = z,
-                }, arrow)
+                }, parent)
             end
         end
+        y += 1
     end
-    triangle(19, 22, Color3.fromRGB(14, 15, 17), 7) -- contour
-    triangle(14, 16, Color3.fromRGB(255, 255, 255), 8) -- flèche blanche
+end
+
+function MapRenderer.new(root: Frame, maxLines: number, onMarker: ((Marker) -> ())?): Renderer
+    root.ClipsDescendants = true
+    -- Flèche du joueur : flèche de navigation BLANCHE (pointe, base échancrée) à contour sombre, tournée au cap.
+    -- Retour du propriétaire (2026-11-05) : l'ancienne version en bandes de 2 px ressemblait à un « A ».
+    local arrow = UITheme.make("Frame", {
+        Name = "FlecheJoueur",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.fromOffset(24, 28),
+        BackgroundTransparency = 1,
+        ZIndex = 7,
+    }, root)
+    fillPolygon(arrow, inflatePolygon(ARROW_SHAPE, ARROW_OUTLINE), Color3.fromRGB(14, 15, 17), 7) -- contour
+    fillPolygon(arrow, ARROW_SHAPE, Color3.fromRGB(255, 255, 255), 8) -- flèche blanche
     return setmetatable(
         { Root = root, Lines = {}, Icons = {}, MaxLines = maxLines, OnMarker = onMarker, Arrow = arrow },
         MapRenderer
