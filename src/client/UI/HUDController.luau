@@ -56,6 +56,9 @@ local infoLabel: TextLabel
 local alertLabel: TextLabel
 local minimapFrame: Frame
 local minimapMask: CanvasGroup
+local minimapPlan: Frame
+-- Dernier dessin de la mini-carte (5 Hz) : entre deux dessins, le plan glisse et tourne à chaque image.
+local lastDraw: { View: MapProjection.View, X: number, Z: number, Heading: number, Rotate: boolean }? = nil
 local renderer: MapRenderer.Renderer
 local turnFrame: Frame
 local turnLabel: TextLabel
@@ -166,7 +169,16 @@ local function build()
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
     }, minimapMask)
-    renderer = MapRenderer.new(minimapFrame, 450, nil)
+    -- Plan déplacé à chaque image entre deux dessins (fluidité) ; la flèche du joueur reste au-dessus, hors du plan.
+    minimapPlan = UITheme.make("Frame", {
+        Name = "Plan",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+    }, minimapFrame)
+    renderer = MapRenderer.new(minimapPlan, 450, nil)
+    renderer.Arrow.Parent = minimapFrame
     -- Guidage : carte à filet cyan (GPS), consigne en blanc, reste en Roboto Mono discret.
     turnFrame = UITheme.panel({
         Name = "Guidage",
@@ -402,14 +414,9 @@ local function updateMinimap()
     local look = root.CFrame.LookVector
     local heading = math.atan2(look.X, -look.Z)
     local span = ZOOM_SPANS[prefs.Hud.MinimapZoom] or ZOOM_SPANS[2]
-    local view = MapProjection.view(
-        x,
-        z,
-        MINIMAP_SIZE / span,
-        if prefs.Hud.MinimapRotate then heading else 0,
-        MINIMAP_SIZE,
-        MINIMAP_SIZE
-    )
+    -- Taille réelle du disque (1440 p : 1,333 × 190 px) : le dessin et le rognage suivent.
+    local size = math.max(minimapFrame.AbsoluteSize.X, 1)
+    local view = MapProjection.view(x, z, size / span, if prefs.Hud.MinimapRotate then heading else 0, size, size)
     local markers = table.clone(poiSource())
     local gps = GPSController.state()
     if gps.Destination then
@@ -433,7 +440,35 @@ local function updateMinimap()
         PlayerX = x,
         PlayerZ = z,
         ClampMarkers = true,
+        Clip = "Circle",
+        ShowNorth = true,
     })
+    minimapPlan.Position = UDim2.fromScale(0.5, 0.5)
+    minimapPlan.Rotation = 0
+    lastDraw = { View = view, X = x, Z = z, Heading = heading, Rotate = prefs.Hud.MinimapRotate }
+end
+
+-- À chaque image : le plan glisse du déplacement du joueur depuis le dernier dessin (et tourne de la variation de
+-- cap si la carte tourne) ; la flèche suit le cap en continu. Aucun objet créé, deux propriétés écrites.
+local function smoothMinimap()
+    local draw = lastDraw
+    if draw == nil or not minimapMask.Visible then
+        return
+    end
+    local character = Players.LocalPlayer.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if root == nil or not root:IsA("BasePart") then
+        return
+    end
+    local x, z = root.Position.X / S, root.Position.Z / S
+    local look = root.CFrame.LookVector
+    local heading = math.atan2(look.X, -look.Z)
+    local u0, v0 = MapProjection.toMap(draw.View, draw.X, draw.Z)
+    local u1, v1 = MapProjection.toMap(draw.View, x, z)
+    minimapPlan.Position = UDim2.new(0.5, u0 - u1, 0.5, v0 - v1)
+    local turned = if draw.Rotate then heading - draw.Heading else 0
+    minimapPlan.Rotation = -math.deg(turned)
+    renderer.Arrow.Rotation = math.deg(heading - draw.View.Rotation - turned)
 end
 
 function HUDController.start()
@@ -442,6 +477,7 @@ function HUDController.start()
     UIState.onPrefs(layout)
     UIState.onViewport(layout)
     RunService.RenderStepped:Connect(updateCluster)
+    RunService.RenderStepped:Connect(smoothMinimap)
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         timer += dt

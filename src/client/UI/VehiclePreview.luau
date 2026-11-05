@@ -43,9 +43,12 @@ local center = Vector3.zero
 local half = Vector3.one -- demi-dimensions de la boîte du véhicule (studs)
 local angle = GarageView.DefaultAngle
 local zoom = 1
-local auto = true -- rotation lente (coupée par une vue choisie ou une rotation à la main)
+-- Rotation lente : case « Rotation automatique » du garage (cochée par défaut) ; une vue choisie la décoche ;
+-- suspendue pendant un glisser.
+local auto = true
 local dragging = false
 local dragPixels = 0
+local lastPointer: Vector3? = nil
 local stepConnection: RBXScriptConnection? = nil
 local listeners: { () -> () } = {}
 -- Demandes au serveur une par une, espacées du délai minimal (vignettes de la collection chargées en série).
@@ -261,20 +264,33 @@ function VehiclePreview.attach(parent: GuiObject): ViewportFrame
         refit()
         placeCamera()
     end)
-    view.InputBegan:Connect(function(input: InputObject)
+    -- Zone de saisie transparente au-dessus du véhicule : un ViewportFrame ne reçoit pas les clics (retour du
+    -- propriétaire : la voiture ne tournait pas à la souris). Cliquer-glisser tourne le véhicule, la molette zoome.
+    local grip = Instance.new("TextButton")
+    grip.Name = "ZoneRotation"
+    grip.Text = ""
+    grip.AutoButtonColor = false
+    grip.BackgroundTransparency = 1
+    grip.Selectable = false
+    grip.Size = UDim2.fromScale(1, 1)
+    grip.ZIndex = 2
+    grip:SetAttribute("AWPointerOnly", true)
+    grip.Parent = parent
+    grip.InputBegan:Connect(function(input: InputObject)
         if
             input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch
         then
             dragging = true
+            lastPointer = input.Position
         end
     end)
-    -- Molette au-dessus de la zone : zoom (vers le haut = plus près).
-    view.InputChanged:Connect(function(input: InputObject)
+    grip.InputChanged:Connect(function(input: InputObject)
         if input.UserInputType == Enum.UserInputType.MouseWheel then
             VehiclePreview.setZoom(zoom + 0.1 * input.Position.Z)
         end
     end)
+    -- Mouvement suivi sur tout l'écran pendant le glisser (le pointeur peut sortir de la zone).
     UserInputService.InputChanged:Connect(function(input: InputObject)
         if
             dragging
@@ -283,10 +299,9 @@ function VehiclePreview.attach(parent: GuiObject): ViewportFrame
                 or input.UserInputType == Enum.UserInputType.Touch
             )
         then
-            dragPixels += input.Delta.X
-            if math.abs(input.Delta.X) > 0 then
-                auto = false
-            end
+            local previous = lastPointer or input.Position
+            dragPixels += input.Position.X - previous.X
+            lastPointer = input.Position
         end
     end)
     UserInputService.InputEnded:Connect(function(input: InputObject)
@@ -295,6 +310,7 @@ function VehiclePreview.attach(parent: GuiObject): ViewportFrame
             or input.UserInputType == Enum.UserInputType.Touch
         then
             dragging = false
+            lastPointer = nil
         end
     end)
     return view
@@ -328,6 +344,7 @@ function VehiclePreview.setView(degrees: number)
     angle = degrees % 360
     auto = false
     placeCamera()
+    notify() -- la case « Rotation automatique » se décoche
 end
 
 -- Rotation à la main (boutons, flèches) : arrête la rotation lente.
@@ -341,12 +358,17 @@ function VehiclePreview.setZoom(value: number)
     notify()
 end
 
--- « Réinitialiser » : vue 3/4, zoom 1, rotation lente.
+-- « Réinitialiser » : vue 3/4 et zoom 1 ; la case « Rotation automatique » garde son état.
 function VehiclePreview.reset()
     angle = GarageView.DefaultAngle
     zoom = 1
-    auto = true
     placeCamera()
+    notify()
+end
+
+-- Case « Rotation automatique » du garage.
+function VehiclePreview.setAutoRotate(on: boolean)
+    auto = on
     notify()
 end
 
@@ -364,9 +386,6 @@ function VehiclePreview.setActive(on: boolean)
                         stickX = state.Position.X
                     end
                 end
-            end
-            if math.abs(stickX) > PreviewFraming.StickDeadZone then
-                auto = false
             end
             local spinning = auto and not dragging and not UIState.prefs().Access.ReduceMotion
             angle = PreviewFraming.step(angle, dt, spinning, dragPixels, stickX)

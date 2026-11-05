@@ -477,6 +477,10 @@ function Components.confirm(parent: Instance, options: ConfirmOptions): Frame?
         AutomaticSize = Enum.AutomaticSize.Y,
         Size = UDim2.fromOffset(options.Width or 420, 0),
     }, parent)
+    -- Fenêtre OPAQUE et contrastée (l'opacité réglable des panneaux la rendait trouble sur le voile).
+    panel.BackgroundColor3 = Tokens.color("Surface1")
+    panel.BackgroundTransparency = 0
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, panel)
     UITheme.make("UIPadding", {
         PaddingLeft = UDim.new(0, Tokens.PanelPadding),
         PaddingRight = UDim.new(0, Tokens.PanelPadding),
@@ -488,12 +492,16 @@ function Components.confirm(parent: Instance, options: ConfirmOptions): Frame?
         { Padding = UDim.new(0, Tokens.Space[4]), SortOrder = Enum.SortOrder.LayoutOrder },
         panel
     )
-    Components.text(panel, options.Question, "H1", {
+    local question = Components.text(panel, options.Question, "H1", {
         TextWrapped = true,
         Size = UDim2.new(1, 0, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
+        TextXAlignment = Enum.TextXAlignment.Left,
         LayoutOrder = 1,
     })
+    -- Texte lisible sur plusieurs lignes (montants d'un devis) : 20 px au lieu du titre de 28 px.
+    question.TextSize = UITheme.text(20)
+    question.LineHeight = 1.15
     local actions = UITheme.make("Frame", {
         BackgroundTransparency = 1,
         AutomaticSize = Enum.AutomaticSize.XY,
