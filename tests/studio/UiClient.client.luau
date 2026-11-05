@@ -162,6 +162,56 @@ local function placeNear(target: Vector3, distance: number, label: string)
 end
 
 -- Clic réel enregistré comme étape.
+-- Lot UI V1.2 : un bouton actif n'est plus repéré par sa couleur automatique (le survol est géré par le thème) ;
+-- l'état inactif est l'attribut AWDisabled.
+local function isActive(item: GuiButton): boolean
+    return item.Active and not item:GetAttribute("AWDisabled")
+end
+
+-- Premier bouton actif d'un texte donné, présent dans l'écran (même hors de la vue d'une liste défilante).
+local function firstActive(root: Instance?, text: string): GuiButton?
+    if root == nil then
+        return nil
+    end
+    for _, item in root:GetDescendants() do
+        if item:IsA("TextButton") and item.Text == text and isActive(item) and Gui.present(item) then
+            return item
+        end
+    end
+    return nil
+end
+
+-- Carte (garage, économie, courses) dont un libellé imbriqué contient `text` ; puis un bouton de cette carte.
+local function cardWith(root: Instance?, text: string): Instance?
+    if root == nil then
+        return nil
+    end
+    for _, item in root:GetDescendants() do
+        if (item:IsA("TextLabel") or item:IsA("TextButton")) and string.find(item.Text, text, 1, true) then
+            local node = item.Parent
+            while node and node ~= root do
+                if
+                    (node:IsA("TextButton") and string.sub(node.Name, 1, 6) == "Carte_")
+                    or (node:IsA("Frame") and node.Name == "CarteCorps")
+                then
+                    return node
+                end
+                node = node.Parent
+            end
+        end
+    end
+    return nil
+end
+
+-- Valeur affichée à droite d'un bouton V1.2 (enfant « Valeur »), sinon son texte.
+local function valueOf(item: Instance?): string
+    if item == nil then
+        return ""
+    end
+    local value = item:FindFirstChild("Valeur")
+    return if value and value:IsA("TextLabel") then value.Text else (item :: any).Text or ""
+end
+
 local function click(name: string, item: GuiObject?, label: string): boolean
     local ok, detail = Gui.click(item, label)
     record(name, ok, detail)
@@ -370,8 +420,28 @@ phase("garage", function()
                     record("ui.garage.saisie_texte_reelle", typed, "texte lu : « " .. (box :: TextBox).Text .. " »")
                     Gui.key("Return")
                     task.wait(0.5)
-                    local save = Gui.findButton(root, "Enregistrer ici")
-                    if click("ui.garage.enregistrer_configuration", save, "Enregistrer ici") then
+                    local save = firstActive(root, "Enregistrer ici")
+                    if save then
+                        Gui.reveal(save)
+                    end
+                    -- Hors garage, l'enregistrement est refusé (règle du serveur) : bouton grisé avec sa raison.
+                    if save == nil then
+                        local grey: GuiButton? = nil
+                        for _, item in (root :: Instance):GetDescendants() do
+                            if
+                                item:IsA("TextButton")
+                                and item.Text == "Enregistrer ici"
+                                and item:GetAttribute("AWReason")
+                            then
+                                grey = item
+                            end
+                        end
+                        record(
+                            "ui.garage.enregistrer_hors_garage_grise",
+                            grey ~= nil,
+                            if grey then tostring(grey:GetAttribute("AWReason")) else "aucun bouton grisé"
+                        )
+                    elseif click("ui.garage.enregistrer_configuration", save, "Enregistrer ici") then
                         task.wait(2)
                         record("ui.garage.info_retour_enregistrement", true, footerText(root))
                         Gui.shot("garage_configuration_retour", {})
@@ -382,7 +452,8 @@ phase("garage", function()
             elseif tab == "Collection" then
                 record("ui.garage.info_collection", true, footerText(root))
                 -- Sélection d'un exemplaire (exigée par les onglets Véhicule et Configurations).
-                local row = Gui.findButton(root, "Prototype d'essai P-01")
+                -- Lot UI-03 : collection en cartes (le nom est imbriqué dans la carte).
+                local row = cardWith(root, "Prototype d'essai P-01") :: GuiObject?
                 if click("ui.garage.selection_vehicule", row, "Prototype d'essai P-01") then
                     task.wait(1)
                     Gui.shot("garage_vehicule_selectionne", {})
@@ -442,7 +513,12 @@ phase("economie", function()
     local root = screen("AWEconomy")
     tabs("AWEconomy", "economie", { "Portefeuille", "Concession", "Marché", "Immobilier", "Services", "Métiers" })
     -- Métier lancé et abandonné par l'interface ; résultat lu sur le serveur.
-    local job = Gui.findButton(root, "Livraison de colis")
+    -- Lot UI-04 : métiers en cartes ; bouton « Démarrer » de la carte « Livraison de colis ».
+    local jobCard = cardWith(root, "Livraison de colis")
+    local job = jobCard and Gui.findButton(jobCard, "Démarrer")
+    if job then
+        Gui.reveal(job)
+    end
     if click("ui.economie.demarrer_metier", job, "Livraison de colis") then
         local started = waitFor(function()
             local snapshot = read("AWEconomy", "Snapshot")
@@ -453,6 +529,15 @@ phase("economie", function()
         Gui.shot("economie_mission_en_cours", {})
         local abandon = Gui.findButton(root, "Abandonner")
         if click("ui.economie.abandonner_metier", abandon, "Abandonner (sans paiement)") then
+            -- Lot UI-04 : abandon soumis à une confirmation protégée (fenêtre modale) ; confirmée par un vrai clic.
+            local veil = (root :: Instance):WaitForChild("VoileConfirmation", 4)
+            if veil then
+                waitFor(function()
+                    local box = veil:FindFirstChild("ConfirmationProtegee", true)
+                    return box ~= nil and box:GetAttribute("AWConfirmArmed") == true
+                end, 3)
+                click("ui.economie.abandon_confirme", Gui.findButton(veil, "Confirmer"), "Confirmer")
+            end
             local ended = waitFor(function()
                 local snapshot = read("AWEconomy", "Snapshot")
                 return snapshot.Snapshot ~= nil and snapshot.Snapshot.Mission == nil
@@ -515,7 +600,7 @@ phase("concession", function()
     -- Premier bouton ACTIF (les boutons grisés n'ont ni couleur automatique ni action).
     local function activeQuote(): GuiButton?
         for _, item in (root :: Instance):GetDescendants() do
-            if item:IsA("TextButton") and item.Text == "Devis d'achat" and item.AutoButtonColor and Gui.shown(item) then
+            if item:IsA("TextButton") and item.Text == "Devis d'achat" and isActive(item) and Gui.shown(item) then
                 return item
             end
         end
@@ -596,7 +681,7 @@ local function activeButton(root: Instance?, text: string): GuiButton?
         return nil
     end
     for _, item in root:GetDescendants() do
-        if item:IsA("TextButton") and item.Text == text and item.AutoButtonColor and Gui.present(item) then
+        if item:IsA("TextButton") and item.Text == text and isActive(item) and Gui.present(item) then
             return item
         end
     end
@@ -666,8 +751,13 @@ phase("courses", function()
                 record("ui.courses.info_tableau_drift", true, footerText(root))
             end
         elseif tab == "Épreuves" then
-            local course = Gui.findButton(root, "Sprint")
-            if click("ui.courses.detail_parcours", course, if course then course.Text else "parcours") then
+            -- Lot UI-04 : parcours en cartes ; bouton « Détails » de la première carte de sprint.
+            local courseCard = cardWith(root, "Sprint")
+            local course = courseCard and Gui.findButton(courseCard, "Détails")
+            if course then
+                Gui.reveal(course)
+            end
+            if click("ui.courses.detail_parcours", course, "Détails (sprint)") then
                 task.wait(1)
                 Gui.shot("courses_detail_parcours", {})
                 local records = Gui.findButton(root, "Records du parcours")
@@ -710,16 +800,25 @@ phase("telephone", function()
         Gui.shot("telephone_parametres", {})
         click("ui.telephone.page_interface", phoneButton("Interface"), "Interface")
         task.wait(0.6)
-        local hud = phoneButton("Niveau du HUD")
-        local beforeText = if hud then hud.Text else ""
+        -- Lot UI-02 : réglage présenté « libellé | valeur » ; bouton amené dans la vue (liste défilante).
+        local hud: GuiButton? = nil
+        for _, item in (screen("AWPhone") :: Instance):GetDescendants() do
+            if item:IsA("TextButton") and item.Text == "Niveau du HUD" then
+                hud = item
+            end
+        end
+        if hud then
+            Gui.reveal(hud)
+        end
+        local beforeText = valueOf(hud)
         local beforePrefs = server().Preferences
         if click("ui.telephone.niveau_hud", hud, beforeText) then
             task.wait(0.8)
-            local after = phoneButton("Niveau du HUD")
+            local after = hud
             record(
                 "ui.telephone.reglage_change_ecran",
-                after ~= nil and after.Text ~= beforeText,
-                (after and after.Text) or "?"
+                after ~= nil and valueOf(after) ~= beforeText,
+                beforeText .. " → " .. valueOf(after)
             )
             local saved = waitFor(function()
                 local prefs = server().Preferences
@@ -728,12 +827,22 @@ phase("telephone", function()
             record("ui.telephone.reglage_enregistre_serveur", saved, "préférences relues par AWTestQuery")
             -- Remis comme avant (deux autres clics : trois niveaux).
             for _ = 1, 2 do
-                Gui.click(phoneButton("Niveau du HUD"), "Niveau du HUD")
+                Gui.click(hud, "Niveau du HUD")
                 task.wait(0.6)
             end
         end
         for _, page in { "Commandes", "Accessibilité", "Audio", "Graphismes" } do
-            if click("ui.telephone.page_" .. page, phoneButton(page), page) then
+            -- Pages en tête de liste : ramenées dans la vue après le défilement du réglage précédent.
+            local pageButton: GuiButton? = nil
+            for _, item in (screen("AWPhone") :: Instance):GetDescendants() do
+                if item:IsA("TextButton") and item.Text == page then
+                    pageButton = item
+                end
+            end
+            if pageButton then
+                Gui.reveal(pageButton)
+            end
+            if click("ui.telephone.page_" .. page, pageButton, page) then
                 task.wait(0.6)
                 Gui.shot("parametres_" .. page, {})
             end
@@ -781,8 +890,9 @@ phase("carte", function()
     local poi: GuiButton? = nil
     -- Lieu à plus de 80 m (sinon « Vous êtes arrivé » aussitôt) : distance lue dans le libellé.
     for _, item in (map :: Instance):GetDescendants() do
-        if item:IsA("TextButton") and Gui.shown(item) and string.find(item.Text, " — ", 1, true) then
-            local value, unit = string.match(item.Text, "— ([%d%.,]+) (k?m)")
+        if item:IsA("TextButton") and Gui.present(item) and item.Name == "Lieu" then
+            -- Lot UI-04 : distance lue dans l'enfant « Valeur » du lieu.
+            local value, unit = string.match(valueOf(item), "([%d%.,]+) (k?m)")
             local meters = tonumber(value and (string.gsub(value, ",", ".")) or "0") or 0
             if unit == "km" then
                 meters *= 1000
@@ -793,7 +903,10 @@ phase("carte", function()
             end
         end
     end
-    if click("ui.carte.choisir_lieu", poi, if poi then poi.Text else "lieu") then
+    if poi then
+        Gui.reveal(poi)
+    end
+    if click("ui.carte.choisir_lieu", poi, if poi then valueOf(poi) else "lieu") then
         task.wait(0.6)
         click(
             "ui.carte.definir_destination",
