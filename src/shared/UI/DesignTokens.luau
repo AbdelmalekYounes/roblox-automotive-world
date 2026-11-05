@@ -43,6 +43,7 @@ DesignTokens.Colors = table.freeze({
     OkBg = rgb(19, 34, 25), -- #132219
     OkText = rgb(191, 230, 204), -- #BFE6CC
     Stage3D = rgb(42, 46, 52), -- #2A2E34 centre du dégradé de la zone 3D (vers BgBase)
+    AppTile = rgb(26, 29, 33), -- #1A1D21 fond des tuiles d'application (planche « Icônes du téléphone »)
 } :: { [string]: Color3 })
 
 DesignTokens.Contrast = table.freeze({

@@ -177,7 +177,7 @@ local function appTile(parent: Instance, name: string, index: number)
         Selectable = true,
     }, parent) :: TextButton
     local square = UITheme.make("Frame", {
-        BackgroundColor3 = UITheme.color("PanelRaised"),
+        BackgroundColor3 = Tokens.color("AppTile"),
         BorderSizePixel = 0,
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.fromScale(0.5, 0),
@@ -192,6 +192,7 @@ local function appTile(parent: Instance, name: string, index: number)
             BackgroundTransparency = 1,
             Image = image,
             ImageColor3 = Tokens.color(PhoneIcons.tint(name)),
+            ScaleType = Enum.ScaleType.Fit, -- planche « Icônes du téléphone » : version 128 px affichée en 28 px
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.fromScale(0.5, 0.5),
             Size = UDim2.fromOffset(Tokens.Phone.AppIcon, Tokens.Phone.AppIcon),
@@ -231,9 +232,9 @@ local function appTile(parent: Instance, name: string, index: number)
             Text = tostring(unread),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, Tokens.Phone.AppTile / 2 - 2, 0, 4),
-            Size = UDim2.fromOffset(20, 20),
+            Size = UDim2.fromOffset(18, 18), -- pastille ambre de 18 px, chiffres Roboto Mono (planche des icônes)
         }, tile) :: TextLabel
-        badge.FontFace = UITheme.face("Label")
+        badge.FontFace = UITheme.face("Value")
         badge.TextSize = UITheme.text(12)
         badge.TextColor3 = UITheme.color("OnAccent")
         UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, badge)

@@ -42,6 +42,7 @@ return function(T: any, H: any)
             OkBg = "#132219",
             OkText = "#BFE6CC",
             Stage3D = "#2A2E34",
+            AppTile = "#1A1D21",
         }
         for name, value in expected do
             T.equal(hex(Tokens.Colors[name]), value, name)
