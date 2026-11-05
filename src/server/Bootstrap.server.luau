@@ -22,6 +22,7 @@ local SocialFolder = script.Parent:WaitForChild("Social")
 local InterfaceService = require(SocialFolder:WaitForChild("InterfaceService"))
 local SocialService = require(SocialFolder:WaitForChild("SocialService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
+local VehiclePreviewService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehiclePreviewService"))
 local OnboardingService = require(script.Parent:WaitForChild("Onboarding"):WaitForChild("OnboardingService"))
 local RadioService = require(script.Parent:WaitForChild("Audio"):WaitForChild("RadioService"))
 local AvatarService = require(script.Parent:WaitForChild("Avatar"):WaitForChild("AvatarService"))
@@ -50,6 +51,8 @@ else
     RaceService.start(false, workspace)
     InterfaceService.start(false)
 end
+-- Lot UI-03 : copies visuelles des véhicules pour l'aperçu 3D du garage (les deux modes).
+VehiclePreviewService.start()
 -- Lot 0.7 : groupes, partage de position, canaux de communication.
 SocialService.start()
 -- Lot 0.8 : place passager ouverte au groupe du propriétaire ou du conducteur.

@@ -89,6 +89,7 @@ if
     or currentSession == "ui_phone"
     or currentSession == "ui_garage"
     or currentSession == "ui_panels"
+    or currentSession == "ui_garage3d"
 then
     return
 end

@@ -60,6 +60,8 @@ local KNOWN_SESSIONS = {
     -- Lots UI-03 et UI-04 : garage seul ; panneaux économie et courses seuls.
     ui_garage = { Name = "ui_garage", Players = 1 },
     ui_panels = { Name = "ui_panels", Players = 1 },
+    -- Lot UI-03 : aperçu 3D du garage (ViewportFrame) seul.
+    ui_garage3d = { Name = "ui_garage3d", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -91,6 +93,7 @@ local EXTRA = {
     { "AW_TestUiDesignClient", "UiDesignClient.client.luau", true },
     { "AW_TestUiPhoneClient", "UiPhoneClient.client.luau", true },
     { "AW_TestUiScreensClient", "UiScreensClient.client.luau", true },
+    { "AW_TestUiGarage3DClient", "UiGarage3DClient.client.luau", true },
 }
 
 local output = process.args[1]

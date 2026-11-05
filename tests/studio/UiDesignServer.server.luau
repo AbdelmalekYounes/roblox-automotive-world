@@ -11,7 +11,14 @@ local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 -- « ui_phone » (lot UI-02) : même serveur, sans la page de démonstration (téléphone seul).
 -- « ui_garage » (UI-03) et « ui_panels » (UI-04) : même serveur, écran concerné seul.
-if session ~= "ui_design" and session ~= "ui_phone" and session ~= "ui_garage" and session ~= "ui_panels" then
+-- « ui_garage3d » (UI-03) : aperçu 3D du garage (ViewportFrame) seul.
+if
+    session ~= "ui_design"
+    and session ~= "ui_phone"
+    and session ~= "ui_garage"
+    and session ~= "ui_panels"
+    and session ~= "ui_garage3d"
+then
     return
 end
 
