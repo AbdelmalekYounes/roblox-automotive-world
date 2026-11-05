@@ -41,6 +41,7 @@ local JOBS: { Job } = {
         RatePerMin = 165,
         Risk = 0,
         Vehicle = "Professional",
+        ProfessionalModel = "wk_brio", -- lot VEH3D-02 : la Brio, véhicule de service prêté
     }),
     job({
         Id = "Delivery",
@@ -49,6 +50,7 @@ local JOBS: { Job } = {
         RatePerMin = 160,
         Risk = 0,
         Vehicle = "Professional",
+        ProfessionalModel = "wk_brio", -- lot VEH3D-02 : la Brio, véhicule de service prêté
     }),
     job({
         Id = "SpecialParts",
@@ -73,6 +75,7 @@ local JOBS: { Job } = {
         RatePerMin = 160,
         Risk = 0.1,
         Vehicle = "Provided",
+        ProfessionalModel = "wk_brio", -- lot VEH3D-02 : la Brio, véhicule de service prêté
     }),
     job({
         Id = "Precision",
@@ -97,6 +100,7 @@ local JOBS: { Job } = {
         RatePerMin = 165,
         Risk = 0.1,
         Vehicle = "Provided",
+        ProfessionalModel = "wk_brio", -- lot VEH3D-02 : la Brio, véhicule de service prêté
     }),
 }
 Jobs.List = table.freeze(JOBS)

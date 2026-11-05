@@ -3,8 +3,8 @@
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
-> trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée ; **lot BASE-01** : un seul véhicule, la
-> **Comète** (carrosserie 3D tierce CC BY), en attendant la citadine (VEH3D-02) ; prototypes P-01 à P-03 et 17 modèles
+> trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée ; **lots BASE-01 et VEH3D-02** : deux véhicules, la
+> **Comète** et la citadine **Brio** (carrosseries 3D tierces CC BY ; Brio en attente de l'import Studio) ; prototypes P-01 à P-03 et 17 modèles
 > de la gamme proposée retirés du jeu (les prototypes restent des jeux d'essai des tests). Lot 0.4 : profils versionnés
 > (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
 > invitations. Lot 0.5 : crédits, réputation, huit métiers, concessions (catalogue de travail provisoire), marché
@@ -137,8 +137,9 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
 | Monter en passager (propriétaire ou groupe) | E près de la portière droite | X |
 | Radio (le conducteur choisit, chacun règle ou coupe son écoute) | application Radio du téléphone | idem |
 
-- **Gamme** (lot BASE-01, [amendement A-01](docs/AMENDEMENTS_CAHIER_DES_CHARGES.md)) : la Comète, achetable en
-  développement seulement ; la citadine suivra (VEH3D-02). Aucun véhicule de départ tant qu'elle n'est pas intégrée.
+- **Gamme** (lot BASE-01, [amendement A-01](docs/AMENDEMENTS_CAHIER_DES_CHARGES.md)) : la Comète et la Brio (lot VEH3D-02,
+  [rapport](docs/vehicle-3d/VEH3D_02_BRIO.md)), achetables en développement seulement ; la Brio est le véhicule de service
+  des métiers. Aucun véhicule de départ (décision du propriétaire).
   Gamme de 18 modèles du lot 0.8 : [archive](docs/lot-0.8/CATALOGUE_18_VEHICULES.md).
 - **Sons** : `python tools/audio/synth.py` produit 30 sons originaux dans `build/audio/` ; rien n'est téléversé, donc
   rien n'est joué en jeu et les stations de radio sont indisponibles

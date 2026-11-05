@@ -61,7 +61,8 @@ return function(T: any, H: any)
             table.insert(names, child.Name)
         end
         table.sort(names)
-        T.equal(table.concat(names, ","), "Comete", "dossier des définitions du jeu")
+        -- Lot VEH3D-02 : la Brio rejoint la Comète.
+        T.equal(table.concat(names, ","), "Brio,Comete", "dossier des définitions du jeu")
         T.truthy(
             root.ServerScriptService.AutomotiveWorldServer.Vehicles:FindFirstChild("BodyKits") == nil,
             "BodyKits supprimé"

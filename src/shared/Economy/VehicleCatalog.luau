@@ -15,7 +15,7 @@
 
 local VehicleCatalog = {}
 
-VehicleCatalog.Version = "base-01"
+VehicleCatalog.Version = "veh3d-02"
 
 export type Availability = "PendingApproval" | "Working" | "Reserved" | "Official"
 
@@ -30,7 +30,7 @@ export type Entry = {
     Dealers: { string }, -- concessions physiques (identifiants de la carte)
 }
 
--- Lot BASE-01 (décision du propriétaire du 2026-11-05) : la Comète seule, en attendant la citadine (VEH3D-02).
+-- Lot BASE-01 (décision du propriétaire du 2026-11-05) : la Comète, puis la citadine Brio (lot VEH3D-02).
 local ENTRIES: { Entry } = {
     {
         Slot = 1,
@@ -39,6 +39,18 @@ local ENTRIES: { Entry } = {
         Name = "Comète",
         Category = "Supercar",
         Price = 185_000,
+        Availability = "PendingApproval",
+        Dealers = { "SVC-DEALER-METRO" },
+    },
+    -- Lot VEH3D-02 (décision du propriétaire du 2026-11-05) : citadine achetable en concession, pas véhicule de
+    -- départ. Prix : hypothèse de travail ; statut relevé à « Official » seulement sur décision du propriétaire.
+    {
+        Slot = 2,
+        Id = "brio",
+        DefinitionId = "wk_brio",
+        Name = "Brio",
+        Category = "Citadine",
+        Price = 12_000,
         Availability = "PendingApproval",
         Dealers = { "SVC-DEALER-METRO" },
     },

@@ -38,7 +38,8 @@ export type Kit = {
     -- `SurfaceAppearance.Color`, qui MULTIPLIE la carte de couleur. Elle n'est appliquée que si ces pièces portent la
     -- carte de couleur NEUTRE `NeutralColorMap` (zone de peinture claire, lignes de carrosserie conservées), à envoyer
     -- par le propriétaire ; sinon la teinte d'origine de la texture est gardée (aucune dégradation).
-    Paint: { Pattern: string, NeutralColorMap: number? },
+    -- Plain (lot VEH3D-02) : peinture UNIE sans carte de couleur ; la teinte du garage remplace la couleur importée.
+    Paint: { Pattern: string, NeutralColorMap: number?, Plain: boolean? },
     -- Maillages des feux séparés (export du 2026-11-04, dépôt d'art 195df9b) : rôle AWLight posé s'ils sont présents
     -- dans le gabarit (absents du premier envoi : sources seules).
     LightMeshes: { [string]: string },
@@ -124,7 +125,88 @@ local COMETE: Kit = {
     },
 }
 
-MeshKitData.Kits = table.freeze({ wk_comete = COMETE })
+-- Brio (lot VEH3D-02), modèle tiers « Milano '95 » (Daniel Zhabotinsky, CC BY 4.0). Mesures du 2026-11-05 (dépôt
+-- d'art : `vehicles/wk_brio/renders_milano95/finition.json`, export `vehicles/wk_brio/export/wk_brio_milano95_lod0.json`).
+-- Dessus d'assise y 0,618 (conducteur) et 0,607 (passager) → centre du Seat 0,2 st plus bas.
+local BRIO: Kit = {
+    Template = "Brio",
+    ManifestId = "veh.wk_brio.meshmilano95",
+    Reference = "BRIO_Caisse_Peinture",
+    ReferenceCenter = Vector3.new(0.005, 1.201, 2.776),
+    SeatDriver = Vector3.new(-1.2, 0.418, 1.55),
+    SeatPassenger = Vector3.new(1.2, 0.407, 1.55),
+    -- Assise de citadine (coussin à 0,9 st du plancher) : pose standard, non vérifiée en jeu.
+    SeatPoses = { Driver = "Conduite", Passenger = "Passager" },
+    -- Plancher sous le pédalier mesuré par rayons (Blender, 2026-11-05) : y −0,29 à −0,35 entre z −0,25 et 1,25.
+    Footwell = { FloorY = -0.29, FrontZ = -0.25, RearZ = 1.25 },
+    -- Dessous du pavillon au droit de la place conducteur : 3,10 st (2,48 st au-dessus de l'assise).
+    RoofUnderside = 3.10,
+    CameraCockpit = Vector3.new(-1.2, 2.501, 1.2),
+    CameraHood = Vector3.new(0, 2.356, -2.751),
+    CameraBumper = Vector3.new(0, -0.286, -6.721),
+    -- Caisse hors rétroviseurs (pièces peintes : demi-largeur 2,87 à 2,91 st).
+    SideHalf = 2.92,
+    Collisions = {
+        Coque = { Center = Vector3.new(0, 0.114, 1.038), Size = Vector3.new(5.888, 1.4, 9.643) },
+        BouclierAvant = { Center = Vector3.new(0, -0.111, -4.577), Size = Vector3.new(4.656, 1.45, 1.787) },
+        BouclierArriere = { Center = Vector3.new(0, -0.036, 6.416), Size = Vector3.new(4.828, 1.3, 1.314) },
+        Habitacle = { Center = Vector3.new(0, 1.925, 2.6), Size = Vector3.new(4.223, 2.222, 5.101) },
+    },
+    -- Une pièce par roue (pneu et jante fusionnés), pivot au moyeu (écart ≤ 0,052 st à la physique).
+    Wheels = {
+        FL = { "BRIO_Roue_AvG" },
+        FR = { "BRIO_Roue_AvD" },
+        RL = { "BRIO_Roue_ArG" },
+        RR = { "BRIO_Roue_ArD" },
+    },
+    GlassPattern = "vitrage",
+    Lights = {
+        {
+            Name = "PhareGauche",
+            Light = "Head",
+            Position = Vector3.new(-1.796, 0.486, -5.448),
+            Size = Vector3.new(0.6, 0.3, 0.1),
+        },
+        {
+            Name = "PhareDroit",
+            Light = "Head",
+            Position = Vector3.new(1.81, 0.464, -5.448),
+            Size = Vector3.new(0.6, 0.3, 0.1),
+        },
+        {
+            Name = "FeuGauche",
+            Light = "Tail",
+            Position = Vector3.new(-2.005, 2.393, 6.02),
+            Size = Vector3.new(0.6, 0.3, 0.1),
+        },
+        {
+            Name = "FeuDroit",
+            Light = "Tail",
+            Position = Vector3.new(2.042, 2.368, 6.02),
+            Size = Vector3.new(0.6, 0.3, 0.1),
+        },
+    },
+    DetailPattern = { "BRIO_Habitacle", "BRIO_Suspension", "BRIO_Garniture" },
+    Paint = { Pattern = "_Peinture", NeutralColorMap = nil, Plain = true },
+    -- Les verres (matériaux unis, transparence perdue à l'import) s'allument avec les blocs qu'ils couvrent.
+    LightMeshes = {
+        BRIO_Feu_Av = "Head",
+        BRIO_VerreOptiqueAv = "Head",
+        BRIO_Feu_Ar = "Tail",
+        BRIO_VerreFeuAr = "Tail",
+    },
+    -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT, vitrage compris, wk_brio_milano95.blend).
+    DamageMarks = {
+        FrontY = -0.111,
+        Front = { -5.957, -6.053, -5.96 },
+        RearY = -0.036,
+        Rear = { 7.597, 7.667, 7.597 },
+        SideY = 0.114,
+        Side = { 2.831, 2.865, 2.833 },
+    },
+}
+
+MeshKitData.Kits = table.freeze({ wk_comete = COMETE, wk_brio = BRIO })
 
 -- Identifiant numérique d'un MeshId (adresse d'actif terminée par l'identifiant numérique).
 function MeshKitData.assetNumber(meshId: string): number?

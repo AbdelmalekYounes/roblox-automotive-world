@@ -144,6 +144,30 @@ add({
     RobloxTextureIds = { 76606382409640, 127066032742162, 129807559388443, 130107105284511, 139339087025487 },
 })
 
+-- Lot VEH3D-02 : carrosserie de la Brio. Identifiants VIDES tant que le propriétaire n'a pas importé le GLB dans Studio
+-- (aucun identifiant inventé) : sans gabarit autorisé, la fabrique garde la carrosserie de repli.
+add({
+    Id = "veh.wk_brio.meshmilano95",
+    Category = "VehicleBody",
+    Version = "0.1.0",
+    Status = "Provisional",
+    Variants = {
+        Low = "Maillages complets (17 865 triangles) ; habitacle, suspension et garnitures masqués au loin",
+        Medium = "Identique, détails visibles plus loin",
+        High = "Identique",
+    },
+    Lod = "LOD0 seul ; RenderFidelity automatique ; LOD1 et LOD2 préparés dans le dépôt d'art (non exportés)",
+    Provenance = "Tiers : « Milano '95 - Low poly model » de Daniel Zhabotinsky (Sketchfab), CC BY 4.0, modifié "
+        .. "(insignes et plaques retirés, optiques et peinture unies, échelle, roues séparées) ; "
+        .. "docs/vehicle-3d/MODELES_TIERS.md",
+    Licence = "CC BY 4.0 — crédit obligatoire (docs/CREDITS_ACTIFS.md)",
+    Source = { Kind = "File", Path = "src/server/Vehicles/MeshKits.luau" },
+    Output = "assets/meshkits/Brio.rbxm",
+    RobloxAssetId = nil,
+    RobloxAssetIds = {},
+    RobloxTextureIds = {},
+})
+
 -- ======================== Monde ========================
 add({
     Id = "world.geometry",

@@ -325,6 +325,17 @@ Expérience privée du propriétaire (GameId 10774855477) déclarée comme envir
 `AW_TEST_Profiles_v1`). Les essais de persistance réelle (QA-D01 à QA-D10, QA-E01, QA-E02, QA-U09) deviennent possibles
 dans cette expérience : **NON TESTÉS** à ce jour.
 
+## 3 undecies. Lot VEH3D-02 — la Brio (2026-11-05)
+
+Liste détaillée : `docs/vehicle-3d/VEH3D_02_BRIO.md` §4 (vérification par le propriétaire).
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-C01 | P1 | Import Studio du GLB, envoi des maillages, gabarit `Brio` et identifiants du manifeste | **EN ATTENTE** (étape du propriétaire) |
+| QA-C02 | P1 | Brio en jeu : allure, roues, places et pose standard, caméras, conduite automatique, feux, peinture du garage, dégâts | **NON TESTÉ** |
+| QA-C03 | P2 | Métiers Taxi, Livraison, Convoyage, Essais : Brio de service fournie, plus de refus « NoProfessionalVehicle » | **NON TESTÉ** |
+| QA-C04 | P3 | Motif de la texture d'intérieur (`UCB_Interiors_2`) : absence de logo à confirmer | **NON VÉRIFIÉ** (propriétaire) |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

@@ -47,6 +47,7 @@ for _, spec in
         require("./specs/UiDesignSystem"),
         require("./specs/Base01"),
         require("./specs/Admin01"),
+        require("./specs/Veh3d02Brio"),
     }
 do
     spec(TestKit, Harness)

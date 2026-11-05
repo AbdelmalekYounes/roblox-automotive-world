@@ -142,7 +142,16 @@ function MeshKits.build(
                 paintable += 1
                 local appearance = item:FindFirstChildOfClass("SurfaceAppearance")
                 local map = appearance and MeshKitData.assetNumber(tostring((appearance :: any).ColorMapContent.Uri))
-                if bodyColor and appearance and kit.Paint.NeutralColorMap and map == kit.Paint.NeutralColorMap then
+                if bodyColor and kit.Paint.Plain then
+                    -- Peinture UNIE (lot VEH3D-02) : aucune carte de couleur à préserver, la teinte s'applique telle
+                    -- quelle (à l'apparence si l'import en a créé une, sinon à la pièce).
+                    if appearance then
+                        appearance.Color = bodyColor
+                    else
+                        item.Color = bodyColor
+                    end
+                    painted += 1
+                elseif bodyColor and appearance and kit.Paint.NeutralColorMap and map == kit.Paint.NeutralColorMap then
                     appearance.Color = bodyColor
                     painted += 1
                 end
