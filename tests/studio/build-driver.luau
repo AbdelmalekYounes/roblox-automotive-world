@@ -70,6 +70,8 @@ local KNOWN_SESSIONS = {
     ui_hud = { Name = "ui_hud", Players = 1 },
     -- UI V1.2 : résolutions 1280 × 720 à 3440 × 1440 (écran virtuel, surcharge de la vue en Studio).
     ui_resolutions = { Name = "ui_resolutions", Players = 1 },
+    -- UI V1.2 : navigation, focus manette, états refusé et hors ligne, anti double envoi.
+    ui_navigation = { Name = "ui_navigation", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -106,6 +108,7 @@ local EXTRA = {
     { "AW_TestUiPanels2Client", "UiPanels2Client.client.luau", true },
     { "AW_TestUiHudClient", "UiHudClient.client.luau", true },
     { "AW_TestUiResolutionsClient", "UiResolutionsClient.client.luau", true },
+    { "AW_TestUiNavigationClient", "UiNavigationClient.client.luau", true },
 }
 
 local output = process.args[1]

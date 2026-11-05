@@ -45,6 +45,7 @@ local UITheme = require(script.Parent.UITheme)
 local Components = require(script.Parent.Components)
 local VehiclePreview = require(script.Parent.VehiclePreview)
 local UIState = require(script.Parent.UIState)
+local PanelKit = require(script.Parent.PanelKit)
 
 local GaragePanel = {}
 
@@ -240,9 +241,9 @@ local function send(action: string, payload: any?, quiet: boolean?)
     if not quiet then
         setStatus("Pending", tr("Demande envoyée…"))
     end
-    local ok, response = pcall(function()
-        return request:InvokeServer(action, data)
-    end)
+    -- Compteur des demandes réellement envoyées (lu par les essais : un double clic n'en envoie qu'une).
+    PanelKit.countSent(panel)
+    local ok, response = PanelKit.invoke(request, action, data)
     busy = false
     panel:SetAttribute("AWBusy", false)
     if not ok or type(response) ~= "table" then
@@ -988,11 +989,12 @@ local function rangeRow(parent: Instance, key: string, range: any, saved: number
         Name = "Piste",
         Text = "",
         AutoButtonColor = false,
-        Selectable = false,
+        Selectable = false, -- pointeur seulement : la manette et le clavier passent par − et +
         Position = UDim2.fromOffset(40, 34),
         Size = UDim2.new(1, -80, 0, 20),
         BackgroundTransparency = 1,
     }, frame)
+    track:SetAttribute("AWPointerOnly", true)
     local rail = make("Frame", {
         BackgroundColor3 = Color3.fromRGB(34, 37, 42),
         BorderSizePixel = 0,

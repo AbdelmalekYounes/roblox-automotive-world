@@ -94,6 +94,7 @@ if
     or currentSession == "ui_panels2"
     or currentSession == "ui_hud"
     or currentSession == "ui_resolutions"
+    or currentSession == "ui_navigation"
 then
     return
 end
