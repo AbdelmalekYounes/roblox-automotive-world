@@ -190,6 +190,18 @@ return function(T: any, H: any)
             "haut du volant au moins 10° sous la ligne de visée"
         )
         T.truthy(template.RoofUnder - eyeY >= CockpitGeometry.RoofClearance, "yeux à 0,6 st au moins sous le pavillon")
+        -- ASTER-02 : même règle sur la jante RÉELLE du modèle (tore de rayon 0,55 et de section 0,065,
+        -- incliné de 15° : le haut de la jante part vers l'avant) → CameraCockpit du modèle à y 2,32.
+        local tilt = math.rad(15)
+        local rimTop = wheel.Center[2] + 0.55 * math.cos(tilt) + 0.065
+        local rimTopZ = wheel.Center[3] - 0.55 * math.sin(tilt)
+        local realEye = CockpitGeometry.eyeY(seat.Center[2], rimTop, eyeZ - rimTopZ, template.RoofUnder)
+        T.near(realEye, 2.31, 0.01, "yeux relevés à 2,31 pour la jante réelle")
+        T.truthy(2.32 >= realEye, "CameraCockpit du modèle (2,32) au-dessus du minimum")
+        T.truthy(
+            CockpitGeometry.wheelDropDeg(2.32, rimTop, eyeZ - rimTopZ) >= 10,
+            "jante réelle à 10° au moins sous la visée depuis CameraCockpit (2,32)"
+        )
     end)
 
     T.test("AvatarService : toutes les applications passent par la file", function()

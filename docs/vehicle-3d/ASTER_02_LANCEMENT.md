@@ -43,7 +43,7 @@ Cotes du gabarit final (mesurées en VM, tâches `20261104-181108` et `20261104-
 | Dessus de l'assise | y −0,04 ; siège conducteur x −1,40, z 2,42 ; passager x +1,40 |
 | Dessous du pavillon | y 4,16 (assise + **4,20**, décision du propriétaire) ; cheveux au plus haut : assise + 3,39 (pose du jeu) |
 | Plancher | dessus y −1,30, tôle 0,1 ; garde au sol 0,39 st (0,11 m) ; pieds 0,07 à 0,34 st au-dessus (pose du jeu) |
-| Volant | centre (−1,40 ; 1,52 ; 1,10), rayon 0,55, incliné de 15° (haut vers le conducteur) ; mains à 0,15–0,34 st de la jante |
+| Volant | centre (−1,40 ; 1,52 ; 1,10), rayon 0,55, incliné de 15° (face vers le conducteur, haut de jante vers l'avant) ; mains à 0,15–0,34 st de la jante |
 | Pédalier | z −1,4 (pointes de pied jusqu'à z −1,21) |
 | Planche de bord | centre z 0, y 0,86 à 1,56 |
 | Largeur intérieure | portières à x ±2,93 (faces internes) ; marge des bras ≥ 0,21 st |
@@ -81,7 +81,7 @@ MeshPart), vitrage, caoutchouc, plastique, chrome, éclairage ; textures origina
 | Roues (centres de moyeu) | AvG (−2,714 ; −0,661 ; −3,743), AvD (+2,714 ; −0,661 ; −3,743), ArG (−2,750 ; −0,661 ; +5,614), ArD (+2,750 ; −0,661 ; +5,614) ; rayon 1,125, largeur 0,732 | Issus de `VehicleDynamics.wheelLayout` ; tolérance ±0,05 st ; animées localement (`Motor6D.Transform`) |
 | `DriverSeat` | dessus d'assise (−1,40 ; −0,04 ; 2,42) | Objet `Seat` du jeu ; attribut **`AWSeatPose = "Conduite"` obligatoire** (§5) |
 | `PassengerSeat` | (+1,40 ; −0,04 ; 2,42) | `AWSeatPose = "Passager"` obligatoire |
-| `CameraCockpit` | (−1,40 ; 2,24 ; 2,07) | Règle du jeu `CockpitGeometry.eyeY` : haut du volant 10° sous la ligne de visée, avatar masqué (vérifié avec le module du jeu, `ASTER_02_DECISIONS.md` §1) |
+| `CameraCockpit` | (−1,40 ; **2,32** ; 2,07) | Règle du jeu `CockpitGeometry.eyeY` appliquée à la **jante réelle** du modèle : haut de jante y 2,114 à z 0,94, à 10° sous la ligne de visée, avatar masqué. L'approximation de la fabrique (haut = centre + 0,55) donnait 2,24. Contrôles Lune et Blender (`ASTER_02_BLOCKOUT.md`) |
 | `CameraHood`, `CameraBumper` | à placer sur le modèle (capot, bouclier) | Comme aujourd'hui |
 | `ExitLeft`, `ExitRight` | (∓4,68 ; −1,69 ; 2,42) | Au sol, hors carrosserie ; nouveau (le placement du passager reste lié à QA-A15) |
 | Volant | pivot au centre (−1,40 ; 1,52 ; 1,10), axe de colonne incliné de 15° | Rotation visuelle locale (proposition) |
