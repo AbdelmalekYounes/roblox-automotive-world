@@ -408,8 +408,12 @@ return function(T: any, H: any)
         T.equal(#errors, 0, table.concat(errors, " ; "))
         local audio, prefixes = 0, {}
         for _, asset in AssetManifest.Assets do
-            -- Seules exceptions : les icônes du téléphone envoyées par le propriétaire (lot UI-02, essai UiDesignSystem).
-            if string.sub(asset.Id, 1, 14) == "ui.icon.phone." then
+            -- Seules exceptions : les icônes du téléphone (lot UI-02, essai UiDesignSystem) et les sons de moteur de la
+            -- Brio (lot AUDIO-01, essai Audio01), envoyés par le propriétaire.
+            if
+                string.sub(asset.Id, 1, 14) == "ui.icon.phone."
+                or string.sub(asset.Id, 1, 18) == "audio.engine.brio."
+            then
                 continue
             end
             T.equal(asset.RobloxAssetId, nil, asset.Id .. " : aucun identifiant Roblox inventé")

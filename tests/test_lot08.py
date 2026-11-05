@@ -33,14 +33,43 @@ PHONE_ICON_IDS = {
 }
 
 
+# Identifiants des 19 sons de moteur de la Brio envoyés par le propriétaire (lot AUDIO-01, 2026-11-06), relevés dans
+# son fichier brio_sound.rbxm : seuls identifiants audio déclarés au manifeste.
+BRIO_ENGINE_SOUND_IDS = {
+    "on.1000": 100316175913759,
+    "on.1300": 71805665589957,
+    "on.1700": 113780474099124,
+    "on.2200": 88489584332634,
+    "on.2900": 139847748681292,
+    "on.3800": 132071504297109,
+    "on.4900": 132995478418521,
+    "on.6300": 133027765625226,
+    "off.1000": 126024686217376,
+    "off.1300": 90633302806466,
+    "off.1700": 106378654172632,
+    "off.2200": 72650990038478,
+    "off.2900": 85091116230984,
+    "off.3800": 108314634619106,
+    "off.4900": 132177207806274,
+    "off.6300": 118288604588883,
+    "start": 119200249015180,
+    "stop": 119630608706700,
+    "stall": 118745681759489,
+}
+
+
 def test_asset_manifest_declares_no_roblox_id():
-    """Aucun identifiant Roblox n'est inventé : RobloxAssetId vaut nil, sauf les 12 icônes du téléphone envoyées par
-    le propriétaire, lues dans une table unique dont le contenu doit être exactement celui qu'il a fourni."""
+    """Aucun identifiant Roblox n'est inventé : RobloxAssetId vaut nil, sauf les 12 icônes du téléphone et les 19 sons
+    de moteur de la Brio envoyés par le propriétaire, lus dans deux tables uniques dont le contenu doit être exactement
+    celui qu'il a fourni."""
     source = MANIFEST.read_text(encoding="utf-8")
     values = re.findall(r"RobloxAssetId\s*=\s*([^,\n]+)", source)
     assert values, "champ RobloxAssetId absent"
     others = [value.strip() for value in values if value.strip() != "nil"]
-    assert others == ["PHONE_ICON_IDS[appName]"], others
+    assert others == ["if vehicle == \"brio\" then BRIO_ENGINE_SOUND_IDS[name] else nil", "PHONE_ICON_IDS[appName]"], others
+    sounds = re.search(r"local BRIO_ENGINE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
+    assert sounds, "table BRIO_ENGINE_SOUND_IDS absente"
+    assert {k: int(v) for k, v in re.findall(r'\["([a-z0-9.]+)"\] = (\d+),', sounds.group(1))} == BRIO_ENGINE_SOUND_IDS
     block = re.search(r"local PHONE_ICON_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert block, "table PHONE_ICON_IDS absente"
     declared = {name: int(number) for name, number in re.findall(r"(\w+) = (\d+),", block.group(1))}

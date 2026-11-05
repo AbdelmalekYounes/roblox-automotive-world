@@ -231,3 +231,45 @@ Retour attendu : un `.rbxm` des 19 objets Sound insérés depuis le gestionnaire
 L'assistant y relève les identifiants avec Lune, puis les reporte au manifeste. Aucun identifiant n'est saisi à la main.
 
 Décision ouverte, hors son : moteur collé au rupteur en 1ʳᵉ et en 2ᵉ (§11).
+
+## 13. Sons envoyés, identifiants intégrés (2026-11-06)
+
+Le propriétaire a importé les 19 sons dans Studio (importation groupée), les a insérés puis enregistrés dans
+`aw-vm-exchange/brio_sound.rbxm` (SHA-256 `a7d9301e…`).
+
+L'assistant y a relevé les 19 identifiants avec Lune (propriété `AudioContent`) : 19 identifiants distincts, un par
+fichier. Ils sont reportés dans `AssetManifest` (table `BRIO_ENGINE_SOUND_IDS`, statut `ReadyForReview`).
+
+Contrôles :
+- pytest : la table du manifeste est exactement celle relevée ;
+- Lune (Audio01 6) : chaque ressource du profil porte son identifiant et elle est jouable ;
+- `scriptserify.ps1 -DownloadRobloxTypes` (2026-11-06) : Lune 410 sur 410, pytest 23 sur 23, toutes les étapes OK.
+
+Place de test : `build/AW-Audio-Brio.rbxlx` (branche à ce commit). Elle porte un nom distinct pour ne pas être écrasée
+par `verify.ps1`.
+
+### Liste de vérification en jeu (propriétaire)
+
+Lancer la place dans Studio (« Jouer »), environnement Dev. Obtenir la Brio par le menu d'administration (F2) ou par la
+concession, puis monter à bord.
+
+1. **Démarrage** : bruit de démarrage, puis ralenti régulier, sans coupure.
+2. **Accélération à fond** :
+   - montée continue du son, sans découpage audible entre les régimes ;
+   - passages de rapport 1-2 et 2-3 entendus (bref creux puis reprise).
+3. **Rupteur** : en 1ʳᵉ et en 2ᵉ, le moteur reste un moment à 7 200 tr/min avant de passer. C'est le constat de
+   physique du §11, attendu tant qu'il n'est pas corrigé.
+4. **Lever de pied** :
+   - le son passe au « pied levé » ;
+   - les rétrogradages en décélération s'entendent (petit coup de gaz).
+5. **Rétrogradage forcé** : vers 40 km/h, écraser l'accélérateur. Le régime remonte nettement.
+6. **Vue cockpit** (changement de caméra) : son plus étouffé et plus grave. Il redevient normal en vue extérieure.
+7. **Réglages** : Téléphone › Paramètres, volume « Moteur ». Le son de la Brio suit le réglage.
+8. **Arrêt du moteur** (si une touche le permet), ou sortie du véhicule : bruit d'arrêt.
+9. **À deux joueurs** (Studio : Test › Clients et serveurs, 2 joueurs) :
+   - la Brio de l'autre joueur s'entend, avec son régime réel et l'effet Doppler quand elle passe ;
+   - une Brio garée, sans conducteur, est silencieuse.
+10. **Comète** :
+    - elle reste **muette** (aucun son enregistré pour elle, décision « la Brio d'abord ») ;
+    - compte-tours jusqu'à 8 300 tr/min (zone rouge), rupteur à 8 500 ;
+    - conduite à revérifier (décision D3).

@@ -271,15 +271,40 @@ end
 
 -- ======================== Audio enregistré (lot AUDIO-01) ========================
 -- Brio : boucles tirées du pack « The Dyno Sessions: 190E » (Chippy569, Freesound), CC0 1.0 : domaine public, aucun
--- crédit exigé (registre docs/audio/SONS_TIERS.md). Fichiers produits par tools/audio/engine_loops.py, à écouter
--- puis envoyer sur Roblox par le propriétaire ; aucun identifiant tant que l'envoi n'est pas fait.
+-- crédit exigé (registre docs/audio/SONS_TIERS.md). Fichiers produits par tools/audio/engine_loops.py (variante
+-- « moteur », validée à l'écoute par le propriétaire le 2026-11-05).
 local ENGINE_LOOPS = "tools/audio/engine_loops.py"
+-- Identifiants des sons ENVOYÉS SUR ROBLOX PAR LE PROPRIÉTAIRE (importation groupée de Studio, 2026-11-06), relevés
+-- par Lune dans son fichier aw-vm-exchange/brio_sound.rbxm (19 objets Sound, propriété AudioContent) : seuls
+-- identifiants audio déclarés au manifeste ; aucun n'est inventé (contrôle pytest : table exacte).
+local BRIO_ENGINE_SOUND_IDS: { [string]: number } = {
+    ["on.1000"] = 100316175913759,
+    ["on.1300"] = 71805665589957,
+    ["on.1700"] = 113780474099124,
+    ["on.2200"] = 88489584332634,
+    ["on.2900"] = 139847748681292,
+    ["on.3800"] = 132071504297109,
+    ["on.4900"] = 132995478418521,
+    ["on.6300"] = 133027765625226,
+    ["off.1000"] = 126024686217376,
+    ["off.1300"] = 90633302806466,
+    ["off.1700"] = 106378654172632,
+    ["off.2200"] = 72650990038478,
+    ["off.2900"] = 85091116230984,
+    ["off.3800"] = 108314634619106,
+    ["off.4900"] = 132177207806274,
+    ["off.6300"] = 118288604588883,
+    ["start"] = 119200249015180,
+    ["stop"] = 119630608706700,
+    ["stall"] = 118745681759489,
+}
+AssetManifest.BrioEngineSoundIds = table.freeze(BRIO_ENGINE_SOUND_IDS)
 local function recordedEngine(vehicle: string, name: string, note: string)
     add({
         Id = "audio.engine." .. vehicle .. "." .. name,
         Category = "Audio",
         Version = "1.0.0",
-        Status = "Provisional",
+        Status = "ReadyForReview",
         Variants = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" },
         Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
         Provenance = "Tiers : pack « The Dyno Sessions: 190E » de Chippy569 (Freesound), CC0, transformé ("
@@ -287,8 +312,8 @@ local function recordedEngine(vehicle: string, name: string, note: string)
             .. ") ; docs/audio/SONS_TIERS.md",
         Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
         Source = { Kind = "File", Path = ENGINE_LOOPS },
-        Output = "build/audio/engines/" .. vehicle .. "/" .. name .. ".wav",
-        RobloxAssetId = nil,
+        Output = "build/audio/engines/" .. vehicle .. "/moteur/" .. name .. ".wav",
+        RobloxAssetId = if vehicle == "brio" then BRIO_ENGINE_SOUND_IDS[name] else nil,
     })
 end
 for _, rpm in { 1000, 1300, 1700, 2200, 2900, 3800, 4900, 6300 } do

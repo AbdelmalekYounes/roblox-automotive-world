@@ -197,16 +197,26 @@ return function(T: any, H: any)
                 T.truthy(asset ~= nil and asset.Category == "Audio", assetId .. " : déclaré au manifeste")
             end
         end
-        -- Brio (lot AUDIO-01) : 19 sons enregistrés (CC0), aucun identifiant Roblox avant l'envoi du propriétaire.
+        -- Brio (lot AUDIO-01) : 19 sons enregistrés (CC0), envoyés sur Roblox par le propriétaire le 2026-11-06 ;
+        -- identifiants relevés dans son fichier brio_sound.rbxm (table exacte contrôlée par pytest).
         local brio = Profiles.Profiles.wk_brio
         T.truthy(brio ~= nil, "profil de la Brio")
         local ids = Profiles.assetIds(brio)
         T.equal(#ids, 19, "8 régimes × charge / décharge + démarrage, arrêt, calage")
+        local seen = {}
         for _, assetId in ids do
             local asset = AssetManifest.get(assetId)
+            local name = string.sub(assetId, #brio.Prefix + 1)
             T.truthy(string.find(asset.Licence, "CC0", 1, true) ~= nil, assetId .. " : licence CC0")
-            T.truthy(string.match(asset.Output, "^build/audio/engines/brio/[a-z0-9.]+%.wav$") ~= nil, assetId)
-            T.equal(asset.RobloxAssetId, nil, assetId .. " : pas encore envoyé")
+            T.truthy(string.match(asset.Output, "^build/audio/engines/brio/moteur/[a-z0-9.]+%.wav$") ~= nil, assetId)
+            T.equal(
+                asset.RobloxAssetId,
+                AssetManifest.BrioEngineSoundIds[name],
+                assetId .. " : identifiant du propriétaire"
+            )
+            T.truthy(AssetManifest.playable(assetId), assetId .. " : jouable")
+            T.truthy(not seen[asset.RobloxAssetId], assetId .. " : identifiant unique")
+            seen[asset.RobloxAssetId] = true
         end
         T.equal(#AssetManifest.validate(), 0, "manifeste cohérent")
         local count = 0
