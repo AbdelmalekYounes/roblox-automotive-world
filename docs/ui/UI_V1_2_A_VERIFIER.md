@@ -17,8 +17,9 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
       motorisation, étiquettes ; clic sur une carte → onglet Véhicule de ce véhicule.
 - [ ] Véhicule de départ (profil neuf) : boutons sans débordement ; clic → **confirmation** « Ce choix est définitif »,
       « Annuler » ne fait rien.
-- [ ] Zone 3D : le véhicule tourne lentement ; glisser à la souris le fait tourner ; molette = zoom ; boutons 3/4,
-      Avant, Arrière, Profil ; flèches gauche / droite (écran et clavier) ; « Réinitialiser » ; libellé de caméra à jour.
+- [x] Zone 3D : cliquer-glisser fait tourner le véhicule ; molette = zoom ; boutons 3/4, Avant, Arrière, Profil ;
+      case « Rotation automatique » ; « Réinitialiser » ; flèches à l'écran retirées (validé par le propriétaire le
+      2026-11-05).
 - [ ] Véhicule : 4 cellules d'état, fiche technique (valeurs plausibles, rien d'inventé), raisons sous la barre
       d'actions quand Sortir / Exposer / Ranger sont grisés.
 - [ ] Préparation › Réglages : glissière (clic et glisser), boutons − et + ; valeur en ambre si modifiée ;
@@ -54,7 +55,7 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
 ## 4. HUD, carte, notifications
 
 - [ ] En conduite : tableau en carte, vitesse en chiffres et « KM/H » à côté, rapport en ambre, jauges ; mini-carte
-      **ronde** (itinéraire cyan, flèche ambre, repères dessinés : lettres G F E W $, carré, losange, damier).
+      **ronde** (itinéraire cyan, flèche blanche, repères dessinés : lettres G F E W $, carré, losange, damier).
 - [ ] Carte (M) : titre « CARTE », destination en cyan, lieux sur deux lignes avec distance ; choisir un lieu
       éloigné → guidage en carte à filet cyan pendant la conduite. **Monde ouvert** : routes visibles sur la carte.
 - [ ] Notifications : cartes à filet (cyan information, ambre avertissement, rouge critique), aucun pictogramme.
@@ -79,3 +80,21 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
   demande ; « Fermer » du garage dans la barre d'aide.
 - Bras levé en marchant avec le téléphone (monde ouvert) : 8° mesurés contre 25° attendus, cause non établie —
   à regarder en marchant avec le téléphone ouvert.
+
+## 8. Retours du propriétaire du 2026-11-05
+
+Validé par le propriétaire : garage, confirmations de l'économie et des métiers, fluidité de la mini-carte, routes
+rognées au cercle de la mini-carte, courses. Grande carte : conservée en l'état pour l'instant.
+
+Corrigé ensuite (contrôles statiques au vert, **NON TESTÉ en jeu**) :
+
+- [ ] **Flèche du joueur** (mini-carte et grande carte) : flèche de navigation blanche pointue à base échancrée,
+      contour sombre, dessinée ligne par ligne au pixel (l'ancienne ressemblait à un « A »). Vérifier qu'elle suit le
+      cap en tournant, sans couture visible. Aperçu calculé (pas une capture du jeu) : `apercu_fleche_joueur.png`.
+- [ ] Si un **disque sombre** reste visible sous la flèche à l'arrêt, noter l'endroit : c'est probablement le repère
+      d'un lieu à cet emplacement (non établi).
+- [ ] **Téléphone, accueil** : la première rangée d'icônes commence sous les boutons ronds « + » et « × » ; le nom de
+      chaque application est plus près de son icône ; le dock reste en bas sans chevaucher la grille.
+- [ ] **Téléphone, applications** : chevron « < » à gauche de « Accueil » sans chevauchement ; grand titre sous la
+      ligne « Accueil » / « + » / « × » ; contenu sous le titre. En conduite, l'étiquette « MODE RAPIDE » est alignée
+      sur le titre.

@@ -460,7 +460,7 @@ local function renderHome()
     -- 4 colonnes calculées sur la largeur disponible (pixels logiques).
     local columnWidth = math.max(64, math.floor((Components.logicalSize(body).X - 8 - 3 * 4) / 4))
     UITheme.make("UIGridLayout", {
-        CellSize = UDim2.fromOffset(columnWidth, 90),
+        CellSize = UDim2.fromOffset(columnWidth, 84),
         CellPadding = UDim2.fromOffset(4, Tokens.Space[3]),
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -1187,8 +1187,10 @@ render = function()
     -- Accueil : pas de grand titre, grille plus haute et dock visible ; applications : grand titre.
     dock.Visible = not quick and app == "Home"
     header.Visible = quick or app ~= "Home"
-    body.Position = UDim2.fromOffset(14, if not quick and app == "Home" then 64 else 124)
-    body.Size = UDim2.new(1, -28, 1, if not quick and app == "Home" then -190 else -160)
+    -- Accueil : grille sous les boutons ronds (y 50 à 94) et au-dessus du dock ; applications : sous le grand titre.
+    -- Retour du propriétaire (2026-11-05) : la première rangée d'icônes passait sous « + » et « × ».
+    body.Position = UDim2.fromOffset(14, if not quick and app == "Home" then 104 else 136)
+    body.Size = UDim2.new(1, -28, 1, if not quick and app == "Home" then -236 else -172)
     if quick then
         renderQuick()
         return
@@ -1462,14 +1464,15 @@ local function build()
             BackgroundColor3 = Tokens.color("Amber"),
             BorderSizePixel = 0,
             AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0, 10, 0.5, sign * 3),
+            -- Le UIPadding décale aussi les enfants : -12 replace le chevron dans la marge gauche (10 px du bord).
+            Position = UDim2.new(0, -12, 0.5, sign * 3),
             Size = UDim2.fromOffset(2.5, 10),
             Rotation = -sign * 45,
         }, backButton)
     end
     header = Components.text(screen, "", "H1", {
         Name = "Titre",
-        Position = UDim2.fromOffset(20, 82),
+        Position = UDim2.fromOffset(20, 96),
         Size = UDim2.new(1, -32, 0, 34),
         AutomaticSize = Enum.AutomaticSize.None,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1478,7 +1481,7 @@ local function build()
     quickTag = Components.text(screen, Tokens.upper(Localization.t("phone.quickTag")), "Label", {
         Name = "ModeRapide",
         AnchorPoint = Vector2.new(1, 0),
-        Position = UDim2.new(1, -20, 0, 90),
+        Position = UDim2.new(1, -20, 0, 104),
         BackgroundTransparency = 0,
         TextColor3 = UITheme.color("AccentSoftText"),
         Visible = false,
@@ -1537,8 +1540,8 @@ local function build()
     end
     body = UITheme.make("ScrollingFrame", {
         Name = "Contenu",
-        Position = UDim2.fromOffset(14, 124),
-        Size = UDim2.new(1, -28, 1, -160),
+        Position = UDim2.fromOffset(14, 136),
+        Size = UDim2.new(1, -28, 1, -172),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
