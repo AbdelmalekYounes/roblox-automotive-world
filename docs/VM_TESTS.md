@@ -84,6 +84,8 @@ stocké par ces scripts. La démarrer dans Workstation puis *Run in Background*.
 ```bat
 test-vm.cmd                                   :: les 7 sessions (≈ 20 min)
 test-vm.cmd -Sessions lot02 -TimeoutSec 1800  :: essais du lot 0.2 seuls
+test-vm.cmd -Sessions lot04                   :: progression du lot 0.4 (2 joueurs)
+test-vm.cmd -Place OpenWorld -Sessions monde  :: place monde ouvert du lot 0.3 (carte générée d'abord)
 test-vm.cmd -Sessions collision,collision_latence
 test-vm.cmd -NoVmControl -DryRun              :: test du protocole seul (sortie factice, sans Studio)
 ```

@@ -17,6 +17,10 @@ local KNOWN_SESSIONS = {
     collision = { Name = "collision", Players = 2 },
     collision_latence = { Name = "collision_latence", Players = 2, DelayMs = 100 },
     lot02 = { Name = "lot02", Players = 1 },
+    -- Lot 0.3 : place MONDE OUVERT (host-run.ps1 -Place OpenWorld).
+    monde = { Name = "monde", Players = 1 },
+    -- Lot 0.4 : progression, place de développement, deux joueurs.
+    lot04 = { Name = "lot04", Players = 2 },
 }
 
 local output = process.args[1]
@@ -47,6 +51,10 @@ local scenarioServer = fs.readFile(base .. "ScenarioServer.server.luau")
 local scenarioClient = fs.readFile(base .. "ScenarioClient.client.luau")
 local lot02Server = fs.readFile(base .. "Lot02Server.server.luau")
 local lot02Client = fs.readFile(base .. "Lot02Client.client.luau")
+local mondeServer = fs.readFile(base .. "MondeServer.server.luau")
+local mondeClient = fs.readFile(base .. "MondeClient.client.luau")
+local lot04Server = fs.readFile(base .. "Lot04Server.server.luau")
+local lot04Client = fs.readFile(base .. "Lot04Client.client.luau")
 
 for label, source in
     {
@@ -56,6 +64,10 @@ for label, source in
         scenarioClient = scenarioClient,
         lot02Serveur = lot02Server,
         lot02Client = lot02Client,
+        mondeServeur = mondeServer,
+        mondeClient = mondeClient,
+        lot04Serveur = lot04Server,
+        lot04Client = lot04Client,
     }
 do
     assert(not string.find(source, "]==]", 1, true), "La suite " .. label .. " ne doit pas contenir « ]==] »")
@@ -77,6 +89,10 @@ driver = replace(driver, "@@SCENARIO_SERVER@@", scenarioServer)
 driver = replace(driver, "@@SCENARIO_CLIENT@@", scenarioClient)
 driver = replace(driver, "@@LOT02_SERVER@@", lot02Server)
 driver = replace(driver, "@@LOT02_CLIENT@@", lot02Client)
+driver = replace(driver, "@@MONDE_SERVER@@", mondeServer)
+driver = replace(driver, "@@MONDE_CLIENT@@", mondeClient)
+driver = replace(driver, "@@LOT04_SERVER@@", lot04Server)
+driver = replace(driver, "@@LOT04_CLIENT@@", lot04Client)
 driver = replace(driver, "@@SESSIONS@@", serde.encode("json", sessions))
 luau.compile(driver)
 

@@ -36,7 +36,7 @@ def test_contract_values_and_bootstrap():
     """Contrôle les valeurs approuvées et les points d'entrée présents."""
     config = (SRC / "shared/ProjectSettings.luau").read_text(encoding="utf-8")
     assert 'RequirementsVersion = "1.0"' in config
-    assert 'DevelopmentVersion = "0.3.0-dev"' in config
+    assert 'DevelopmentVersion = "0.4.0-dev"' in config
     assert "LaunchVehicleModelCount = 18" in config
     assert "LaunchZoneCount = 7" in config
     assert "MaximumPlayersTarget = 24" in config
@@ -45,25 +45,37 @@ def test_contract_values_and_bootstrap():
     assert (SRC / "client/Bootstrap.client.luau").is_file()
 
 
+DATASTORE_ADAPTER = "DataStoreProfileRepository.luau"
+
+
 def test_no_premature_datastore_economy_or_external_code():
-    """Ni sauvegarde, ni économie, ni code/actif externe dans le lot 0.1."""
+    """Ni économie, ni code/actif externe ; DataStore réservé à son adaptateur (lot 0.4)."""
+    datastore_tokens = ["GetDataStore(", "UpdateAsync(", "DataStoreService"]
     forbidden = [
-        "GetDataStore(",
         "SetAsync(",
-        "UpdateAsync(",
-        "DataStoreService",
         "MarketplaceService",
         "ProcessReceipt",
         "InsertService",
         "loadstring",
         "rbxassetid://",
     ]
+    adapters = []
     for script in _sources():
         source = script.read_text(encoding="utf-8")
         for token in forbidden:
             assert token not in source, f"{token} interdit dans {script.name}"
+        if any(token in source for token in datastore_tokens):
+            adapters.append(script.name)
         assert not re.search(r"require\(\s*\d", source), f"module externe par identifiant dans {script.name}"
         assert "--" in source, f"Commentaires manquants dans {script.name}"
+    assert adapters == [DATASTORE_ADAPTER], f"DataStore hors de son adaptateur : {adapters}"
+
+
+def test_storage_environments_not_declared():
+    """Aucune expérience de test ou de production déclarée : tout reste en mémoire."""
+    config = (SRC / "server/Persistence/EnvironmentConfig.luau").read_text(encoding="utf-8")
+    assert "TestGameIds = table.freeze({})" in config
+    assert "ProdGameIds = table.freeze({})" in config
 
 
 def test_client_server_shared_separation():

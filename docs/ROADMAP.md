@@ -54,6 +54,17 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Vérifié hors Studio uniquement (187 tests Lune, 9 pytest, typage strict) ; **aucun essai Studio ni humain**.
 - Rapport : `docs/lot-0.3/RAPPORT_LOT_0.3.md` ; architecture : `docs/lot-0.3/ARCHITECTURE_LOT_0.3.md`.
 
+## État du lot 0.4 (branche `feat/properties-garages-persistence-0.4`, PR brouillon, base : lot 0.3)
+
+- Livré : profils versionnés (schéma v1, migrations, verrou exclusif à génération, reprise des verrous expirés,
+  transactions idempotentes, réconciliation des écritures incertaines, environnements Dev/Test/Prod séparés),
+  collection à identifiants uniques, propriété gratuite unique, contrats du starter (liste officielle vide),
+  propriétés (3 catégories, plafond 5) et intérieurs instanciés, garages, réglages, esthétique, pièces, 5
+  configurations, état durable, invitations, contrats économiques, interface provisoire.
+- Vérifié hors Studio uniquement (235 tests Lune sur adaptateur mémoire, 10 pytest, typage strict) ; persistance
+  réelle, essais Studio et humains **NON TESTÉS** (`docs/QA_BACKLOG.md`).
+- Rapport : `docs/lot-0.4/RAPPORT_LOT_0.4.md` ; architecture : `docs/lot-0.4/ARCHITECTURE_LOT_0.4.md`.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.

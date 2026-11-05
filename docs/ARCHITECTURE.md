@@ -90,7 +90,7 @@ La première voiture sera un **prototype technique original**, distinct de tout 
 
 > **Lot 0.2** : les points d'extension ci-dessous sont implémentés (moteurs essence/diesel/électrique, six boîtes,
 > FWD/RWD/AWD et autobloquants, aides par modèle, mouillé, énergie et dégâts de session, caméras embarquées).
-> Changements d'architecture : `docs/lot-0.2/ARCHITECTURE_LOT_0.2.md` (lot 0.2), `docs/lot-0.3/ARCHITECTURE_LOT_0.3.md` (monde ouvert, lot 0.3). Le tableau suivant décrit l'état du lot 0.1.
+> Changements d'architecture : `docs/lot-0.2/ARCHITECTURE_LOT_0.2.md` (lot 0.2), `docs/lot-0.3/ARCHITECTURE_LOT_0.3.md` (monde ouvert, lot 0.3), `docs/lot-0.4/ARCHITECTURE_LOT_0.4.md` (persistance, lot 0.4). Le tableau suivant décrit l'état du lot 0.1.
 
 ### Points d'extension (déclarés, NON implémentés au lot 0.1)
 

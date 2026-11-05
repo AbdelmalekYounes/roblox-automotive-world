@@ -59,6 +59,20 @@ local ENERGY_PUBLISH_STEP = 0.002
 -- Repositionnement serveur : délai sans détection de choc.
 local DAMAGE_SUSPEND_S = 1.5
 
+-- Exemplaire PERSONNEL d'un joueur (lot 0.4), matérialisé par ProgressionService.
+type PersonalInfo = {
+    OwnerUserId: number,
+    VehicleId: string,
+    -- Session protégée (essai, lots futurs) : rien n'est réécrit dans le profil.
+    Protected: boolean,
+    -- Droit de conduire, vérifié à chaque embarquement (propriétaire, invités).
+    MayDrive: (Player) -> boolean,
+    -- Distance mesurée par le serveur depuis la dernière lecture (m).
+    DistanceM: number,
+    LastPosition: Vector3?,
+    Since: number,
+}
+
 type VehicleRecord = {
     Model: Model,
     Root: BasePart,
@@ -90,6 +104,9 @@ type VehicleRecord = {
     PublishedEnergy: number,
     -- Véhicule de banc d'essai de charge (Studio uniquement) : commande scriptée.
     BenchInput: Types.DriverInput?,
+    -- Collisions entre joueurs : participant du médiateur (absent pour un banc).
+    Participant: CollisionMediator.Participant?,
+    Personal: PersonalInfo?,
 }
 
 type Limiters = {
@@ -335,9 +352,15 @@ local function onOccupantChanged(record: VehicleRecord)
     end
     local player = playerFromHumanoid(occupant)
     local alreadyDriving = if player then recordByDriver[player] else nil
+    local personal = record.Personal
+    local refusedPersonal = false
+    if personal and player then
+        refusedPersonal = not personal.MayDrive(player)
+    end
     local unauthorized = player == nil
         or (record.Driver ~= nil and record.Driver ~= player)
         or (alreadyDriving ~= nil and alreadyDriving ~= record)
+        or refusedPersonal
     if unauthorized then
         -- Occupation non validée par le serveur : le siège est libéré.
         ejectOccupant(record, occupant)
@@ -356,6 +379,11 @@ local function onPromptTriggered(record: VehicleRecord, player: Player)
         return
     end
     if recordByDriver[player] ~= nil or os.clock() < record.CorrectionUntil then
+        return
+    end
+    -- Exemplaire personnel : seuls le propriétaire et ses invités autorisés à conduire.
+    if record.Personal and not record.Personal.MayDrive(player) then
+        notify(player, "VehicleNotYours")
         return
     end
     local character = player.Character
@@ -702,6 +730,26 @@ local function anyPlayerNear(position: Vector3, radius: number): boolean
     return false
 end
 
+-- Kilométrage d'un exemplaire personnel : positions vues par le serveur, sauts
+-- invraisemblables (correction, repositionnement) exclus.
+local function measureDistance(record: VehicleRecord)
+    local personal = record.Personal
+    if personal == nil then
+        return
+    end
+    local position = record.Root.Position
+    local last = personal.LastPosition
+    personal.LastPosition = position
+    if last == nil or record.Driver == nil or os.clock() < record.CorrectionUntil then
+        return
+    end
+    local meters = (position - last).Magnitude * METERS_PER_STUD
+    local plausible = record.Definition.Limits.MaxPlausibleSpeedKmh / 3.6 * VALIDATION_INTERVAL_S * 1.5
+    if meters <= plausible then
+        personal.DistanceM += meters
+    end
+end
+
 local function maintainParkedVehicles()
     for _, record in records do
         if record.Driver ~= nil then
@@ -711,6 +759,9 @@ local function maintainParkedVehicles()
         local position = record.Root.Position
         if position.Y < KILL_HEIGHT then
             placeUnderServer(record, record.HomePivot)
+            continue
+        end
+        if record.Personal then
             continue
         end
         if (position - record.HomePivot.Position).Magnitude > RETURN_DISTANCE_STUDS then
@@ -820,6 +871,78 @@ local function onAction(player: Player, action: any, argument: any)
     end
 end
 
+-- Crée l'enregistrement d'un véhicule matérialisé (parc d'essai ou exemplaire personnel).
+local function createRecord(definition: Types.VehicleDefinition, pivot: CFrame, model: Model): VehicleRecord
+    local root = model.PrimaryPart :: BasePart
+    local seat = model:FindFirstChild("DriverSeat") :: Seat
+    local door = root:FindFirstChild("DriverDoor") :: Attachment
+    local prompt = door:FindFirstChild("EnterPrompt") :: ProximityPrompt
+
+    local record: VehicleRecord = {
+        Model = model,
+        Root = root,
+        Seat = seat,
+        Prompt = prompt,
+        Definition = definition,
+        HomePivot = pivot,
+        Driver = nil,
+        ServerOwned = true,
+        Simulator = VehicleSimulator.new(model, definition, { ReplicationFriendly = true }),
+        Asleep = false,
+        CalmTimer = 0,
+        AwayTimer = 0,
+        LastSample = nil,
+        LastValidPivot = pivot,
+        CorrectionUntil = 0,
+        UnflipReadyAt = 0,
+        SuspicionCount = 0,
+        LastSuspicionLog = 0,
+        LastSteer = 0,
+        OwnershipFailures = 0,
+        LastServerSpeed = 0,
+        LastEjectionLog = 0,
+        Energy = EnergyModel.newAccount(definition),
+        ClientEnergy = nil,
+        EnergySample = nil,
+        PublishedEnergy = -1,
+        BenchInput = nil,
+        Participant = nil,
+        Personal = nil,
+    }
+    record.Participant = {
+        Model = model,
+        Root = root,
+        MassKg = definition.Chassis.MassKg,
+        Driver = nil,
+        ClientSimulated = false,
+    }
+    table.insert(records, record)
+    setOwner(record, nil)
+    publishEnergy(record, true)
+    damage:register(model, definition)
+
+    -- Ancrer puis désancrer une pièce rend la propriété réseau à l'attribution
+    -- automatique de Roblox : on réaffirme aussitôt le propriétaire attendu.
+    root:GetPropertyChangedSignal("Anchored"):Connect(function()
+        if root.Anchored then
+            return
+        end
+        task.defer(function()
+            local expected = if record.ServerOwned then nil else record.Driver
+            if not setOwner(record, expected) and record.Driver ~= nil then
+                recoverDriver(record)
+            end
+        end)
+    end)
+    seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+        onOccupantChanged(record)
+    end)
+    prompt.Triggered:Connect(function(player)
+        onPromptTriggered(record, player)
+    end)
+    return record
+end
+
 -- Plots d'apparition des véhicules : zone d'essai (place de développement) ou
 -- parc des prototypes du monde ouvert (lot 0.3). Un véhicule par plot, dans
 -- l'ordre de VehicleDefinitions.TestFleet.
@@ -847,64 +970,7 @@ function VehicleService.start(zone: SpawnSet)
         local pivot = VehicleFactory.spawnPivotForPad(definition, pad)
         local model = VehicleFactory.create(definition, pivot, index)
         model.Parent = folder
-        local root = model.PrimaryPart :: BasePart
-        local seat = model:FindFirstChild("DriverSeat") :: Seat
-        local door = root:FindFirstChild("DriverDoor") :: Attachment
-        local prompt = door:FindFirstChild("EnterPrompt") :: ProximityPrompt
-
-        local record: VehicleRecord = {
-            Model = model,
-            Root = root,
-            Seat = seat,
-            Prompt = prompt,
-            Definition = definition,
-            HomePivot = pivot,
-            Driver = nil,
-            ServerOwned = true,
-            Simulator = VehicleSimulator.new(model, definition, { ReplicationFriendly = true }),
-            Asleep = false,
-            CalmTimer = 0,
-            AwayTimer = 0,
-            LastSample = nil,
-            LastValidPivot = pivot,
-            CorrectionUntil = 0,
-            UnflipReadyAt = 0,
-            SuspicionCount = 0,
-            LastSuspicionLog = 0,
-            LastSteer = 0,
-            OwnershipFailures = 0,
-            LastServerSpeed = 0,
-            LastEjectionLog = 0,
-            Energy = EnergyModel.newAccount(definition),
-            ClientEnergy = nil,
-            EnergySample = nil,
-            PublishedEnergy = -1,
-            BenchInput = nil,
-        }
-        table.insert(records, record)
-        setOwner(record, nil)
-        publishEnergy(record, true)
-        damage:register(model, definition)
-
-        -- Ancrer puis désancrer une pièce rend la propriété réseau à l'attribution
-        -- automatique de Roblox : on réaffirme aussitôt le propriétaire attendu.
-        root:GetPropertyChangedSignal("Anchored"):Connect(function()
-            if root.Anchored then
-                return
-            end
-            task.defer(function()
-                local expected = if record.ServerOwned then nil else record.Driver
-                if not setOwner(record, expected) and record.Driver ~= nil then
-                    recoverDriver(record)
-                end
-            end)
-        end)
-        seat:GetPropertyChangedSignal("Occupant"):Connect(function()
-            onOccupantChanged(record)
-        end)
-        prompt.Triggered:Connect(function(player)
-            onPromptTriggered(record, player)
-        end)
+        createRecord(definition, pivot, model)
     end
 
     RunService.PreSimulation:Connect(function(dt)
@@ -926,17 +992,6 @@ function VehicleService.start(zone: SpawnSet)
     local mediator = CollisionMediator.new(function(driver, model, normal, deltaV, point)
         createdRemotes.Impulse:FireClient(driver, model, normal, deltaV, point)
     end)
-    local participants: { CollisionMediator.Participant } = {}
-    for _, record in records do
-        table.insert(participants, {
-            Model = record.Model,
-            Root = record.Root,
-            MassKg = record.Definition.Chassis.MassKg,
-            Driver = nil,
-            ClientSimulated = false,
-        })
-    end
-
     local function correcting(model: Model): boolean
         for _, record in records do
             if record.Model == model then
@@ -950,13 +1005,15 @@ function VehicleService.start(zone: SpawnSet)
     RunService.Heartbeat:Connect(function(dt)
         local beat = os.clock()
         local now = os.clock()
-        for index, record in records do
+        local participants: { CollisionMediator.Participant } = {}
+        for _, record in records do
             -- Les véhicules de banc (Studio) n'ont pas de participant : ils sont
             -- simulés par le serveur, dont le moteur résout leurs contacts.
-            local participant = participants[index]
+            local participant = record.Participant
             if participant == nil then
                 continue
             end
+            table.insert(participants, participant)
             participant.Driver = record.Driver
             participant.ClientSimulated = record.Driver ~= nil
                 and not record.ServerOwned
@@ -972,6 +1029,7 @@ function VehicleService.start(zone: SpawnSet)
             for _, record in records do
                 verifyOwnership(record)
                 settleEnergy(record, os.clock())
+                measureDistance(record)
             end
             validateMovements(os.clock())
         end
@@ -995,6 +1053,138 @@ function VehicleService.start(zone: SpawnSet)
     end)
 
     print(string.format("[AutomotiveWorld] %d véhicules d'essai prêts (parc du lot 0.2)", #records))
+end
+
+export type PersonalSpawn = {
+    Definition: Types.VehicleDefinition, -- définition dérivée (réglages, pièces, apparence)
+    Pivot: CFrame,
+    OwnerUserId: number,
+    VehicleId: string,
+    Protected: boolean,
+    MayDrive: (Player) -> boolean,
+    EnergyFraction: number,
+    Damage: any, -- état de dégâts durable (format DamageModel)
+    TuningSpec: string, -- réglages et pièces (JSON) recalculés à l'identique par le client
+}
+
+local personalFolder: Folder? = nil
+
+--[[
+    Matérialise un exemplaire personnel (lot 0.4). L'énergie et les dégâts
+    durables sont restaurés ; le client recalcule la même définition dérivée
+    à partir de TuningSpec. Renvoie le modèle.
+]]
+function VehicleService.spawnPersonal(spawn: PersonalSpawn): Model
+    assert(started, "VehicleService non démarré")
+    local folder = personalFolder
+    if folder == nil then
+        local created = Instance.new("Folder")
+        created.Name = "VehiculesPersonnels"
+        created.Parent = Workspace
+        personalFolder = created
+        folder = created
+    end
+    local definition = spawn.Definition
+    local model = VehicleFactory.create(definition, spawn.Pivot, 0)
+    model.Name = "Perso_" .. spawn.VehicleId
+    model:SetAttribute("OwnerUserId", spawn.OwnerUserId)
+    model:SetAttribute("PersonalVehicleId", spawn.VehicleId)
+    model:SetAttribute("TuningSpec", spawn.TuningSpec)
+    model.Parent = folder
+    local record = createRecord(definition, spawn.Pivot, model)
+    record.Personal = {
+        OwnerUserId = spawn.OwnerUserId,
+        VehicleId = spawn.VehicleId,
+        Protected = spawn.Protected,
+        MayDrive = spawn.MayDrive,
+        DistanceM = 0,
+        LastPosition = nil,
+        Since = os.clock(),
+    }
+    local store = definition.Powertrain.Energy
+    record.Energy = EnergyModel.newAccount(definition, math.clamp(spawn.EnergyFraction, 0, 1) * store.Capacity)
+    publishEnergy(record, true)
+    if spawn.Damage then
+        damage:restore(model, spawn.Damage)
+    end
+    return model
+end
+
+local function personalRecord(model: Model): VehicleRecord?
+    for _, record in records do
+        if record.Model == model and record.Personal then
+            return record
+        end
+    end
+    return nil
+end
+
+export type PersonalState = {
+    EnergyFraction: number,
+    Damage: any,
+    DistanceKm: number,
+    ElapsedS: number,
+    MaxSpeedKmh: number,
+    Protected: boolean,
+}
+
+-- État mesuré par le serveur depuis la dernière lecture (remet la distance à zéro).
+function VehicleService.readPersonal(model: Model): PersonalState?
+    local record = personalRecord(model)
+    if record == nil then
+        return nil
+    end
+    local personal = record.Personal :: PersonalInfo
+    local now = os.clock()
+    local state: PersonalState = {
+        EnergyFraction = record.Energy.Level / math.max(record.Energy.Capacity, 1e-9),
+        Damage = damage:getState(model),
+        DistanceKm = personal.DistanceM / 1000,
+        ElapsedS = now - personal.Since,
+        MaxSpeedKmh = record.Definition.Limits.MaxPlausibleSpeedKmh,
+        Protected = personal.Protected,
+    }
+    personal.DistanceM = 0
+    personal.Since = now
+    return state
+end
+
+-- Conducteur actuel d'un exemplaire personnel et sa vitesse (m/s).
+function VehicleService.personalDriver(model: Model): (Player?, number)
+    local record = personalRecord(model)
+    if record == nil then
+        return nil, 0
+    end
+    return record.Driver, record.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD
+end
+
+-- Fait descendre le conducteur (arrêt sûr décidé par l'appelant).
+function VehicleService.ejectPersonalDriver(model: Model)
+    local record = personalRecord(model)
+    if record and record.Seat.Occupant then
+        ejectOccupant(record, record.Seat.Occupant)
+    end
+end
+
+-- Retire un exemplaire personnel du monde (rangement, départ du joueur).
+function VehicleService.despawnPersonal(model: Model)
+    local record = personalRecord(model)
+    if record == nil then
+        return
+    end
+    local occupant = record.Seat.Occupant
+    if occupant then
+        releaseCharacter(record, occupant)
+    end
+    if record.Driver then
+        releaseDriver(record)
+    end
+    damage:unregister(model)
+    local index = table.find(records, record)
+    if index then
+        table.remove(records, index)
+    end
+    model:Destroy()
 end
 
 local function findRecord(model: any): VehicleRecord?

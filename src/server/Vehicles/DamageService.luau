@@ -542,4 +542,37 @@ function DamageService.perf(self: Service): PerfStats.Summary
     return PerfStats.summary(self.StepTimes)
 end
 
+--[[
+    Restauration d'un état de dégâts DURABLE (lot 0.4) sur un exemplaire
+    personnel qui vient d'être matérialisé : attributs publiés et visuels
+    appliqués. Seul le serveur l'appelle, à partir du profil.
+]]
+function DamageService.restore(self: Service, model: Model, state: any)
+    local entry = self.ByModel[model]
+    if entry == nil or type(state) ~= "table" then
+        return
+    end
+    -- Relecture défensive : valeurs absentes ou invalides → intact.
+    local attributes = DamageModel.toAttributes(state)
+    local restored = DamageModel.fromAttributes(function(name: string): any
+        return attributes[name]
+    end)
+    entry.State = restored
+    publish(entry)
+    applyVisuals(entry)
+end
+
+-- Retire un véhicule détruit (exemplaire personnel rangé).
+function DamageService.unregister(self: Service, model: Model)
+    local entry = self.ByModel[model]
+    if entry == nil then
+        return
+    end
+    self.ByModel[model] = nil
+    local index = table.find(self.Entries, entry)
+    if index then
+        table.remove(self.Entries, index)
+    end
+end
+
 return DamageService

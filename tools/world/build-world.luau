@@ -170,7 +170,7 @@ local function strip(
 end
 
 -- Simplification de Douglas-Peucker (3D) d'une polyligne.
-local function simplify(points: { any }, tolerance: number): { any }
+local function simplifyRaw(points: { any }, tolerance: number): { any }
     if #points <= 2 then
         return points
     end
@@ -201,6 +201,32 @@ local function simplify(points: { any }, tolerance: number): { any }
     for i, p in points do
         if keep[i] then
             table.insert(result, p)
+        end
+    end
+    return result
+end
+
+-- Longueur maximale d'un segment (m). Une pièce Roblox ne peut pas dépasser
+-- 2 048 studs par côté (≈ 573 m) : au-delà, le moteur la RACCOURCIT en silence,
+-- ce qui laissait un trou au bout des longues chaussées droites (mesuré en
+-- Studio, tâche 20261103-025743). Tout tracé simplifié est donc redécoupé.
+local MAX_SEGMENT_M = 500
+
+local function simplify(points: { any }, tolerance: number): { any }
+    local reduced = simplifyRaw(points, tolerance)
+    local result = { reduced[1] }
+    for i = 2, #reduced do
+        local a, b = reduced[i - 1], reduced[i]
+        local length = math.sqrt((b.X - a.X) ^ 2 + (b.Y - a.Y) ^ 2 + (b.Z - a.Z) ^ 2)
+        local pieces = math.max(1, math.ceil(length / MAX_SEGMENT_M))
+        for k = 1, pieces do
+            local f = k / pieces
+            table.insert(
+                result,
+                if k == pieces
+                    then b
+                    else { X = a.X + (b.X - a.X) * f, Y = a.Y + (b.Y - a.Y) * f, Z = a.Z + (b.Z - a.Z) * f }
+            )
         end
     end
     return result
@@ -1199,6 +1225,24 @@ for _, placement in layout.Placements do
 end
 
 -- ============================== ÉCRITURE ==============================
+
+-- Garde-fou : aucune pièce au-delà de la taille maximale du moteur (2 048 studs).
+local MAX_PART_STUDS = 2048
+local oversized = 0
+for _, item in root:GetDescendants() do
+    if item:IsA("BasePart") then
+        local size = item.Size
+        if math.max(size.X, size.Y, size.Z) > MAX_PART_STUDS then
+            oversized += 1
+            if oversized <= 5 then
+                print(string.format("Pièce trop grande : %s (%s)", item:GetFullName(), tostring(size)))
+            end
+        end
+    end
+end
+if oversized > 0 then
+    error(string.format("%d pièce(s) dépassent %d studs : le moteur les raccourcirait", oversized, MAX_PART_STUDS))
+end
 
 root:SetAttribute("Parts", stats.Parts)
 local data = roblox.serializeModel({ root })

@@ -179,3 +179,11 @@ rojo build openworld.project.json -o build\AutomotiveWorld-OpenWorld.rbxl
 
 (`build\AutomotiveWorld.rbxlx` est produit par `rojo build -o build\AutomotiveWorld.rbxlx` ; `scripts\verify.ps1`
 enchaîne le tout.) Architecture détaillée : [`ARCHITECTURE_LOT_0.3.md`](ARCHITECTURE_LOT_0.3.md).
+
+## 7. Mise à jour après la campagne de tests du 2026-11-03
+
+La session Studio `monde` (nouvelle) a trouvé un défaut de la carte : 195 pièces dépassaient la taille maximale du
+moteur (2 048 studs) et étaient raccourcies, laissant des trous aux bouts des longues chaussées droites. Corrigé dans
+`b41e0f1` (tracés redécoupés à 500 m, garde-fou dans le générateur ; carte : 37 239 pièces). Après correction, la
+session passe entièrement (tâche `20261103-030159`, 32/32), dont une conduite réelle à 133,4 km/h sur l'autoroute.
+Détail : `docs/QA_CAMPAGNE_2026-11-03.md`.

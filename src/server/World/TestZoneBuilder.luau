@@ -15,6 +15,10 @@ local STUDS_PER_METER = 1 / Constants.MetersPerStud
 export type TestZone = {
     Folder: Folder,
     Pads: { BasePart },
+    -- Lot 0.4 : représentants, dans la zone d'essai, d'une entrée de propriété
+    -- et d'un garage public du monde ouvert.
+    Entrance: BasePart,
+    PublicGarage: BasePart,
 }
 
 type PartProps = {
@@ -309,8 +313,26 @@ function TestZoneBuilder.build(): TestZone
         Material = Enum.Material.Concrete,
     })
 
+    -- Lot 0.4 — entrée de propriété et garage public d'essai (regard vers -Z).
+    local entrance = makePart(folder, {
+        Name = "EntreeProprieteEssai",
+        Size = Vector3.new(24, 0.05, 16),
+        CFrame = CFrame.new(-110, 0.03, 120),
+        Color = Color3.fromRGB(120, 140, 220),
+        CanCollide = false,
+    })
+    addSign(folder, "Propriete", Vector3.new(-110, 0, 130))
+    local garage = makePart(folder, {
+        Name = "GaragePublicEssai",
+        Size = Vector3.new(24, 0.05, 16),
+        CFrame = CFrame.new(-170, 0.03, 120),
+        Color = Color3.fromRGB(220, 140, 80),
+        CanCollide = false,
+    })
+    addSign(folder, "Garage public", Vector3.new(-170, 0, 130))
+
     folder.Parent = Workspace
-    return { Folder = folder, Pads = pads }
+    return { Folder = folder, Pads = pads, Entrance = entrance, PublicGarage = garage }
 end
 
 return TestZoneBuilder

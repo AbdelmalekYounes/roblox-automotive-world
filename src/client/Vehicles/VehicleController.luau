@@ -11,6 +11,7 @@
 -- dans les attributs écrits par le serveur).
 
 local ContextActionService = game:GetService("ContextActionService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -22,6 +23,7 @@ local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local VehicleDefinitions = require(VehiclesShared:WaitForChild("VehicleDefinitions"))
 local VehicleSimulator = require(VehiclesShared:WaitForChild("VehicleSimulator"))
+local TuningRules = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Garage"):WaitForChild("TuningRules"))
 local InputCodec = require(VehiclesShared:WaitForChild("InputCodec"))
 local Telemetry = require(VehiclesShared:WaitForChild("Telemetry"))
 local PhysicsFolder = VehiclesShared:WaitForChild("Physics")
@@ -407,9 +409,30 @@ local function endSession()
     measures = Telemetry.new()
 end
 
+-- Exemplaire personnel (lot 0.4) : même définition dérivée que le serveur
+-- (réglages et pièces publiés par lui), sinon la définition d'origine.
+local function personalDefinition(model: Model, base: Types.VehicleDefinition): Types.VehicleDefinition
+    local spec = model:GetAttribute("TuningSpec")
+    if type(spec) ~= "string" then
+        return base
+    end
+    local ok, decoded = pcall(function()
+        return HttpService:JSONDecode(spec)
+    end)
+    if not ok or type(decoded) ~= "table" then
+        return base
+    end
+    local derived = TuningRules.apply(base, decoded.Tuning or {}, decoded.Parts or {})
+    if not VehicleDefinitions.validate(derived) then
+        return base
+    end
+    return derived
+end
+
 local function beginSession(model: Model, seat: Seat)
     local definitionId = model:GetAttribute(Constants.Attributes.DefinitionId)
-    local definition = if type(definitionId) == "string" then VehicleDefinitions.get(definitionId) else nil
+    local base = if type(definitionId) == "string" then VehicleDefinitions.get(definitionId) else nil
+    local definition = if base then personalDefinition(model, base) else nil
     if definition == nil or model.PrimaryPart == nil then
         return
     end

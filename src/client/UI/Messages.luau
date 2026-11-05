@@ -30,6 +30,8 @@ local FRENCH: { [string]: string } = {
     EngineStalled = "Moteur calé : enfoncez l'embrayage (ou neutre) pour redémarrer.",
     EnergyEmpty = "Réserve vide : plus de propulsion. Aucune recharge n'est disponible dans cette zone d'essai.",
     DamageMechanical = "Dégâts mécaniques : le comportement du véhicule est affecté.",
+    -- Lot 0.4
+    VehicleNotYours = "Ce véhicule appartient à un autre joueur.",
 }
 
 function Messages.format(key: string, value: any): string

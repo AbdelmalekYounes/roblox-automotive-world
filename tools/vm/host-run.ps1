@@ -20,10 +20,13 @@
 	test-vm.cmd
 	test-vm.cmd -Sessions solo
 	test-vm.cmd -NoVmControl -DryRun      (test du protocole, sans Studio)
+	test-vm.cmd -Place OpenWorld -Sessions monde   (place monde ouvert, lot 0.3)
 #>
 param(
 	[string]$Vmx,
 	[string]$Exchange,
+	[ValidateSet("Dev", "OpenWorld")]
+	[string]$Place = "Dev",
 	[string[]]$Sessions = @("solo", "multijoueur", "latence", "scenarios", "collision", "collision_latence", "lot02"),
 	[int]$TimeoutSec = 1500,
 	[int]$AgentWaitSec = 240,
@@ -126,7 +129,16 @@ Write-Host "Agent prêt : invité $($beat.guest), utilisateur $($beat.user), ver
 $id = Get-Date -Format "yyyyMMdd-HHmmss"
 $jobDir = Join-Path $jobsDir $id
 New-Item -ItemType Directory -Force -Path $jobDir | Out-Null
-& rojo build -o (Join-Path $jobDir "place.rbxl")
+if ($Place -eq "OpenWorld") {
+	# Lot 0.3 : carte générée hors ligne, puis place monde ouvert (StreamingEnabled).
+	& rojo build -o "build\AutomotiveWorld.rbxlx"
+	if ($LASTEXITCODE -ne 0) { throw "rojo build a échoué." }
+	& lune run tools/world/build-world.luau "build\AutomotiveWorld.rbxlx" "build\world\OpenWorld.rbxm"
+	if ($LASTEXITCODE -ne 0) { throw "La génération de la carte a échoué." }
+	& rojo build openworld.project.json -o (Join-Path $jobDir "place.rbxl")
+} else {
+	& rojo build -o (Join-Path $jobDir "place.rbxl")
+}
 if ($LASTEXITCODE -ne 0) { throw "rojo build a échoué." }
 & lune run tests/studio/build-driver.luau (Join-Path $jobDir "driver.luau") ($Sessions -join ",")
 if ($LASTEXITCODE -ne 0) { throw "La génération du pilote de tests a échoué." }
@@ -134,11 +146,11 @@ Copy-Item (Join-Path $PSScriptRoot "job-runner.ps1") (Join-Path $jobDir "job-run
 Copy-Item (Join-Path $PSScriptRoot "ScreenCapture.cs") (Join-Path $jobDir "ScreenCapture.cs")
 $commit = (& git rev-parse --short HEAD 2>$null)
 [pscustomobject]@{
-	id = $id; sessions = $Sessions; timeoutSec = $TimeoutSec; dryRun = [bool]$DryRun
+	id = $id; sessions = $Sessions; place = $Place; timeoutSec = $TimeoutSec; dryRun = [bool]$DryRun
 	commit = $commit; createdAt = (Get-Date).ToString("o")
 } | ConvertTo-Json | Out-File -Encoding utf8 (Join-Path $jobDir "job.json")
 New-Item -ItemType File -Path (Join-Path $jobDir "job.ready") | Out-Null
-Write-Host "Tâche $id déposée (sessions : $($Sessions -join ', '), commit $commit)."
+Write-Host "Tâche $id déposée (place $Place, sessions : $($Sessions -join ', '), commit $commit)."
 
 # 4. Résultat
 $done = Join-Path $jobDir "done.json"
