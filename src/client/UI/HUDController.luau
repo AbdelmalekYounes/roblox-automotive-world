@@ -107,6 +107,9 @@ local function build()
         TextXAlignment = Enum.TextXAlignment.Right,
         TextColor3 = UITheme.color("Accent"),
     }, cluster)
+    -- Lot UI-04 : chiffres en Roboto Mono gras (maquette V1.2, « vitesse · Mono »), tailles du tableau inchangées.
+    speedLabel.FontFace = UITheme.face("Speed")
+    gearLabel.FontFace = UITheme.face("Speed")
     subLabel = UITheme.label("", 13, {
         Position = UDim2.fromOffset(14, 50),
         Size = UDim2.new(1, -28, 0, 16),

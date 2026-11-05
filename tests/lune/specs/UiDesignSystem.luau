@@ -156,4 +156,49 @@ return function(T: any, H: any)
         T.equal(Tokens.upper("Préparation à l'arrêt"), "PRÉPARATION À L'ARRÊT", "é, à, ê")
         T.equal(Tokens.upper("Cœur, façade, où"), "CŒUR, FAÇADE, OÙ", "œ, ç, ù")
     end)
+
+    T.suite("UI-02 — téléphone V1.2")
+
+    local game = H.game()
+    local function source(path: string): string
+        local node = game
+        for segment in string.gmatch(path, "[^%.]+") do
+            node = node:FindFirstChild(segment)
+            assert(node, path)
+        end
+        return node.Source
+    end
+
+    T.test("1. icônes : 12 applications, déclarées au manifeste, aucune inventée", function()
+        local Icons = H.require("ReplicatedStorage.Shared.UI.PhoneIcons")
+        local Manifest = H.require("ReplicatedStorage.Shared.Assets.AssetManifest")
+        T.equal(#Icons.Apps, 12, "12 applications")
+        for _, app in Icons.Apps do
+            local entry = Manifest.get("ui.icon.phone." .. string.lower(app))
+            T.truthy(entry ~= nil, app .. " : entrée du manifeste")
+            T.equal(entry.RobloxAssetId, nil, app .. " : pas encore envoyée (aucun identifiant inventé)")
+            T.equal(Icons.image(app), nil, app .. " : cadre vide tant que l'image n'est pas envoyée")
+        end
+        T.equal(Icons.tint("Map"), "GpsCyan", "carte en cyan")
+        T.equal(Icons.tint("Radio"), "Amber", "autres en ambre")
+        T.equal(#Manifest.validate(), 0, "manifeste cohérent")
+    end)
+
+    T.test("2. téléphone : aucun caractère Unicode en guise d'icône, tailles de la maquette", function()
+        local phone = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneController")
+        for _, glyph in { "🗺", "🚗", "⌂", "★", "🏁", "☺", "♪", "◎", "⚙", "🔔", "🔍", "←" } do
+            T.truthy(string.find(phone, glyph, 1, true) == nil, "glyphe absent : " .. glyph)
+        end
+        for _, needle in
+            { "PhoneIcons.image", "Tokens.Phone", "Radius.PhoneFrame", "Radius.PhoneScreen", "PhoneResize" }
+        do
+            T.truthy(string.find(phone, needle, 1, true) ~= nil, needle)
+        end
+        T.truthy(Tokens.Phone.Normal.X == 380 and Tokens.Phone.Normal.Y == 780, "taille normale 380 × 780")
+        T.truthy(Tokens.Phone.Enlarged.X == 460 and Tokens.Phone.Enlarged.Y == 940, "taille agrandie 460 × 940")
+        T.truthy(
+            Tokens.Phone.CompactNormal.X == 330 and Tokens.Phone.CompactNormal.Y == 600,
+            "taille compacte 330 × 600"
+        )
+    end)
 end

@@ -194,7 +194,7 @@ function NotificationService.start()
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 270),
         Size = UDim2.fromOffset(560, 48),
-        BackgroundColor3 = Color3.fromRGB(200, 40, 40),
+        BackgroundColor3 = UITheme.color("Accent"),
         Visible = false,
     }, gui)
     UITheme.make("UICorner", { CornerRadius = UDim.new(0, 8) }, banner)

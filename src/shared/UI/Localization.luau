@@ -379,6 +379,15 @@ local E: { [string]: Entry } = {
         "Server unreachable: nothing is confirmed.",
     },
     ["ui.tuning.origin"] = { "Origine {value}", "Stock {value}" },
+    -- Lot UI-02 : réglages rapides du téléphone en roulant.
+    ["phone.quick.zoom"] = { "Zoom carte", "Map zoom" },
+    ["phone.quick.clearGps"] = { "Effacer le GPS", "Clear GPS" },
+    -- Lot UI-03 : barre d'aide du garage (raccourcis existants d'InputMap).
+    ["garage.hints"] = { "Retour arrière : retour · P : fermer", "Backspace: back · P: close" },
+    -- Mots à la place des pictogrammes Unicode (maquette V1.2 §5 : aucun caractère comme icône).
+    ["social.tag.visit"] = { "visite", "visit" },
+    ["social.tag.drive"] = { "conduite", "drive" },
+    ["social.tag.sharing"] = { "partage sa position", "sharing position" },
     ["ui.on"] = { "activé", "on" },
     ["ui.off"] = { "désactivé", "off" },
     ["ui.yes"] = { "Oui", "Yes" },

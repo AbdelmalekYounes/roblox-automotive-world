@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 
 local Messages = require(script.Parent.Messages)
+local UITheme = require(script.Parent.UITheme)
 
 local DevHud = {}
 
@@ -47,7 +48,7 @@ local function makeLabel(parent: Instance, name: string, position: UDim2, size: 
     label.Position = position
     label.Size = size
     label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(235, 242, 249)
+    label.TextColor3 = UITheme.color("Text")
     label.Font = Enum.Font.GothamMedium
     label.TextSize = textSize
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -63,7 +64,7 @@ local function makeBar(parent: Instance, name: string, y: number, color: Color3)
     frame.Name = name
     frame.Position = UDim2.new(0, 16, 0, y)
     frame.Size = UDim2.new(1, -32, 0, 7)
-    frame.BackgroundColor3 = Color3.fromRGB(45, 52, 62)
+    frame.BackgroundColor3 = UITheme.color("PanelRaised")
     frame.BorderSizePixel = 0
     frame.Parent = parent
     local fill = Instance.new("Frame")
@@ -91,7 +92,7 @@ local function ensureGui(): ScreenGui
     frame.AnchorPoint = Vector2.new(1, 1)
     frame.Position = UDim2.new(1, -16, 1, -16)
     frame.Size = UDim2.fromOffset(380, 404)
-    frame.BackgroundColor3 = Color3.fromRGB(18, 24, 33)
+    frame.BackgroundColor3 = UITheme.color("PanelChrome")
     frame.BackgroundTransparency = 0.15
     frame.BorderSizePixel = 0
     frame.Visible = false
@@ -109,7 +110,7 @@ local function ensureGui(): ScreenGui
     systemsLabel = makeLabel(frame, "Systemes", UDim2.fromOffset(16, 158), UDim2.new(1, -32, 0, 96), 13)
     measureLabel = makeLabel(frame, "Mesures", UDim2.fromOffset(16, 256), UDim2.new(1, -32, 0, 44), 13)
     local help = makeLabel(frame, "Aide", UDim2.fromOffset(16, 302), UDim2.new(1, -32, 0, 98), 11)
-    help.TextColor3 = Color3.fromRGB(170, 182, 196)
+    help.TextColor3 = UITheme.color("TextDim")
     helpLabel = help
 
     local notice = Instance.new("TextLabel")
@@ -117,9 +118,9 @@ local function ensureGui(): ScreenGui
     notice.AnchorPoint = Vector2.new(0.5, 0)
     notice.Position = UDim2.new(0.5, 0, 0, 72)
     notice.Size = UDim2.fromOffset(560, 40)
-    notice.BackgroundColor3 = Color3.fromRGB(18, 24, 33)
+    notice.BackgroundColor3 = UITheme.color("PanelChrome")
     notice.BackgroundTransparency = 0.1
-    notice.TextColor3 = Color3.fromRGB(255, 214, 160)
+    notice.TextColor3 = UITheme.color("AccentSoftText")
     notice.Font = Enum.Font.GothamMedium
     notice.TextSize = 16
     notice.TextWrapped = true

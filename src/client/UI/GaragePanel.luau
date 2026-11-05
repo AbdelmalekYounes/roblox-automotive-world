@@ -32,6 +32,9 @@ local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localizatio
 
 local Text = require(script.Parent.ProgressionMessages)
 local UIManager = require(script.Parent.UIManager)
+local UITheme = require(script.Parent.UITheme)
+local Components = require(script.Parent.Components)
+local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
 
 local GaragePanel = {}
 
@@ -59,6 +62,10 @@ local body: ScrollingFrame
 local footer: TextLabel
 local badge: TextLabel
 local tabButtons: { [string]: TextButton } = {}
+local stage: Frame
+local stageTitle: TextLabel
+local side: Frame
+local hints: TextLabel
 local closeButton: TextButton? = nil
 local state: any = nil -- dernier instantané reçu du serveur
 local tab = "Collection"
@@ -72,6 +79,10 @@ local function make(className: string, props: { [string]: any }, parent: Instanc
     local item = Instance.new(className)
     for key, value in props do
         (item :: any)[key] = value
+    end
+    -- Lot UI-03 : repères Gotham convertis en Titillium Web (système de conception V1.2), même graisse.
+    if props.Font and (item:IsA("TextLabel") or item:IsA("TextButton") or item:IsA("TextBox")) then
+        UITheme.applyFont(item :: any, props.Font)
     end
     item.Parent = parent
     return item
@@ -161,23 +172,21 @@ local function nextOrder(): number
 end
 
 local function line(text: string, size: number?): TextLabel
-    return make("TextLabel", {
+    local label = Components.text(body, text, "Body", {
         Size = UDim2.new(1, -8, 0, size or 22),
-        BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(230, 236, 244),
-        Font = Enum.Font.Gotham,
-        TextSize = 15,
+        AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Text = text,
         LayoutOrder = nextOrder(),
-    }, body)
+    })
+    return label
 end
 
 local function heading(text: string)
-    local label = line(text, 26)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 17
+    local label = line(text, 30)
+    label.FontFace = UITheme.face("H2")
+    label.TextSize = UITheme.text(Tokens.Type.H2.Size)
+    label.Text = Tokens.upper(text)
 end
 
 local function row(): Frame
@@ -196,21 +205,40 @@ end
 
 local function button(parent: Instance, text: string, width: number, callback: () -> (), enabled: boolean?): TextButton
     local active = enabled ~= false
-    local item = make("TextButton", {
-        Size = UDim2.new(0, width, 0, 30),
-        BackgroundColor3 = if active then Color3.fromRGB(52, 92, 160) else Color3.fromRGB(60, 64, 72),
-        TextColor3 = if active then Color3.fromRGB(255, 255, 255) else Color3.fromRGB(150, 155, 165),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        Text = text,
-        AutoButtonColor = active,
+    local item = UITheme.button(text, {
+        Size = UDim2.new(0, width, 0, Tokens.MinTarget),
         Selectable = active,
     }, parent)
-    make("UICorner", { CornerRadius = UDim.new(0, 6) }, item)
     if active then
         item.Activated:Connect(callback)
+    else
+        item.Active = false
+        item.BackgroundTransparency = Tokens.DisabledTransparency
+        item.TextTransparency = Tokens.DisabledTransparency
     end
     return item
+end
+
+-- Panneau latéral à la largeur de l'onglet (maquette §3), zone 3D sur la largeur restante ; disposition compacte sous
+-- 1400 px logiques.
+local function layoutPanels()
+    if (side :: Frame?) == nil then
+        return
+    end
+    local camera = workspace.CurrentCamera :: Camera
+    local compact = Tokens.layout(camera.ViewportSize.X, camera.ViewportSize.Y).Compact
+    local sizes = Tokens.Garage.SidePanel
+    local pair = if tab == "Véhicule"
+        then sizes.Vehicle
+        elseif tab == "Préparation" then sizes.Preparation
+        else sizes.Other
+    local width = if compact then pair[2] else pair[1]
+    local height = -(Tokens.Garage.TopBar + Tokens.Garage.Tabs + Tokens.Garage.HelpBar)
+    side.Size = UDim2.new(0, width, 1, height)
+    stage.Size = UDim2.new(1, -width, 1, height)
+    local vehicle = if state and selected then vehicleById(selected) else nil
+    stageTitle.Text = if vehicle then vehicle.DisplayName else ""
+    panel:SetAttribute("AWSidePanelWidth", width)
 end
 
 -- ======================== Onglets ========================
@@ -263,7 +291,7 @@ local function renderCollection()
         make("TextLabel", {
             Size = UDim2.new(1, -230, 1, 0),
             BackgroundTransparency = 1,
-            TextColor3 = Color3.fromRGB(210, 216, 226),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -452,7 +480,7 @@ local function renderPreparation()
         make("TextLabel", {
             Size = UDim2.new(1, -90, 1, 0),
             BackgroundTransparency = 1,
-            TextColor3 = Color3.fromRGB(220, 226, 236),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -526,7 +554,7 @@ local function renderPreparation()
         make("TextLabel", {
             Size = UDim2.new(0, 220, 1, 0),
             BackgroundTransparency = 1,
-            TextColor3 = Color3.fromRGB(220, 226, 236),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -571,8 +599,8 @@ local function renderConfigurations()
     local input = row()
     nameBox = make("TextBox", {
         Size = UDim2.new(0, 240, 0, 30),
-        BackgroundColor3 = Color3.fromRGB(40, 44, 52),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundColor3 = UITheme.color("PanelRaised"),
+        TextColor3 = UITheme.color("Text"),
         PlaceholderText = tr("Nom de la configuration"),
         Text = "",
         Font = Enum.Font.Gotham,
@@ -586,7 +614,7 @@ local function renderConfigurations()
         make("TextLabel", {
             Size = UDim2.new(0, 300, 1, 0),
             BackgroundTransparency = 1,
-            TextColor3 = Color3.fromRGB(220, 226, 236),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -644,7 +672,7 @@ local function renderInvitations()
         make("TextLabel", {
             Size = UDim2.new(0, 420, 1, 0),
             BackgroundTransparency = 1,
-            TextColor3 = Color3.fromRGB(220, 226, 236),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.Gotham,
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -669,8 +697,14 @@ function render()
         return
     end
     for name, item in tabButtons do
-        item.BackgroundColor3 = if name == tab then Color3.fromRGB(80, 130, 210) else Color3.fromRGB(44, 52, 66)
+        local on = name == tab
+        item.TextColor3 = if on then UITheme.color("Text") else UITheme.color("TextDim")
+        local rail = item:FindFirstChild("Filet") :: Frame?
+        if rail then
+            rail.Visible = on
+        end
     end
+    layoutPanels()
     clear()
     order = 0
     if state == nil or state.Vehicles == nil then
@@ -730,88 +764,158 @@ function GaragePanel.start()
     request = folder:WaitForChild(ProgressionProtocol.Request) :: RemoteFunction
     local pushEvent = folder:WaitForChild(ProgressionProtocol.Push) :: RemoteEvent
 
-    gui = make(
-        "ScreenGui",
-        { Name = "AWProgression", ResetOnSpawn = false, IgnoreGuiInset = false },
-        player:WaitForChild("PlayerGui")
-    )
+    gui = make("ScreenGui", {
+        Name = "AWProgression",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        -- Écran plein : au-dessus du HUD (la mini-carte recouvrait le panneau latéral, VM 20261105-034506).
+        DisplayOrder = 20,
+    }, player:WaitForChild("PlayerGui"))
     badge = make("TextLabel", {
         AnchorPoint = Vector2.new(1, 0),
         Position = UDim2.new(1, -12, 0, 64),
         Size = UDim2.fromOffset(360, 26),
-        BackgroundColor3 = Color3.fromRGB(18, 24, 33),
-        BackgroundTransparency = 0.2,
-        TextColor3 = Color3.fromRGB(235, 242, 249),
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BackgroundTransparency = 0.1,
+        TextColor3 = UITheme.color("Text"),
         Font = Enum.Font.GothamMedium,
         TextSize = 13,
         Text = "",
     }, gui)
+    make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, badge)
+    -- Disposition de la maquette « Garage » (§3) : barre haute 56, onglets 48, barre d'aide 40 ; zone 3D à gauche,
+    -- panneau latéral à droite (Véhicule 420 / 340, Préparation 680 / 540, autres 560 / 460).
     panel = make("Frame", {
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.52),
-        Size = UDim2.fromOffset(900, 520),
-        BackgroundColor3 = Color3.fromRGB(24, 30, 40),
-        BackgroundTransparency = 0.05,
+        Name = "Garage",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundColor3 = UITheme.color("Panel"),
+        BorderSizePixel = 0,
         Visible = false,
     }, gui)
-    make("UICorner", { CornerRadius = UDim.new(0, 10) }, panel)
-    local tabs = make(
-        "Frame",
-        { Size = UDim2.new(1, -16, 0, 36), Position = UDim2.fromOffset(8, 8), BackgroundTransparency = 1 },
-        panel
+    local top = make("Frame", {
+        Name = "BarreHaute",
+        Size = UDim2.new(1, 0, 0, Tokens.Garage.TopBar),
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BorderSizePixel = 0,
+    }, panel)
+    Components.text(top, tr("Garage"), "H1", {
+        Position = UDim2.fromOffset(Tokens.PanelPadding, 10),
+    })
+    local tabs = make("Frame", {
+        Name = "Onglets",
+        Position = UDim2.fromOffset(0, Tokens.Garage.TopBar),
+        Size = UDim2.new(1, 0, 0, Tokens.Garage.Tabs),
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BorderSizePixel = 0,
+    }, panel)
+    make(
+        "UIPadding",
+        { PaddingLeft = UDim.new(0, Tokens.PanelPadding), PaddingRight = UDim.new(0, Tokens.PanelPadding) },
+        tabs
     )
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, Tokens.Space[6]),
         SortOrder = Enum.SortOrder.LayoutOrder,
     }, tabs)
     for index, name in TABS do
         local item = make("TextButton", {
-            Size = UDim2.fromOffset(130, 32),
-            BackgroundColor3 = Color3.fromRGB(44, 52, 66),
-            TextColor3 = Color3.fromRGB(255, 255, 255),
-            Font = Enum.Font.GothamMedium,
-            TextSize = 14,
+            Name = "Onglet" .. index,
+            Size = UDim2.new(0, 0, 1, 0),
+            AutomaticSize = Enum.AutomaticSize.X,
+            BackgroundTransparency = 1,
+            AutoButtonColor = false,
             Text = tr(name),
             LayoutOrder = index,
         }, tabs)
-        make("UICorner", { CornerRadius = UDim.new(0, 6) }, item)
+        item.FontFace = UITheme.face("Button")
+        item.TextSize = UITheme.text(Tokens.Type.Button.Size)
+        item.TextColor3 = UITheme.color("TextDim")
+        make("Frame", {
+            Name = "Filet",
+            BackgroundColor3 = UITheme.color("Accent"),
+            BorderSizePixel = 0,
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.fromScale(0, 1),
+            Size = UDim2.new(1, 0, 0, Tokens.StatusRail),
+            Visible = false,
+        }, item)
         item.Activated:Connect(function()
             tab = name
             render()
         end)
         tabButtons[name] = item
     end
-    local close = make("TextButton", {
-        Size = UDim2.fromOffset(60, 32),
-        BackgroundColor3 = Color3.fromRGB(120, 50, 50),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        Text = tr("Fermer"),
-        LayoutOrder = 99,
-    }, tabs)
-    close.Activated:Connect(toggle)
-    closeButton = close
+    -- Zone 3D (rendu du véhicule arbitré après essai : ViewportFrame ou caméra de présentation) : nom du véhicule.
+    stage = make("Frame", {
+        Name = "Scene",
+        Position = UDim2.fromOffset(0, Tokens.Garage.TopBar + Tokens.Garage.Tabs),
+        BackgroundTransparency = 1,
+    }, panel)
+    Components.stage(stage)
+    stageTitle =
+        Components.text(stage, "", "H1", { Position = UDim2.fromOffset(Tokens.PanelPadding, Tokens.PanelPadding) })
+    side = make("Frame", {
+        Name = "PanneauLateral",
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, 0, 0, Tokens.Garage.TopBar + Tokens.Garage.Tabs),
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BorderSizePixel = 0,
+    }, panel)
     body = make("ScrollingFrame", {
-        Position = UDim2.fromOffset(8, 52),
-        Size = UDim2.new(1, -16, 1, -96),
+        Position = UDim2.fromOffset(0, 0),
+        Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 8,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = UITheme.color("Line"),
+    }, side)
+    make("UIPadding", {
+        PaddingLeft = UDim.new(0, Tokens.PanelPadding),
+        PaddingRight = UDim.new(0, Tokens.PanelPadding),
+        PaddingTop = UDim.new(0, Tokens.PanelPadding),
+        PaddingBottom = UDim.new(0, Tokens.PanelPadding),
+    }, body)
+    make("UIListLayout", { Padding = UDim.new(0, Tokens.Space[2]), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+    -- Barre d'aide (40 px) : messages d'état (en attente, refus, confirmé) et touches.
+    local help = make("Frame", {
+        Name = "BarreAide",
+        AnchorPoint = Vector2.new(0, 1),
+        Position = UDim2.fromScale(0, 1),
+        Size = UDim2.new(1, 0, 0, Tokens.Garage.HelpBar),
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BorderSizePixel = 0,
     }, panel)
-    make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, body)
     footer = make("TextLabel", {
-        Position = UDim2.new(0, 12, 1, -38),
-        Size = UDim2.new(1, -24, 0, 30),
+        Position = UDim2.fromOffset(Tokens.PanelPadding, 0),
+        Size = UDim2.new(0.6, 0, 1, 0),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(255, 214, 120),
+        TextColor3 = UITheme.color("AccentSoftText"),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
         Text = "",
-    }, panel)
+    }, help)
+    -- « Fermer » dans la barre d'aide, en bas à droite : en haut à droite, il passait sous le cartouche du joueur
+    -- affiché par Roblox (clic perdu, VM 20261105-034506).
+    local close = UITheme.button(tr("Fermer"), {
+        Name = "Fermer",
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -Tokens.PanelPadding, 0.5, 0),
+        Size = UDim2.fromOffset(0, Tokens.MinTarget),
+        AutomaticSize = Enum.AutomaticSize.X,
+    }, help)
+    make("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }, close)
+    close.Activated:Connect(toggle)
+    closeButton = close
+    hints = Components.text(help, "", "Label", {
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -Tokens.PanelPadding - 120, 0.5, 0),
+        TextColor3 = UITheme.color("TextDim"),
+    })
+    hints.Text = Tokens.upper(Localization.t("garage.hints"))
 
     player:GetAttributeChangedSignal("AWProfileState"):Connect(updateBadge)
     updateBadge()
