@@ -523,13 +523,15 @@ local function build()
             return shell.Tabs[tab]
         end,
     })
-    -- F8 : clavier seulement, administrateurs seulement (aucune touche des joueurs n'est prise).
+    -- F8 (client Roblox) et F2 (Studio intercepte F8 pendant le jeu) : clavier, administrateurs seulement.
+    -- Accès sans clavier : Téléphone › Paramètres › Administration.
     ContextActionService:BindAction("AWAdminMenu", function(_, inputState)
         if inputState == Enum.UserInputState.Begin then
             UIManager.toggle("Admin")
         end
         return Enum.ContextActionResult.Sink
-    end, false, Enum.KeyCode.F8)
+    end, false, Enum.KeyCode.F8, Enum.KeyCode.F2)
+    print("[AutomotiveWorld][Admin] Menu d'administration disponible : F8 ou F2, ou Téléphone › Paramètres.")
     Localization.changed(function()
         for name, item in shell.Tabs do
             item.Text = tr(name)
@@ -554,6 +556,18 @@ function AdminPanel.start()
         end
         player:GetAttributeChangedSignal("AWAdmin"):Connect(check)
         check()
+        -- Diagnostic : compte non reconnu comme administrateur (UserId à comparer à Server/Admin/AdminConfig).
+        task.delay(10, function()
+            if not built then
+                print(
+                    string.format(
+                        "[AutomotiveWorld][Admin] Menu indisponible : le compte %s (UserId %d) n'est pas administrateur.",
+                        player.Name,
+                        player.UserId
+                    )
+                )
+            end
+        end)
     end)
 end
 

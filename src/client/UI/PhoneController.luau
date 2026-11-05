@@ -942,6 +942,13 @@ end
 
 local function renderSettings()
     local prefs = UIState.prefs()
+    -- Lot ADMIN-01 : accès au menu d'administration sans clavier (le serveur revérifie chaque demande).
+    if Players.LocalPlayer:GetAttribute("AWAdmin") == true then
+        button(Localization.t("phone.admin"), function()
+            UIManager.close("Phone")
+            UIManager.open("Admin")
+        end, nil, "F8 · F2", true, "MenuAdmin")
+    end
     for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio", "Graphics", "Credits" } do
         local b = button(
             Localization.t("settings." .. string.lower(string.sub(page, 1, 1)) .. string.sub(page, 2)),

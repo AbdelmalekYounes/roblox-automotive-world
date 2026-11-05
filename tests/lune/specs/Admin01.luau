@@ -131,7 +131,7 @@ return function(T: any, H: any)
                 string.find(panel, 'player:GetAttribute("AWAdmin") == true', 1, true) ~= nil,
                 "attribut du serveur"
             )
-            T.truthy(string.find(panel, "Enum.KeyCode.F8", 1, true) ~= nil, "touche F8")
+            T.truthy(string.find(panel, "Enum.KeyCode.F8, Enum.KeyCode.F2", 1, true) ~= nil, "touches F8 et F2")
             local noclip = source(CLIENT .. "Admin.NoclipController")
             T.truthy(
                 string.find(noclip, 'player:GetAttribute("AWAdminNoclip") == true', 1, true) ~= nil,

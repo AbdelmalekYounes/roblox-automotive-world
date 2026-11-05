@@ -252,6 +252,8 @@ local E: { [string]: Entry } = {
         "Descendez du véhicule pour recevoir le véhicule professionnel.",
         "Get out of your vehicle to receive the work vehicle.",
     },
+    -- Lot ADMIN-01 : accès au menu d'administration depuis le téléphone.
+    ["phone.admin"] = { "Administration", "Administration" },
     -- Lot ADMIN-01 : refus du menu d'administration.
     AdminActionUnknown = {
         "Action d'administration inconnue.",

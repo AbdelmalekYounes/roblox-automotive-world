@@ -534,6 +534,9 @@ end
 local function onPlayer(player: Player)
     if isAdmin(player) then
         player:SetAttribute("AWAdmin", true)
+        print(
+            string.format("[AutomotiveWorld][Admin] %s (UserId %d) reconnu administrateur.", player.Name, player.UserId)
+        )
     end
     player.CharacterAdded:Connect(function(character)
         onCharacter(player, character)

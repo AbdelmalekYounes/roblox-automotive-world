@@ -137,3 +137,20 @@ Studio joue avec ton compte, `youyou31110`.
 9. **Optionnel, deux joueurs** (onglet Test › Serveur local à 2 joueurs, ou après la publication) :
    - le second joueur n'a ni F8 ni menu ;
    - depuis ton menu : « Aller à », « Amener », crédits, puis « Expulser » avec un motif.
+
+## 6. Retour du propriétaire : « F8 ne fait rien » (2026-11-05)
+
+Causes possibles, **non établies** (aucun essai de ma part) :
+- Studio réserve probablement F8 pendant le jeu (raccourci « Run »), si bien que la touche n'arrive pas au jeu ;
+- ou le compte Studio n'est pas l'UserId 941826283.
+
+Corrections :
+- seconde touche **F2** ;
+- accès **Téléphone › Paramètres › Administration** (administrateurs seulement) ;
+- diagnostic dans la sortie :
+  - serveur : « … reconnu administrateur » ;
+  - client : « Menu d'administration disponible » ;
+  - ou, au bout de 10 s : « Menu indisponible : le compte … (UserId …) n'est pas administrateur ».
+
+`verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK, Lune 398/398.
+
