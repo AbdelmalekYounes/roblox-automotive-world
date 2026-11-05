@@ -30,6 +30,24 @@ export type Kit = {
     -- Sources de lumière (le maillage des feux, texturé, ne passe pas en néon) : invisibles, AWLight.
     Lights: { { Name: string, Light: string, Position: Vector3, Size: Vector3 } },
     DetailPattern: { string }, -- pièces masquées au loin (dossier Details, DetailLod)
+    -- Peinture du garage (finalisation VEH3D-01) : pièces peintes (suffixe) ; la teinte du garage passe par
+    -- `SurfaceAppearance.Color`, qui MULTIPLIE la carte de couleur. Elle n'est appliquée que si ces pièces portent la
+    -- carte de couleur NEUTRE `NeutralColorMap` (zone de peinture claire, lignes de carrosserie conservées), à envoyer
+    -- par le propriétaire ; sinon la teinte d'origine de la texture est gardée (aucune dégradation).
+    Paint: { Pattern: string, NeutralColorMap: number? },
+    -- Maillages des feux séparés (export du 2026-11-04, dépôt d'art 195df9b) : rôle AWLight posé s'ils sont présents
+    -- dans le gabarit (absents du premier envoi : sources seules).
+    LightMeshes: { [string]: string },
+    -- Marques de dégâts (DamageService) posées sur la surface VISIBLE, mesurée par rayons sur le maillage :
+    -- avant et arrière en x = −1, 0, +1 (z de la surface), flancs en z = −1,6, 0, +1,6 (|x| de la surface).
+    DamageMarks: {
+        FrontY: number,
+        Front: { number },
+        RearY: number,
+        Rear: { number },
+        SideY: number,
+        Side: { number },
+    },
 }
 
 -- Mesures du 2026-11-04 (MODELES_TIERS.md §3 et §4). Dessus d'assise y −0,643 → centre du Seat −0,843.
@@ -84,6 +102,17 @@ local COMETE: Kit = {
         },
     },
     DetailPattern = { "COMETE_Habitacle", "COMETE_Freins", "COMETE_EssuieGlaces", "COMETE_Retroviseurs_mirror" },
+    Paint = { Pattern = "_body", NeutralColorMap = nil },
+    LightMeshes = { COMETE_Feu_Av = "Head", COMETE_Feu_Ar = "Tail" },
+    -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT hors vitrage, wk_comete_720s.blend).
+    DamageMarks = {
+        FrontY = -0.264,
+        Front = { -9.171, -9.323, -9.171 },
+        RearY = 0.036,
+        Rear = { 6.838, 6.892, 6.838 },
+        SideY = 0.414,
+        Side = { 3.394, 3.41, 3.454 },
+    },
 }
 
 MeshKitData.Kits = table.freeze({ wk_comete = COMETE })

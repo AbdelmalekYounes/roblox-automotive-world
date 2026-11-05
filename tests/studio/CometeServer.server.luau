@@ -27,7 +27,7 @@ local Workspace = game:GetService("Workspace")
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 -- « comete_vitres » : même début, puis comparatif de réglages du vitrage (captures), sans conduite.
-if session ~= "comete" and session ~= "comete_vitres" then
+if session ~= "comete" and session ~= "comete_vitres" and session ~= "comete_perf" and session ~= "comete2" then
     return
 end
 
@@ -69,7 +69,7 @@ local askEvent = Instance.new("RemoteEvent")
 askEvent.Name = "AWCometeAsk"
 askEvent.Parent = ReplicatedStorage
 ReplicatedStorage:SetAttribute("AWTestSession", session)
-ReplicatedStorage:SetAttribute("AWTestPlayers", 1)
+ReplicatedStorage:SetAttribute("AWTestPlayers", if session == "comete2" then 2 else 1)
 
 local Server = ServerScriptService:WaitForChild("AutomotiveWorldServer")
 local Vehicles = Server:WaitForChild("Vehicles")
@@ -204,6 +204,206 @@ task.wait(2)
 
 local calibrated = ask(player, "calibrate", {}, 60)
 record("comete.serveur.client_pret", calibrated ~= nil)
+
+-- ======================== Réplication à 2 joueurs (session « comete2 ») ========================
+-- Joueur 1 (plus petit identifiant) au volant ; joueur 2 observe ce que son client reçoit : maillages, roues du
+-- modèle qui tournent, braquage (VisualSteer), feux stop (VisualBrake), conducteur visible. Commandes du joueur 1
+-- par le point d'accès de test du contrôleur (INSTRUMENTÉ, signalé) : les vraies touches de la VM ne visent pas une
+-- fenêtre de Studio précise quand deux clients sont ouverts.
+if session == "comete2" then
+    local both = waitFor(function()
+        return #Players:GetPlayers() >= 2
+    end, 90)
+    record("comete2.serveur.deux_joueurs", both, #Players:GetPlayers())
+    local all = Players:GetPlayers()
+    table.sort(all, function(a, b)
+        return a.UserId < b.UserId
+    end)
+    local driver, observer = all[1], all[2]
+    if not both or observer == nil then
+        StudioTestService:EndTest({ session = session, players = 2, server = steps, clients = reports })
+        return
+    end
+    for _, who in { driver, observer } do
+        local c = who.Character or who.CharacterAdded:Wait()
+        c:WaitForChild("Humanoid", 10)
+    end
+    task.wait(3);
+    (driver.Character :: Model):PivotTo(CFrame.new(-262, 4, 110));
+    (observer.Character :: Model):PivotTo(CFrame.new(-275, 4, 135))
+    task.wait(0.8)
+    local car = MissionService.spawnBeside(driver, "wk_comete", "COMETE-K2")
+    record("comete2.serveur.apparition", car ~= nil)
+    if car == nil then
+        StudioTestService:EndTest({ session = session, players = 2, server = steps, clients = reports })
+        return
+    end
+    task.wait(1.5)
+    place(car, ground(-250, 120, 180))
+    task.wait(2.5)
+    record("comete2.serveur.conducteur_assis", sit(driver, car, "DriverSeat"))
+    -- Observation lancée d'abord, puis la démonstration du conducteur (même durée).
+    acks["observe"] = nil
+    askEvent:FireClient(observer, "observe", { Model = car, Driver = driver, Seconds = 9 })
+    task.wait(0.5)
+    local demo = ask(driver, "demo", {}, 30)
+    record(
+        "comete2.conducteur.demonstration",
+        type(demo) == "table",
+        if type(demo) == "table" then demo.Detail else "sans réponse"
+    )
+    waitFor(function()
+        return acks["observe"] ~= nil
+    end, 30)
+    local seen = acks["observe"]
+    record(
+        "comete2.observateur.rapport",
+        type(seen) == "table",
+        if type(seen) == "table" then seen.Detail else "sans réponse"
+    )
+    for _, who in { driver, observer } do
+        ask(who, "finish", {}, 10)
+    end
+    waitFor(function()
+        local n = 0
+        for _ in reports do
+            n += 1
+        end
+        return n >= 2
+    end, 60)
+    record("comete2.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    StudioTestService:EndTest({ session = session, players = 2, server = steps, clients = reports })
+    return
+end
+
+-- ======================== K08 : performances (session « comete_perf ») ========================
+-- Parcs immobiles de 1, 8, 16 et 24 véhicules (fabrique, ancrés), P-01 (référence) puis Comète, jour et nuit, même
+-- cadrage. Mesure du CLIENT par `Stats` : temps de rendu processeur et carte graphique, appels de dessin, triangles.
+-- Ces temps ne dépendent pas du plafond de 60 images/s du Studio de la VM (le temps d'image, lui, y reste collé).
+-- Critère D5 : Comète ≤ P-01 + 2 ms à nombre égal. Rendu de la VM (carte graphique virtuelle) : un poste réel reste à mesurer.
+if session == "comete_perf" then
+    local COUNTS = { 1, 8, 16, 24 }
+    local function fleet(definition: any, label: string, count: number): Folder
+        local folder = Instance.new("Folder")
+        folder.Name = "AWTestParc_" .. label .. "_" .. count
+        folder.Parent = Workspace
+        for i = 1, count do
+            local x = -560 + ((i - 1) % 6) * 22
+            local z = -980 + math.floor((i - 1) / 6) * 26
+            local pivot = CFrame.new(x, definition.Chassis.CgHeightM / M + 0.3, z)
+            local vehicle = VehicleFactory.create(definition, pivot, 200 + i)
+            vehicle.Name = label .. "_" .. i
+            vehicle.Parent = folder;
+            (vehicle.PrimaryPart :: BasePart).Anchored = true
+        end
+        return folder
+    end
+    character:PivotTo(CFrame.new(-505, 4, -1060))
+    task.wait(1)
+    local clock = Lighting.ClockTime
+    local cadrage = { CFrame.lookAt(Vector3.new(-505, 30, -1030), Vector3.new(-505, 0, -915)):GetComponents() }
+    local results: { [string]: any } = {}
+    -- Scène vide (référence de la mesure elle-même).
+    for _, phase in { "jour", "nuit" } do
+        Lighting.ClockTime = if phase == "jour" then 14 else 0
+        task.wait(2)
+        results["vide_0_" .. phase] = ask(player, "frames:vide_0_" .. phase, { Seconds = 6, Cadrage = cadrage }, 30)
+    end
+    for _, count in COUNTS do
+        for _, entry in { { "p01", Definitions.get("proto_p01") }, { "comete", COMETE } } do
+            local label, definition = entry[1], entry[2]
+            local folder = fleet(definition, label, count)
+            task.wait(3)
+            for _, phase in { "jour", "nuit" } do
+                Lighting.ClockTime = if phase == "jour" then 14 else 0
+                task.wait(2)
+                local key = string.format("%s_%d_%s", label, count, phase)
+                results[key] = ask(player, "frames:" .. key, { Seconds = 6, Cadrage = cadrage }, 30)
+            end
+            folder:Destroy()
+            task.wait(1.5)
+        end
+    end
+    Lighting.ClockTime = clock
+    local function v(key: string, field: string): number?
+        local data = results[key]
+        return if type(data) == "table" then data[field] else nil
+    end
+    local function f(x: number?): string
+        return if x then string.format("%.2f", x) else "—"
+    end
+    for _, count in COUNTS do
+        for _, phase in { "jour", "nuit" } do
+            local refCpu, cpu =
+                v(("p01_%d_%s"):format(count, phase), "Cpu"), v(("comete_%d_%s"):format(count, phase), "Cpu")
+            local refGpu, gpu =
+                v(("p01_%d_%s"):format(count, phase), "Gpu"), v(("comete_%d_%s"):format(count, phase), "Gpu")
+            -- Temps de rendu à 0 : mesure indisponible dans ce Studio (constaté le 2026-11-05, tâche 20261105-013629).
+            -- Jamais compté comme une réussite : contrôle informatif, verdict D5 laissé « non concluant ».
+            local measurable = (refCpu or 0) > 0 or (cpu or 0) > 0 or (refGpu or 0) > 0 or (gpu or 0) > 0
+            local ok = measurable
+                and refCpu ~= nil
+                and cpu ~= nil
+                and refGpu ~= nil
+                and gpu ~= nil
+                and (cpu :: number) <= (refCpu :: number) + 2
+                and (gpu :: number) <= (refGpu :: number) + 2
+            record(
+                string.format(
+                    "comete.k08.%s_%02d_vehicules_%s",
+                    if measurable then "rendu" else "info_rendu_non_mesurable",
+                    count,
+                    phase
+                ),
+                ok or not measurable,
+                string.format(
+                    "processeur P-01 %s / Comète %s ms ; carte graphique %s / %s ms ; appels de dessin %s / %s ; triangles %s / %s ; images %s / %s ms",
+                    f(refCpu),
+                    f(cpu),
+                    f(refGpu),
+                    f(gpu),
+                    f(v(("p01_%d_%s"):format(count, phase), "Draws")),
+                    f(v(("comete_%d_%s"):format(count, phase), "Draws")),
+                    f(v(("p01_%d_%s"):format(count, phase), "Tris")),
+                    f(v(("comete_%d_%s"):format(count, phase), "Tris")),
+                    f(v(("p01_%d_%s"):format(count, phase), "Mean")),
+                    f(v(("comete_%d_%s"):format(count, phase), "Mean"))
+                )
+            )
+        end
+    end
+    -- Budget de triangles par véhicule (hypothèse LOD0 de 25 000, ASTER_02_HAUTE_FIDELITE.md) : mesuré à 24.
+    local tris24 = v("comete_24_jour", "Tris")
+    local trisRef = v("p01_24_jour", "Tris")
+    record(
+        "comete.k08.triangles_par_comete_24",
+        tris24 ~= nil and trisRef ~= nil and ((tris24 :: number) - (v("vide_0_jour", "Tris") or 0)) / 24 <= 25000,
+        string.format(
+            "%s triangles pour 24 Comète, %s pour 24 P-01, %s scène vide",
+            f(tris24),
+            f(trisRef),
+            f(v("vide_0_jour", "Tris"))
+        )
+    )
+    record(
+        "comete.k08.info_scene_vide",
+        true,
+        string.format(
+            "processeur %s ms, carte graphique %s ms (jour)",
+            f(v("vide_0_jour", "Cpu")),
+            f(v("vide_0_jour", "Gpu"))
+        )
+    )
+    emitData("perf", results)
+    ask(player, "finish", {}, 10)
+    waitFor(function()
+        return next(reports) ~= nil
+    end, 60)
+    record("comete.serveur.rapport_client", next(reports) ~= nil)
+    record("comete.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+    StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })
+    return
+end
 
 -- ======================== K01 : gabarit et apparition ========================
 
@@ -503,6 +703,38 @@ else
     record("comete.k04.passager_assis", false)
 end
 
+-- ======================== K04 / K07 : embarquement réel, téléphone, feux stop ========================
+-- Personnage posé près de la porte conducteur (instrumenté) ; montée par la VRAIE touche E maintenue (invite
+-- « Conduire »), téléphone par la vraie touche T, freinage par la vraie touche S après un élan (W).
+place(model, ground(-250, 120, 180))
+task.wait(1.5)
+character:PivotTo(root.CFrame * CFrame.new(-KIT.SideHalf - 2.5, 1.5, -1.4) * CFrame.Angles(0, math.rad(-90), 0))
+task.wait(1)
+local boarded = ask(player, "board", { Seat = "DriverSeat" }, 30)
+local seatedNow = humanoidOf(player) ~= nil
+    and (humanoidOf(player) :: Humanoid).SeatPart == model:FindFirstChild("DriverSeat")
+record(
+    "comete.k04.embarquement_reel_touche_e",
+    seatedNow,
+    if type(boarded) == "table" then boarded.Detail else "sans réponse"
+)
+if not seatedNow then
+    sit(player, model, "DriverSeat") -- repli instrumenté (signalé) pour la suite
+end
+local phone = ask(player, "phone", {}, 20)
+record(
+    "comete.k04.rapport_telephone",
+    type(phone) == "table",
+    if type(phone) == "table" then phone.Detail else "sans réponse"
+)
+local brake = ask(player, "brake", {}, 40)
+record(
+    "comete.k07.rapport_feux_stop",
+    type(brake) == "table",
+    if type(brake) == "table" then brake.Detail else "sans réponse"
+)
+ask(player, "exit", { Key = "F" }, 15)
+
 -- Choc arrière : véhicule vide replacé (serveur, sans conducteur), arrière à 14 st du mur, puis marche arrière
 -- conduite au clavier. Choc latéral : non couvert (un véhicule vide lancé par le serveur est plafonné par la
 -- validation anti-éjection, 3 m/s ; constaté le 2026-11-05, tâche 20261105-000811).
@@ -541,6 +773,26 @@ record(
 place(model, ground(-250, 120, 180))
 task.wait(1.5)
 shot(player, model, "comete_apres_chocs_arriere", Vector3.new(14, 4.5, 20), Vector3.new(0, 0.3, 1))
+-- Marques de dégâts du kit (posées sur la surface mesurée) : nombre par type, gros plans.
+local markCount: { [string]: number } = {}
+local degats = model:FindFirstChild("Degats")
+for _, item in if degats then degats:GetChildren() else {} do
+    local kind = string.match(item.Name, "^(%a-)[A-Z][a-z]+$") or item.Name
+    markCount[kind] = (markCount[kind] or 0) + 1
+end
+local markRows = {}
+for kind, count in markCount do
+    table.insert(markRows, kind .. " " .. count)
+end
+table.sort(markRows)
+record("comete.k06.marques_de_degats", #markRows > 0, table.concat(markRows, ", "))
+shot(player, model, "comete_degats_avant_gros_plan", Vector3.new(-3, 1.6, -16), Vector3.new(0, -0.2, -9.2))
+shot(player, model, "comete_degats_arriere_gros_plan", Vector3.new(3, 1.8, 13.5), Vector3.new(0, 0.1, 6.8))
+record(
+    "comete.k01.info_peinture",
+    true,
+    "mode " .. tostring((model:FindFirstChild("Carrosserie") :: Instance):GetAttribute("AWPaint"))
+)
 
 -- ======================== K07 : nuit ========================
 
@@ -548,14 +800,43 @@ local clock = Lighting.ClockTime
 Lighting.ClockTime = 0
 character:PivotTo(root.CFrame * CFrame.new(-8, 3, -14))
 task.wait(2)
-local night = ask(player, "night", { Model = model }, 30)
+-- Véhicule accidenté : les optiques cassées restent éteintes la nuit.
+local brokenNight = ask(player, "night", { Model = model }, 30)
+local brokenCount = 0
+for _, item in model:GetDescendants() do
+    if item:IsA("BasePart") and item:GetAttribute("AWLightBroken") == true then
+        brokenCount += 1
+    end
+end
 record(
-    "comete.k07.rapport_nuit",
-    type(night) == "table",
-    if type(night) == "table" then night.Detail else "sans réponse"
+    "comete.k06.optiques_cassees_eteintes_la_nuit",
+    type(brokenNight) == "table" and brokenCount > 0 and brokenNight.BrokenLit == 0,
+    string.format(
+        "%d optique(s) cassée(s) ; %s",
+        brokenCount,
+        if type(brokenNight) == "table" then brokenNight.Detail else "sans réponse"
+    )
 )
-shot(player, model, "comete_nuit_avant", Vector3.new(-6, 3.5, -30), Vector3.new(0, 0.3, 0))
-shot(player, model, "comete_nuit_arriere", Vector3.new(6, 3.5, 28), Vector3.new(0, 0.3, 0))
+shot(player, model, "comete_nuit_apres_chocs", Vector3.new(-6, 3.5, -30), Vector3.new(0, 0.3, 0))
+-- Comète neuve (remplace la précédente) : 4 sources allumées, captures de nuit.
+local fresh = MissionService.spawnBeside(player, "wk_comete", "COMETE-NUIT")
+if fresh then
+    model = fresh
+    root = fresh.PrimaryPart :: BasePart
+    task.wait(1.5)
+    place(fresh, ground(-250, 120, 180))
+    task.wait(2.5)
+    local night = ask(player, "night", { Model = fresh }, 30)
+    record(
+        "comete.k07.feux_allumes_la_nuit",
+        type(night) == "table" and night.Enabled == 4 and night.Sources == 4,
+        if type(night) == "table" then night.Detail else "sans réponse"
+    )
+    shot(player, fresh, "comete_nuit_avant", Vector3.new(-6, 3.5, -30), Vector3.new(0, 0.3, 0))
+    shot(player, fresh, "comete_nuit_arriere", Vector3.new(6, 3.5, 28), Vector3.new(0, 0.3, 0))
+else
+    record("comete.k07.feux_allumes_la_nuit", false, "Comète neuve non apparue")
+end
 Lighting.ClockTime = clock
 
 -- ======================== K01 : un autre véhicule garde sa carrosserie provisoire ========================
@@ -586,63 +867,6 @@ end
 if model.Parent then
     VehicleService.despawnPersonal(model)
 end
-
--- ======================== K08 : performances (parc immobile, 24 véhicules) ========================
-
-local function fleet(definition: any, label: string): Folder
-    local folder = Instance.new("Folder")
-    folder.Name = "AWTestParc_" .. label
-    folder.Parent = Workspace
-    for i = 1, 24 do
-        local x = -560 + ((i - 1) % 6) * 22
-        local z = -980 + math.floor((i - 1) / 6) * 26
-        local pivot = CFrame.new(x, definition.Chassis.CgHeightM / M + 0.3, z)
-        local vehicle = VehicleFactory.create(definition, pivot, 200 + i)
-        vehicle.Name = label .. "_" .. i
-        vehicle.Parent = folder;
-        (vehicle.PrimaryPart :: BasePart).Anchored = true
-    end
-    return folder
-end
-character:PivotTo(CFrame.new(-505, 4, -1040))
-task.wait(1)
-local perf = {}
-for _, entry in { { "p01", Definitions.get("proto_p01") }, { "comete", COMETE } } do
-    local label, definition = entry[1], entry[2]
-    local folder = fleet(definition, label)
-    task.wait(3)
-    for _, phase in { "jour", "nuit" } do
-        Lighting.ClockTime = if phase == "jour" then 14 else 0
-        task.wait(2)
-        -- Même cadrage pour les deux parcs : les 24 véhicules dans la vue.
-        local cadrage = { CFrame.lookAt(Vector3.new(-505, 30, -1030), Vector3.new(-505, 0, -915)):GetComponents() }
-        local data = ask(player, "frames:" .. label .. "_" .. phase, { Seconds = 8, Cadrage = cadrage }, 30)
-        perf[label .. "_" .. phase] = data
-    end
-    folder:Destroy()
-    task.wait(1)
-end
-Lighting.ClockTime = clock
-local function p(label: string, key: string): number?
-    local data = perf[label]
-    return if type(data) == "table" then data[key] else nil
-end
-for _, phase in { "jour", "nuit" } do
-    local ref, test = p("p01_" .. phase, "Mean"), p("comete_" .. phase, "Mean")
-    -- Studio de la VM plafonné à 60 images/s (16,7 ms) : un écart sous ce plafond reste invisible.
-    record(
-        "comete.k08.temps_d_image_" .. phase .. "_info_plafond_60_i_s",
-        ref ~= nil and test ~= nil and (test :: number) <= (ref :: number) + 2,
-        string.format(
-            "24 P-01 : moyenne %s ms, P95 %s ; 24 Comète : moyenne %s ms, P95 %s (critère ≤ référence + 2 ms ; rendu de la VM)",
-            tostring(ref),
-            tostring(p("p01_" .. phase, "P95")),
-            tostring(test),
-            tostring(p("comete_" .. phase, "P95"))
-        )
-    )
-end
-emitData("perf", perf)
 
 -- ======================== Fin ========================
 

@@ -9,8 +9,9 @@
       réelle sur les N plus proches seulement.
     N dépend de la qualité graphique (ArtDirection.Profiles). Aucun effet sur
     la conduite : l'adhérence ne dépend que de l'humidité de chaussée.
-    Les feux STOP des autres véhicules ne sont pas représentés (l'état du
-    freinage n'est pas répliqué) : écart documenté.
+    Feux STOP (lot VEH3D-01) : les pièces AWLight = "Tail" s'allument aussi, plus fort, quand le serveur publie
+    le freinage (attribut VisualBrake, de jour comme de nuit). Optique cassée par un choc (AWLightBroken) :
+    éteinte jusqu'à la réparation.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -55,6 +56,24 @@ local function setSource(part: BasePart, on: boolean)
     end
 end
 
+-- Intensité d'un feu arrière : veilleuse (1) ou stop (3), mémorisée à la première lecture.
+local baseBrightness: { [Light]: number } = {}
+local function setBrake(part: BasePart, braking: boolean)
+    local light = part:FindFirstChild("Lumiere")
+    if light and light:IsA("Light") then
+        if baseBrightness[light] == nil then
+            baseBrightness[light] = light.Brightness
+            light.Destroying:Connect(function()
+                baseBrightness[light] = nil
+            end)
+        end
+        local wanted = baseBrightness[light] * (if braking then 3 else 1)
+        if light.Brightness ~= wanted then
+            light.Brightness = wanted
+        end
+    end
+end
+
 type Candidate = { Part: BasePart, Distance: number }
 
 -- Allume les sources des `count` éléments les plus proches, éteint les autres.
@@ -83,21 +102,36 @@ local function update(lanterns: { [BasePart]: boolean })
     local profile = ArtDirection.profile(UIState.prefs().Graphics.Quality)
 
     -- Véhicules : une entrée par véhicule (ses phares et feux partagent le rang).
-    local vehicles: { { Parts: { BasePart }, Distance: number } } = {}
+    local vehicles: { { Parts: { BasePart }, Distance: number, Braking: boolean } } = {}
     for _, vehicle in CollectionService:GetTagged(Constants.VehicleTag) do
         if vehicle:IsA("Model") then
             local parts = {}
             local body = vehicle:FindFirstChild("Carrosserie")
+            local braking = vehicle:GetAttribute(Constants.Attributes.VisualBrake) == true
             if body then
                 for _, item in body:GetDescendants() do
                     if item:IsA("BasePart") and item:GetAttribute("AWLight") ~= nil then
-                        table.insert(parts, item)
-                        glow(item, on)
+                        local broken = item:GetAttribute("AWLightBroken") == true
+                        local tail = item:GetAttribute("AWLight") == "Tail"
+                        if broken then
+                            glow(item, false)
+                            setSource(item, false)
+                        else
+                            table.insert(parts, item)
+                            glow(item, on or (tail and braking))
+                            if tail then
+                                setBrake(item, braking)
+                            end
+                        end
                     end
                 end
             end
             if #parts > 0 then
-                table.insert(vehicles, { Parts = parts, Distance = (vehicle:GetPivot().Position - eye).Magnitude })
+                table.insert(vehicles, {
+                    Parts = parts,
+                    Distance = (vehicle:GetPivot().Position - eye).Magnitude,
+                    Braking = braking,
+                })
             end
         end
     end
@@ -105,8 +139,10 @@ local function update(lanterns: { [BasePart]: boolean })
         return a.Distance < b.Distance
     end)
     for index, entry in vehicles do
+        local braking = entry.Braking
         for _, part in entry.Parts do
-            setSource(part, on and index <= profile.VehicleLightSources)
+            local tail = part:GetAttribute("AWLight") == "Tail"
+            setSource(part, (on or (tail and braking)) and index <= profile.VehicleLightSources)
         end
     end
 

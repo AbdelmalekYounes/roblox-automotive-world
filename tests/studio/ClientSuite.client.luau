@@ -82,6 +82,8 @@ if
     or currentSession == "silhouette2"
     or currentSession == "comete"
     or currentSession == "comete_vitres"
+    or currentSession == "comete_perf"
+    or currentSession == "comete2"
 then
     return
 end

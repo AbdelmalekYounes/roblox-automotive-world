@@ -53,6 +53,8 @@ local VehicleConstants = {
         -- simulation au conducteur : le client recale sa copie locale si elle diffère.
         SimulationPivot = "SimulationPivot",
         VisualSteer = "VisualSteer",
+        -- Freinage affiché (feux stop) : écrit par le serveur d'après la commande du conducteur (lot VEH3D-01).
+        VisualBrake = "VisualBrake",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",
         -- Énergie (écrite par le serveur seul) : niveau en L ou kWh, réserve vide.
