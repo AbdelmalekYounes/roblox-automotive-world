@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.9 (intégration et validation globale)
+# Automotive World — Lot 0.9.1 (campagne QA interactive autonome)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -20,8 +20,12 @@
 > (économie, courses, arrivée, banc des 18 modèles, mesures), corrections (courses, marché, rendu de nuit), audit de
 > sécurité, préparation des essais DataStore. **Pas une autorisation de lancement public.** Aucune
 > expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.9 sur `feat/integration-qa-0.9` (PR brouillon #9, base : lot 0.8 ; PR #1 à #8 non fusionnées).
-> Rapport : [docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
+> Lot 0.9.1 : interfaces parcourues par de **vrais clics et vraies touches dans la VM** (pont d'entrées, jamais sur le
+> poste principal), huit métiers et trajets GPS par un pilote, social à deux clients, drift noté par le serveur,
+> captures inspectées ; neuf défauts corrigés (QA-F13 à F20, QA-A08 neutralisée).
+> **Statut** : lot 0.9.1 sur `feat/autonomous-interactive-qa-0.9.1` (PR brouillon #10, base : lot 0.9 ; PR #1 à #9 non
+> fusionnées). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
+> [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
 > humains : [checklist](docs/lot-0.9/CHECKLIST_TESTS_HUMAINS.md) ; DataStore, charge et appareils réels : **NON
 > TESTÉS** ([docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)).
 
@@ -211,7 +215,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.6` | Rapport du lot 0.6, architecture des courses et de la compétition |
 | `docs/lot-0.7` | Rapport du lot 0.7, architecture de l'interface, du GPS et du social |
 | `docs/lot-0.8` | Rapport du lot 0.8, architecture, catalogue des 18 modèles, ressources et licences, direction artistique |
-| `docs/lot-0.9` | Validation globale, anomalies et corrections, performances, sécurité, checklist humaine, dépendances externes |
+| `docs/lot-0.9` | Validation globale, anomalies et corrections, performances, sécurité, checklist humaine, dépendances externes ; lot 0.9.1 : tests interactifs autonomes, couverture QA par fonction |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 

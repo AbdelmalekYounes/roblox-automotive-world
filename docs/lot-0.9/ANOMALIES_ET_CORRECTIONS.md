@@ -59,3 +59,10 @@ M (quelques jours), L (dépend d'un tiers ou d'un lot).
 | Interface lot 0.7 | QA-U01 à U13 | NE | P1–P2 | — | Ergonomie, confidentialité | Moyenne (U08) | Humain, R1 | S–M | Inchangé (humain) |
 | Lot 0.8 | QA-V01 à V15 | NE / AP | P1–P3 | — | Art, son, arrivée | Faible | Propriétaire, téléversement | S–L | V02 : banc 18 / 18 en jeu ; V08 : parcours d'arrivée vérifié en jeu (Dev) ; V07 : photo partiellement (à pied) |
 | Performance | QA-P01 à P09 | NE | P1–P3 | — | Fluidité | — | Matériel de référence (M1), R4 | M | Outillage `perf` livré ; mesures VM indicatives (`PERFORMANCES.md`) |
+
+## 5. Lot 0.9.1 (campagne interactive autonome)
+
+Défauts trouvés par vrais clics, captures inspectées et trajets réels dans la VM, puis corrigés : QA-F13 à QA-F20 ;
+anomalies ouvertes : QA-A08 (valeur non finie neutralisée, cause non établie), QA-A09 (virage du client 2, présente
+dès le lot 0.9), QA-A10 (bras du téléphone). Détail, reproductions et preuves : `TESTS_INTERACTIFS_AUTONOMES.md` §11
+et `docs/QA_BACKLOG.md` §1 et §1 bis.

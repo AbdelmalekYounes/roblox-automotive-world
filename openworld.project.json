@@ -38,6 +38,12 @@
       "OpenWorld": {
         "$path": "build/world/OpenWorld.rbxm"
       }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Voxel"
+      }
     }
   }
 }

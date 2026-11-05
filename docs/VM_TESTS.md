@@ -48,7 +48,36 @@ clavier/manette est remplacée** par un point d'accès réservé à Studio (`Veh
 | `collision_latence` | la même expérience avec 100 ms de délai réseau dans chaque sens |
 | `lot02` | lot 0.2, 1 joueur, 22 étapes : six boîtes, aides avec/sans, mouillé, pente, bordures (rayon/sphère), dégâts, énergie et panne, caméras, banc de 16 véhicules serveur (≈ 7 min 30) |
 
-Non couvert : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir `docs/lot-0.1/RAPPORT_TESTS.md`).
+Non couvert par ces sessions : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir
+`docs/lot-0.1/RAPPORT_TESTS.md`). Lot 0.9.1 : les sessions `ui` et `ui_monde` utilisent de **vraies** entrées
+souris et clavier **dans la VM** (section suivante) ; la manette reste non couverte.
+
+## Entrées réelles dans la VM (lot 0.9.1)
+
+But : parcourir les interfaces par de vrais clics et de vraies touches, et non en appelant leurs fonctions.
+
+```
+client de test (GuiDriver.luau)                     aw-capture.exe (ScreenCapture.cs), DANS la VM
+print("@@AWIN@@ 12 click 937 355") ── journal Studio (%LOCALAPPDATA%\Roblox\logs) ──▶ SendInput (souris, clavier)
+Activated / KeyCode reçus par le jeu ◀──────────── clic et touches dans la fenêtre de Studio de la VM
+```
+
+- **Activation** : par tâche seulement (`job.json` → `guiInput`), d'office pour les sessions `ui…`, ou
+  `test-vm.cmd -GuiInput`. Sans ce drapeau, l'outil ne fait que des captures, comme avant.
+- **Étalonnage** : le test affiche deux carrés magenta à l'intérieur de la vue du jeu (les coins sont couverts par la
+  barre de Roblox et le filigrane de Windows) ; l'outil les repère sur l'écran de la VM (décalage et échelle), puis
+  clique le premier : l'événement `Activated` du bouton prouve que le clic réel est arrivé. Clavier : touches sans action
+  envoyées par code virtuel puis par code de balayage ; le mode dont les `KeyCode` reçus sont exacts est retenu (VM en
+  AZERTY : codes de balayage).
+- **Garde-fous** : aucune action avant l'étalonnage ; pointeur **borné à la vue du jeu** (jamais la barre d'outils de
+  Studio, donc jamais « Arrêter ») ; touches limitées à une liste (lettres, chiffres, espace, entrée, échap, retour,
+  tabulation, flèches, `\`, Maj) : ni touches de fonction, ni Ctrl, ni Alt ; chaque commande est consignée dans
+  `report\gui\input-log.txt`. Les entrées sont produites dans la session Windows de la VM et n'en sortent pas : la
+  souris et le clavier du poste principal ne sont jamais utilisés.
+- **Captures nommées** : `report\gui\named\NNN_<nom>.jpg`, vue du jeu en pleine résolution, reliées dans le rapport à
+  la position du personnage et au contexte.
+- **Limites** : une seule fenêtre étalonnée à la fois ; les sessions à deux clients (deux fenêtres de Studio) passent
+  par les remotes du jeu (instrumenté, signalé). Aucune manette n'est émulée (il faudrait installer un pilote dans la VM).
 Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.
 
 ## Préparation de la VM
@@ -101,7 +130,7 @@ Rapport : `<échange>\jobs\<id>\report\report.md` (captures dans `report\screens
 | `configure-share.ps1` | Hôte, utilisateur courant, **seulement avec `-Apply`** | `vmrun enableSharedFolders / addSharedFolder / setSharedFolderState` pour `aw-vm-exchange` ; `removeSharedFolder` du partage du dépôt avec `-RemoveRepoShare` | autre réglage de la VM ou de l'hôte |
 | `guest-setup.ps1` | VM, PowerShell administrateur, lancé à la main | copie l'agent dans `%LOCALAPPDATA%\AutomotiveWorldTests\agent` ; tâche planifiée `AutomotiveWorldAgent` (utilisateur courant, **droits limités**, à l'ouverture de session) ; veille et économiseur d'écran de la VM désactivés ; liste les autres agents ; signale l'ancienne exclusion Defender | modifier un réglage de sécurité (antivirus, pare-feu, comptes) ; arrêter ou désactiver un agent d'un autre projet sans `-StopTasks` |
 | `guest-agent.ps1` | VM, droits limités | battement de cœur ; prise de tâche ; copie d'une **liste fermée** de fichiers ; lance `job-runner.ps1` ; renvoie le rapport | lire un mot de passe ; contacter un service ; écrire hors du dossier d'échange et de `%LOCALAPPDATA%\AutomotiveWorldTests` |
-| `job-runner.ps1` | VM, droits limités | lance Studio en mode script sur la place locale ; compile `ScreenCapture.cs` avec le compilateur C# de Windows vers `%LOCALAPPDATA%\AutomotiveWorldTests\bin` ; arrête seulement les processus qu'il a lancés ; copie la sortie et les journaux Studio de la tâche | simuler des entrées clavier/souris ; publier ; enregistrer la place |
+| `job-runner.ps1` | VM, droits limités | lance Studio en mode script sur la place locale ; compile `ScreenCapture.cs` avec le compilateur C# de Windows vers `%LOCALAPPDATA%\AutomotiveWorldTests\bin` ; arrête seulement les processus qu'il a lancés ; copie la sortie et les journaux Studio de la tâche ; **si la tâche le demande** (`guiInput`, lot 0.9.1) démarre le pont d'entrées réelles **dans la VM** (section « Entrées réelles ») | simuler des entrées hors de la VM ou sans `guiInput` ; publier ; enregistrer la place |
 | `make-report.ps1` | Hôte | transforme la sortie Studio en `report.md` | — |
 
 Écritures de la VM, au total : `agent-heartbeat.json`, `jobs\<id>\job.claimed`, `jobs\<id>\report\` et

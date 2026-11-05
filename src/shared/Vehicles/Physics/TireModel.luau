@@ -112,6 +112,10 @@ function TireModel.stopClamp(force: number, effectiveMass: number, relativeVeloc
         return force
     end
     local limit = effectiveMass * math.abs(relativeVelocity) / dt
+    -- Lot 0.9.1 (QA-A08) : limite non finie ou négative → aucune force (jamais d'erreur).
+    if not (limit >= 0) then
+        return 0
+    end
     return math.clamp(force, -limit, limit)
 end
 

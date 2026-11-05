@@ -221,12 +221,15 @@ function InputArbiter.step(
     local clutchHeld = (useKeys and keys.Clutch == true) or (state.Active == "Gamepad" and pad.Clutch > 0)
     state.Clutch = approach(state.Clutch, if clutchHeld then 1 else 0, CLUTCH_PRESS_PER_S, CLUTCH_RELEASE_PER_S, dt)
 
+    -- Lot 0.9.1 (QA-F18) : interface modale ouverte (seulement à l'arrêt) : frein à main
+    -- serré. Les commandes étant neutralisées, le joueur ne pouvait plus retenir le
+    -- véhicule : une boîte automatique rampait au ralenti et le panneau se fermait.
     if state.Active == "Gamepad" then
         return {
             Throttle = pad.Throttle,
             Brake = pad.Brake,
             Steer = pad.Steer,
-            Handbrake = pad.Handbrake,
+            Handbrake = pad.Handbrake or captured,
             Clutch = state.Clutch,
         },
             event
@@ -236,7 +239,7 @@ function InputArbiter.step(
         Throttle = state.Throttle,
         Brake = state.Brake,
         Steer = state.Steer,
-        Handbrake = useKeys and keys.Handbrake,
+        Handbrake = (useKeys and keys.Handbrake) or captured,
         Clutch = state.Clutch,
     },
         event

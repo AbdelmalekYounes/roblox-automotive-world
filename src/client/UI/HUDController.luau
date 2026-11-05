@@ -180,7 +180,8 @@ local function aidsText(data: any, detailed: boolean): string
                     string.format(
                         "%s %s",
                         aid.Label,
-                        if aid.Status == "Off" then "✕" elseif aid.Status == "Active" then "!" else "✓"
+                        -- QA-F14 : « ✕ » / « ✓ » absents de la police : signes rendus partout.
+                        if aid.Status == "Off" then "×" elseif aid.Status == "Active" then "!" else "●"
                     )
                 )
             elseif aid.Status == "Active" then

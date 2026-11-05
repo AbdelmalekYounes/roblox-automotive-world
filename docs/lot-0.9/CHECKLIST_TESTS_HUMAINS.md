@@ -108,3 +108,16 @@ et le téléversement (`docs/lot-0.8/ASSETS_ET_LICENCES.md` §4).
 | 8.3 | Les 8 exercices | Réussite détectée, aucun crédit (QA-V10) |
 | 8.4 | Pendant les 60 premières secondes, demander à un second compte de te foncer dessus en voiture | Aucun dégât, voiture qui ne te percute pas (QA-V09) |
 | 8.5 | Ouverture automatique de la fenêtre au clavier, puis à la manette | Aucun gel ; focus seulement à la manette (QA-V15) |
+
+## Session 9 — Points laissés par la campagne interactive du lot 0.9.1 (≈ 20 min)
+
+Ces points n'ont pas pu être tranchés dans la VM (`TESTS_INTERACTIFS_AUTONOMES.md` §12–13).
+
+| # | Étapes | Attendu |
+|---|---|---|
+| 9.1 | Dans le **client Roblox** (pas Studio), à pied : touche **O** | Le mode photo s'ouvre (dans Studio, la touche n'atteint jamais le jeu) |
+| 9.2 | Ouvrir le téléphone (T) à pied, regarder son personnage de face puis depuis un second compte | Téléphone dans la main, **bras levé** (la capture de la VM le montre bras baissé, QA-U10) |
+| 9.3 | Monde ouvert, de nuit (22 h), qualité moyenne puis haute, en ville et sur route | Avis : la nuit est-elle trop sombre hors des lampadaires ? |
+| 9.4 | Ouvrir le garage (P) à la souris, cliquer un autre onglet | Avis : le contour de focus resté sur le premier onglet gêne-t-il ? |
+| 9.5 | Vue cockpit (V jusqu'à « Cockpit ») sur trois modèles | Route visible au-dessus du volant ; position des yeux naturelle (QA-F15) |
+| 9.6 | Mission de taxi : passager pris en charge | Passager assis à la place passager, pas au-dessus du toit (QA-F19) |

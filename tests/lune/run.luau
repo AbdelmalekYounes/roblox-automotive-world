@@ -38,6 +38,7 @@ for _, spec in
         require("./specs/Lot07Interface"),
         require("./specs/Lot08Content"),
         require("./specs/Lot09Integration"),
+        require("./specs/Lot091Interactive"),
     }
 do
     spec(TestKit, Harness)

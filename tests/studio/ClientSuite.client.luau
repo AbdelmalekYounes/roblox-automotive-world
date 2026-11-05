@@ -67,6 +67,14 @@ if
     or currentSession == "lot06"
     or currentSession == "lot08"
     or currentSession == "perf"
+    or currentSession == "ui"
+    or currentSession == "ui_monde"
+    or currentSession == "ui_marche"
+    or currentSession == "metiers"
+    or currentSession == "gps"
+    or currentSession == "gps2"
+    or currentSession == "drift"
+    or currentSession == "social"
 then
     return
 end

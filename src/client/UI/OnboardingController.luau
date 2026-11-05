@@ -59,6 +59,15 @@ end
 
 local render: () -> ()
 
+-- Bloc de confirmation (dernier du cadre défilant) amené dans la vue, une fois le
+-- canevas recalculé par la mise en page (0,1 s : quelques images).
+local function revealConfirmation()
+    task.delay(0.1, function()
+        local visible = body.AbsoluteWindowSize.Y
+        body.CanvasPosition = Vector2.new(0, math.max(0, body.CanvasSize.Y.Offset - visible))
+    end)
+end
+
 local function clear()
     for _, child in body:GetChildren() do
         if not child:IsA("UIListLayout") then
@@ -162,7 +171,12 @@ local function renderFlow()
             button(Localization.t("onb.choose", { name = candidate.Name }), function()
                 confirming = candidate.Id
                 InputRouter.armConfirm()
+                -- Lot 0.9.1 (QA-F13) : l'ancien « Fait. » du pied laissait croire le choix
+                -- enregistré, et la confirmation, ajoutée en bas de la liste, restait hors
+                -- de vue : on efface le pied et on fait défiler jusqu'à elle.
+                footer.Text = ""
                 render()
+                revealConfirmation()
             end)
         end
         if status.TestDriveActive then
@@ -231,7 +245,7 @@ local function renderTraining()
     local done = if status and status.State then status.State.Exercises else {}
     for _, id in OnboardingRules.Exercises do
         local finished = done[id] ~= nil
-        button(string.format("%s %s", if finished then "✓" else "○", Localization.t("exercise." .. id)), function()
+        button(string.format("%s %s", if finished then "●" else "○", Localization.t("exercise." .. id)), function()
             local character = Players.LocalPlayer.Character
             local root = character and character:FindFirstChild("HumanoidRootPart")
             local first = nil

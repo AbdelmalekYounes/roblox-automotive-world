@@ -158,6 +158,9 @@ local function quote(label: string, action: string, payload: any, quoteArgs: any
     end
     pending = { Label = label, Action = action, Payload = payload, Quote = response.Result }
     InputRouter.armConfirm()
+    -- Lot 0.9.1 (QA-F13, même cause) : le « Fait. » de la demande précédente laissait
+    -- croire l'opération déjà faite pendant la confirmation.
+    footer.Text = ""
     render()
 end
 
@@ -166,7 +169,16 @@ local function simple(action: string, payload: any?)
         return
     end
     busy = true
-    local response = invoke(action, payload)
+    -- Lot 0.9.1 (QA-F16) : une opération sensible (retrait d'annonce) envoyée sans
+    -- identifiant de demande était toujours refusée (RequestIdInvalid) : « Retirer
+    -- l'annonce » ne fonctionnait jamais. Identifiant ajouté pour toute opération sensible.
+    local data: any = payload
+    if EconomyProtocol.Sensitive[action] then
+        local copy: { [string]: any } = if type(payload) == "table" then table.clone(payload) else {}
+        copy.RequestId = HttpService:GenerateGUID(false)
+        data = copy
+    end
+    local response = invoke(action, data)
     busy = false
     footer.Text = describe(response)
     render()

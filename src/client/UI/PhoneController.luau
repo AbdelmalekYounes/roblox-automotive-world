@@ -801,11 +801,13 @@ local function build()
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, device)
-    UITheme.button("⤢", { Position = UDim2.new(1, -92, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
+    -- Lot 0.9.1 (QA-F14) : « ⤢ » et « ✕ » absents de la police (carrés vides dans les
+    -- captures) ; signes latins, toujours rendus.
+    UITheme.button("+", { Position = UDim2.new(1, -92, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
         enlarged = not enlarged
         layout()
     end)
-    UITheme.button("✕", { Position = UDim2.new(1, -48, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
+    UITheme.button("×", { Position = UDim2.new(1, -48, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
         UIManager.close("Phone")
     end)
     body = UITheme.make("ScrollingFrame", {
@@ -838,7 +840,7 @@ local function build()
             p.Hud.MinimapZoom = step(p.Hud.MinimapZoom, 1, 1, 4)
         end)
     end)
-    quickButton("✕ GPS", function()
+    quickButton("× GPS", function()
         GPSController.clear()
         render()
     end)

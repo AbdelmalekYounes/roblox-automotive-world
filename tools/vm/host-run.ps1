@@ -21,6 +21,7 @@
 	test-vm.cmd -Sessions solo
 	test-vm.cmd -NoVmControl -DryRun      (test du protocole, sans Studio)
 	test-vm.cmd -Place OpenWorld -Sessions monde   (place monde ouvert, lot 0.3)
+	test-vm.cmd -Sessions ui                       (interfaces par vraies entrées DANS la VM, lot 0.9.1)
 #>
 param(
 	[string]$Vmx,
@@ -32,7 +33,10 @@ param(
 	[int]$AgentWaitSec = 240,
 	[switch]$NoVmControl,
 	[switch]$Suspend,
-	[switch]$DryRun
+	[switch]$DryRun,
+	# Lot 0.9.1 : pont d'entrées réelles DANS LA VM (clics et touches demandés par le
+	# client de test). Activé aussi d'office pour les sessions « ui… ».
+	[switch]$GuiInput
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,9 +130,22 @@ $beat = Get-Content -Raw $heartbeat | ConvertFrom-Json
 Write-Host "Agent prêt : invité $($beat.guest), utilisateur $($beat.user), version $($beat.agentVersion)."
 
 # 3. Tâche
-$id = Get-Date -Format "yyyyMMdd-HHmmss"
-$jobDir = Join-Path $jobsDir $id
-New-Item -ItemType Directory -Force -Path $jobDir | Out-Null
+# Identifiant réservé de façon exclusive (fichier « <id>.reserve » créé en mode CreateNew) :
+# deux dépôts dans la même seconde partageaient le même dossier et le second écrasait la
+# place du premier (lot 0.9.1, tâche 20261103-231150 : sessions Dev jouées sur la place
+# monde ouvert). Le second prend le suffixe « -1 », « -2 »…
+$suffix = 0
+while ($true) {
+	$id = (Get-Date -Format "yyyyMMdd-HHmmss") + $(if ($suffix -gt 0) { "-$suffix" } else { "" })
+	$jobDir = Join-Path $jobsDir $id
+	try {
+		$claim = [IO.File]::Open("$jobDir.reserve", [IO.FileMode]::CreateNew)
+		$claim.Close()
+		if (-not (Test-Path $jobDir)) { break }
+	} catch { }
+	$suffix++
+}
+New-Item -ItemType Directory -Path $jobDir | Out-Null
 if ($Place -eq "OpenWorld") {
 	# Lot 0.3 : carte générée hors ligne, puis place monde ouvert (StreamingEnabled).
 	& rojo build -o "build\AutomotiveWorld.rbxlx"
@@ -145,9 +162,10 @@ if ($LASTEXITCODE -ne 0) { throw "La génération du pilote de tests a échoué.
 Copy-Item (Join-Path $PSScriptRoot "job-runner.ps1") (Join-Path $jobDir "job-runner.ps1")
 Copy-Item (Join-Path $PSScriptRoot "ScreenCapture.cs") (Join-Path $jobDir "ScreenCapture.cs")
 $commit = (& git rev-parse --short HEAD 2>$null)
+$useGuiInput = [bool]$GuiInput -or [bool]($Sessions | Where-Object { $_ -like "ui*" })
 [pscustomobject]@{
 	id = $id; sessions = $Sessions; place = $Place; timeoutSec = $TimeoutSec; dryRun = [bool]$DryRun
-	commit = $commit; createdAt = (Get-Date).ToString("o")
+	guiInput = $useGuiInput; commit = $commit; createdAt = (Get-Date).ToString("o")
 } | ConvertTo-Json | Out-File -Encoding utf8 (Join-Path $jobDir "job.json")
 New-Item -ItemType File -Path (Join-Path $jobDir "job.ready") | Out-Null
 Write-Host "Tâche $id déposée (place $Place, sessions : $($Sessions -join ', '), commit $commit)."

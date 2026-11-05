@@ -81,10 +81,16 @@ for _, entry in
         table.unpack(EXTRA_SUITES),
     }
 do
-    local item = Instance.new(if entry[3] then "LocalScript" else "Script")
+    -- entry[3] : true = script client, false = script serveur, "module" = module de test
+    -- partagé (lot 0.9.1, ReplicatedStorage, détruit avec les autres à la fin).
+    local kind = entry[3]
+    local item = Instance.new(if kind == "module" then "ModuleScript" elseif kind then "LocalScript" else "Script")
     item.Name = entry[1]
     item.Source = entry[2]
-    item.Parent = if entry[3] then StarterPlayer:WaitForChild("StarterPlayerScripts") else ServerScriptService
+    item.Parent = if kind == "module"
+        then game:GetService("ReplicatedStorage")
+        elseif kind then StarterPlayer:WaitForChild("StarterPlayerScripts")
+        else ServerScriptService
     table.insert(extraScripts, item)
 end
 

@@ -384,7 +384,7 @@ local function refreshCargo(entry: Active, model: Model?)
             root,
             "PassagerBuste",
             Vector3.new(0.45 * m, 0.6 * m, 0.25 * m),
-            seat * CFrame.new(0, 0.45 * m, 0),
+            seat * CFrame.new(0, MissionCargo.Passenger.BustM * m, 0),
             Color3.fromRGB(70, 90, 140)
         )
         cargoPart(
@@ -392,7 +392,7 @@ local function refreshCargo(entry: Active, model: Model?)
             root,
             "PassagerTete",
             Vector3.new(0.24 * m, 0.24 * m, 0.24 * m),
-            seat * CFrame.new(0, 0.95 * m, 0),
+            seat * CFrame.new(0, MissionCargo.Passenger.HeadM * m, 0),
             Color3.fromRGB(205, 160, 125),
             Enum.PartType.Ball
         )

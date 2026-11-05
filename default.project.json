@@ -25,6 +25,12 @@
           "$path": "src/client"
         }
       }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Voxel"
+      }
     }
   }
 }

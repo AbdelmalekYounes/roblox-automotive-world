@@ -36,7 +36,13 @@ local function requireModule(moduleScript: any): any
             script = moduleScript,
             require = requireModule,
             -- `game` n'est volontairement PAS exposé : un module pur ne doit
-            -- pas dépendre des services Roblox.
+            -- pas dépendre des services Roblox. Les types de VALEUR de Roblox
+            -- (lot 0.9.1 : géométrie des carrosseries) le sont, sans service.
+            CFrame = roblox.CFrame,
+            Vector3 = roblox.Vector3,
+            Vector2 = roblox.Vector2,
+            Color3 = roblox.Color3,
+            Enum = roblox.Enum,
         },
     })
     local result = chunk()
