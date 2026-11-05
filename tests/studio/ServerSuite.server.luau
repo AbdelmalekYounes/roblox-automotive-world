@@ -36,6 +36,11 @@ if
     or sessionName == "aster"
     or sessionName == "silhouette"
     or sessionName == "silhouette2"
+    or sessionName == "comete"
+    or sessionName == "comete_vitres"
+    or sessionName == "comete_perf"
+    or sessionName == "comete2"
+    or sessionName == "comete_avatar"
 then
     return
 end

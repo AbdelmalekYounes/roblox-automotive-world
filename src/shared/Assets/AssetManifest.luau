@@ -9,7 +9,9 @@
 
     Toutes les ressources sont ORIGINALES : géométrie construite par code
     (BodyKits, générateur de carte), sons synthétisés par un script du dépôt.
-    Aucun actif Marketplace, aucun emprunt à un autre projet.
+    Aucun actif Marketplace, aucun emprunt à un autre projet. SEULE EXCEPTION, accordée par le propriétaire
+    (lot VEH3D-01, 2026-11-04) : le modèle 3D tiers de la Comète (CC BY 4.0, crédité ; registre
+    docs/vehicle-3d/MODELES_TIERS.md), dont les maillages ont été envoyés sur Roblox par le propriétaire.
 
     RobloxAssetId : identifiant Roblox RÉEL après téléversement par le
     propriétaire. Il est nil partout : rien n'a été téléversé, aucun
@@ -42,6 +44,10 @@ export type Asset = {
     -- Fichier produit par la source (son à téléverser), relatif au dépôt.
     Output: string?,
     RobloxAssetId: number?,
+    -- Kit de maillages (VEH3D-01) : identifiants RÉELS des maillages et des textures envoyés par le propriétaire,
+    -- relevés dans le gabarit .rbxm (test Lune : la liste est exactement celle du gabarit, rien n'est inventé).
+    RobloxAssetIds: { number }?,
+    RobloxTextureIds: { number }?,
 }
 
 local ORIGINAL = "Original — conçu pour Automotive World"
@@ -107,6 +113,57 @@ add({
     Source = { Kind = "File", Path = "src/client/World/VehicleLights.luau" },
     Output = nil,
     RobloxAssetId = nil,
+})
+
+-- ======================== Carrosserie 3D tierce (lot VEH3D-01) ========================
+add({
+    Id = "veh.wk_comete.mesh720s",
+    Category = "VehicleBody",
+    Version = "1.0.0",
+    Status = "ReadyForReview",
+    Variants = {
+        Low = "Maillages complets (6 907 triangles) ; détails masqués au loin",
+        Medium = "Identique, détails visibles plus loin",
+        High = "Identique",
+    },
+    Lod = "LOD0 seul ; RenderFidelity automatique ; habitacle, freins et essuie-glaces dans Carrosserie/Details",
+    Provenance = "Tiers : « 2017 Mclaren 720s » de _Sheep19 (Sketchfab), CC BY 4.0, modifié (logos retirés, échelle, "
+        .. "roues séparées) ; exception du propriétaire, docs/vehicle-3d/MODELES_TIERS.md",
+    Licence = "CC BY 4.0 — crédit obligatoire (docs/CREDITS_ACTIFS.md)",
+    Source = { Kind = "File", Path = "src/server/Vehicles/MeshKits.luau" },
+    Output = "assets/meshkits/Comete720s.rbxm",
+    RobloxAssetId = nil,
+    RobloxAssetIds = {
+        72070150876445,
+        73457381515552,
+        79005674751505,
+        81144738448567,
+        81797127978233,
+        82291169931257,
+        85421020854464,
+        87224242574848,
+        89081965660812,
+        92270039932160,
+        93486246899499,
+        95185700118311,
+        102224824061605,
+        102573121267361,
+        103640134917186,
+        104886086089628,
+        106049474235075,
+        115446736871757,
+        117440140283283,
+        118010695887646,
+        118695232875609,
+        120490569759204,
+        124647274463924,
+        134599392040709,
+        134800284008231,
+        135006162692878,
+        135244511879645,
+        137148103400804,
+    },
+    RobloxTextureIds = { 76606382409640, 127066032742162, 129807559388443, 130107105284511, 139339087025487 },
 })
 
 -- ======================== Monde ========================

@@ -120,6 +120,51 @@ collection `ENVELOPPES`, et ajouter à la session VM du modèle réel les contr�
 Échecs restants de la tâche `20261104-193715` : pieds sous le plancher en **pose standard** (siège sans `AWSeatPose`), sans
 objet pour l'Aster, dont les sièges portent l'attribut (exigence d'ASTER-02).
 
+## 4 bis. Changement de direction : reproduction de la référence (2026-11-04)
+
+Décision du propriétaire, écart au cahier des charges **arbitré par lui** (CLAUDE.md : seul le propriétaire accorde une
+exception).
+
+Il a écrit : « on ne prend pas en compte ce que dit le CDC sur la reproduction des véhicules ; on va essayer de
+reproduire le véhicule sans le logo Volkswagen ». Réponses aux deux questions posées :
+- **hauteur : proportions réelles**, environ 1,46 m ; la hauteur de la définition du jeu est 1,47 m ;
+- **face avant et détails : tout reproduire**, c'est-à-dire bandeau lumineux, phares, calandre, boucliers, feux et
+  jantes, sans le logo.
+
+| Point | Conséquence |
+|---|---|
+| Direction A « Trait », signature Mivale « L » | Remplacées pour l'Aster ; le blockout validé et les passes HF1 à HF4 restent dans l'historique (dépôt d'art `4ff1a75`) |
+| Interdits maintenus | Aucun logo, aucun nom « Volkswagen » ni « Golf » dans le jeu, les fichiers du modèle ou les textures ; aucune photographie utilisée comme texture ; plaques fictives. Les photos du manifeste servent de référence de modelage seulement |
+| Risque signalé au propriétaire | La forme d'un véhicule récent peut être protégée (dessin ou modèle, image de marque), même sans logo ; un ayant droit peut faire retirer un contenu publié sur Roblox. Ce risque porte sur la publication, que seul le propriétaire décide (aucune publication sans son accord) |
+| Toit (décision du §2 remplacée) | Hors tout ramené à la hauteur de la définition, 1,47 m, soit le dessus du pavillon à y 3,46. Il reste environ 3,3 st entre l'assise et le dessous du pavillon, au lieu de 4,20 : **les marges de tête mesurées en VM (§2) ne tiennent plus**. Assise, pose et contrôles VM sont à reprendre ; aucune solution n'est choisie à ce stade |
+| Physique | Inchangée : la définition (4,25 × 1,78 × 1,47 m, empattement 2,62 m) est déjà proche des cotes réelles de la référence |
+
+## 4 ter. Modèles 3D tiers proposés par le propriétaire (2026-11-04)
+
+**Décision du propriétaire : le jeu ne sera jamais monétisé** (« Jamais monétisé » : ni Robux, ni passes, ni achats).
+La clause « pas d'usage commercial » (NC) des licences Creative Commons n'est donc plus un obstacle en soi.
+
+Neuf collections Sketchfab ont été relevées par l'API publique (lecture seule, 2026-11-04) : six collections « cars
+for Roblox », soit 127 modèles distincts, et trois collections de ddiaz-design, soit 138 modèles. Aucun téléchargement
+n'a été fait.
+
+| Constat | Détail |
+|---|---|
+| Correspondances avec les 18 références | Comète : « 2017 Mclaren 720s » (s0h1o9b), CC BY, 6 917 faces. Aster / Rafale : « 2024 Volkswagen Golf GTI », « 2025 Volkswagen Golf R » (ddiaz-design). Brise : « 2015 / 2019 Mazda MX-5 ». Éclat : « 2022 Toyota GR86 - EU ». Rien pour les 13 autres |
+| Origine déclarée par l'auteur des modèles ddiaz-design | Golf GTI 2024 : « Based on a Volkswagen 3d model », étiquette `configurator`. Golf R 2025 : « Based on a Volkswagen 3d model », crédit à un serveur Discord « GameModels Community ». GR86 : « Based on a Racing Master 3d model ». MX-5 2015 : « Based on a Need For Speed Heat 3d model » |
+| Conséquence | Modèles **repris de jeux vidéo commerciaux ou d'un configurateur de constructeur**. La licence CC BY-NC-SA affichée ne peut pas venir de l'ayant droit, et l'absence de monétisation n'y change rien. **Non retenus** (CLAUDE.md : aucun emprunt de modèle ni actif non inspecté) |
+| McLaren 720s (exception accordée : « Tester la 720s », registre `MODELES_TIERS.md`) | L'auteur déclare l'avoir modélisée lui-même (« Modelled in Blender, textures made in Photoshop »). Seul candidat recevable, sous réserve d'une **exception du propriétaire** à la règle d'emprunt, d'une inspection du fichier (logos, contenu) et du crédit exigé par CC BY |
+
+## 4 quater. Suspension d'ASTER-02 (2026-11-04)
+
+Décision du propriétaire : « non aster on abandonne pour l'instant », en réponse au choix entre clôturer ASTER-02 et
+ouvrir en parallèle le lot d'intégration de la Comète.
+- ASTER-02 est **suspendu**, non clôturé : la PR n'est pas fusionnée et rien n'est intégré au jeu.
+- Le travail reste dans la branche et dans le dépôt d'art : blockout « Trait » validé et passes HF1 à HF4 ; blockout
+  « reproduction » à valider ; étalonnage terminé.
+- Le lot d'intégration de la Comète (VEH3D-01) part de cette branche, qui porte l'essai de la 720s et les outils.
+- Le propriétaire accorde ainsi l'exception à la règle « un lot clôturé avant le suivant ».
+
 ## 5. Rappel des autres points ouverts
 
 - Corps par défaut avant le choix du joueur : masculin, provisoire (à confirmer).

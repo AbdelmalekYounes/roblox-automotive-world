@@ -51,6 +51,8 @@ clavier/manette est remplacée** par un point d'accès réservé à Studio (`Veh
 | `aster` | phase 1 de l'Aster : maquette en blocs d'après le gabarit, 10 morphologies sur les deux corps humains, pose standard et pose du jeu, mesures côté client (`@@AWASTER@@`), forme des têtes |
 | `silhouette` | clôture de la phase 1 : choix de silhouette par **vrais clics** (panneau d'apparition, téléphone), vêtements, têtes classiques et non classiques, réapparition, couleurs de peau, changements successifs avec expirations forcées |
 | `silhouette2` | 2 clients : corps du joueur 1 mesuré par le joueur 2 et comparé au serveur à chaque changement (changements appelés par le serveur de test) |
+| `comete` | lot VEH3D-01 : Comète 3D (kit de maillages), essais QA-K01 à QA-K08 : structure, chargement des maillages, roues, sièges, caméras (touche V), conduite et chocs avant/arrière contre `MurDeChoc`, nuit, temps d'image de 24 Comète ; à lancer avec `-GuiInput` |
+| `comete_vitres` | lot VEH3D-01 : même début que `comete`, puis 5 réglages du vitrage capturés conducteur assis (profil, trois-quarts) ; à lancer avec `-GuiInput` |
 
 Non couvert par ces sessions : lecture réelle des touches et de la manette, ressenti, son (essais humains, voir
 `docs/lot-0.1/RAPPORT_TESTS.md`). Lot 0.9.1 : les sessions `ui` et `ui_monde` utilisent de **vraies** entrées
@@ -94,6 +96,10 @@ Activated / KeyCode reçus par le jeu ◀──────────── cl
   par script doit réimposer la caméra à chaque étape de rendu (voir `AvatarClient.client.luau`).
 - **Touche O** : jamais reçue par le jeu dans Studio (ni code virtuel ni code de balayage) ; le mode photo s'ouvre par
   le téléphone. Limite de l'environnement, connue depuis le lot 0.9.1.
+- **Touche Ctrl** : jamais reçue par le jeu dans Studio (tâches `20261105-001843` et `-002227`) ; la session `comete`
+  engage R par l'appel de test et le signale.
+- **Fenêtre d'arrivée** : un profil neuf ouvre « Choisir votre véhicule », qui capture la conduite (lot 0.7) ; une
+  session qui conduit la ferme d'abord par la vraie touche Retour.
 Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.
 
 ## Préparation de la VM

@@ -24,6 +24,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
 local InputMap = require(Shared.UI.InputMap)
+local Attributions = require(Shared:WaitForChild("Assets"):WaitForChild("Attributions"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local UIState = require(script.Parent.UIState)
@@ -545,7 +546,7 @@ end
 
 local function renderSettings()
     local prefs = UIState.prefs()
-    for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio", "Graphics" } do
+    for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio", "Graphics", "Credits" } do
         button(Localization.t("settings." .. string.lower(string.sub(page, 1, 1)) .. string.sub(page, 2)), function()
             settingsPage = page
             render()
@@ -612,6 +613,25 @@ local function renderSettings()
                 end)
             end
         )
+    elseif settingsPage == "Credits" then
+        -- Lot VEH3D-01 : attributions CC BY 4.0 (titre et lien affichés seulement sur décision du propriétaire).
+        line(Localization.t("credits.intro"))
+        for _, entry in Attributions.List do
+            line(Localization.t("credits.entry", {
+                usage = Localization.t(entry.UsageKey),
+                creator = entry.Creator,
+                source = entry.Source,
+                licence = entry.Licence,
+                changes = Localization.t(entry.ChangesKey),
+            }))
+            if entry.ShowTitle then
+                line(Localization.t("credits.title", { title = entry.Title }))
+            end
+            if entry.ShowUrl then
+                line(Localization.t("credits.url", { url = entry.Url }))
+            end
+            line(Localization.t("credits.licence", { licence = entry.Licence, url = entry.LicenceUrl }))
+        end
     elseif settingsPage == "Controls" then
         for _, binding in InputMap.Defaults do
             if binding.Rebindable then

@@ -23,6 +23,7 @@ end
 local session = ReplicatedStorage:GetAttribute("AWTestSession")
 if
     session ~= "avatar"
+    and session ~= "comete_avatar"
     and session ~= "avatar2"
     and session ~= "aster"
     and session ~= "silhouette"
@@ -842,6 +843,51 @@ handlers.silcheck = function(_id, data)
         "silhouette.client.panneau_absent_" .. tostring(data.Key),
         playerGui:FindFirstChild("AWBodyChoice") == nil,
         "choix déjà fait dans la session"
+    )
+end
+
+-- Session « comete_avatar » (lot VEH3D-01) : pieds et tête dans la pose de JEU, mesurés par ce client, comparés au
+-- plancher mesuré sous le pédalier de la Comète (MeshKitData.Footwell) et au haut de la boîte d'habitacle.
+handlers.comfeet = function(_id, data)
+    task.wait(1) -- pose de jeu mise en place (fondu 0,3 s)
+    local kit = (require(Shared:WaitForChild("Vehicles"):WaitForChild("MeshKitData")) :: any).Kits.wk_comete
+    local model = character()
+    local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid?
+    local seat = humanoid and humanoid.SeatPart
+    local vehicle = seat and seat.Parent
+    local root = vehicle and (vehicle :: Model).PrimaryPart
+    local label = string.format("comete_avatar.client.%s_%s.pose_de_jeu", tostring(data.Seat), tostring(data.Morph))
+    if root == nil then
+        record(label, false, "non assis")
+        return
+    end
+    local frame = (root :: BasePart).CFrame
+    local low, front, rear = math.huge, math.huge, -math.huge
+    for _, name in { "LeftFoot", "RightFoot" } do
+        local part = model:FindFirstChild(name)
+        if part and part:IsA("BasePart") then
+            local p = frame:PointToObjectSpace(part.Position)
+            low = math.min(low, p.Y - part.Size.Y / 2)
+            front, rear = math.min(front, p.Z), math.max(rear, p.Z)
+        end
+    end
+    local head = model:FindFirstChild("Head") :: BasePart?
+    local top = if head then frame:PointToObjectSpace(head.Position).Y + head.Size.Y / 2 else math.huge
+    local roof = kit.RoofUnderside
+    local well = kit.Footwell
+    local feetOk = low >= well.FloorY - 0.05 and front >= well.FrontZ - 0.3 and rear <= well.RearZ + 0.6
+    record(
+        label,
+        feetOk and top < roof,
+        string.format(
+            "dessous des pieds %.2f (plancher %.2f), z %.2f à %.2f ; haut de la tête %.2f (pavillon %.2f)",
+            low,
+            well.FloorY,
+            front,
+            rear,
+            top,
+            roof
+        )
     )
 end
 

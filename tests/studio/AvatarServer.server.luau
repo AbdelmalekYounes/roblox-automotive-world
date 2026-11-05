@@ -27,6 +27,7 @@ local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 if
     session ~= "avatar"
+    and session ~= "comete_avatar"
     and session ~= "avatar2"
     and session ~= "aster"
     and session ~= "silhouette"
@@ -1556,7 +1557,10 @@ record(
 )
 
 -- 2. Morphologies debout : marche, téléphone (client), puis assise dans les véhicules.
-local SAMPLE = { "proto_p01", "wk_pixel", "wk_comete", "wk_brise", "wk_dune" }
+-- « comete_avatar » (lot VEH3D-01, demande du propriétaire du 2026-11-05) : la Comète seule, toutes les
+-- morphologies ; les 17 autres modèles ne sont pas essayés.
+local ONLY_COMETE = session == "comete_avatar"
+local SAMPLE = if ONLY_COMETE then { "wk_comete" } else { "proto_p01", "wk_pixel", "wk_comete", "wk_brise", "wk_dune" }
 local results: { [string]: { [string]: { [string]: Seated } } } = {} -- véhicule → siège → morphologie
 local exits: { [string]: { string } } = {}
 
@@ -1581,6 +1585,11 @@ local function seatAndMeasure(model: Model, modelId: string, morph: Morph, seatN
     local json = table.clone(data)
     json.vehicle, json.seat, json.morph = modelId, key, morph.Id
     emitData("seat", json)
+    if ONLY_COMETE then
+        -- Pose de jeu (« Sportive ») appliquée par le CLIENT : seule sa mesure la voit (le serveur mesure la pose
+        -- standard du moteur, critère gardé pour information).
+        ask(player, "comfeet:" .. key .. "_" .. morph.Id, { Seat = key, Morph = morph.Id }, 15)
+    end
     if capture then
         shot(
             player,
@@ -1701,7 +1710,7 @@ end
 -- 3. Les 18 modèles avec les morphologies extrêmes (assise seulement, une capture M7).
 for _, spec in WorkingCatalog.Specs do
     local modelId = spec.Id
-    if table.find(SAMPLE, modelId) then
+    if ONLY_COMETE or table.find(SAMPLE, modelId) then
         continue
     end
     for _, morph in MORPHS do
@@ -1830,7 +1839,11 @@ for _, modelId in vehicles do
                     end
                 end
             end
-            if measured > 0 then
+            if measured > 0 and ONLY_COMETE and criterion.Key == "pieds_dans_l_habitacle" then
+                -- Comète : sièges en pose de jeu « Sportive », vue par les clients seulement ; le serveur mesure la
+                -- pose standard du moteur. Verdict porté par la mesure du client (comete_avatar.client.*).
+                record(prefix .. "info_pieds_pose_standard_du_moteur", true, table.concat(failing, " / "))
+            elseif measured > 0 then
                 record(prefix .. criterion.Key, #failing == 0, table.concat(failing, " / "))
             end
         end
@@ -1865,7 +1878,7 @@ end
 record("avatar.info_masse_du_personnage_assis", true, table.concat(massNotes, " / "))
 
 -- 5. Tenue refusée assis, réapparition : R15 et apparence initiale relue.
-local model = spawnVehicle(player, "proto_p01")
+local model = spawnVehicle(player, if ONLY_COMETE then "wk_comete" else "proto_p01")
 if model and sit(player, model, "DriverSeat") then
     local seatedRestore = AvatarService.restore(player)
     record(

@@ -28,6 +28,7 @@ local Types = require(VehiclesShared:WaitForChild("VehicleTypes"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local DamageModel = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("DamageModel"))
 local PerfStats = require(VehiclesShared:WaitForChild("PerfStats"))
+local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData")) :: any
 
 local METERS_PER_STUD = Constants.MetersPerStud
 local STUDS_PER_METER = 1 / METERS_PER_STUD
@@ -66,6 +67,11 @@ export type Entry = {
     Event: ImpactEvent?,
     Visual: { [string]: number }, -- niveau visuel appliqué par zone
     Smoke: boolean,
+    -- Demi-longueur et demi-largeur de la recherche d'obstacle (studs, hors marge) : cotes du châssis, ou étendue des
+    -- boîtes de collision d'un kit de maillages si elle les dépasse (lot VEH3D-01 : nez de la Comète à 8,83 st du
+    -- centre pour 8,13 st de châssis ; choc avant à 42 km/h parfois non confirmé, tâche 20261105-024819).
+    HalfLength: number,
+    HalfWidth: number,
 }
 
 export type ImpactRecord = {
@@ -119,6 +125,15 @@ local function publish(entry: Entry)
 end
 
 function DamageService.register(self: Service, model: Model, definition: Types.VehicleDefinition): Entry
+    local halfLength = definition.Chassis.LengthM * STUDS_PER_METER / 2
+    local halfWidth = definition.Chassis.WidthM * STUDS_PER_METER / 2
+    local kit = MeshKitData.Kits[definition.Id]
+    if kit then
+        for _, box in kit.Collisions do
+            halfLength = math.max(halfLength, math.abs(box.Center.Z) + box.Size.Z / 2)
+            halfWidth = math.max(halfWidth, math.abs(box.Center.X) + box.Size.X / 2)
+        end
+    end
     local entry: Entry = {
         Model = model,
         Root = model.PrimaryPart :: BasePart,
@@ -130,6 +145,8 @@ function DamageService.register(self: Service, model: Model, definition: Types.V
         Event = nil,
         Visual = { Front = 0, Rear = 0, Left = 0, Right = 0 },
         Smoke = false,
+        HalfLength = halfLength,
+        HalfWidth = halfWidth,
     }
     table.insert(self.Entries, entry)
     self.ByModel[model] = entry
@@ -211,17 +228,37 @@ end
 
 local function breakLight(entry: Entry, name: string)
     local light = bodyPart(entry, name)
-    if light and light.Material == Enum.Material.Neon then
+    if light == nil then
+        return
+    end
+    -- Lu par VehicleLights (client) : optique éteinte jusqu'au remplacement du véhicule (lot VEH3D-01 ; sans cet
+    -- attribut, l'éclairage de nuit rallumait l'optique cassée au passage suivant).
+    light:SetAttribute("AWLightBroken", true)
+    if light.Material == Enum.Material.Neon then
         light.Material = Enum.Material.Glass
         light.Color = Color3.fromRGB(60, 60, 64)
     end
+end
+
+-- Kit de maillages (lot VEH3D-01) : surface visible mesurée sur le maillage (MeshKitData.DamageMarks), repère du
+-- châssis, studs. nil pour une carrosserie provisoire (règle d'origine inchangée).
+local function kitMarks(entry: Entry): any
+    local definitionId = entry.Model:GetAttribute("DefinitionId")
+    local kit = if type(definitionId) == "string" then MeshKitData.Kits[definitionId] else nil
+    local hull = bodyPart(entry, "Coque")
+    if kit == nil or hull == nil or hull:GetAttribute("AWCollisionOnly") ~= true then
+        return nil
+    end
+    return kit.DamageMarks
 end
 
 -- Panneau déformé : l'original (collisionnable) devient invisible, une copie
 -- visuelle inclinée et enfoncée prend sa place. La collision ne change pas.
 local function deformPanel(entry: Entry, name: string, angle: number, inset: number, drop: number)
     local panel = bodyPart(entry, name)
-    if panel == nil then
+    -- Lot VEH3D-01 : boîte de collision invisible d'un kit de maillages (aucun panneau à montrer) ; la copier
+    -- ferait apparaître un bloc opaque devant le modèle 3D. Le choc reste compté, rayures comprises.
+    if panel == nil or panel:GetAttribute("AWCollisionOnly") == true then
         return
     end
     local localCFrame = entry.Root.CFrame:ToObjectSpace(panel.CFrame)
@@ -253,6 +290,7 @@ local function applyVisuals(entry: Entry)
     local halfLength = chassis.LengthM * STUDS_PER_METER / 2
     local scratch = Color3.fromRGB(70, 70, 74)
     local dent = Color3.fromRGB(45, 45, 48)
+    local kit = kitMarks(entry)
     for _, zone in DamageModel.Zones do
         local level = DamageModel.visualLevel(entry.State.Zones[zone])
         local applied = entry.Visual[zone]
@@ -262,6 +300,49 @@ local function applyVisuals(entry: Entry)
         entry.Visual[zone] = level
         local side = if zone == "Left" then -1 elseif zone == "Right" then 1 else 0
         local ends = if zone == "Front" then -1 elseif zone == "Rear" then 1 else 0
+        if kit then
+            -- Kit de maillages : marques posées SUR la surface visible (aucun panneau à déformer : le maillage n'est
+            -- pas découpé par zone). Rayures, puis enfoncement sombre et optiques éteintes, puis enfoncement large.
+            local k = kit
+            local function mark(name: string, size: Vector3, frame: CFrame, color: Color3)
+                addDecor(entry, name .. zone, size, frame, color)
+            end
+            -- Point i (1..3) sur la surface, décalé de `out` studs vers l'extérieur.
+            local function onSurface(i: number, out: number, dy: number): CFrame
+                if side ~= 0 then
+                    return CFrame.new(side * (k.Side[i] + out), k.SideY + dy, (i - 2) * 1.6)
+                end
+                local z = if ends < 0 then k.Front[i] - out else k.Rear[i] + out
+                return CFrame.new((i - 2) * 1.0, (if ends < 0 then k.FrontY else k.RearY) + dy, z)
+            end
+            if level >= 1 and applied < 1 then
+                for i = 1, 3 do
+                    local tilt = if side ~= 0
+                        then CFrame.Angles(math.rad(8 * (i - 2)), 0, 0)
+                        else CFrame.Angles(0, 0, math.rad(6 * (i - 2)))
+                    local size = if side ~= 0 then Vector3.new(0.04, 0.05, 1.5) else Vector3.new(0.8, 0.05, 0.04)
+                    mark("Rayure", size, onSurface(i, 0.02, 0.12 * (i - 2)) * tilt, scratch)
+                end
+            end
+            if level >= 2 and applied < 2 then
+                for i = 1, 3 do
+                    local size = if side ~= 0 then Vector3.new(0.05, 0.6, 1.4) else Vector3.new(0.85, 0.45, 0.05)
+                    mark("Enfoncement", size, onSurface(i, 0.03, 0), dent)
+                end
+                if side == 0 then
+                    local prefix = if zone == "Front" then "Phare" else "Feu"
+                    breakLight(entry, prefix .. "Gauche")
+                    breakLight(entry, prefix .. "Droit")
+                end
+            end
+            if level >= 3 and applied < 3 then
+                for i = 1, 3 do
+                    local size = if side ~= 0 then Vector3.new(0.06, 0.85, 1.6) else Vector3.new(0.95, 0.75, 0.06)
+                    mark("Deformation", size, onSurface(i, 0.04, 0.15), dent)
+                end
+            end
+            continue
+        end
         if level >= 1 and applied < 1 then
             -- Rayures : fines traînées sur la zone touchée.
             for i = -1, 1 do
@@ -381,9 +462,9 @@ local function findObstacle(self: Service, entry: Entry, pushDirection: Vector3)
     local bottom = -0.5
     local top = height - cgHeight
     local size = Vector3.new(
-        chassis.WidthM * STUDS_PER_METER + 2 * CONTACT_MARGIN_STUDS,
+        2 * (entry.HalfWidth + CONTACT_MARGIN_STUDS),
         top - bottom,
-        chassis.LengthM * STUDS_PER_METER + 2 * CONTACT_MARGIN_STUDS
+        2 * (entry.HalfLength + CONTACT_MARGIN_STUDS)
     )
     local center = root.CFrame * CFrame.new(0, (top + bottom) / 2, 0)
     local excluded: { Instance } = { entry.Model }

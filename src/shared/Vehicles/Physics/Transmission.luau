@@ -218,6 +218,15 @@ function Transmission.update(
         return throttle, brake
     end
 
+    if kind == "Sequential" then
+        -- Décision du propriétaire (2026-11-05, revue de la Comète) : au neutre et à l'arrêt, « accélérer » engage le
+        -- 1er rapport, comme le double embrayage ; les montées et descentes restent au conducteur, la marche arrière
+        -- au sélecteur (descente depuis le neutre, véhicule arrêté).
+        if state.Gear == 0 and input.Throttle > 0.05 and math.abs(forwardSpeed) < Transmission.StopSpeed then
+            state.Gear = 1
+        end
+    end
+
     if kind == "DualClutch" then
         -- Neutre au démarrage : « accélérer » engage le 1er rapport (position D).
         if state.Gear == 0 and input.Throttle > 0.05 and forwardSpeed > -Transmission.StopSpeed then

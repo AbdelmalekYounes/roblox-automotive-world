@@ -11,6 +11,12 @@
         "$path": "places/dev/PlaceConfig.luau"
       }
     },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "AutomotiveWorldMeshKits": {
+        "$path": "assets/meshkits"
+      }
+    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "AutomotiveWorldServer": {

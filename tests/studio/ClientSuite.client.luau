@@ -80,6 +80,11 @@ if
     or currentSession == "aster"
     or currentSession == "silhouette"
     or currentSession == "silhouette2"
+    or currentSession == "comete"
+    or currentSession == "comete_vitres"
+    or currentSession == "comete_perf"
+    or currentSession == "comete2"
+    or currentSession == "comete_avatar"
 then
     return
 end

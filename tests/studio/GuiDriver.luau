@@ -35,6 +35,7 @@ local VK: { [string]: number } = {
     Down = 0x28,
     Backslash = 0xDC,
     Shift = 0x10,
+    Control = 0x11, -- lot VEH3D-01 : rétrogradage (AWVehicleShiftDown)
 }
 
 -- Codes de balayage (position physique, clavier américain) : utilisés si le moteur lit
@@ -51,6 +52,7 @@ local SCAN: { [string]: number } = {
     Down = 0x50,
     Backslash = 0x2B,
     Shift = 0x2A,
+    Control = 0x1D,
 }
 do
     local rows = { { "QWERTYUIOP", 0x10 }, { "ASDFGHJKL", 0x1E }, { "ZXCVBNM", 0x2C }, { "1234567890", 0x02 } }
