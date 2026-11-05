@@ -45,15 +45,15 @@ Détail et mesures : `MODELES_TIERS.md` §6.
 | Définition | `src/shared/Vehicles/Definitions/Brio.luau` | Définition autonome générée par la règle de l'ancienne gamme (WorkingCatalog de `main` 6a2dc34, base P-01 essence) à partir des cotes réelles : 3,85 m, empattement 2,42 m, 960 kg, 55 kW, roues de 0,28 m ; ABS et antipatinage. Figée par `tests/lune/fixtures/brio_definition_reference.json` |
 | Kit de maillages | `src/shared/Vehicles/MeshKitData.luau` | Entrée `wk_brio`, gabarit `Brio`, valeurs mesurées de `finition.json`. Pose standard `Conduite` / `Passager`. Les verres d'optique s'allument avec les blocs (`AWLight`) |
 | Peinture unie | `src/server/Vehicles/MeshKits.luau` | Nouveau champ `Paint.Plain` : la teinte du garage remplace la couleur importée, sans carte de couleur |
-| Manifeste | `src/shared/Assets/AssetManifest.luau` | `veh.wk_brio.meshmilano95`, statut `Provisional`. Identifiants **vides** tant que l'import n'est pas fait : aucun identifiant inventé |
+| Manifeste | `src/shared/Assets/AssetManifest.luau` | `veh.wk_brio.meshmilano95`, statut `ReadyForReview` : 27 maillages et 3 textures relevés dans le gabarit importé (§6) |
 | Crédits | `Attributions.luau`, `Localization.luau`, `docs/CREDITS_ACTIFS.md` | Crédit CC BY de Daniel Zhabotinsky, textes FR et EN |
 | Catalogue | `src/shared/Economy/VehicleCatalog.luau` | Emplacement 2 : « Brio », catégorie Citadine, prix 12 000 (hypothèse), concession `SVC-DEALER-METRO`, statut `PendingApproval` (achetable en Dev seulement) |
 | Métiers | `src/shared/Economy/Jobs.luau` | `ProfessionalModel = "wk_brio"` pour Taxi, Delivery, Convoy et Testing (fin du refus « NoProfessionalVehicle ») |
 | Textes | `src/shared/UI/Texts08.luau` | `vehicle.wk_brio.category` et `vehicle.wk_brio.desc` (FR et EN) |
 | Départ | `StarterCatalog` | **Inchangé** : la Brio n'est pas un véhicule de départ |
 
-**Tant que le gabarit `Brio` n'est pas dans `assets/meshkits/`**, la fabrique construit la carrosserie de repli générée par
-code. Ce repli existe depuis BASE-01 et la Brio reste conduisible avec.
+Le gabarit `assets/meshkits/Brio.rbxm` est intégré depuis le 2026-11-05 (§6). Si un maillage n'est pas autorisé par
+le manifeste, la fabrique revient à la carrosserie de repli générée par code (existante depuis BASE-01).
 
 ### 2.3 Tests
 
@@ -145,10 +145,30 @@ Avant l'import, les points 5, 9 et 10 sont déjà vérifiables sur la carrosseri
 
 ## 5. Non fait, non vérifié
 
-- Import Studio et identifiants d'actifs (étape du propriétaire, §3).
 - Tout le comportement en jeu (§4) : **NON TESTÉ**.
 - Statut commercial : `PendingApproval`, donc achetable en Dev seulement. Pour la rendre achetable dans l'expérience de
   test, il faut passer à `Official` : décision du propriétaire.
 - Prix de 12 000 : hypothèse de travail.
+- Gabarit contrôlé hors Studio seulement (§6) : rendu des couleurs reposées et du vitrage non vu en jeu.
 - LOD1 et LOD2 non exportés : RenderFidelity automatique, comme la Comète.
 - Silhouette proche d'un modèle réel (Fiat Punto mk1), sans aucun logo ni nom de marque : accepté au choix du modèle.
+
+## 6. Intégration du gabarit importé (2026-11-05)
+
+Le propriétaire a importé le GLB dans Studio, envoyé les maillages sur Roblox et déposé `aw-vm-exchange/brio.rbxm`
+(22:21). Le fichier est copié **tel quel** dans `assets/meshkits/Brio.rbxm` (empreinte SHA-256 identique, `c693c8c7…`).
+Rojo nomme le modèle d'après le fichier (`Brio`), comme `Comete720s`.
+
+Relevé du gabarit (Lune, `@lune/roblox`) :
+- 27 MeshParts `BRIO_…` dans leurs modèles `_Node`, 11 SurfaceAppearance, aucun script ;
+- 27 identifiants de maillage et 3 textures (pneus, dessous de caisse, intérieur), reportés dans le manifeste ;
+- positions : toutes les pièces, ramenées au repère du châssis par la pièce de référence, à ±0,01 st de l'export.
+
+**Écart constaté :** les matériaux unis sans texture n'ont pas de couleur à l'import (gris par défaut 163/162/165). La
+peinture reçoit la teinte du garage (`Paint.Plain`) et le vitrage le réglage existant. Pour les 6 autres pièces (blocs
+et verres des feux, clignotants, recul), le kit porte désormais leurs couleurs (`MeshKitData.Colors`, valeurs sRGB des
+matériaux Blender) et la fabrique les repose.
+
+Tests : `lune run tests/lune/run.luau build/AutomotiveWorld.rbxlx`, puis `scriptserify.ps1 -DownloadRobloxTypes`
+(2026-11-05) : 403 réussis sur 403, toutes les étapes OK. Nouveaux tests 4 et 5 de `Veh3d02Brio` : gabarit, identifiants
+= manifeste, positions, couleurs reposées.

@@ -331,7 +331,7 @@ Liste détaillée : `docs/vehicle-3d/VEH3D_02_BRIO.md` §4 (vérification par le
 
 | Id | Priorité | Constat | État |
 |---|---|---|---|
-| QA-C01 | P1 | Import Studio du GLB, envoi des maillages, gabarit `Brio` et identifiants du manifeste | **EN ATTENTE** (étape du propriétaire) |
+| QA-C01 | P1 | Import Studio du GLB, envoi des maillages, gabarit `Brio` et identifiants du manifeste | **Fait** le 2026-11-05 (import par le propriétaire, contrôle Lune : `VEH3D_02_BRIO.md` §6) |
 | QA-C02 | P1 | Brio en jeu : allure, roues, places et pose standard, caméras, conduite automatique, feux, peinture du garage, dégâts | **NON TESTÉ** |
 | QA-C03 | P2 | Métiers Taxi, Livraison, Convoyage, Essais : Brio de service fournie, plus de refus « NoProfessionalVehicle » | **NON TESTÉ** |
 | QA-C04 | P3 | Motif de la texture d'intérieur (`UCB_Interiors_2`) : absence de logo à confirmer | **NON VÉRIFIÉ** (propriétaire) |

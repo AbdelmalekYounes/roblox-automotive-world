@@ -43,6 +43,10 @@ export type Kit = {
     -- Maillages des feux séparés (export du 2026-11-04, dépôt d'art 195df9b) : rôle AWLight posé s'ils sont présents
     -- dans le gabarit (absents du premier envoi : sources seules).
     LightMeshes: { [string]: string },
+    -- Couleurs des matériaux UNIS sans texture (lot VEH3D-02) : l'import glTF de Studio ne les reprend pas (pièces
+    -- grises par défaut, relevé du gabarit Brio du 2026-11-05) ; la fabrique les repose. Valeurs sRGB des matériaux
+    -- Blender (conversion de la couleur linéaire).
+    Colors: { [string]: Color3 }?,
     -- Marques de dégâts (DamageService) posées sur la surface VISIBLE, mesurée par rayons sur le maillage :
     -- avant et arrière en x = −1, 0, +1 (z de la surface), flancs en z = −1,6, 0, +1,6 (|x| de la surface).
     DamageMarks: {
@@ -194,6 +198,15 @@ local BRIO: Kit = {
         BRIO_VerreOptiqueAv = "Head",
         BRIO_Feu_Ar = "Tail",
         BRIO_VerreFeuAr = "Tail",
+    },
+    -- Matériaux de `milano95_prepare.py` : AW_Phare, AW_VerreOptique, AW_Feu, AW_VerreFeu, AW_Clignotant, AW_Recul.
+    Colors = {
+        BRIO_Feu_Av = Color3.fromRGB(246, 246, 243),
+        BRIO_VerreOptiqueAv = Color3.fromRGB(243, 246, 250),
+        BRIO_Feu_Ar = Color3.fromRGB(212, 49, 49),
+        BRIO_VerreFeuAr = Color3.fromRGB(225, 63, 63),
+        BRIO_Clignotants = Color3.fromRGB(255, 179, 57),
+        BRIO_Recul = Color3.fromRGB(249, 249, 249),
     },
     -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT, vitrage compris, wk_brio_milano95.blend).
     DamageMarks = {

@@ -269,6 +269,7 @@ passage (valeurs vides) ; corrigé et relancé.
 Pneus : inscription « Kamastone » sur le flanc (marque fictive du modèle d'origine), conservée.
 
 Non vérifié :
-- l'import dans Studio et l'envoi des maillages sur Roblox (étape du propriétaire) ;
+- l'import dans Studio et l'envoi des maillages sur Roblox : faits par le propriétaire le 2026-11-05 (matériaux unis
+  arrivés gris, couleurs reposées par la fabrique : `VEH3D_02_BRIO.md` §6) ;
 - l'absence de logo dans le petit motif de la texture d'intérieur (`UCB_Interiors_2`) : à confirmer par le propriétaire ;
 - tout le comportement en jeu (liste de vérification de `VEH3D_02_BRIO.md`).

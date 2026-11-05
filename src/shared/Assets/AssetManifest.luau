@@ -144,13 +144,13 @@ add({
     RobloxTextureIds = { 76606382409640, 127066032742162, 129807559388443, 130107105284511, 139339087025487 },
 })
 
--- Lot VEH3D-02 : carrosserie de la Brio. Identifiants VIDES tant que le propriétaire n'a pas importé le GLB dans Studio
--- (aucun identifiant inventé) : sans gabarit autorisé, la fabrique garde la carrosserie de repli.
+-- Lot VEH3D-02 : carrosserie de la Brio. Identifiants relevés dans le gabarit importé et envoyé sur Roblox par le
+-- propriétaire (assets/meshkits/Brio.rbxm, 2026-11-05) : 27 maillages, 3 textures (pneus, dessous, intérieur).
 add({
     Id = "veh.wk_brio.meshmilano95",
     Category = "VehicleBody",
-    Version = "0.1.0",
-    Status = "Provisional",
+    Version = "1.0.0",
+    Status = "ReadyForReview",
     Variants = {
         Low = "Maillages complets (17 865 triangles) ; habitacle, suspension et garnitures masqués au loin",
         Medium = "Identique, détails visibles plus loin",
@@ -164,8 +164,36 @@ add({
     Source = { Kind = "File", Path = "src/server/Vehicles/MeshKits.luau" },
     Output = "assets/meshkits/Brio.rbxm",
     RobloxAssetId = nil,
-    RobloxAssetIds = {},
-    RobloxTextureIds = {},
+    RobloxAssetIds = {
+        71187915817689,
+        71449144421405,
+        73826286061139,
+        77052823926801,
+        78233288738454,
+        80144700231925,
+        83220939253261,
+        84934317204711,
+        95590929903188,
+        95927816868970,
+        99282151811659,
+        100233007228538,
+        101904833865320,
+        102220743644062,
+        103898878648858,
+        111588426158913,
+        113794880026414,
+        119492697275975,
+        126732967392834,
+        128273499442836,
+        128503426060333,
+        130551788936349,
+        134931851726367,
+        135577186490843,
+        137134736949346,
+        139240039171084,
+        139725972931129,
+    },
+    RobloxTextureIds = { 78670891483304, 93571790330180, 112726640798829 },
 })
 
 -- ======================== Monde ========================

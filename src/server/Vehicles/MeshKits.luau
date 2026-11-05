@@ -138,6 +138,11 @@ function MeshKits.build(
                 item.Color = Color3.fromRGB(120, 135, 145)
                 item.Transparency = 0.6
             end
+            -- Matériau uni perdu à l'import (lot VEH3D-02) : couleur mesurée reposée.
+            local plainColor = kit.Colors and kit.Colors[item.Name]
+            if plainColor then
+                item.Color = plainColor
+            end
             if string.sub(item.Name, -#kit.Paint.Pattern) == kit.Paint.Pattern then
                 paintable += 1
                 local appearance = item:FindFirstChildOfClass("SurfaceAppearance")

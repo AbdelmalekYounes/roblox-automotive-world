@@ -4,7 +4,7 @@
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
 > trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée ; **lots BASE-01 et VEH3D-02** : deux véhicules, la
-> **Comète** et la citadine **Brio** (carrosseries 3D tierces CC BY ; Brio en attente de l'import Studio) ; prototypes P-01 à P-03 et 17 modèles
+> **Comète** et la citadine **Brio** (carrosseries 3D tierces CC BY) ; prototypes P-01 à P-03 et 17 modèles
 > de la gamme proposée retirés du jeu (les prototypes restent des jeux d'essai des tests). Lot 0.4 : profils versionnés
 > (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
 > invitations. Lot 0.5 : crédits, réputation, huit métiers, concessions (catalogue de travail provisoire), marché
