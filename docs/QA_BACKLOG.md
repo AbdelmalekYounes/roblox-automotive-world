@@ -319,6 +319,12 @@ Les 17 modèles, les prototypes, le parc d'essai et les carrosseries provisoires
 | QA-M03 | P3 | Invisibilité : accessoire ajouté après l'activation visible jusqu'à la réapparition | Limite connue |
 | QA-M04 | P3 | Réparation : déformations d'une coque de repli non annulées (sans objet pour la Comète) | Limite connue |
 
+### Expérience de test déclarée (2026-11-05)
+
+Expérience privée du propriétaire (GameId 10774855477) déclarée comme environnement **Test** (DataStore isolé
+`AW_TEST_Profiles_v1`). Les essais de persistance réelle (QA-D01 à QA-D10, QA-E01, QA-E02, QA-U09) deviennent possibles
+dans cette expérience : **NON TESTÉS** à ce jour.
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |
