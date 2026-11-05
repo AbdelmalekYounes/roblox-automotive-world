@@ -53,6 +53,8 @@ local KNOWN_SESSIONS = {
     comete_perf = { Name = "comete_perf", Players = 1 },
     comete2 = { Name = "comete2", Players = 2 },
     comete_avatar = { Name = "comete_avatar", Players = 1 },
+    -- Lot UI-01 : système de conception V1.2 (page de démonstration, vrais clics).
+    ui_design = { Name = "ui_design", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -80,6 +82,8 @@ local EXTRA = {
     { "AW_TestAvatarClient", "AvatarClient.client.luau", true },
     { "AW_TestCometeServer", "CometeServer.server.luau", false },
     { "AW_TestCometeClient", "CometeClient.client.luau", true },
+    { "AW_TestUiDesignServer", "UiDesignServer.server.luau", false },
+    { "AW_TestUiDesignClient", "UiDesignClient.client.luau", true },
 }
 
 local output = process.args[1]

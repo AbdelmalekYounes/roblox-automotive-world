@@ -97,6 +97,8 @@ task.spawn(OnboardingController.start)
 require(UI:WaitForChild("BodyChoice")).start()
 PhotoMode.setRacingCheck(RacePanel.racing)
 PhotoMode.start()
+-- Lot UI-01 : page de démonstration du système de conception, dans Studio seulement (essais).
+require(UI:WaitForChild("DesignDemo")).start()
 
 InputRouter.on("Phone", function()
     UIManager.toggle("Phone")

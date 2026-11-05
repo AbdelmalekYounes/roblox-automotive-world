@@ -44,6 +44,7 @@ for _, spec in
         require("./specs/AsterPhase1"),
         require("./specs/AsterPhase1Closure"),
         require("./specs/Veh3d01Comete"),
+        require("./specs/UiDesignSystem"),
     }
 do
     spec(TestKit, Harness)
