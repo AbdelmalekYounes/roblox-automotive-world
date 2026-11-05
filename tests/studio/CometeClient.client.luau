@@ -226,8 +226,7 @@ handlers.pose = function(id, _data)
         local part = me:FindFirstChild(name)
         return if part and part:IsA("BasePart") then frame:PointToObjectSpace(part.Position) else nil
     end
-    local cabin = KIT.Collisions.Habitacle
-    local roof = cabin.Center.Y + cabin.Size.Y / 2
+    local roof = KIT.RoofUnderside
     local head = me:FindFirstChild("Head") :: BasePart?
     local headTop = if head then frame:PointToObjectSpace(head.Position).Y + head.Size.Y / 2 else nil
     local handL, handR = localOf("LeftHand"), localOf("RightHand")

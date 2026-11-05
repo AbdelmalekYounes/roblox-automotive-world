@@ -52,15 +52,18 @@ end
 -- Avec LEGS, les pieds traversaient le plancher et le dessous de caisse (session VM, tâche 20261105-015804) :
 -- bassin peu abaissé, cuisses légèrement relevées, jambes tendues vers le pédalier. Réglage par mesure VM :
 -- genoux 40° → dessous des pieds à −1,5 st (sous le plancher) ; genoux 78° et cuisses 12° → +0,41 st (pieds à la
--- planche de bord, tâche 20261105-020557) ; valeurs intermédiaires retenues, à confirmer par la mesure suivante.
+-- planche de bord, tâche 20261105-020557) ; genoux 52° : pieds posés pour les 8 morphologies, mais têtes de 3 sur 8
+-- au-dessus du pavillon mesuré (2,71 st ; tâche 20261105-022424) : bassin plus enfoncé, buste plus incliné, genoux
+-- un peu plus ouverts pour garder les pieds posés ; buste à 31° : la plus grande morphologie (M3) dépassait de 0,01 st
+-- la marge de 2,70 st à 28° (tâche 20261105-022922).
 local LOW_LEGS: Pose = {
-    Root = { Pitch = 0, Down = 0.1 },
-    Waist = { Pitch = 22 },
-    Neck = { Pitch = -14 },
+    Root = { Pitch = 0, Down = 0.18 },
+    Waist = { Pitch = 31 },
+    Neck = { Pitch = -20 },
     LeftHip = { Pitch = 4 },
     RightHip = { Pitch = 4 },
-    LeftKnee = { Pitch = 52 },
-    RightKnee = { Pitch = 52 },
+    LeftKnee = { Pitch = 56 },
+    RightKnee = { Pitch = 56 },
 }
 
 SeatPose.Poses = table.freeze({

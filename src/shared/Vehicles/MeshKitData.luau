@@ -21,6 +21,7 @@ export type Kit = {
     -- Pose assise du jeu (Shared.Vehicles.SeatPose) des deux places, et plancher des pieds mesuré (y, z mini, z maxi).
     SeatPoses: { Driver: string, Passenger: string },
     Footwell: { FloorY: number, FrontZ: number, RearZ: number },
+    RoofUnderside: number, -- dessous du pavillon au-dessus des places (y, mesuré), pour les têtes
     SeatPassenger: Vector3,
     CameraCockpit: Vector3,
     CameraHood: Vector3,
@@ -64,6 +65,8 @@ local COMETE: Kit = {
     SeatPoses = { Driver = "Sportive", Passenger = "SportivePassager" },
     -- Plancher sous le pédalier mesuré par rayons (Blender, 2026-11-05) : y −0,92 entre z −4,6 et −3,2.
     Footwell = { FloorY = -0.92, FrontZ = -4.6, RearZ = -3.2 },
+    -- Dessous du pavillon au droit des places (x ±1,2 ; z −1,5 à −0,5) : 2,71 à 2,73 st (Blender, 2026-11-05).
+    RoofUnderside = 2.70,
     CameraCockpit = Vector3.new(-1.2, 1.798, -1.8),
     CameraHood = Vector3.new(0, 2.024, -5.797),
     CameraBumper = Vector3.new(0, 0.514, -10.084),
