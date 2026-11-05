@@ -1585,6 +1585,11 @@ local function seatAndMeasure(model: Model, modelId: string, morph: Morph, seatN
     local json = table.clone(data)
     json.vehicle, json.seat, json.morph = modelId, key, morph.Id
     emitData("seat", json)
+    if ONLY_COMETE then
+        -- Pose de jeu (« Sportive ») appliquée par le CLIENT : seule sa mesure la voit (le serveur mesure la pose
+        -- standard du moteur, critère gardé pour information).
+        ask(player, "comfeet:" .. key .. "_" .. morph.Id, { Seat = key, Morph = morph.Id }, 15)
+    end
     if capture then
         shot(
             player,
@@ -1834,7 +1839,11 @@ for _, modelId in vehicles do
                     end
                 end
             end
-            if measured > 0 then
+            if measured > 0 and ONLY_COMETE and criterion.Key == "pieds_dans_l_habitacle" then
+                -- Comète : sièges en pose de jeu « Sportive », vue par les clients seulement ; le serveur mesure la
+                -- pose standard du moteur. Verdict porté par la mesure du client (comete_avatar.client.*).
+                record(prefix .. "info_pieds_pose_standard_du_moteur", true, table.concat(failing, " / "))
+            elseif measured > 0 then
                 record(prefix .. criterion.Key, #failing == 0, table.concat(failing, " / "))
             end
         end

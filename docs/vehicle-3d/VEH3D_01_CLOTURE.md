@@ -15,7 +15,8 @@ sur Roblox par l'assistant.**
 | Comète complète | `test-vm.cmd -Sessions comete -GuiInput` | `20261105-013629` | 86 réussis, 2 échecs : touche Ctrl, compte des captures en session perf (corrigé) |
 | Pose « Sportive » | idem | `20261105-020557`, puis `20261105-020940` | 68 réussis, 1 échec (Ctrl) ; pieds posés sur le plancher (§3.E) |
 | Performances | `-Sessions comete_perf` | `20261105-013629` | triangles et appels de dessin mesurés ; temps de rendu non mesurables (§3.D) |
-| Morphologies R15 | `-Sessions comete_avatar` | `20261105-015804` | 16 assises sur 16 ; sorties en échec (§3.E) |
+| Morphologies R15 | `-Sessions comete_avatar` | `20261105-015804`, puis `20261105-023349` | 16 sorties sur 16 en échec avant correction ; après : sorties 16 / 16, pose de jeu 16 / 16 (§3.E) |
+| Contrôle final | `-Sessions comete_avatar,comete -GuiInput` | `20261105-023349` | **189 réussis, 1 échec (touche Ctrl)** |
 | 2 joueurs | `-Sessions comete2` | `20261105-015804` | contrôles de réplication tous réussis ; 1 échec du compte des captures du conducteur (corrigé) |
 | Vitrage | `-Sessions comete_vitres`, puis `comete` | `20261105-003353`, `20261105-005339` | réglage C retenu et vérifié |
 
@@ -31,7 +32,8 @@ donc engagée par l'appel de test du contrôleur, ce qui est signalé dans chaqu
 | Optique cassée rallumée la nuit | l'éclairage remettait le néon à chaque passage | attribut `AWLightBroken`, éclairage éteint | VM : 4 optiques cassées, 0 allumée |
 | Aucun feu stop dans le jeu | freinage non répliqué | attribut `VisualBrake` publié par le serveur (comme le braquage) | VM : solo et joueur 2 |
 | Marques de dégâts cachées dans la caisse | placées d'après les cotes de la carrosserie provisoire | surface visible mesurée dans Blender (`DamageMarks`) | VM : 15 marques, captures |
-| Pieds sous le plancher et sous la caisse | assise de la Comète très basse (coussin à 0,28 st du plancher) | pose « Sportive » propre à ses sièges | VM : dessous des pieds 0,13 st au-dessus du plancher |
+| Pieds sous le plancher et sous la caisse | assise de la Comète très basse (coussin à 0,28 st du plancher) | pose « Sportive » propre à ses sièges, réglée par mesures successives | VM : 8 morphologies, pieds posés, têtes sous le pavillon mesuré |
+| Sorties : conducteur couché, passager sur le toit (16 sur 16) | l'occupant assis est dans le volume de collision de l'habitacle ; libéré, il en était expulsé | groupe de collision `AWSortie` (sans collision avec les véhicules) de l'assise au placement ; passager placé côté droit (QA-A15) ; accord du propriétaire | VM : 16 sorties sur 16 |
 
 ## 3. État par point demandé
 
@@ -94,16 +96,25 @@ donc engagée par l'appel de test du contrôleur, ce qui est signalé dans chaqu
 - **Caméras** : cockpit, capot et bouclier atteints par la vraie touche V ; avatar masqué en vue cockpit.
 - **Morphologies R15** (8, représentatives et extrêmes), avec la pose standard du moteur mesurée par le serveur :
   16 assises sur 16 ; rien ne traverse les flancs ; jambes libres sous la planche de bord ; assise sans enfoncement.
-- **Pose de jeu « Sportive »** (nouvelle, sièges de la Comète seulement), avatar par défaut, mesurée par le client :
-  tête 0,08 st sous le haut de la boîte d'habitacle ; mains à |x| 1,73 et 2,24 (flanc 3,49) ; dessous des pieds
-  0,13 st au-dessus du plancher, sur le pédalier. **Non mesurée avec les 8 morphologies** : la session des
-  morphologies mesure côté serveur, qui ne voit pas la pose appliquée par le client. La marge réelle sous le pavillon du
-  maillage n'est pas mesurée non plus : seule la boîte d'habitacle l'est.
-- **Sorties** :
-  - conducteur : **8 sorties sur 8 en échec**, personnage couché au sol à 6 à 9 st du véhicule. Même famille que
-    QA-A16 et QA-A18 (sortie générique, cause non établie), systématique sur la Comète ;
-  - passager : **8 sorties sur 8 en échec**, personnage sur le véhicule. C'est QA-A15 (en attente de décision) : les
-    règles génériques de sortie n'ont pas été modifiées.
+- **Pose de jeu « Sportive »** (nouvelle, sièges de la Comète seulement : bassin enfoncé de 0,18 st, buste incliné
+  de 31°, cuisses à 4°, genoux à 56°), mesurée **par le client** pour les 8 morphologies, conducteur et passager
+  (tâche `20261105-023349`) : 16 / 16.
+  - Dessous des pieds entre −0,85 et −0,71 st, donc au-dessus du plancher mesuré (−0,92), sur le pédalier.
+  - Haut de la tête entre 2,05 et 2,66 st, donc sous le dessous du pavillon mesuré dans Blender (2,71 à 2,73 st ;
+    marge de contrôle 2,70).
+  - Avatar du compte de test : mains à |x| 1,73 et 2,24 (flanc 3,49).
+  - Le critère serveur « pieds dans l'habitacle » mesure la pose standard du moteur, que le serveur voit seul ; il est
+    gardé pour information.
+- **Sorties : corrigées** (accord du propriétaire du 2026-11-05).
+  - Cause : l'occupant assis se trouve dans le volume de collision de l'habitacle. Libéré, le moteur physique l'en
+    expulsait : conducteur couché, passager sur le toit.
+  - Correction **générique** : l'occupant passe dans le groupe de collision `AWSortie`, sans collision avec les
+    véhicules, de l'assise jusqu'à son placement vérifié ; son groupe d'origine lui est ensuite rendu. Garde-fous :
+    personnage détruit, ou debout 3 s sans placement ; la protection d'arrivée n'est jamais rendue. Le passager est
+    placé côté droit (QA-A15).
+  - Vraies touches F et Espace : **conducteur 8 / 8, passager 8 / 8** (avant : 0 / 16).
+  - Essayé sur la Comète seule. Les autres modèles utilisent le même code, mais n'ont pas été essayés à la demande du
+    propriétaire.
 - **Réplication à 2 joueurs** : le joueur 2 reçoit les 28 maillages, voit la jante tourner, le braquage (pneu 30°) et
   les feux stop, et voit la tête du conducteur. Les commandes du joueur 1 sont instrumentées.
 
@@ -126,8 +137,8 @@ donc engagée par l'appel de test du contrôleur, ce qui est signalé dans chaqu
 ## 4. Limites restantes
 
 Choc latéral ; dégâts sans déformation de pièce ; feux non lumineux ; peinture non personnalisable ; LOD1 et LOD2 non
-intégrés ; D5 non mesuré ; pose de jeu non mesurée avec les morphologies ; sorties conducteur et passager ; écran de
-crédits sans capture ; finition du garage appliquée à aucun véhicule ; essai humain.
+intégrés ; D5 non mesuré ; sorties corrigées mais non essayées sur les 17 autres modèles ; écran de crédits sans
+capture ; finition du garage appliquée à aucun véhicule ; essai humain.
 
 ## 5. Actions du propriétaire
 
@@ -137,17 +148,17 @@ crédits sans capture ; finition du garage appliquée à aucun véhicule ; essai
 | Décider : LOD1/LOD2 dans l'envoi ? | coût mesuré faible | export prêt à faire |
 | Décider : panneaux de dégâts déformables ? | marques actuelles rectangulaires | découpe Blender à faire |
 | Décider : titre et lien dans les crédits | conformité CC BY et règles Roblox | bascule `ShowTitle` / `ShowUrl` |
-| Décider : QA-A15 (passager) et la famille QA-A16/A18 (conducteur couché) | sorties en échec sur la Comète | aucune modification générique sans accord |
 | Revue visuelle et conduite | aucune validation humaine à ce jour | captures des tâches citées |
 | Mesure D5 sur un poste réel | la VM ne fournit pas les temps de rendu | session `comete_perf` réutilisable |
 | Arbitrer le risque lié au dessin commercial | §3.F | — |
 
 ## 6. Recommandation
 
-**NO-GO pour la clôture en l'état, GO pour la revue du propriétaire.** Le code est complet et testé dans le périmètre
-qui ne demande pas d'envoi d'actifs. La clôture demande encore :
-1. la décision sur les sorties : 16 échecs sur 16, dont QA-A15, priorité P1 ;
-2. l'envoi groupé, qui débloque les feux lumineux et la peinture ;
-3. la revue visuelle.
+**GO pour la revue du propriétaire ; clôture possible après elle.** Le code est complet et testé dans le périmètre qui
+ne demande pas d'envoi d'actifs ; les sorties sont corrigées (16 / 16) ; le contrôle final donne 189 réussis sur 190
+(le seul échec est la touche Ctrl, limite de Studio). Avant de clôturer :
+1. ta revue visuelle et une conduite ;
+2. ta décision sur l'envoi groupé (feux lumineux, peinture), ou l'acceptation de ces limites pour cette version ;
+3. ta décision sur le titre et le lien des crédits, et sur le risque lié au dessin commercial.
 
 Le chantier UI PREMIUM V1.2 n'est pas commencé. Il sera préparé après l'acceptation de la Comète.
