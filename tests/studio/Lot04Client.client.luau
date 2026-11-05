@@ -358,8 +358,9 @@ if index == 1 then
     record(prefix .. "identifiant_demande_invalide", badId.Error == "RequestIdInvalid", describe(badId))
     local unknown = call("Teleport", {})
     record(prefix .. "action_inconnue", unknown.Error == "ActionUnknown", describe(unknown))
+    -- Lot 0.5 : les achats passent par le canal économique (AWEconomy), plus par celui-ci.
     local buy = call("BuyProperty", { OfferId = "RES-METRO-PARC" })
-    record(prefix .. "achat_indisponible", buy.Error == "EconomyUnavailable", describe(buy))
+    record(prefix .. "achat_hors_canal_economique_refuse", buy.Error == "ActionUnknown", describe(buy))
 
     -- Toutes les opérations finissent confirmées.
     local allConfirmed = waitFor(function()

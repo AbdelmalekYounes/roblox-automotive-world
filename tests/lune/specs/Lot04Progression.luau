@@ -538,16 +538,18 @@ return function(T: any, H: any)
 
     T.suite("Lot 0.4 — contrats économiques et monde")
 
-    T.test("ratios approuvés et opérations payantes indisponibles", function()
+    T.test("ratios approuvés ; opérations économiques déclarées", function()
         T.equal(EconomyContracts.Ratios.DealerTradeIn, 0.6)
         T.equal(EconomyContracts.Ratios.DetachedPartResale, 0.75)
         T.equal(EconomyContracts.Ratios.PropertyResale, 0.7)
         T.equal(EconomyContracts.Ratios.ExtensionResale, 0.4)
         T.equal(EconomyContracts.Ratios.ModuleResale, 0.6)
         T.equal(EconomyContracts.Ratios.PlayerMarketCommission, 0.05)
+        -- Lot 0.5 : opérations implémentées (contenu de travail réservé au développement).
         for _, operation in EconomyContracts.Operations do
-            T.truthy(not EconomyContracts.available(operation), operation)
+            T.truthy(EconomyContracts.available(operation), operation)
         end
+        T.truthy(not EconomyContracts.available("Inconnue"), "opération inconnue")
         T.equal(EconomyContracts.dealerTradeIn(10000, 1), 6000)
         T.equal(EconomyContracts.detachedPartResale(1000, true), 750)
         T.equal(EconomyContracts.playerSaleNet(1000), 950)

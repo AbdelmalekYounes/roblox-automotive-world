@@ -33,6 +33,7 @@ for _, spec in
         require("./specs/Lot03Systems"),
         require("./specs/Lot04Persistence"),
         require("./specs/Lot04Progression"),
+        require("./specs/Lot05Economy"),
     }
 do
     spec(TestKit, Harness)

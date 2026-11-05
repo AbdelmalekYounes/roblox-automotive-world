@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.4 (persistance, propriétés et garages)
+# Automotive World — Lot 0.5 (économie, métiers et marché)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -7,10 +7,11 @@
 > essence/automatique/propulsion, P-02 diesel/manuelle/traction, P-03 électrique/rapport unique/intégrale, et trois
 > configurations de validation des boîtes double embrayage, séquentielle et CVT). Lot 0.4 : profils versionnés
 > (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
-> invitations. Ni catalogue, ni économie : aucune expérience de test ou de production n'est déclarée, donc tout
-> profil reste **en mémoire** (aucune écriture DataStore).
-> **Statut** : lot 0.4 en développement sur `feat/properties-garages-persistence-0.4` (PR brouillon, base : lot 0.3 ;
-> PR #1, #2 et #3 non fusionnées). Rapport : [docs/lot-0.4/RAPPORT_LOT_0.4.md](docs/lot-0.4/RAPPORT_LOT_0.4.md).
+> invitations. Lot 0.5 : crédits, réputation, huit métiers, concessions (catalogue de travail provisoire), marché
+> d'occasion à transferts multiprofils récupérables, immobilier, pièces, énergie, réparation, lavage. Aucune
+> expérience de test ou de production n'est déclarée : tout profil reste **en mémoire** (aucune écriture DataStore).
+> **Statut** : lot 0.5 en développement sur `feat/economy-progression-0.5` (PR brouillon, base : lot 0.4 ;
+> PR #1 à #4 non fusionnées). Rapport : [docs/lot-0.5/RAPPORT_LOT_0.5.md](docs/lot-0.5/RAPPORT_LOT_0.5.md).
 > Les essais Studio, humains, DataStore et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)
 > (**NON TESTÉS** à ce jour).
 
@@ -60,6 +61,14 @@ configurations, invitations) et badge d'état de sauvegarde. En développement, 
 gratuite et des données **synthétiques** (trois prototypes, une propriété moyenne, une pièce de chaque type),
 perdues à l'arrêt du serveur. Zone d'essai : entrée de propriété (repère bleu) et garage public (repère orange)
 à l'ouest du point d'apparition.
+
+## Économie et métiers (lot 0.5)
+
+Touche **J** (manette : clic du stick droit) : portefeuille, réputation, métiers, concession, marché, immobilier
+et services. Chaque opération financière affiche un devis, demande une confirmation et montre l'état réel renvoyé
+par le serveur. En développement : 150 000 crédits synthétiques ; concession (repère jaune) et station-service
+(repère vert) d'essai à l'ouest du point d'apparition. Simulation des revenus :
+`lune run tools/economy/simulate.luau build/AutomotiveWorld.rbxlx`.
 
 ## Commandes de conduite
 
@@ -120,6 +129,8 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 |---|---|
 | `src/shared/Garage` | Catalogues et règles **purs** : propriétés, modules de garage, pièces, réglages, esthétique, starter, contrats économiques, protocole |
 | `src/server/Persistence` | Profils versionnés, verrou de session, transactions, migrations, environnements, adaptateurs mémoire et DataStore |
+| `src/shared/Economy` | Catalogue commercial (18 emplacements), barème provisoire, métiers, réputation, protocole économique |
+| `src/server/Economy` | Portefeuille, commerce, marché et transferts multiprofils, missions, rémunération, service économique |
 | `src/server/Progression` | Règles de collection, starter, propriétés, garages, préparation, invitations ; lieux, intérieurs, service des demandes |
 | `src/shared/World` | Données de carte versionnées, réseau routier, mise en page, graphe (A*), feux, météo, trafic et piétons **purs** |
 | `src/shared/Vehicles` | Types, définitions, dynamique **pure** (pneu, suspension, moteurs, boîtes, différentiels, aides, énergie, dégâts), adaptateur Roblox `VehicleSimulator`, codec réseau, mesures |
@@ -133,6 +144,7 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 | `docs/lot-0.2` | Rapport du lot 0.2 (mesures réelles), écarts, changements d'architecture |
 | `docs/lot-0.3` | Rapport du lot 0.3, architecture du monde ouvert |
 | `docs/lot-0.4` | Rapport du lot 0.4, architecture de la persistance et des garages |
+| `docs/lot-0.5` | Rapport du lot 0.5, architecture de l'économie |
 | `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 
@@ -145,7 +157,8 @@ Règles permanentes : [CLAUDE.md](CLAUDE.md).
 - Le cahier des charges validé et les 33 décisions AUD font foi.
 - Aucun code, modèle, interface, texture ni donnée de Collectverse ou Mimic Hunters n'est réutilisé ;
   la géométrie du prototype est générée par code à partir de primitives.
-- Aucun crédit, achat ni récompense n'est implémenté. La persistance (lot 0.4) n'écrit dans un DataStore que pour une
+- Les crédits (lot 0.5) ne sont gagnés que par des activités mesurées par le serveur ; aucun achat Robux. La
+  persistance n'écrit dans un DataStore que pour une
   expérience de test ou de production explicitement déclarée (aucune aujourd'hui).
 - Aucun objectif (24 joueurs, ~60 FPS) n'est déclaré atteint : les premières mesures de coût du lot 0.2 ont été faites
   dans une VM sans accélération graphique, avec un seul joueur ; elles ne sont pas représentatives.

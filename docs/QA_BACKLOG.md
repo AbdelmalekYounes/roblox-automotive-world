@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1, 0.2, 0.3 et 0.4. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.5. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -15,7 +15,7 @@ Règles de ce registre :
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
   sont faits par le propriétaire.
 
-Dernière mise à jour : 2026-11-03, après la campagne de tests groupée (branche `feat/properties-garages-persistence-0.4`).
+Dernière mise à jour : 2026-11-03, lot 0.5 (branche `feat/economy-progression-0.5`).
 
 ## 1. Anomalies ouvertes
 
@@ -34,6 +34,7 @@ Dernière mise à jour : 2026-11-03, après la campagne de tests groupée (branc
 | Id | Lot | Système | Priorité | Défaut | Correction | Preuve |
 |---|---|---|---|---|---|---|
 | QA-F01 | 0.4 | Garages | P1 | Une sortie répétée (même demande) pendant l'attente de sauvegarde matérialisait une seconde copie conduisible du véhicule (`20261103-025318`) | `5da05aa` | `20261103-025600`, `20261103-030408` : 1 exemplaire, aucun véhicule restant |
+| QA-F03 | 0.5 | Lieux économiques | P2 | Les 13 lieux économiques recevaient l'invite « Préparer / Garage public » de la progression (29 invites au lieu de 16, `20261103-035626`) | `2caf0c9` | `20261103-035902` : 16 + 13 invites, aucune erreur |
 | QA-F02 | 0.3 | Carte | P1 | 195 pièces dépassaient 2 048 studs et étaient raccourcies par le moteur : trous aux bouts des longues chaussées droites (P-01 sur l'herbe, 37,8 km/h, `20261103-025743`) | `b41e0f1` | `20261103-030159` : 133,4 km/h sur A6-2, toujours sur la route |
 
 ## 2. Essais humains (aucun n'a été réalisé)
@@ -112,6 +113,29 @@ de production).
 | QA-S20 | Entrées | P2 | Invites d'entrée sur les 13 emplacements de la carte et les 3 garages publics | Invites présentes, lieux reconnus même secteur non chargé côté client | **PARTIEL** — `030159` : 16 invites présentes dans la carte. Usage de chaque invite : **NON TESTÉ** |
 | QA-S21 | Zone d'essai | P2 | Place de développement : entrée et garage public d'essai, données synthétiques (3 prototypes, 1 propriété moyenne, pièces) | Disponibles en Dev seulement, perdues à l'arrêt du serveur (stockage mémoire) | **FAIT** — `030408` : entrée et garage public d'essai, données synthétiques (3 prototypes, 2 propriétés, pièces), environnement « Dev » en mémoire |
 | QA-S22 | Non-régression | P1 | Sessions VM existantes après les modifications du service des véhicules (création des enregistrements, participants des collisions) | Résultats identiques au lot 0.2 (hors anomalies connues) | **FAIT** — `030408` : 7 sessions historiques sur le code du lot 0.4, aucune erreur d'exécution, échecs uniquement dans les familles connues |
+
+## 3 ter. Essais reportés du lot 0.5 (économie, métiers, marché)
+
+Les invariants des opérations qui créent de l'argent, transfèrent un actif ou facturent un joueur sont vérifiés par
+Lune **sur l'adaptateur mémoire** (`tests/lune/specs/Lot05Economy.luau`), y compris interruptions et répétitions.
+Cela ne valide PAS la persistance Roblox ni les transferts entre serveurs réels.
+
+| Id | Système | Priorité | Essai | Attendu | État |
+|---|---|---|---|---|---|
+| QA-E01 | Transferts réels | P1 | Vente entre deux joueurs sur DataStore d'une expérience de test isolée, puis arrêt brutal entre deux étapes | Transfert terminé ou compensé à la reprise, aucun doublon | **NON TESTÉ** |
+| QA-E02 | Inter-serveurs | P1 | Vendeur et acheteur sur deux serveurs différents (boîtes de réception, balayage) | Transfert terminé par le serveur du vendeur, fonds réservés jamais perdus | **NON TESTÉ** |
+| QA-E03 | Marché | P2 | Recherche d'annonces avec beaucoup d'annonces (index `Market_Index` borné à 500) | Résultats corrects ; montée en charge à revoir (MemoryStore ou index paginé) | **NON TESTÉ** |
+| QA-E04 | Missions en jeu | P1 | Les 8 métiers joués de bout en bout (Dev et monde ouvert), avec véhicule personnel, professionnel et fourni | Étapes reconnues, paiement unique, véhicule temporaire retiré | **NON TESTÉ** |
+| QA-E05 | AUD-ECO-01 | P1 | Joueur sans crédit ni véhicule personnel : mission de livraison avec véhicule professionnel | Paiement normal, aucun véhicule acquis, aucun débit | **NON TESTÉ** (logique Lune seulement) |
+| QA-E06 | Énergie en jeu | P1 | Plein, recharge, interruption (départ, véhicule déplacé, serveur arrêté) | Paiement au réel, aucune énergie gratuite, fonds restitués | **NON TESTÉ** |
+| QA-E07 | Concessions | P2 | Achat et reprise dans les deux concessions de la carte ; refus à distance | Exemplaire unique, débit confirmé, reprise ≈ 60 % | **NON TESTÉ** |
+| QA-E08 | Immobilier | P2 | Achat à l'entrée d'un bien, agrandissement, module, revente avec visiteurs présents | Ratios 70/40/60 %, véhicules exposés rangés, revente refusée si occupée | **NON TESTÉ** |
+| QA-E09 | Garage public | P2 | Main-d'œuvre facturée (pièce, esthétique, réglages) ; solde insuffisant | Intervention annulée en entier si le paiement échoue | **NON TESTÉ** |
+| QA-E10 | Interface économie | P1 | Panneau J / stick droit au clavier, souris et manette ; devis, confirmation, état réel ; blocage en mouvement | Jamais de réussite affichée avant confirmation | **NON TESTÉ** (humain) |
+| QA-E14 | Guidage de mission | P1 | Mission lancée loin de son départ (Essais dans le monde ouvert : piste de drag à ~4 km) : flèche, distance, étiquette du repère, colonne posée au sol | Objectif trouvé sans connaître la carte ; flèche juste quel que soit l'angle de caméra | **NON TESTÉ** (humain) |
+| QA-E11 | Équilibrage | P2 | Revenus horaires réels par métier contre la simulation (`tools/economy/simulate.luau`) | Écarts compris et documentés | **NON TESTÉ** |
+| QA-E12 | Lavage | P3 | Salissure visible et lavage | Teinte rendue à la prochaine sortie ; aucune réparation | **NON TESTÉ** |
+| QA-E13 | Bornes | P3 | Occupation d'une borne par plusieurs joueurs | Pas de blocage abusif (session limitée à 180 s) ; réservation par borne non implémentée | **NON TESTÉ** |
 
 ## 4. Charge, performance et stabilité
 

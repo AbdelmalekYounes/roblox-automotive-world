@@ -28,6 +28,7 @@ export type Acquisition = {
     Synthetic: boolean,
     EnergyFraction: number, -- réserve à la livraison (fraction du modèle)
     Cosmetics: { [string]: any },
+    PaidPrice: number?, -- prix réellement payé (lot 0.5), 0 par défaut
 }
 
 -- Ajoute un exemplaire à la collection ; renvoie son identifiant.
@@ -52,6 +53,8 @@ function VehicleOwnership.add(profile: ProfileSchema.Profile, acquisition: Acqui
         Storage = { State = "Stored" },
         Reservation = nil,
         UpdatedAt = now,
+        PaidPrice = acquisition.PaidPrice or 0,
+        Dirt = 0,
     }
     return id
 end

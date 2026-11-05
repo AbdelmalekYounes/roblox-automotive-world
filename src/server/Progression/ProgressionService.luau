@@ -33,7 +33,7 @@ local StarterCatalog = require(GarageShared:WaitForChild("StarterCatalog"))
 local TuningRules = require(GarageShared:WaitForChild("TuningRules"))
 local CosmeticCatalog = require(GarageShared:WaitForChild("CosmeticCatalog"))
 local PartCatalog = require(GarageShared:WaitForChild("PartCatalog"))
-local EconomyContracts = require(GarageShared:WaitForChild("EconomyContracts"))
+local EconomyCatalog = require(Shared:WaitForChild("Economy"):WaitForChild("EconomyCatalog"))
 
 local Persistence = script.Parent.Parent.Persistence
 local ProfileService = require(Persistence.ProfileService)
@@ -50,6 +50,7 @@ local Customization = require(script.Parent.Customization)
 local InvitationRules = require(script.Parent.InvitationRules)
 local DurableState = require(script.Parent.DurableState)
 local Locations = require(script.Parent.Locations)
+local Commerce = require(script.Parent.Parent.Economy.Commerce)
 local PropertyInteriors = require(script.Parent.PropertyInteriors)
 
 local ProgressionService = {}
@@ -315,6 +316,11 @@ local function derivedDefinition(profile: ProfileSchema.Profile, vehicle: Profil
     local parts = catalogParts(profile, vehicle)
     local derived = TuningRules.apply(base, vehicle.Tuning, parts)
     derived.Appearance = CosmeticCatalog.appearance(base.Appearance, vehicle.Cosmetics :: any)
+    -- Lot 0.5 : salissure visible (teinte assombrie), effacée par le lavage.
+    local dirt = math.clamp(vehicle.Dirt or 0, 0, 1)
+    for index, channel in derived.Appearance.BodyRgb do
+        derived.Appearance.BodyRgb[index] = math.floor(channel * (1 - 0.35 * dirt))
+    end
     local valid, errors = VehicleDefinitions.validate(derived)
     if not valid then
         -- Ne devrait jamais arriver (réglages validés à l'enregistrement) :
@@ -687,6 +693,21 @@ handlers.Return = function(player, _payload, txId)
 end
 
 -- Préparation : capacités du lieu (garage public, ou propriété et modules).
+-- Main-d'œuvre d'une intervention en garage public (barème provisoire).
+local function laborFee(kind: string, payload: any, result: any): number
+    local labor = EconomyCatalog.Labor
+    if kind == "SetPart" then
+        return if payload.PartId ~= nil then labor.PartInstall else labor.PartRemove
+    elseif kind == "SetCosmetics" then
+        return labor.Cosmetics
+    elseif kind == "SetTuning" then
+        return labor.Tuning
+    elseif kind == "ApplyConfig" and type(result) == "table" and result.Swapped then
+        return labor.PartInstall
+    end
+    return 0
+end
+
 local function prepare(
     player: Player,
     payload: any,
@@ -711,7 +732,25 @@ local function prepare(
         return rejected("VehicleNotOwned")
     end
     local result = session:commit(txId :: string, kind, function(profile)
-        return mutate(profile, definition, context.Capabilities)
+        local ok, value = mutate(profile, definition, context.Capabilities)
+        if not ok then
+            return false, value
+        end
+        -- Lot 0.5 : main-d'œuvre du garage public facturée DANS la même
+        -- mutation (tout ou rien) ; aucune dans un garage privé équipé.
+        if context.Kind == "PublicGarage" then
+            local fee = laborFee(kind, payload, value)
+            if fee > 0 then
+                local paid, err = Commerce.chargeLabor(profile, fee, "Labor:" .. kind, payload.VehicleId, now())
+                if not paid then
+                    return false, err
+                end
+                if type(value) == "table" then
+                    value.Labor = fee
+                end
+            end
+        end
+        return true, value
     end)
     return reply(result, player)
 end
@@ -855,21 +894,7 @@ handlers.Exit = function(player)
     return { Status = "Ok", Snapshot = snapshot(player) }
 end
 
--- Opérations payantes : contrats prêts, indisponibles avant le lot 0.5.
-local ECONOMY_ACTIONS: { [string]: EconomyContracts.Operation } = {
-    BuyProperty = "BuyProperty",
-    SellProperty = "SellProperty",
-    UpgradeGarage = "UpgradeGarage",
-    InstallModule = "InstallGarageModule",
-}
-for action, operation in ECONOMY_ACTIONS do
-    handlers[action] = function(): Response
-        if not EconomyContracts.available(operation) then
-            return rejected("EconomyUnavailable")
-        end
-        return rejected("ActionUnknown")
-    end
-end
+-- Lot 0.5 : les opérations payantes sont traitées par EconomyService (canal AWEconomy).
 
 local function handle(player: Player, action: any, payload: any): Response
     if type(action) ~= "string" or handlers[action] == nil then
@@ -1029,6 +1054,11 @@ local function installPrompts(openWorld: Instance?, devZone: any)
         return
     end
     for _, place in Locations.all() do
+        -- Seuls les lieux de la progression (entrées, garages publics) ; les
+        -- lieux économiques ont leur propre invite (EconomyService).
+        if place.Kind ~= "Entrance" and place.Kind ~= "PublicGarage" then
+            continue
+        end
         local model = openWorld:FindFirstChild(place.Id, true)
         local slab = if model and model:IsA("Model") then model.PrimaryPart else nil
         if slab then
@@ -1046,7 +1076,7 @@ function ProgressionService.start(openWorld: Instance?, devZone: any)
     assert(not started, "ProgressionService déjà démarré")
     started = true
     if devZone then
-        Locations.loadDev(devZone.Entrance, devZone.PublicGarage)
+        Locations.loadDev(devZone.Entrance, devZone.PublicGarage, devZone.Dealer, devZone.Station)
     else
         Locations.loadOpenWorld()
     end
@@ -1105,5 +1135,29 @@ end
 
 -- Pièces du catalogue (pour référence des emplacements dans l'interface).
 ProgressionService.PartSlots = PartCatalog.Slots
+
+-- Lot 0.5 : exemplaire personnel matérialisé d'un joueur (services, missions).
+function ProgressionService.outVehicle(player: Player): (Model?, string?)
+    local out = outVehicles[player]
+    if out then
+        return out.Model, out.VehicleId
+    end
+    return nil, nil
+end
+
+-- Lot 0.5 : réconciliation immédiate de l'état durable (avant un service payé).
+function ProgressionService.syncDurable(player: Player)
+    syncDurable(player)
+end
+
+-- Lot 0.5 : contexte de lieu (pour les services économiques).
+function ProgressionService.context(player: Player): any
+    local session = ProfileService.get(player)
+    return contextOf(player, if session then session.Data else nil)
+end
+
+ProgressionService.snapshot = function(player: Player): any
+    return snapshot(player)
+end
 
 return table.freeze(ProgressionService)

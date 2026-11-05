@@ -15,6 +15,7 @@ local Persistence = script.Parent.Parent.Persistence
 local ProfileSchema = require(Persistence.ProfileSchema)
 local VehicleOwnership = require(script.Parent.VehicleOwnership)
 local PropertyRules = require(script.Parent.PropertyRules)
+local Wallet = require(script.Parent.Parent.Economy.Wallet)
 
 local Shared = script.Parent.Parent.Parent.Parent.ReplicatedStorage.Shared
 local PartCatalog = require(Shared.Garage.PartCatalog)
@@ -25,6 +26,7 @@ local DevSeed = {}
 DevSeed.TxId = "Grant:DevSeed"
 DevSeed.Models = table.freeze({ "proto_p01", "proto_p02", "proto_p03" })
 DevSeed.PropertyOffer = "RES-METRO-LOFTS"
+DevSeed.SyntheticBalance = 150_000
 
 function DevSeed.apply(profile: ProfileSchema.Profile, now: number, lookup: (string) -> any): (boolean, any)
     if profile.Grants.DevSeed ~= nil then
@@ -56,6 +58,8 @@ function DevSeed.apply(profile: ProfileSchema.Profile, now: number, lookup: (str
             Synthetic = true,
         }
     end
+    -- Lot 0.5 : crédits SYNTHÉTIQUES pour éprouver l'économie (Dev, mémoire seulement).
+    Wallet.credit(profile, DevSeed.SyntheticBalance, "DevSynthetic", "dev-seed", now)
     profile.Grants.DevSeed = { At = now, Ref = "synthetic" }
     return true, { Vehicles = vehicles }
 end

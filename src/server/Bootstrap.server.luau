@@ -16,6 +16,7 @@ local WeatherService = require(WorldFolder:WaitForChild("WeatherService"))
 local TrafficService = require(WorldFolder:WaitForChild("TrafficService"))
 local ProfileService = require(script.Parent:WaitForChild("Persistence"):WaitForChild("ProfileService"))
 local ProgressionService = require(script.Parent:WaitForChild("Progression"):WaitForChild("ProgressionService"))
+local EconomyService = require(script.Parent:WaitForChild("Economy"):WaitForChild("EconomyService"))
 local VehicleService = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleService"))
 
 -- Des invariants simples détectent immédiatement une erreur de configuration.
@@ -30,11 +31,13 @@ if PlaceConfig.Mode == "OpenWorld" then
     WeatherService.start()
     TrafficService.start()
     ProgressionService.start(world.Root, nil)
+    EconomyService.start(true, world.Root, nil)
 else
     -- La zone est construite sans attente pour exister avant l'apparition des joueurs.
     local zone = TestZoneBuilder.build()
     VehicleService.start(zone)
     ProgressionService.start(nil, zone)
+    EconomyService.start(false, nil, zone)
 end
 -- Profils (lot 0.4) : après les services qui écoutent leur cycle de vie.
 ProfileService.start()

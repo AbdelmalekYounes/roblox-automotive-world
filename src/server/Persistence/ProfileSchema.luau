@@ -22,7 +22,7 @@
 
 local ProfileSchema = {}
 
-ProfileSchema.Version = 1
+ProfileSchema.Version = 2
 -- Taille maximale visée d'un enregistrement (le DataStore accepte 4 Mo).
 -- Au-delà, les nouvelles acquisitions sont refusées par une limite TECHNIQUE
 -- explicite, à arbitrer (§4.2) ; stratégie de fractionnement : rapport du lot.
@@ -30,6 +30,9 @@ ProfileSchema.SoftLimitBytes = 3_500_000
 ProfileSchema.MaxConfigurations = 5
 ProfileSchema.MaxRecentTransactions = 100
 ProfileSchema.MaxActiveInvitations = 20
+-- Lot 0.5 : historique économique borné et identifiants de transferts conservés.
+ProfileSchema.MaxLedger = 60
+ProfileSchema.AppliedRetentionS = 30 * 24 * 3600
 
 export type StorageState = "Stored" | "Displayed" | "Out"
 
@@ -83,6 +86,9 @@ export type Vehicle = {
     Storage: Storage,
     Reservation: Reservation?,
     UpdatedAt: number,
+    -- Lot 0.5 (schéma 2)
+    PaidPrice: number, -- prix d'achat réellement payé (0 : gratuit, synthétique, ancien)
+    Dirt: number, -- salissure 0..1 (lavage), sans effet mécanique
 }
 
 export type PartItem = {
@@ -103,8 +109,12 @@ export type Property = {
     Origin: string, -- "FreeStarter" | "Purchase" | "DevSynthetic"
     Sellable: boolean,
     GarageLevel: number,
-    Modules: { [string]: { InstalledAt: number } },
+    Modules: { [string]: { InstalledAt: number, PaidPrice: number? } },
     Synthetic: boolean,
+    -- Lot 0.5 : montants RÉELLEMENT payés (base des reventes 70 / 40 / 60 %).
+    PaidPrice: number,
+    PaidExtensions: number,
+    PaidModules: number,
 }
 
 export type Invitation = {
@@ -119,6 +129,22 @@ export type Invitation = {
 }
 
 export type TransactionEntry = { Kind: string, At: number, Result: any }
+
+-- Lot 0.5 : portefeuille (crédits entiers, jamais négatifs).
+export type Wallet = {
+    Balance: number, -- disponible
+    Reserved: number, -- engagé dans une opération en cours (transfert, service)
+    Earned: number, -- total gagné
+    Spent: number, -- total dépensé
+}
+
+export type LedgerEntry = { At: number, Kind: string, Amount: number, Balance: number, Ref: string }
+
+-- Rôle du profil dans un transfert multiprofil (récupération après interruption).
+export type TransferEntry = { Role: string, State: string, Amount: number, At: number, Ref: string }
+
+-- Service progressif (carburant, recharge) : fonds réservés, réglés à la fin.
+export type ServiceEntry = { Kind: string, VehicleId: string, Reserved: number, UnitPrice: number, At: number }
 
 export type Profile = {
     SchemaVersion: number,
@@ -135,6 +161,14 @@ export type Profile = {
     Properties: { [string]: Property },
     Invitations: { [string]: Invitation },
     Transactions: { [string]: TransactionEntry },
+    -- Lot 0.5 (schéma 2)
+    Wallet: Wallet,
+    Reputation: { Points: number, Recent: { [string]: { Count: number, Since: number } } },
+    Jobs: { [string]: { Completed: number, Failed: number, Xp: number, Best: number } },
+    Ledger: { LedgerEntry },
+    Transfers: { [string]: TransferEntry },
+    Applied: { [string]: number }, -- transferts déjà appliqués à CE profil → instant
+    Services: { [string]: ServiceEntry },
 }
 
 function ProfileSchema.new(userId: number, now: number, environment: string): Profile
@@ -152,6 +186,13 @@ function ProfileSchema.new(userId: number, now: number, environment: string): Pr
         Properties = {},
         Invitations = {},
         Transactions = {},
+        Wallet = { Balance = 0, Reserved = 0, Earned = 0, Spent = 0 },
+        Reputation = { Points = 0, Recent = {} },
+        Jobs = {},
+        Ledger = {},
+        Transfers = {},
+        Applied = {},
+        Services = {},
     }
 end
 
@@ -197,7 +238,25 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
     end
     check(profile.SchemaVersion == ProfileSchema.Version, "SchemaVersion")
     check(isInteger(profile.UserId) and profile.UserId ~= 0, "UserId")
-    for _, key in { "Counters", "Grants", "Starter", "Vehicles", "Parts", "Properties", "Invitations", "Transactions" } do
+    for _, key in
+        {
+            "Counters",
+            "Grants",
+            "Starter",
+            "Vehicles",
+            "Parts",
+            "Properties",
+            "Invitations",
+            "Transactions",
+            "Wallet",
+            "Reputation",
+            "Jobs",
+            "Ledger",
+            "Transfers",
+            "Applied",
+            "Services",
+        }
+    do
         check(type(profile[key]) == "table", "Missing:" .. key)
     end
     if #errors > 0 then
@@ -268,6 +327,27 @@ function ProfileSchema.validate(profile: any): (boolean, { string })
         )
     end
     check(count <= 5, "PropertyLimit")
+    -- Portefeuille : entiers, jamais négatifs ; les fonds réservés correspondent
+    -- exactement aux opérations en cours (transferts acheteur, services).
+    local wallet = profile.Wallet
+    for _, key in { "Balance", "Reserved", "Earned", "Spent" } do
+        check(isInteger(wallet[key]) and wallet[key] >= 0, "Wallet:" .. key)
+    end
+    local engaged = 0
+    for _, entry in profile.Transfers do
+        if entry.Role == "Buyer" and entry.State == "Reserved" then
+            engaged += entry.Amount
+        end
+    end
+    for _, entry in profile.Services do
+        engaged += entry.Reserved
+    end
+    check(wallet.Reserved == engaged, "Wallet:ReservedMismatch")
+    check(#profile.Ledger <= ProfileSchema.MaxLedger, "Ledger")
+    for id, vehicle in profile.Vehicles do
+        check(isInteger(vehicle.PaidPrice) and vehicle.PaidPrice >= 0, "Vehicle:" .. tostring(id) .. ":PaidPrice")
+        check(fraction(vehicle.Dirt), "Vehicle:" .. tostring(id) .. ":Dirt")
+    end
     return #errors == 0, errors
 end
 

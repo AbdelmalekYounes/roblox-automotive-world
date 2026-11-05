@@ -107,6 +107,8 @@ type VehicleRecord = {
     -- Collisions entre joueurs : participant du médiateur (absent pour un banc).
     Participant: CollisionMediator.Participant?,
     Personal: PersonalInfo?,
+    -- Lot 0.5 : corrections de mouvement subies (une mission en cours est annulée).
+    Corrections: number?,
 }
 
 type Limiters = {
@@ -526,6 +528,7 @@ end
 
 local function correctMovement(record: VehicleRecord, reason: string)
     local driver = record.Driver
+    record.Corrections = (record.Corrections or 0) + 1
     warn(
         string.format(
             "[AutomotiveWorld][Validation] Mouvement impossible (%s) sur %s, conducteur %s : position corrigée, aucune sanction.",
@@ -1159,6 +1162,62 @@ function VehicleService.personalDriver(model: Model): (Player?, number)
 end
 
 -- Fait descendre le conducteur (arrêt sûr décidé par l'appelant).
+-- Lot 0.5 : énergie RÉELLEMENT livrée par une station (unités du modèle),
+-- bornée par la capacité ; renvoie la quantité ajoutée.
+function VehicleService.addEnergy(model: Model, amount: number): number
+    local record = personalRecord(model)
+    if record == nil or amount <= 0 then
+        return 0
+    end
+    local account = record.Energy
+    local added = math.min(amount, account.Capacity - account.Level)
+    if added <= 0 then
+        return 0
+    end
+    account.Level += added
+    account.Empty = account.Level <= 0
+    publishEnergy(record, true)
+    return added
+end
+
+-- Énergie actuelle et capacité d'un exemplaire personnel matérialisé.
+function VehicleService.personalEnergy(model: Model): (number, number)
+    local record = personalRecord(model)
+    if record == nil then
+        return 0, 0
+    end
+    return record.Energy.Level, record.Energy.Capacity
+end
+
+-- Lot 0.5 : réparation payée appliquée au véhicule matérialisé.
+function VehicleService.restorePersonalDamage(model: Model, state: any)
+    if personalRecord(model) then
+        damage:restore(model, state)
+    end
+end
+
+--[[
+    Lot 0.5 (missions) : usure cumulée et corrections subies par N'IMPORTE quel
+    véhicule suivi (parc, exemplaire personnel, véhicule professionnel), lues
+    par le serveur seul.
+]]
+function VehicleService.vehicleState(model: Model): (number, number)
+    for _, record in records do
+        if record.Model == model then
+            local state = damage:getState(model)
+            local wear = 0
+            if state then
+                for _, value in state.Zones do
+                    wear += value
+                end
+                wear += (1 - state.Engine) + (1 - state.Steering)
+            end
+            return wear, record.Corrections or 0
+        end
+    end
+    return 0, 0
+end
+
 function VehicleService.ejectPersonalDriver(model: Model)
     local record = personalRecord(model)
     if record and record.Seat.Occupant then

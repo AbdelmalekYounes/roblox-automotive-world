@@ -34,6 +34,10 @@ local Progression = script.Parent.Parent.Progression
 local GarageRules = require(Progression.GarageRules)
 local PropertyRules = require(Progression.PropertyRules)
 local DevSeed = require(Progression.DevSeed)
+local Economy = script.Parent.Parent.Economy
+local Commerce = require(Economy.Commerce)
+local Market = require(Economy.Market)
+local ProfileAccess = require(script.Parent.ProfileAccess)
 
 local VehicleDefinitions =
     require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("VehicleDefinitions"))
@@ -96,6 +100,16 @@ function ProfileService.onConfirmed(callback: (Player, { string }) -> ())
     table.insert(confirmedCallbacks, callback)
 end
 
+-- Préparation d'un profil chargé (verrou détenu) : exemplaires sortis rangés,
+-- réservations échues levées, services d'énergie interrompus annulés (fonds
+-- restitués), transferts terminés anciens retirés.
+local function normalize(profile: any, now: number): boolean
+    local garage = GarageRules.normalize(profile, now)
+    local services = Commerce.recoverServices(profile, now)
+    local pruned = Market.prune(profile, now)
+    return garage or services or pruned
+end
+
 local function newSession(player: Player): ProfileSession.Session
     return ProfileSession.new({
         Repository = repository,
@@ -113,7 +127,7 @@ local function newSession(player: Player): ProfileSession.Session
         MinWriteInterval = 6,
         AutosaveInterval = 60,
         OnLoaded = function(profile, now)
-            return GarageRules.normalize(profile, now)
+            return normalize(profile, now)
         end,
         Suspended = function()
             return suspension
@@ -297,6 +311,42 @@ function ProfileService.suspendWrites(reason: string?)
     for player in sessions do
         publish(player, if reason then "Suspended" else "Saved")
     end
+end
+
+function ProfileService.repository(): any
+    return repository
+end
+
+local access: any = nil
+
+--[[
+    Accès multiprofil (lot 0.5) : session du joueur s'il est sur ce serveur,
+    sinon session temporaire ; « Deferred » s'il est verrouillé ailleurs.
+]]
+function ProfileService.access(): any
+    if access == nil then
+        access = ProfileAccess.new({
+            Repository = repository,
+            Environment = resolved.Name,
+            Clock = os.time,
+            Token = function()
+                return HttpService:GenerateGUID(false)
+            end,
+            Server = if game.JobId ~= "" then game.JobId else "studio",
+            Online = function(userId: number): any
+                local player = Players:GetPlayerByUserId(userId)
+                local session = if player then sessions[player] else nil
+                if session and session.State == "Active" then
+                    return session
+                end
+                return nil
+            end,
+            Log = log,
+            OnLoaded = normalize,
+            MinWriteInterval = 6,
+        })
+    end
+    return access
 end
 
 -- Marque l'état « en cours d'écriture » visible du client après une mutation.

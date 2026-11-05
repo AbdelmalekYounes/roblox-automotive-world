@@ -18,6 +18,9 @@ local ProfileSchema = require(Persistence.ProfileSchema)
 
 local DurableState = {}
 
+-- Salissure gagnée par kilomètre (pleinement sale après 50 km).
+DurableState.DirtPerKm = 0.02
+
 export type Runtime = {
     EnergyFraction: number, -- mesure serveur, fraction de la réserve
     Damage: any, -- DamageModel.DamageState du serveur
@@ -89,6 +92,8 @@ function DurableState.reconcile(vehicle: ProfileSchema.Vehicle, runtime: Runtime
     local distance = math.clamp(runtime.DistanceKm, 0, limit)
     if distance > 0 then
         vehicle.OdometerKm += distance
+        -- Lot 0.5 : salissure progressive (lavage payant), sans effet mécanique.
+        vehicle.Dirt = math.min(1, (vehicle.Dirt or 0) + distance * DurableState.DirtPerKm)
         changed = true
     end
     if changed then

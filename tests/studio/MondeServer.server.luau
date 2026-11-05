@@ -132,13 +132,17 @@ record(
 )
 
 -- 3. Lieux du lot 0.4 : invites sur les 13 entrées et 3 garages publics.
-local prompts = 0
+local prompts, economyPrompts = 0, 0
 for _, item in (map and map:GetDescendants()) or {} do
     if item:IsA("ProximityPrompt") and item.Name == "AWProgressionPrompt" then
         prompts += 1
+    elseif item:IsA("ProximityPrompt") and item.Name == "AWEconomyPrompt" then
+        economyPrompts += 1
     end
 end
 record("monde.invites_lieux", prompts == 16, prompts)
+-- Lot 0.5 : 2 concessions, 6 stations-service, 2 bornes, 3 lavages.
+record("monde.invites_lieux_economiques", economyPrompts == 13, economyPrompts)
 
 local player = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
 local character = player.Character or player.CharacterAdded:Wait()

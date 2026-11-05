@@ -6,6 +6,8 @@
 -- utiliser le DataStore ; il n'est instancié qu'en environnement Test/Prod.
 local DATASTORE_ADAPTER = "ServerScriptService.AutomotiveWorldServer.Persistence.DataStoreProfileRepository"
 local ADAPTER_ALLOWED = { DataStore = true, ["requête HTTP / stockage"] = true }
+-- Lot 0.5 : les crédits existent, mais seulement dans l'économie serveur.
+local ECONOMY_PREFIX = "ServerScriptService.AutomotiveWorldServer.Economy."
 
 local FORBIDDEN_PATTERNS = {
     { Pattern = "DataStoreService", Label = "DataStore" },
@@ -83,7 +85,11 @@ return function(T: any, H: any)
                 if class == "Script" or class == "LocalScript" or class == "ModuleScript" then
                     scanned += 1
                     local source = descendant.Source
-                    local allowed = if descendant:GetFullName() == DATASTORE_ADAPTER then ADAPTER_ALLOWED else {}
+                    local fullName = descendant:GetFullName()
+                    local allowed: { [string]: boolean } = if fullName == DATASTORE_ADAPTER then ADAPTER_ALLOWED else {}
+                    if string.sub(fullName, 1, #ECONOMY_PREFIX) == ECONOMY_PREFIX then
+                        allowed = { ["crédits"] = true }
+                    end
                     for _, rule in FORBIDDEN_PATTERNS do
                         if allowed[rule.Label] then
                             continue
