@@ -10,6 +10,8 @@
     valeurs sont des hypothèses de conception, pas des mesures d'un véhicule réel.
 
     Carrosserie : kit de maillages tiers CC BY 4.0 (MeshKitData, docs/vehicle-3d/MODELES_TIERS.md).
+    Lot AUDIO-01 (décision D3, 2026-11-05) : zone rouge 8 300, rupteur 8 500, passage conseillé 8 100 tr/min, courbe de
+    couple prolongée ; la référence d'égalité est régénérée (docs/lot-audio-01/PLAN_AUDIO_01.md).
 ]]
 
 local Types = require(script.Parent.Parent.VehicleTypes)
@@ -92,9 +94,9 @@ local definition: Types.VehicleDefinition = {
             IdleFuelLph = 0.80000000000000004,
             IdleRpm = 850,
             InertiaKgM2 = 0.29999999999999999,
-            LimiterRpm = 7200,
+            LimiterRpm = 8500,
             PartLoadPenalty = 1.2,
-            RedlineRpm = 7000,
+            RedlineRpm = 8300,
             StallRpm = 450,
             TorqueCurve = {
                 {
@@ -121,13 +123,24 @@ local definition: Types.VehicleDefinition = {
                     Rpm = 6000,
                     TorqueNm = 735,
                 },
+                -- Lot AUDIO-01 (décision D3 du propriétaire, 2026-11-05) : V8 qui monte à 8 500 tr/min. Courbe prolongée à
+                -- puissance quasi constante (~475 kW de 6 000 à 8 100 tr/min, comme l'ancien maximum) : seule la plage
+                -- de régime change, pas le niveau de performance.
                 {
-                    Rpm = 6800,
-                    TorqueNm = 660,
+                    Rpm = 7000,
+                    TorqueNm = 650,
                 },
                 {
-                    Rpm = 7200,
-                    TorqueNm = 603,
+                    Rpm = 7600,
+                    TorqueNm = 600,
+                },
+                {
+                    Rpm = 8100,
+                    TorqueNm = 560,
+                },
+                {
+                    Rpm = 8500,
+                    TorqueNm = 520,
                 },
             },
         },
@@ -150,7 +163,7 @@ local definition: Types.VehicleDefinition = {
             ReverseRatio = 3.2999999999999998,
             ShiftDownRpm = 2856,
             ShiftDurationS = 0.059999999999999998,
-            ShiftUpRpm = 6800,
+            ShiftUpRpm = 8100,
         },
     },
     Steering = {

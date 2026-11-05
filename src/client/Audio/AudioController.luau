@@ -25,6 +25,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AssetManifest = require(Shared:WaitForChild("Assets"):WaitForChild("AssetManifest"))
 local EngineAudioModel = require(Shared:WaitForChild("Audio"):WaitForChild("EngineAudioModel"))
+local EngineSoundProfiles = require(Shared.Audio:WaitForChild("EngineSoundProfiles"))
 local AmbienceModel = require(Shared.Audio.AmbienceModel)
 local WeatherModel = require(Shared:WaitForChild("World"):WaitForChild("WeatherModel"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
@@ -80,19 +81,136 @@ local function soundFor(parent: Instance, assetId: string, looped: boolean): Sou
     return sound
 end
 
-local function applyLayers(parent: Instance, layers: { EngineAudioModel.Layer })
+-- `pitch` (Doppler, lot AUDIO-01) multiplie la vitesse de lecture de toutes les couches.
+local function applyLayers(parent: Instance, layers: { EngineAudioModel.Layer }, pitch: number?)
     for _, layer in layers do
         local sound = soundFor(parent, layer.Id, true)
         if sound then
             sound.Volume = layer.Volume
-            sound.PlaybackSpeed = layer.Speed
+            sound.PlaybackSpeed = layer.Speed * (pitch or 1)
         end
     end
 end
 
+-- ======================== Lot AUDIO-01 : profils enregistrés ========================
+
+-- État sonore précédent de chaque véhicule (détection des événements) et dernier déclenchement par événement.
+local previousState: { [Model]: EngineAudioModel.State } = {}
+local lastEvent: { [Model]: { [string]: number } } = {}
+-- Délai minimal entre deux occurrences d'un même événement (s) : évite les rafales (rupteur, pétarades).
+local EVENT_COOLDOWN_S = { Limiter = 0.15, Pops = 0.8, BlowOff = 1.2, Shift = 0.3 }
+
+-- État moteur d'un véhicule : réel pour le véhicule conduit, publié par le serveur pour les autres (nil : silence,
+-- véhicule sans conducteur).
+local function engineState(model: Model, data: any?): EngineAudioModel.State?
+    if data then
+        return {
+            Rpm = data.EngineRpm,
+            Load = data.Throttle,
+            Running = data.EngineRunning ~= false and data.Stalled ~= true,
+            Stalled = data.Stalled == true,
+            Gear = data.Gear,
+        }
+    end
+    if model:GetAttribute(Constants.Attributes.DriverUserId) == 0 then
+        return nil
+    end
+    local rpm = model:GetAttribute(Constants.Attributes.AudioRpm)
+    if type(rpm) ~= "number" then
+        return nil
+    end
+    local load = model:GetAttribute(Constants.Attributes.AudioLoad)
+    return {
+        Rpm = rpm,
+        Load = if type(load) == "number" then load else 0,
+        Running = rpm > 0,
+        Stalled = false,
+        Gear = nil,
+    }
+end
+
+-- Événements ponctuels (démarrage, rapport, rupteur, pétarades…) joués à la position du véhicule.
+local function playEvents(model: Model, part: BasePart, profile: EngineAudioModel.Profile, now: EngineAudioModel.State)
+    local before = previousState[model]
+    previousState[model] = now
+    if before == nil then
+        return
+    end
+    local clock = os.clock()
+    local fired = lastEvent[model]
+    if fired == nil then
+        fired = {}
+        lastEvent[model] = fired
+        model.Destroying:Connect(function()
+            previousState[model] = nil
+            lastEvent[model] = nil
+        end)
+    end
+    for _, name in EngineAudioModel.events(profile, before, now) do
+        local last = (fired :: { [string]: number })[name]
+        if last == nil or clock - last >= ((EVENT_COOLDOWN_S :: any)[name] or 0) then
+            (fired :: { [string]: number })[name] = clock
+            local sound = soundFor(part, profile.Prefix .. name, false)
+            if sound then
+                sound.Volume = profile.Gain
+                sound:Play()
+            end
+        end
+    end
+end
+
+-- Écoute depuis l'habitacle : égaliseur posé sur le groupe « Engine » (tous les moteurs entendus de la cabine).
+local function applyListening(cockpit: boolean)
+    local group = SoundService:FindFirstChild("AWEngine")
+    if group == nil or not group:IsA("SoundGroup") then
+        return
+    end
+    local eq = group:FindFirstChild("AWHabitacle") :: EqualizerSoundEffect?
+    if eq == nil then
+        local created = Instance.new("EqualizerSoundEffect")
+        created.Name = "AWHabitacle"
+        created.Parent = group
+        eq = created
+    end
+    local settings = EngineAudioModel.listening(cockpit)
+    local effect = eq :: EqualizerSoundEffect
+    effect.LowGain = settings.LowGain
+    effect.MidGain = settings.MidGain
+    effect.HighGain = settings.HighGain
+    effect.Enabled = cockpit
+end
+
+-- Facteur Doppler d'un véhicule observé : vitesse d'approche vers la caméra (m/s).
+local function dopplerFor(part: BasePart, eye: Vector3): number
+    local offset = eye - part.Position
+    local distance = offset.Magnitude
+    if distance < 1e-3 then
+        return 1
+    end
+    local approach = part.AssemblyLinearVelocity:Dot(offset / distance) * Constants.MetersPerStud
+    return EngineAudioModel.doppler(approach)
+end
+
 local function vehicleLayers(model: Model, data: any?, quality: string): { EngineAudioModel.Layer }?
-    local definition = VehicleDefinitions.get(model:GetAttribute(Constants.Attributes.DefinitionId) :: any)
+    local definitionId = model:GetAttribute(Constants.Attributes.DefinitionId)
+    local definition = VehicleDefinitions.get(definitionId :: any)
     if definition == nil then
+        return nil
+    end
+    -- Lot AUDIO-01 : profil enregistré du modèle, s'il existe ; sinon modèle générique du lot 0.8.
+    local profile = EngineSoundProfiles.Profiles[definitionId :: any]
+    if profile then
+        local state = engineState(model, data)
+        local part = model.PrimaryPart
+        if state == nil or part == nil then
+            previousState[model] = nil
+            return nil
+        end
+        playEvents(model, part, profile, state)
+        return EngineAudioModel.profileLayers(profile, state, quality)
+    end
+    -- Véhicule observé sans conducteur : silence (plus de ralenti pour les voitures garées).
+    if data == nil and model:GetAttribute(Constants.Attributes.DriverUserId) == 0 then
         return nil
     end
     local energy = definition.Powertrain.Energy.Kind
@@ -136,6 +254,9 @@ local function update()
     local driven: Model? = if data then data.Model else nil
     local eye = camera.CFrame.Position
 
+    -- Habitacle (vue cockpit) : moteurs étouffés et plus graves (lot AUDIO-01).
+    applyListening(data ~= nil and data.CameraName == "Cockpit")
+
     -- Véhicule conduit : régime réel.
     if driven and driven.PrimaryPart then
         local layers = vehicleLayers(driven, data, quality)
@@ -143,7 +264,7 @@ local function update()
             applyLayers(driven.PrimaryPart :: Instance, layers)
         end
     end
-    -- Véhicules observés les plus proches : régime estimé.
+    -- Véhicules observés les plus proches : régime publié par le serveur (profil) ou estimé (modèle générique).
     local nearby: { { Model: Model, Distance: number } } = {}
     for _, item in CollectionService:GetTagged(Constants.VehicleTag) do
         if item:IsA("Model") and item ~= driven and item.PrimaryPart then
@@ -166,7 +287,8 @@ local function update()
             end
             local part = entry.Model.PrimaryPart
             if part then
-                applyLayers(part, layers)
+                -- Effet Doppler des véhicules observés (lot AUDIO-01).
+                applyLayers(part, layers, dopplerFor(part, eye))
             end
         end
     end

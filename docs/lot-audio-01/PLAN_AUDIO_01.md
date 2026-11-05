@@ -95,3 +95,22 @@ Travaux de code menés **en parallèle de l'étape 1** (ils ne dépendent pas de
 - Pneus, vent, chocs, klaxon et portes : sons possibles plus tard, à proposer.
 - Les sons d'interface, d'ambiance et de radio du lot 0.8 restent inchangés.
 - Aucune publication Roblox par l'assistant.
+
+## 6. Avancement (2026-11-05)
+
+Fait, et contrôlé hors Studio par `scripts\verify.ps1 -DownloadRobloxTypes` le 2026-11-05 : toutes les étapes OK, Lune
+**409 réussis sur 409** (dont 6 tests de `tests/lune/specs/Audio01.luau`).
+
+| Travail | Fichiers | Détail |
+|---|---|---|
+| Comète à 8 500 tr/min (D3) | `Definitions/Comete.luau`, `comete_definition_reference.json` | Zone rouge 8 300, rupteur 8 500, passage conseillé 8 100. Courbe prolongée à puissance quasi constante : maximum ~475 kW, contre ~470 avant. Nouvelle référence d'égalité ; le diff ne porte que sur ces champs |
+| Régime transmis | `InputCodec`, `VehicleController`, `VehicleService`, `VehicleConstants` | Le conducteur déclare son régime (6e valeur de la commande, pas de 100 tr/min, 0 si le moteur est arrêté). Le serveur le borne (rupteur du modèle + 5 %) et publie `AudioRpm` et `AudioLoad` (accélérateur). Ces attributs sont retirés quand le conducteur sort. Usage purement sonore. Un ancien client reste accepté |
+| Modèle sonore v2 | `EngineAudioModel`, `EngineSoundProfiles` | Profils enregistrés : boucles en charge et en décharge par régime, fondu croisé, transposition bornée (0,7 à 1,45), couche turbo. Événements : démarrage, arrêt, calage, rapport, rupteur, pétarades, décharge du turbo. Égaliseur d'habitacle et Doppler. Aucun profil inscrit tant que les enregistrements ne sont pas traités |
+| Contrôleur | `AudioController`, `DevHud` | Profil du modèle s'il existe, sinon modèle générique. Les véhicules garés sans conducteur sont silencieux. Égaliseur « habitacle » en vue cockpit. Doppler sur les véhicules observés. Événements ponctuels avec délai minimal |
+
+Non vérifié :
+- tout le rendu en jeu : aucun son n'est encore envoyé sur Roblox ;
+- la conduite de la Comète à 8 500 tr/min ;
+- la charge réseau de la 6e valeur (envoi seulement quand une valeur change, au plus 15 fois par seconde comme avant).
+
+En attente : le téléchargement des enregistrements du §3 par le propriétaire (étape 1).

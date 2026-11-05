@@ -411,6 +411,9 @@ local function releaseDriver(record: VehicleRecord)
     record.Model:SetAttribute(Constants.Attributes.DriverUserId, 0)
     record.Model:SetAttribute(Constants.Attributes.VisualSteer, 0)
     record.Model:SetAttribute(Constants.Attributes.VisualBrake, false)
+    -- Plus de conducteur : plus de son de moteur publié (le véhicule garé est silencieux chez les autres).
+    record.Model:SetAttribute(Constants.Attributes.AudioRpm, nil)
+    record.Model:SetAttribute(Constants.Attributes.AudioLoad, nil)
     record.Prompt.Enabled = true
     setOwner(record, nil)
 end
@@ -976,7 +979,7 @@ local function onInput(player: Player, payload: any)
     if record == nil then
         return
     end
-    local input, energy = InputCodec.decode(payload)
+    local input, energy, rpm = InputCodec.decode(payload)
     if input == nil then
         return
     end
@@ -996,6 +999,20 @@ local function onInput(player: Player, payload: any)
     local braking = input.Brake > 0.1
     if braking ~= (record.Model:GetAttribute(Constants.Attributes.VisualBrake) == true) then
         record.Model:SetAttribute(Constants.Attributes.VisualBrake, braking)
+    end
+    -- Son du moteur chez les autres joueurs (lot AUDIO-01) : régime déclaré, borné par le rupteur du modèle (+5 %),
+    -- et charge = accélérateur. Purement sonore : aucune conséquence physique, économique ni de classement.
+    if rpm then
+        local engine = record.Definition.Powertrain.Engine
+        local ceiling = if engine then engine.LimiterRpm * 1.05 else 0
+        local audioRpm = math.clamp(rpm, 0, ceiling)
+        if audioRpm ~= record.Model:GetAttribute(Constants.Attributes.AudioRpm) then
+            record.Model:SetAttribute(Constants.Attributes.AudioRpm, audioRpm)
+        end
+    end
+    local load = math.round(input.Throttle * 10) / 10
+    if load ~= record.Model:GetAttribute(Constants.Attributes.AudioLoad) then
+        record.Model:SetAttribute(Constants.Attributes.AudioLoad, load)
     end
 end
 

@@ -231,6 +231,8 @@ export type HudData = {
     TransmissionKind: string?,
     Electric: boolean?,
     Stalled: boolean?,
+    -- Lot AUDIO-01 : moteur tournant (son du démarrage et de l'arrêt).
+    EngineRunning: boolean?,
     Model: Model?,
 }
 
