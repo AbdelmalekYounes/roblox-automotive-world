@@ -170,20 +170,30 @@ return function(T: any, H: any)
         return node.Source
     end
 
-    T.test("1. icônes : 12 applications, déclarées au manifeste, aucune inventée", function()
-        local Icons = H.require("ReplicatedStorage.Shared.UI.PhoneIcons")
-        local Manifest = H.require("ReplicatedStorage.Shared.Assets.AssetManifest")
-        T.equal(#Icons.Apps, 12, "12 applications")
-        for _, app in Icons.Apps do
-            local entry = Manifest.get("ui.icon.phone." .. string.lower(app))
-            T.truthy(entry ~= nil, app .. " : entrée du manifeste")
-            T.equal(entry.RobloxAssetId, nil, app .. " : pas encore envoyée (aucun identifiant inventé)")
-            T.equal(Icons.image(app), nil, app .. " : cadre vide tant que l'image n'est pas envoyée")
+    T.test(
+        "1. icônes : 12 applications, déclarées au manifeste avec l'image envoyée par le propriétaire",
+        function()
+            local Icons = H.require("ReplicatedStorage.Shared.UI.PhoneIcons")
+            local Manifest = H.require("ReplicatedStorage.Shared.Assets.AssetManifest")
+            T.equal(#Icons.Apps, 12, "12 applications")
+            local seen = {}
+            for _, app in Icons.Apps do
+                local entry = Manifest.get("ui.icon.phone." .. string.lower(app))
+                T.truthy(entry ~= nil, app .. " : entrée du manifeste")
+                local id = entry.RobloxAssetId
+                T.truthy(
+                    id ~= nil and id == Manifest.PhoneIconIds[app],
+                    app .. " : identifiant de la table du propriétaire"
+                )
+                T.truthy(not seen[id], app .. " : identifiant distinct")
+                seen[id] = true
+                T.equal(Icons.image(app), "rbxassetid://" .. tostring(id), app .. " : image servie par contentId")
+            end
+            T.equal(Icons.tint("Map"), "GpsCyan", "carte en cyan")
+            T.equal(Icons.tint("Radio"), "Amber", "autres en ambre")
+            T.equal(#Manifest.validate(), 0, "manifeste cohérent")
         end
-        T.equal(Icons.tint("Map"), "GpsCyan", "carte en cyan")
-        T.equal(Icons.tint("Radio"), "Amber", "autres en ambre")
-        T.equal(#Manifest.validate(), 0, "manifeste cohérent")
-    end)
+    )
 
     T.test("2. téléphone : aucun caractère Unicode en guise d'icône, tailles de la maquette", function()
         local phone = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneController")
