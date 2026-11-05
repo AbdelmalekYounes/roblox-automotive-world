@@ -245,3 +245,8 @@ reconstruites sur la phase 1 de l'Aster, sans ASTER-02 (`feat/veh3d-01-comete-v2
 code identique aux PR #16 et #17 hors éléments propres à ASTER-02). Ordre proposé : #1 à #11, diagnostic de la
 régression du banc des 18 modèles (QA-A24), #12 à #14, puis les deux branches reconstruites ; #15 reste ouverte comme
 archive suspendue. **Aucune fusion sans l'accord du propriétaire.**
+
+- **Étape 1 faite le 2026-11-05** (accord du propriétaire : « Oui, étape 1 ») : PR #1 à #11 fusionnées dans `main`, dans
+  l'ordre, par commit de fusion (dernier : `4457963`) ; arbre de `main` identique à la tête du lot 0.9.2 (`82fd279`) ;
+  `scripts/verify.ps1 -DownloadRobloxTypes` : toutes étapes OK sur `main`. PR #12 reciblée sur `main`, non fusionnée.
+  Suite : étape 2 (diagnostic de QA-A24), sur accord.

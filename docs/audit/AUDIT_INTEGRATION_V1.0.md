@@ -552,7 +552,12 @@ sans toucher aux branches ni aux PR existantes :
 | 6 — passe documentaire | corrections D1 à D18 principales (ROADMAP, README, QA_BACKLOG §3 octies avec QA-A24, A25, U14 à U17, D11, VM_TESTS, dossiers UI et Comète, bandeaux « suspendu » sur les documents ASTER présents, index des véhicules 3D, 3 commentaires de code sans effet) ; les documents ASTER-02 restés sur la PR #15 ne sont pas modifiés |
 | 9 — art `veh3d-01-comete-v2` | créée depuis l'art `main` (`9dfc628`) ; 10 commits de la Comète rejoués, 1 conflit (`aster02_render_hf4.py`, gardé tel quel, autonome) ; dossier `vehicles/wk_comete`, `calibration` et scripts de la Comète identiques à `veh3d-01-comete` ; tête `f271b92` |
 
-**Non fait, en attente d'accord** : étapes 1, 2, 3, 7 et 8 (fusions dans `main`, diagnostic de QA-A24, reciblage de
+**Étape 1 faite le 2026-11-05** (accord du propriétaire) : PR #1 à #11 fusionnées dans `main` par commit de fusion,
+dans l'ordre (#1 `75d4962` … #11 `4457963`), chaque PR reciblée sur `main` puis marquée prête ; `git diff origin/main 82fd279`
+vide (arbre identique au lot 0.9.2) ; `verify.ps1` toutes étapes OK sur `main` ; branches des lots conservées ; PR #12
+reciblée sur `main`, non fusionnée.
+
+**Non fait, en attente d'accord** : étapes 2, 3, 7 et 8 (fusions dans `main`, diagnostic de QA-A24, reciblage de
 #15), ouverture des nouvelles PR, fermeture de #16 et #17, protection de `main`, étiquettes de sauvegarde.
 Validations du propriétaire du 2026-11-05 : reportées sur les branches v2 par l'identité du code ; **une courte
 revérification en jeu reste conseillée** avant fusion.
