@@ -119,6 +119,9 @@ BRIO = {
     "level_on": (-14.0, 3.0),
     "level_off": (-20.0, 2.0),
     "rms_event": -18.0,
+    # Boîte automatique de la définition (Definitions/Brio.luau) pour la démo des passages : rapports, passage à
+    # 6 800 tr/min, couple coupé 0,25 s, décollage au régime de calage du convertisseur (~2 500 tr/min).
+    "gearbox": {"ratios": [3.4, 2.1, 1.5, 1.15], "shift_up": 6800, "shift_s": 0.25, "launch_rpm": 2550},
 }
 
 PROFILES = {"brio": BRIO}
@@ -345,19 +348,70 @@ def amplitudes(points: list[int], rpm: float, load: float, idle: float) -> dict:
     return out
 
 
-def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE) -> np.ndarray:
-    """Ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et descente en 4 s, ralenti 2 s.
-    Volumes interpolés linéairement dans chaque bloc de 5 ms ; transposition bornée 0,7–1,45 comme le jeu."""
+def shift_trajectory(profile: dict, step: float = 0.005) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Scénario « passages de rapport » (approché, pour l'écoute) : ralenti 1,5 s ; pied au plancher, décollage au
+    régime de calage du convertisseur ; montée dans chaque rapport jusqu'au passage (accélération de moins en moins
+    vive) ; à chaque passage, couple coupé (`shift_s`) et régime ramené à régime × rapport suivant / rapport actuel ;
+    en 4ᵉ, lever de pied à 6 000 tr/min, descente vers 1 800 tr/min en 5 s, puis ralenti 2 s. La charge est lissée
+    comme dans le jeu (constante de temps 0,06 s, AudioController). Retourne (temps, régime, charge)."""
+    box = profile["gearbox"]
+    idle = profile["idle_rpm"]
+    ratios = box["ratios"]
+    rpm_t, load_t = [], []
+    rpm, load_target = float(idle), 0.0
+
+    def push(seconds: float, rpm_of, load: float):
+        nonlocal rpm
+        for i in range(int(round(seconds / step))):
+            rpm = rpm_of(i * step, rpm)
+            rpm_t.append(rpm)
+            load_t.append(load)
+
+    push(1.5, lambda t, r: idle, 0.0)
+    start = rpm
+    push(0.35, lambda t, r: start + (box["launch_rpm"] - start) * min(1.0, t / 0.3), 1.0)
+    for gear, ratio in enumerate(ratios):
+        # Accélération du régime (tr/min/s) décroissante avec le rapport, ordre de grandeur d'une petite essence.
+        climb = 2600.0 * (ratio / ratios[0]) ** 1.3
+        top = box["shift_up"] if gear + 1 < len(ratios) else 6000.0
+        push(max(0.0, (top - rpm) / climb), lambda t, r: r + climb * step, 1.0)
+        if gear + 1 < len(ratios):
+            target = top * ratios[gear + 1] / ratio
+            # Pendant la coupure, le convertisseur déverrouillé laisse le régime rejoindre celui du rapport suivant.
+            push(box["shift_s"], lambda t, r, target=target: r + (target - r) * (1 - np.exp(-step / 0.07)), 0.0)
+    high = rpm
+    push(5.0, lambda t, r: 1800 + (high - 1800) * np.exp(-t / 1.8), 0.0)
+    low = rpm
+    push(0.6, lambda t, r: idle + (low - idle) * np.exp(-t / 0.2), 0.0)
+    push(2.0, lambda t, r: idle, 0.0)
+    loads = np.array(load_t)
+    smooth = np.zeros_like(loads)
+    k = 1 - np.exp(-step / 0.06)
+    for i in range(1, len(loads)):
+        smooth[i] = smooth[i - 1] + (loads[i] - smooth[i - 1]) * k
+    times = np.arange(len(loads), dtype=np.float64) * step
+    return times, np.array(rpm_t), smooth
+
+
+def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=None) -> np.ndarray:
+    """Démo d'écoute : par défaut ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et descente
+    en 4 s, ralenti 2 s ; ou une trajectoire (temps, régime, charge) fournie. Volumes interpolés linéairement dans
+    chaque bloc de 5 ms ; transposition bornée 0,7–1,45 comme le jeu."""
     idle, top = profile["idle_rpm"], profile["limiter_rpm"] * 0.97
-    keys = [(0, idle, 0), (1.5, idle, 0), (1.6, idle, 1), (7.6, top, 1), (7.7, top, 0), (11.7, idle, 0), (13.7, idle, 0)]
-    times = np.array([k[0] for k in keys])
+    if trajectory is None:
+        keys = [(0, idle, 0), (1.5, idle, 0), (1.6, idle, 1), (7.6, top, 1), (7.7, top, 0), (11.7, idle, 0), (13.7, idle, 0)]
+        times = np.array([k[0] for k in keys], dtype=np.float64)
+        rpms = np.array([k[1] for k in keys], dtype=np.float64)
+        loads = np.array([k[2] for k in keys], dtype=np.float64)
+    else:
+        times, rpms, loads = trajectory
     block = int(0.005 * rate)
     total = int(times[-1] * rate)
     out = np.zeros(total)
     phases = {key: 0.0 for key in loops}
 
     def state(t):
-        return float(np.interp(t, times, [k[1] for k in keys])), float(np.interp(t, times, [k[2] for k in keys]))
+        return float(np.interp(t, times, rpms)), float(np.interp(t, times, loads))
 
     for start in range(0, total, block):
         n = min(block, total - start)
@@ -444,6 +498,13 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
     demo = level(render_demo(profile, loops), -16.0)
     write_wav(out / f"demo_{name}.wav", demo)
     report["demo"] = f"demo_{name}.wav : ralenti, montée en charge 6 s, lever de pied 4 s, ralenti"
+    if "gearbox" in profile:
+        shifts = level(render_demo(profile, loops, trajectory=shift_trajectory(profile)), -16.0)
+        write_wav(out / f"demo_passages_{name}.wav", shifts)
+        report["demo_passages"] = (
+            f"demo_passages_{name}.wav : ralenti, départ pied au plancher, passages 1-2, 2-3, 3-4 à 6 800 tr/min "
+            "(couple coupé 0,25 s), lever de pied en 4e, ralenti"
+        )
     (out / "rapport.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     return report
 

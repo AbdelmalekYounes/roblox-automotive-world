@@ -156,3 +156,28 @@ mesurées et corrections : `docs/audio/SONS_TIERS.md` (§ « Sons produits — v
 Retour du propriétaire sur la version 2 : « on entend des coupures les deux premières et les deux dernières
 secondes », pour les deux variantes. La cause est un débordement d'entier dans le rééchantillonnage 96 → 48 kHz :
 voir `docs/audio/SONS_TIERS.md`. Correction et test de non-régression ; sons et démos reproduits.
+
+## 10. Passages de rapport (2026-11-05, demande du propriétaire : « au niveau des passages de vitesses il se passe quoi niveau son »)
+
+Constat :
+- à chaque passage, la boîte automatique coupe le couple pendant 0,25 s (`VehicleDynamics` : `ShiftTimer`) et le régime
+  redescend vers celui du rapport suivant ;
+- le son suivait bien le régime, mais restait sur la boucle « en charge », parce que la charge du son était la pédale ;
+- la démo précédente ne contenait aucun passage.
+
+Correction, approuvée par le propriétaire (« Oui, corrige ») :
+- **Charge réelle du moteur :** `VehicleController` publie `EngineLoad` dans les données du HUD. Elle vaut 0 pendant un
+  passage, sinon l'accélérateur effectif après les aides.
+- **Son :** `AudioController` suit cette charge, lissée avec une constante de temps de 0,06 s. À chaque passage, la
+  boucle « en décharge » prend brièvement le relais : on entend un creux net, sans claquement.
+- **Détection des événements :** elle compare désormais deux relevés espacés d'au moins 0,1 s. Le véhicule conduit est
+  mis à jour à chaque image, et une chute de régime ne se voit pas d'une image à la suivante.
+- **Démo `demo_passages_<variante>.wav` :**
+  - ralenti ;
+  - départ pied au plancher au régime de calage du convertisseur ;
+  - passages 1-2, 2-3 et 3-4 à 6 800 tr/min avec les rapports de la Brio ;
+  - lever de pied en 4ᵉ, puis ralenti.
+
+  Creux mesuré à chaque passage : 6 à 8 dB pendant ~0,2 s.
+- **Non traité :** les véhicules des autres joueurs gardent la charge de la pédale, mais la chute de régime y est déjà
+  transmise. C'est une option, à décider par le propriétaire.

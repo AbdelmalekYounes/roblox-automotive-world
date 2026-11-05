@@ -830,6 +830,9 @@ local function onPreRender(dt: number)
             Electric = powertrain.Engine == nil,
             Stalled = state.EngineStalled,
             EngineRunning = telemetry.EngineRunning,
+            -- Charge RÉELLE du moteur pour le son (lot AUDIO-01) : nulle pendant un passage de rapport (couple coupé par
+            -- la boîte, VehicleDynamics), sinon accélérateur effectif après les aides.
+            EngineLoad = if state.ShiftTimer > 0 then 0 else telemetry.DriveThrottle,
             Model = current.Model,
         })
     end

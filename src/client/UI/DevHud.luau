@@ -233,6 +233,8 @@ export type HudData = {
     Stalled: boolean?,
     -- Lot AUDIO-01 : moteur tournant (son du démarrage et de l'arrêt).
     EngineRunning: boolean?,
+    -- Lot AUDIO-01 : charge réelle du moteur (0 pendant un passage de rapport), pour le son.
+    EngineLoad: number?,
     Model: Model?,
 }
 

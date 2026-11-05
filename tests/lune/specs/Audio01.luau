@@ -144,6 +144,26 @@ return function(T: any, H: any)
         )
     end)
 
+    T.test("5 bis. passages de rapport : le son suit la charge RÉELLE du moteur (nulle pendant la coupure)", function()
+        local controller = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.VehicleController")
+        T.truthy(
+            string.find(controller, "EngineLoad = if state.ShiftTimer > 0 then 0 else telemetry.DriveThrottle", 1, true)
+                ~= nil,
+            "charge nulle pendant le passage (couple coupé par la boîte)"
+        )
+        local audio = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Audio.AudioController")
+        T.truthy(string.find(audio, "data.EngineLoad or data.Throttle", 1, true) ~= nil, "charge réelle utilisée")
+        T.truthy(string.find(audio, "LOAD_SMOOTHING_S = 0.06", 1, true) ~= nil, "lissage court, sans claquement")
+        T.truthy(
+            string.find(audio, "updateDriven(dt)", 1, true) ~= nil,
+            "véhicule conduit mis à jour à chaque image"
+        )
+        -- Pendant la coupure (charge 0), la boucle « en décharge » prend le relais au régime courant.
+        local cut = volumes(Model.profileLayers(PROFILE, state(4400, 0), "High"))
+        T.truthy(cut["audio.engine.essai.on.3900"] < 1e-9, "aucune boucle en charge pendant la coupure")
+        T.truthy(cut["audio.engine.essai.off.3900"] > 0.5, "boucle en décharge audible")
+    end)
+
     T.test("5. habitacle étouffé, Doppler borné", function()
         local cabin, outside = Model.listening(true), Model.listening(false)
         T.truthy(cabin.HighGain < -6 and cabin.LowGain > 0, "aigus coupés, graves renforcés en cabine")

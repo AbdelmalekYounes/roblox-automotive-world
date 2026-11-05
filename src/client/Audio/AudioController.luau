@@ -102,11 +102,16 @@ local EVENT_COOLDOWN_S = { Limiter = 0.15, Pops = 0.8, BlowOff = 1.2, Shift = 0.
 
 -- État moteur d'un véhicule : réel pour le véhicule conduit, publié par le serveur pour les autres (nil : silence,
 -- véhicule sans conducteur).
+-- Charge lissée du véhicule conduit : suit la charge RÉELLE du moteur (nulle pendant un passage de rapport) avec une
+-- constante de temps courte, pour un creux net mais sans claquement à chaque passage.
+local LOAD_SMOOTHING_S = 0.06
+local drivenLoad = 0
+
 local function engineState(model: Model, data: any?): EngineAudioModel.State?
     if data then
         return {
             Rpm = data.EngineRpm,
-            Load = data.Throttle,
+            Load = drivenLoad,
             Running = data.EngineRunning ~= false and data.Stalled ~= true,
             Stalled = data.Stalled == true,
             Gear = data.Gear,
@@ -130,13 +135,22 @@ local function engineState(model: Model, data: any?): EngineAudioModel.State?
 end
 
 -- Événements ponctuels (démarrage, rapport, rupteur, pétarades…) joués à la position du véhicule.
+-- Les événements comparent deux relevés espacés d'au moins 0,1 s : le véhicule conduit est mis à jour à chaque image,
+-- et une chute de régime ou un lever de pied ne se voit pas d'une image à la suivante.
+local EVENT_SPACING_S = 0.1
+local lastEvaluation: { [Model]: number } = {}
+
 local function playEvents(model: Model, part: BasePart, profile: EngineAudioModel.Profile, now: EngineAudioModel.State)
+    local clock = os.clock()
+    if previousState[model] ~= nil and clock - (lastEvaluation[model] or 0) < EVENT_SPACING_S then
+        return
+    end
+    lastEvaluation[model] = clock
     local before = previousState[model]
     previousState[model] = now
     if before == nil then
         return
     end
-    local clock = os.clock()
     local fired = lastEvent[model]
     if fired == nil then
         fired = {}
@@ -144,6 +158,7 @@ local function playEvents(model: Model, part: BasePart, profile: EngineAudioMode
         model.Destroying:Connect(function()
             previousState[model] = nil
             lastEvent[model] = nil
+            lastEvaluation[model] = nil
         end)
     end
     for _, name in EngineAudioModel.events(profile, before, now) do
@@ -247,8 +262,10 @@ local ambienceHolder: Folder? = nil
 -- Véhicule conduit : régime réel, recalculé À CHAQUE IMAGE (lot AUDIO-01, retour d'écoute du propriétaire : une
 -- mise à jour toutes les 0,1 s faisait entendre des marches de volume et de hauteur). Habitacle en vue cockpit.
 local lastCockpit: boolean? = nil
-local function updateDriven()
+local function updateDriven(dt: number)
     local data = DevHud.latest()
+    local target = if data then (data.EngineLoad or data.Throttle) else 0
+    drivenLoad += (target - drivenLoad) * (1 - math.exp(-dt / LOAD_SMOOTHING_S))
     local cockpit = data ~= nil and data.CameraName == "Cockpit"
     if cockpit ~= lastCockpit then
         lastCockpit = cockpit
@@ -354,7 +371,7 @@ function AudioController.start()
     ambienceHolder = holder
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
-        updateDriven()
+        updateDriven(dt)
         timer += dt
         if timer >= UPDATE_S then
             timer = 0

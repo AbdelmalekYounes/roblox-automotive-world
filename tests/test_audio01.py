@@ -83,3 +83,17 @@ def test_resampling_keeps_long_signals_intact():
     rms = np.sqrt((frames**2).mean(axis=1))
     assert rms.min() > 0.95 * rms.max()
     assert np.max(np.abs(out - signal[::2])) < 0.01
+
+
+def test_shift_demo_cuts_load_and_drops_rpm_by_the_gear_ratio():
+    """Démo des passages : à chaque passage, charge ramenée près de 0 et régime ramené au rapport suivant."""
+    times, rpm, load = el.shift_trajectory(el.BRIO)
+    box = el.BRIO["gearbox"]
+    peaks = [i for i in range(1, len(rpm) - 1) if rpm[i] >= box["shift_up"] - 1 and rpm[i + 1] < rpm[i]]
+    assert len(peaks) == len(box["ratios"]) - 1, "trois passages (1-2, 2-3, 3-4)"
+    for n, i in enumerate(peaks):
+        window = slice(i, i + int(box["shift_s"] / 0.005))
+        assert load[window].min() < 0.1, "charge coupée pendant le passage"
+        expected = box["shift_up"] * box["ratios"][n + 1] / box["ratios"][n]
+        assert abs(rpm[window].min() - expected) / expected < 0.05, "régime du rapport suivant"
+    assert rpm[-1] == el.BRIO["idle_rpm"] and load[-1] < 0.01
