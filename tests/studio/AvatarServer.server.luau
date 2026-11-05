@@ -27,6 +27,7 @@ local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
 if
     session ~= "avatar"
+    and session ~= "comete_avatar"
     and session ~= "avatar2"
     and session ~= "aster"
     and session ~= "silhouette"
@@ -1556,7 +1557,10 @@ record(
 )
 
 -- 2. Morphologies debout : marche, téléphone (client), puis assise dans les véhicules.
-local SAMPLE = { "proto_p01", "wk_pixel", "wk_comete", "wk_brise", "wk_dune" }
+-- « comete_avatar » (lot VEH3D-01, demande du propriétaire du 2026-11-05) : la Comète seule, toutes les
+-- morphologies ; les 17 autres modèles ne sont pas essayés.
+local ONLY_COMETE = session == "comete_avatar"
+local SAMPLE = if ONLY_COMETE then { "wk_comete" } else { "proto_p01", "wk_pixel", "wk_comete", "wk_brise", "wk_dune" }
 local results: { [string]: { [string]: { [string]: Seated } } } = {} -- véhicule → siège → morphologie
 local exits: { [string]: { string } } = {}
 
@@ -1701,7 +1705,7 @@ end
 -- 3. Les 18 modèles avec les morphologies extrêmes (assise seulement, une capture M7).
 for _, spec in WorkingCatalog.Specs do
     local modelId = spec.Id
-    if table.find(SAMPLE, modelId) then
+    if ONLY_COMETE or table.find(SAMPLE, modelId) then
         continue
     end
     for _, morph in MORPHS do
@@ -1865,7 +1869,7 @@ end
 record("avatar.info_masse_du_personnage_assis", true, table.concat(massNotes, " / "))
 
 -- 5. Tenue refusée assis, réapparition : R15 et apparence initiale relue.
-local model = spawnVehicle(player, "proto_p01")
+local model = spawnVehicle(player, if ONLY_COMETE then "wk_comete" else "proto_p01")
 if model and sit(player, model, "DriverSeat") then
     local seatedRestore = AvatarService.restore(player)
     record(

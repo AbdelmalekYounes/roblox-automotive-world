@@ -52,6 +52,7 @@ local KNOWN_SESSIONS = {
     comete_vitres = { Name = "comete_vitres", Players = 1 },
     comete_perf = { Name = "comete_perf", Players = 1 },
     comete2 = { Name = "comete2", Players = 2 },
+    comete_avatar = { Name = "comete_avatar", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
