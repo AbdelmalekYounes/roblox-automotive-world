@@ -109,3 +109,10 @@ Préparation : `rojo build default.project.json -o build\AutomotiveWorld-base01.
 Dernière exécution, le 2026-11-05, après toutes les modifications du lot : `scriptserify.ps1 -DownloadRobloxTypes`. Toutes
 les étapes sont OK : Rojo, Selene, pilote Studio, StyLua, Lune (389 réussis, 0 échec), carte du monde ouvert, place monde
 ouvert, pytest, luau-lsp strict.
+
+## 6. Vérification par le propriétaire (2026-11-05)
+
+Essai en jeu du propriétaire dans Studio, place `build/AutomotiveWorld-base01.rbxlx` (commit `6fcde41`) : **points 1 à 7
+du §4 validés** (« 1. OK … 7. OK »). Le point 8 (accès de revue) n'a pas été rapporté. Clôture et fusion autorisées par le
+propriétaire le 2026-11-05.
+

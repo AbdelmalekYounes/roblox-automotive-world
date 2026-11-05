@@ -307,7 +307,7 @@ Les 17 modèles, les prototypes, le parc d'essai et les carrosseries provisoires
 | Id | Priorité | Constat | État |
 |---|---|---|---|
 | QA-B01 | P2 | Sessions VM qui supposent le parc d'essai ou les modèles retirés : `lot02`, `lot04`, `lot06`, `lot08`, `scenarios`, `monde`, `gps`, `ui*`, `avatar*`, `comete*` (fichiers de `tests/studio` qui citent `proto_p0x`, `wk_…`, `VehiculesEssai`) | **NON ADAPTÉES** : elles se compilent (`verify.ps1`) mais échoueraient à l'exécution ; à reprendre si une campagne VM est relancée |
-| QA-B02 | P2 | Arrivée sans véhicule de départ, métiers à véhicule fourni refusés (« NoProfessionalVehicle »), concession limitée à la Comète en Dev | **NON TESTÉ** en jeu : liste de vérification du propriétaire |
+| QA-B02 | P2 | Arrivée sans véhicule de départ, métiers à véhicule fourni refusés (« NoProfessionalVehicle »), concession limitée à la Comète en Dev | **Validé en jeu par le propriétaire le 2026-11-05** (rapport BASE-01 §6) |
 | QA-B03 | P3 | Reproductions QA-A08 et du calage par rebond liées aux modèles retirés (10 cas de la Mistral, rebond de l'Atlas) : non rejouables sur les jeux d'essai | Couverture réduite, consignée ; les 3 cas du P-01 et la règle de relance restent testés |
 
 ## 4. Charge, performance et stabilité
