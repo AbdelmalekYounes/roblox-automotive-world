@@ -37,10 +37,10 @@ local noticeSink: ((string, any) -> ())? = nil
 
 local KEYBOARD_HELP = "Z/W accélérer • S freiner/reculer (maintenir à l'arrêt : marche arrière en boîte auto) • Q/A D diriger • Espace frein à main"
     .. "\nMaj gauche / Ctrl gauche rapport + / − • C embrayage • 1 ABS • 2 antipatinage • 3 ESP • G récupération"
-    .. "\nV caméra • R remettre sur roues • F sortir"
+    .. "\nV caméra • clic droit maintenu : regarder autour • R remettre sur roues • F sortir"
 local GAMEPAD_HELP = "RT accélérer • LT freiner/reculer • Stick gauche diriger • A frein à main"
     .. "\nRB / LB rapport + / − • B embrayage • Croix gauche choisir un réglage, croix droite le changer"
-    .. "\nCroix haut caméra • Croix bas remettre sur roues • Y sortir"
+    .. "\nCroix haut caméra • Stick droit regarder autour • Croix bas remettre sur roues • Y sortir"
 
 local function makeLabel(parent: Instance, name: string, position: UDim2, size: UDim2, textSize: number): TextLabel
     local label = Instance.new("TextLabel")
