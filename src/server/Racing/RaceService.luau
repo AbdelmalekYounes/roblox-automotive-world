@@ -1408,6 +1408,23 @@ function RaceService.start(openWorld: boolean, parent: Instance)
 end
 
 -- Accès en lecture pour les essais automatisés (Studio) : parcours et salons.
+-- Lot ADMIN-01 : départ sans attendre les autres joueurs (menu d'administration). Le salon de l'administrateur
+-- passe à son effectif actuel et tous les inscrits sont déclarés prêts : le verrouillage a lieu au battement suivant.
+function RaceService.adminForceStart(userId: number): (boolean, string?)
+    local session = RaceLobby.sessionOf(lobby, userId)
+    if session == nil then
+        return false, "AdminNoRace"
+    end
+    if session.State ~= "Open" then
+        return false, "RaceAlreadyLocked"
+    end
+    session.MinParticipants = math.max(1, #session.Order)
+    for _, participant in session.Participants do
+        participant.Ready = true
+    end
+    return true, nil
+end
+
 function RaceService.state(): any
     return { Courses = courses, Lobby = lobby, Installations = installations }
 end

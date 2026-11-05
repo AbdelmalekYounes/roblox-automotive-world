@@ -1176,6 +1176,10 @@ function VehicleService.start(zone: SpawnSet)
         createdRemotes.Impulse:FireClient(driver, model, normal, deltaV, point)
     end)
     local function correcting(model: Model): boolean
+        -- Lot ADMIN-01 : véhicule rendu invulnérable par le menu d'administration (aucun dégât compté).
+        if model:GetAttribute("AWAdminInvulnerable") == true then
+            return true
+        end
         for _, record in records do
             if record.Model == model then
                 return os.clock() < record.CorrectionUntil
@@ -1451,6 +1455,50 @@ function VehicleService.ejectPersonalDriver(model: Model)
 end
 
 -- Retire un exemplaire personnel du monde (rangement, départ du joueur).
+local function findRecord(model: any): VehicleRecord?
+    for _, record in records do
+        if record.Model == model then
+            return record
+        end
+    end
+    return nil
+end
+
+-- ======================== Menu d'administration (lot ADMIN-01) ========================
+-- Appelés par Server/Admin/AdminService SEULEMENT, après la vérification des droits.
+
+-- Véhicule conduit par le joueur (nil s'il n'est pas au volant).
+function VehicleService.drivenBy(player: Player): Model?
+    local record = recordByDriver[player]
+    return if record then record.Model else nil
+end
+
+-- Réparation complète ; énergie remise au plein si demandé. Renvoie false si le véhicule n'est pas suivi.
+function VehicleService.adminRepair(model: Model, refill: boolean): boolean
+    local record = findRecord(model)
+    if record == nil or not damage:repair(model) then
+        return false
+    end
+    if refill then
+        local account = record.Energy
+        account.Level = account.Capacity
+        account.Empty = false
+        publishEnergy(record, true)
+    end
+    return true
+end
+
+-- Remise sur roues immédiate (sans délai ni condition de vitesse, contrairement à l'action des joueurs).
+function VehicleService.adminFlip(model: Model): boolean
+    local record = findRecord(model)
+    if record == nil then
+        return false
+    end
+    local root = record.Root
+    placeUnderServer(record, uprightPivot(root.Position + Vector3.new(0, 4, 0), root.CFrame.LookVector))
+    return true
+end
+
 function VehicleService.despawnPersonal(model: Model)
     local record = personalRecord(model)
     if record == nil then
@@ -1469,15 +1517,6 @@ function VehicleService.despawnPersonal(model: Model)
         table.remove(records, index)
     end
     model:Destroy()
-end
-
-local function findRecord(model: any): VehicleRecord?
-    for _, record in records do
-        if record.Model == model then
-            return record
-        end
-    end
-    return nil
 end
 
 --[[

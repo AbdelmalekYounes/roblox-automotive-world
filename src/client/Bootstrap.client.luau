@@ -66,6 +66,9 @@ local UIState = require(UI:WaitForChild("UIState"))
 local GaragePanel = require(UI:WaitForChild("GaragePanel"))
 local EconomyPanel = require(UI:WaitForChild("EconomyPanel"))
 local RacePanel = require(UI:WaitForChild("RacePanel"))
+-- Lot ADMIN-01 : menu d'administration (construit seulement pour les administrateurs) et déplacement libre.
+local AdminPanel = require(UI:WaitForChild("AdminPanel"))
+local NoclipController = require(script.Parent:WaitForChild("Admin"):WaitForChild("NoclipController"))
 local OnboardingController = require(UI:WaitForChild("OnboardingController"))
 local PhotoMode = require(UI:WaitForChild("PhotoMode"))
 
@@ -91,6 +94,8 @@ PhoneController.start()
 GaragePanel.start()
 EconomyPanel.start()
 RacePanel.start()
+AdminPanel.start()
+NoclipController.start()
 -- Lot 0.8 : parcours d'arrivée (passable) et exercices de formation.
 task.spawn(OnboardingController.start)
 -- Avatars humains (2026-11-04) : choix de la silhouette à la première apparition.
@@ -156,6 +161,24 @@ do
             AudioController.setZoneLookup(WorldLayout.get().ZoneOf)
         end)
     end
+end
+if not openWorld then
+    -- Lot ADMIN-01 : place de développement sans cycle jour/nuit ; le rendu (heure, météo) démarre au premier
+    -- réglage du menu d'administration (attribut AWClockEpoch ou AWWeather publié par le serveur).
+    local Workspace = game:GetService("Workspace")
+    local environmentStarted = false
+    local function startEnvironment()
+        if environmentStarted then
+            return
+        end
+        environmentStarted = true
+        require(script.Parent:WaitForChild("World"):WaitForChild("Environment")).start()
+    end
+    if Workspace:GetAttribute("AWClockEpoch") ~= nil or Workspace:GetAttribute("AWWeather") ~= nil then
+        startEnvironment()
+    end
+    Workspace:GetAttributeChangedSignal("AWClockEpoch"):Connect(startEnvironment)
+    Workspace:GetAttributeChangedSignal("AWWeather"):Connect(startEnvironment)
 end
 if openWorld then
     local WorldClient = script.Parent:WaitForChild("World")

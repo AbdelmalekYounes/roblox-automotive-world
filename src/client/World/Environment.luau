@@ -103,7 +103,15 @@ function Environment.start()
         local now = Workspace:GetServerTimeNow()
         local epoch = Workspace:GetAttribute("AWClockEpoch")
         if type(epoch) == "number" then
-            Lighting.ClockTime = WeatherModel.clockTime(now, epoch)
+            -- Lot ADMIN-01 : ancre et vitesse du cycle réglables par le serveur (menu d'administration).
+            local anchor = Workspace:GetAttribute("AWClockAnchor")
+            local speed = Workspace:GetAttribute("AWClockSpeed")
+            Lighting.ClockTime = WeatherModel.clockTime(
+                now,
+                epoch,
+                if type(anchor) == "number" then anchor else nil,
+                if type(speed) == "number" then speed else nil
+            )
         end
 
         local preset = presetOf(Workspace:GetAttribute("AWWeather"))

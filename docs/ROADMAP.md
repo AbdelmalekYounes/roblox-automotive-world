@@ -273,3 +273,18 @@ Décision du propriétaire du 2026-11-05 ([amendement A-01](AMENDEMENTS_CAHIER_D
 Suite : ADMIN-01 (expérience privée et menu d'administration, [proposition](lot-admin-01/PROPOSITION_ADMIN_01.md)),
 puis VEH3D-02 (citadine Milano '95, [candidats](vehicle-3d/VEH3D_02_CANDIDATS.md)).
 
+## Lot ADMIN-01 — menu d'administration et expérience privée (branche `feat/admin-01-menu-admin`)
+
+Décisions du propriétaire du 2026-11-05 ([proposition](lot-admin-01/PROPOSITION_ADMIN_01.md) §4,
+[rapport](lot-admin-01/RAPPORT_ADMIN_01.md)) : menu réservé aux administrateurs (liste côté serveur), actif dans tous les
+environnements, touche F8. 22 actions :
+- monde : heure, cycle, météo ;
+- véhicule : apparition temporaire, réparation, remise sur roues, invulnérabilité ;
+- personnage : no clip, vitesse, invisibilité, réapparition, téléportation ;
+- joueurs : aller à, amener, crédits (100 000 au plus par action), expulsion ;
+- profil : réputation, mission, course, réinitialisation en Dev et Test ;
+- diagnostic et journal.
+
+Correctif QA-D11 : une place publiée non déclarée passe en « Unconfigured », sans crédits synthétiques. Expérience
+privée : à créer et publier par le propriétaire, puis déclarer son identifiant (environnement Test, DataStore isolé).
+

@@ -252,6 +252,105 @@ local E: { [string]: Entry } = {
         "Descendez du véhicule pour recevoir le véhicule professionnel.",
         "Get out of your vehicle to receive the work vehicle.",
     },
+    -- Lot ADMIN-01 : accès au menu d'administration depuis le téléphone.
+    ["phone.admin"] = { "Administration", "Administration" },
+    -- Lot ADMIN-01 : refus du menu d'administration.
+    AdminActionUnknown = {
+        "Action d'administration inconnue.",
+        "Unknown admin action.",
+    },
+    AdminNotAllowed = {
+        "Réservé aux administrateurs.",
+        "Administrators only.",
+    },
+    AdminHourInvalid = {
+        "Heure invalide (0 à 24).",
+        "Invalid time (0 to 24).",
+    },
+    AdminSpeedInvalid = {
+        "Vitesse hors des bornes.",
+        "Speed out of range.",
+    },
+    AdminWeatherInvalid = {
+        "Météo inconnue.",
+        "Unknown weather.",
+    },
+    AdminModelInvalid = {
+        "Modèle invalide.",
+        "Invalid model.",
+    },
+    AdminModelUnknown = {
+        "Modèle inconnu.",
+        "Unknown model.",
+    },
+    AdminFlagInvalid = {
+        "Valeur invalide (oui ou non).",
+        "Invalid value (yes or no).",
+    },
+    AdminPointInvalid = {
+        "Lieu invalide.",
+        "Invalid place.",
+    },
+    AdminPointUnknown = {
+        "Lieu introuvable.",
+        "Place not found.",
+    },
+    AdminPlayerInvalid = {
+        "Joueur invalide.",
+        "Invalid player.",
+    },
+    AdminPlayerAbsent = {
+        "Ce joueur n'est pas sur le serveur.",
+        "This player is not on the server.",
+    },
+    AdminAmountInvalid = {
+        "Montant hors des bornes.",
+        "Amount out of range.",
+    },
+    AdminReasonInvalid = {
+        "Motif requis (120 caractères au plus).",
+        "Reason required (120 characters max).",
+    },
+    AdminNoCharacter = {
+        "Personnage absent.",
+        "No character.",
+    },
+    AdminNotDriving = {
+        "Montez au volant d'un véhicule.",
+        "Get behind the wheel of a vehicle.",
+    },
+    AdminVehicleUnknown = {
+        "Véhicule non suivi par le serveur.",
+        "Vehicle not tracked by the server.",
+    },
+    AdminNoProfile = {
+        "Profil non chargé.",
+        "Profile not loaded.",
+    },
+    AdminResetRefusedProd = {
+        "Réinitialisation interdite en production.",
+        "Reset not allowed in production.",
+    },
+    AdminSelf = {
+        "Action impossible sur vous-même.",
+        "Not possible on yourself.",
+    },
+    AdminNoRace = {
+        "Vous n'êtes inscrit à aucune épreuve ouverte.",
+        "You are not registered in any open event.",
+    },
+    AdminGrantFailed = {
+        "Crédits non accordés.",
+        "Credits not granted.",
+    },
+    AdminReputationFailed = {
+        "Réputation non modifiée.",
+        "Reputation not changed.",
+    },
+    AdminResetFailed = {
+        "Profil non réinitialisé.",
+        "Profile not reset.",
+    },
     -- Lot BASE-01 : métier à véhicule fourni, sans modèle disponible tant que la citadine n'est pas intégrée.
     NoProfessionalVehicle = {
         "Aucun véhicule de service n'est disponible pour ce métier pour le moment.",

@@ -92,10 +92,12 @@ WeatherModel.Standard = table.freeze({
     Label = "Conditions standardisées (AUD-WEATHER-01)",
 })
 
--- Heure (0–24) à l'instant `serverTime`, `epoch` = instant de StartHour.
-function WeatherModel.clockTime(serverTime: number, epoch: number): number
-    local cycles = (serverTime - epoch) / WeatherModel.DayLengthS
-    return (WeatherModel.StartHour + 24 * cycles) % 24
+-- Heure (0–24) à l'instant `serverTime`. `epoch` = instant où l'horloge valait `anchorHour` (StartHour par défaut) ;
+-- `speed` = multiplicateur du cycle (1 par défaut ; 0 = heure figée). Lot ADMIN-01 : ancre et vitesse réglables
+-- par le menu d'administration (attributs AWClockAnchor et AWClockSpeed de Workspace).
+function WeatherModel.clockTime(serverTime: number, epoch: number, anchorHour: number?, speed: number?): number
+    local cycles = (serverTime - epoch) * (speed or 1) / WeatherModel.DayLengthS
+    return ((anchorHour or WeatherModel.StartHour) + 24 * cycles) % 24
 end
 
 -- Épisode suivant, à partir d'un tirage uniforme `roll` dans [0 ; 1[.

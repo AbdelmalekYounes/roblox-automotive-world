@@ -13,6 +13,9 @@ local ECONOMY_PREFIX = "ServerScriptService.AutomotiveWorldServer.Economy."
 -- (OrderedDataStore) isolés dans UN adaptateur, instancié seulement si une
 -- expérience de test isolée ou de production est déclarée (aucune ne l'est).
 local RACING_PREFIX = "ServerScriptService.AutomotiveWorldServer.Racing."
+-- Lot ADMIN-01 : le menu d'administration accorde des crédits (transaction « AdminGrant » du portefeuille, au plus
+-- 100 000 par action, droits vérifiés côté serveur).
+local ADMIN_SERVICE = "ServerScriptService.AutomotiveWorldServer.Admin.AdminService"
 local CROSS_SERVER_ADAPTER = "ServerScriptService.AutomotiveWorldServer.Racing.CrossServerAdapter"
 local CROSS_SERVER_ALLOWED = {
     DataStore = true,
@@ -105,6 +108,8 @@ return function(T: any, H: any)
                     elseif fullName == CROSS_SERVER_ADAPTER then
                         allowed = CROSS_SERVER_ALLOWED
                     elseif string.sub(fullName, 1, #RACING_PREFIX) == RACING_PREFIX then
+                        allowed = { ["crédits"] = true }
+                    elseif fullName == ADMIN_SERVICE then
                         allowed = { ["crédits"] = true }
                     end
                     for _, rule in FORBIDDEN_PATTERNS do

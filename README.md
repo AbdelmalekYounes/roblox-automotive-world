@@ -147,6 +147,14 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   ([direction artistique](docs/lot-0.8/DIRECTION_ARTISTIQUE.md)).
 - **Parcours d'arrivée** : s'ouvre à la première connexion, passable ; consultable ensuite (application Guide).
 
+## Menu d'administration (lot ADMIN-01)
+
+Touche **F8**, administrateurs seulement (liste côté serveur, `src/server/Admin/AdminConfig.luau`). Monde (heure,
+cycle, météo), véhicules (apparition temporaire, réparation, remise sur roues, invulnérabilité), personnage (no clip,
+vitesse, invisibilité, téléportation), joueurs (aller à, amener, crédits jusqu'à 100 000 par action, expulsion), profil
+(réputation, mission, course, réinitialisation en Dev et Test), diagnostic, journal
+([rapport](docs/lot-admin-01/RAPPORT_ADMIN_01.md)).
+
 ## Commandes de conduite
 
 | Action | Clavier | Manette |

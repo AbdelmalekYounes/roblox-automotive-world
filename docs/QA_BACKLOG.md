@@ -290,7 +290,7 @@ Constats relevés dans les rapports VM existants (aucune nouvelle exécution) et
 | QA-U15 | P3 | Interfaces V1.2 sur écrans réels 1080 p, 1440 p, ultralarge (essais VM sur écran virtuel) | NON TESTÉ |
 | QA-U16 | P2 | GPS sur le code V1.2 (tâche `20261105-155234` coupée) ; essai `ui_hud` corrigé, non relancé | NON TESTÉ |
 | QA-U17 | P3 | Téléphone en main en marchant (monde ouvert) : bras levé de 8° mesurés contre 25° attendus (`20261105-154646`), lien avec QA-A20 et QA-U10 | Ouverte, non classée |
-| QA-D11 | P1 (avant publication) | Une place publiée dont l'identifiant n'est pas déclaré dans `EnvironmentConfig` est traitée en « Dev / mémoire » : crédits synthétiques (`DevSeed`) attribués et modèles en attente achetables (`Environment.luau`, `ProfileService.luau`) | Ouverte : déclarer les identifiants ou refuser le mode Dev hors Studio avant toute publication |
+| QA-D11 | P1 (avant publication) | Une place publiée dont l'identifiant n'est pas déclaré dans `EnvironmentConfig` est traitée en « Dev / mémoire » : crédits synthétiques (`DevSeed`) attribués et modèles en attente achetables (`Environment.luau`, `ProfileService.luau`) | **Corrigée** (ADMIN-01, 2026-11-05) : hors Studio, environnement « Unconfigured » sans données synthétiques ; test Lune `Lot04Persistence`. Comportement dans une expérience publiée : **NON TESTÉ** |
 
 ## 3 nonies. Lot BASE-01 — base propre à deux véhicules (2026-11-05)
 
@@ -309,6 +309,15 @@ Les 17 modèles, les prototypes, le parc d'essai et les carrosseries provisoires
 | QA-B01 | P2 | Sessions VM qui supposent le parc d'essai ou les modèles retirés : `lot02`, `lot04`, `lot06`, `lot08`, `scenarios`, `monde`, `gps`, `ui*`, `avatar*`, `comete*` (fichiers de `tests/studio` qui citent `proto_p0x`, `wk_…`, `VehiculesEssai`) | **NON ADAPTÉES** : elles se compilent (`verify.ps1`) mais échoueraient à l'exécution ; à reprendre si une campagne VM est relancée |
 | QA-B02 | P2 | Arrivée sans véhicule de départ, métiers à véhicule fourni refusés (« NoProfessionalVehicle »), concession limitée à la Comète en Dev | **Validé en jeu par le propriétaire le 2026-11-05** (rapport BASE-01 §6) |
 | QA-B03 | P3 | Reproductions QA-A08 et du calage par rebond liées aux modèles retirés (10 cas de la Mistral, rebond de l'Atlas) : non rejouables sur les jeux d'essai | Couverture réduite, consignée ; les 3 cas du P-01 et la règle de relance restent testés |
+
+## 3 decies. Lot ADMIN-01 — menu d'administration (2026-11-05)
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-M01 | P2 | Les 22 actions du menu en jeu (`docs/lot-admin-01/RAPPORT_ADMIN_01.md` §5) | **Validé en jeu par le propriétaire le 2026-11-05** (rapport ADMIN-01 §7), menu latéral compris |
+| QA-M02 | P2 | Menu absent pour un joueur non administrateur ; demande forcée refusée et consignée | Contrôlé par Lune (droits avant validation) ; **NON TESTÉ** à deux joueurs |
+| QA-M03 | P3 | Invisibilité : accessoire ajouté après l'activation visible jusqu'à la réapparition | Limite connue |
+| QA-M04 | P3 | Réparation : déformations d'une coque de repli non annulées (sans objet pour la Comète) | Limite connue |
 
 ## 4. Charge, performance et stabilité
 
