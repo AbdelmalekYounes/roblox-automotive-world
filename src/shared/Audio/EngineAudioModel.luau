@@ -170,9 +170,9 @@ local function pointWeight(points: { number }, index: number, rpm: number): numb
 end
 
 --[[
-    Couches d'un profil enregistré. `Load` 0–1 (accélérateur) ; moteur arrêté ou calé : silence. Fondu croisé selon le
-    régime (deux boucles voisines au plus) et selon la charge (en charge / en décharge, transition douce autour de
-    LoadKnee). Vitesse de lecture = régime / régime de la boucle, bornée.
+    Couches d'un profil enregistré. `Load` 0–1 (accélérateur) ; moteur arrêté ou calé : silence. Fondu croisé à
+    puissance constante selon le régime (deux boucles voisines au plus) et selon la charge (en charge / en décharge,
+    transition douce autour de LoadKnee). Vitesse de lecture = régime / régime de la boucle, bornée.
 ]]
 function EngineAudioModel.profileLayers(profile: Profile, state: State, quality: string?): { Layer }
     local out: { Layer } = {}
@@ -183,12 +183,15 @@ function EngineAudioModel.profileLayers(profile: Profile, state: State, quality:
     if rpm < profile.IdleRpm * 1.15 then
         on *= 0.5
     end
+    -- Fondus à PUISSANCE CONSTANTE (retour d'écoute du propriétaire) : les boucles voisines ne sont pas corrélées ;
+    -- un fondu linéaire creusait le volume de 3 dB au milieu de chaque transition (effet de pompage audible).
+    local onAmp, offAmp = math.sin(on * math.pi / 2), math.cos(on * math.pi / 2)
     for index, ref in profile.Points do
-        local w = if silent then 0 else pointWeight(profile.Points, index, rpm)
+        local w = if silent then 0 else math.sin(pointWeight(profile.Points, index, rpm) * math.pi / 2)
         local speed = math.clamp(rpm / ref, EngineAudioModel.ProfileMinSpeed, EngineAudioModel.ProfileMaxSpeed)
         local id = tostring(ref)
-        table.insert(out, { Id = profile.Prefix .. "on." .. id, Volume = w * on * profile.Gain, Speed = speed })
-        table.insert(out, { Id = profile.Prefix .. "off." .. id, Volume = w * (1 - on) * profile.Gain, Speed = speed })
+        table.insert(out, { Id = profile.Prefix .. "on." .. id, Volume = w * onAmp * profile.Gain, Speed = speed })
+        table.insert(out, { Id = profile.Prefix .. "off." .. id, Volume = w * offAmp * profile.Gain, Speed = speed })
     end
     if profile.Turbo then
         -- Sifflement du turbo : monte avec la charge et le régime (pression de suralimentation), jamais au ralenti.

@@ -40,33 +40,46 @@ tous des régimes : « 500 » ne correspond à aucune mesure.
 | `162504__chippy569__17_medsweep_d6.wav` | descentes pied levé | ~4 000 → 1 360 tr/min (3,3 à 7,5 s) |
 | `162528__chippy569__23_startismall_d6.wav`, `162525__chippy569__23_startbig_d6.wav` | démarrage, arrêt | — |
 
-### Sons produits
+### Sons produits — version 2 (2026-11-05, après écoute du propriétaire)
+
+**Version 1, rejetée par le propriétaire** (« ça sonne pas bien du tout, on entend très bien le découpage »).
+Causes relevées par mesure :
+- **sources hétérogènes d'un point au voisin** : écart de timbre jusqu'à 8 dB ;
+- **boucles courtes** : 0,25 à 0,5 s ;
+- **fondus linéaires** : creux de 3 dB au milieu de chaque transition ;
+- **sauts de niveau dans les boucles prises sur un balayage** : jusqu'à 17 dB, parce qu'un balayage devient plus fort
+  en montant ;
+- **démo calculée en escalier**, et moteur recalculé toutes les 0,1 s en jeu.
+
+Version 2 :
+- **8 points**, de 1 000 à 6 300 tr/min, espacés d'un facteur ~1,3. Chaque point vient autant que possible d'un même
+  balayage continu.
+- **Préparation des boucles :**
+  1. extrait déplié à régime constant ;
+  2. enveloppe lente aplanie ;
+  3. allongement à ~1,6 s par grains de 6 cycles alignés sur le cycle moteur ;
+  4. raccord à puissance constante.
+- **Niveaux** suivant une courbe régulière du régime : +3 dB par octave en charge, +2 dB en décharge.
+- **Deux variantes** produites, à départager à l'oreille par le propriétaire :
+
+| Variante | Sources | Écart de timbre moyen entre points voisins (mesure) |
+|---|---|---|
+| `moteur` (**recommandée**) | DPA 4062 : montée continue `162499` (1 550 → 6 400 tr/min, arrêtée avant le rupteur du banc), descente continue `162502` (7 000 → 1 470 tr/min), ralenti stable de la même prise (6,4–8,6 s, ~1 420 tr/min) | ~3,4 dB |
+| `echappement` | Audix D6 : montée `162501`, descentes `162504`, prises stables `21_500`, `19_500`, `21_6500` pour les extrémités | ~5,1 dB |
 
 Commande : `python -I tools/audio/engine_loops.py brio "E:\ROBLOX DEV\aw-sound-references\brio\freesound"`.
-Sortie : `build/audio/engines/brio/`, détail dans `rapport.json`. Tous les fichiers sont en WAV 48 kHz, 16 bits, mono.
+Sortie : `build/audio/engines/brio/<variante>/`, avec 16 boucles `on.<tr/min>` et `off.<tr/min>`, `start`, `stop`,
+`stall`, une démo `demo_<variante>.wav` et `rapport.json`. Tous les fichiers sont en WAV 48 kHz, 16 bits, mono.
 
-| Ressource | Origine (transformation) |
-|---|---|
-| `on.1000`, `off.1000` | ralenti, transposé × 0,987 |
-| `on.1450` | `19_500` (1 288 tr/min), × 1,126 |
-| `on.2100`, `on.3000` | `19_2500`, × 0,821 et × 1,173 |
-| `on.4300` | montée 0,95–1,50 s (3 669 → 5 263 tr/min), dépliée à régime constant |
-| `on.6200` | `20_6500`, × 0,999 |
-| `off.1450` | descente 6,85–7,40 s (1 753 → 1 448 tr/min), dépliée |
-| `off.2100`, `off.3000` | `21_2500`, × 0,864 et × 1,234 |
-| `off.4300` | descente 3,25–4,05 s (4 112 → 3 489 tr/min), dépliée |
-| `off.6200` | `21_6500`, × 0,984 |
-| `start`, `stop`, `stall` | `23_startismall` (1,85–4,6 s) ; `23_startbig` (6,55–8,2 s et 6,75–7,9 s), avec fondus |
-| `demo_montee_lever_de_pied` | démo d'écoute, non envoyée : ralenti, montée en charge 6 s, lever de pied 4 s, ralenti |
-
-Contrôles de l'outil (2026-11-05) :
-- régime vérifié de chaque boucle à ±3 % du régime de référence ;
-- raccord de boucle sous les sauts ordinaires du signal (au plus 0,29 fois le 99ᵉ centile) ;
-- niveau continu au raccord, à ±2 dB ;
-- niveaux RMS de −15 dBFS en charge et −21 dBFS en décharge, crête sous −1 dBFS.
+Contrôles de l'outil sur la variante `moteur` (2026-11-05) :
+- régime de chaque boucle à ±4 % de sa référence ;
+- variation de niveau dans une boucle (trames de 2 cycles) : 1,0 à 2,5 dB au-dessus du ralenti, 5 à 6 dB au ralenti
+  (irrégularité naturelle) ;
+- démo : saut de niveau d'une trame de 60 ms à la suivante, médiane 0,54 dB.
 
 Limites connues :
-- seuls 3 régimes stables ont été enregistrés ; les autres points viennent de transpositions ou d'extraits de balayage
-  courts (0,5 à 0,9 s) ;
-- le ralenti d'origine est très faible : relevé de 30 dB, son bruit de fond aussi ;
-- l'octave de `19_500` reste à confirmer à l'écoute (§ ci-dessus).
+- le ralenti de la variante « moteur » tourne à ~1 420 tr/min sur le banc. Il est ramené à 1 000 tr/min (× 0,70),
+  puis joué jusqu'à 850 tr/min ;
+- l'octave de `19_500` (variante « échappement ») reste à confirmer à l'écoute ;
+- le ralenti de la variante « échappement » est très faible à l'origine : relevé d'environ 30 dB, son bruit de fond
+  aussi.

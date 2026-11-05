@@ -135,5 +135,18 @@ Fait le 2026-11-05 :
   - `tests/test_audio01.py` : mesure du régime, dépliage d'un balayage, niveaux, cohérence avec le profil du jeu ;
   - Lot08 16 : les sons enregistrés sont comptés à part.
 
-Étape suivante : écoute par le propriétaire (démo et boucles), puis envoi des 15 sons sur Roblox, puis identifiants
-au manifeste.
+
+## 8. Version 2 après écoute (2026-11-05)
+
+Retour du propriétaire sur la version 1 : « ça sonne pas bien du tout, on entend très bien le découpage ». Causes
+mesurées et corrections : `docs/audio/SONS_TIERS.md` (§ « Sons produits — version 2 »).
+
+| Correction | Où |
+|---|---|
+| 8 points plus rapprochés, pris sur des balayages continus ; boucles de ~1,6 s par grains alignés sur le cycle ; enveloppe lente aplanie ; niveaux suivant le régime ; deux variantes de micro | `tools/audio/engine_loops.py` |
+| Fondus à puissance constante (régime et charge) | `EngineAudioModel.profileLayers`, démo |
+| Moteur du véhicule conduit recalculé à chaque image (au lieu de toutes les 0,1 s) ; égaliseur d'habitacle posé seulement quand la vue change | `AudioController` |
+| Profil Brio à 8 points ; 19 sons au manifeste | `EngineSoundProfiles`, `AssetManifest` |
+
+Étape suivante : écoute des deux démos par le propriétaire et choix de la variante. Ensuite, envoi sur Roblox des
+19 sons de la variante choisie, puis identifiants au manifeste.

@@ -13,11 +13,12 @@ local EngineAudioModel = require(script.Parent.EngineAudioModel)
 local EngineSoundProfiles = {}
 
 -- Brio (lot AUDIO-01, 2026-11-05) : pack « The Dyno Sessions: 190E » (Chippy569, CC0), 4 cylindres 16 soupapes au
--- banc, micro d'échappement. Boucles produites par `tools/audio/engine_loops.py brio` (registre docs/audio/SONS_TIERS.md).
--- Régimes de référence espacés d'un facteur ~1,45 ; ni turbo ni pétarades (citadine atmosphérique).
+-- banc. Boucles produites par `tools/audio/engine_loops.py brio` (registre docs/audio/SONS_TIERS.md).
+-- Régimes de référence espacés d'un facteur ~1,3 (version 2, après écoute) ; ni turbo ni pétarades (citadine
+-- atmosphérique).
 local BRIO: EngineAudioModel.Profile = {
     Prefix = "audio.engine.brio.",
-    Points = { 1000, 1450, 2100, 3000, 4300, 6200 },
+    Points = { 1000, 1300, 1700, 2200, 2900, 3800, 4900, 6300 },
     IdleRpm = 850,
     LimiterRpm = 7200,
     Turbo = false,

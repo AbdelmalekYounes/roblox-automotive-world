@@ -1,23 +1,26 @@
 """Boucles de moteur tirées d'ENREGISTREMENTS libres (lot AUDIO-01), pour un profil sonore du jeu.
 
 Entrée : les fichiers d'origine téléchargés par le propriétaire, hors dépôt (registre : docs/audio/SONS_TIERS.md).
-Sortie (dans `build/`, jamais versionnée) :
+Sortie (dans `build/`, jamais versionnée), une sous-partie par variante de micro :
 - une boucle par régime de référence, en charge (`on.<tr/min>`) et en décharge (`off.<tr/min>`) ;
 - des sons ponctuels (`start`, `stop`, `stall`) ;
-- `rapport.json` (régimes mesurés, niveaux, longueurs) et une DÉMO d'écoute rendue avec le mélange du jeu
-  (Shared/Audio/EngineAudioModel.profileLayers) : montée en régime en charge, lever de pied, ralenti.
+- `rapport.json` et une DÉMO d'écoute rendue avec le mélange du jeu (Shared/Audio/EngineAudioModel.profileLayers).
 
-Méthode, numpy seul, sans dépendance nouvelle :
-- régime mesuré par la raie d'allumage d'un 4 cylindres (fréquence × 30 = tr/min), raie la plus forte entre 25 et
-  260 Hz. La règle a été vérifiée sur les boucles étiquetées 2 500 et 6 500 tr/min du pack 190E ;
-- boucle stable : transposée par rééchantillonnage au régime de référence, longueur = nombre entier de cycles moteur
-  (120 / tr/min s), raccord par fondu à puissance constante ;
-- extrait d'une montée ou d'une descente en régime : régime ajusté linéairement sur l'extrait, puis temps « déplié »
-  pour un régime constant (phase moteur conservée), puis bouclé de même ;
-- 96 kHz ramenés à 48 kHz (filtre par FFT), mono, 16 bits ; niveaux RMS homogènes, crête sous −1 dBFS.
+Version 2 (2026-11-05), après l'écoute du propriétaire (« on entend très bien le découpage ») :
+- chaque point vient, autant que possible, d'un même BALAYAGE CONTINU (montée en charge, descente pied levé) : timbre
+  cohérent d'un point au voisin ; points plus rapprochés (facteur ~1,3) ;
+- boucles longues (~1,6 s) : extrait déplié à régime constant puis allongé par GRAINS alignés sur le cycle moteur
+  (6 cycles, recouvrement de moitié, fenêtre de Hann, ordre pseudo-aléatoire à graine fixe) : pas de répétition
+  courte audible ;
+- enveloppe lente aplanie avant les grains (un balayage devient plus fort en montant : sans cela, sauts de niveau
+  entre grains) ; niveaux suivant une courbe régulière du régime (plus fort en montant) ;
+- démo : fondus à puissance constante et volumes interpolés échantillon par échantillon (plus d'escalier).
+
+Mesure du régime : raie d'allumage d'un 4 cylindres (fréquence × 30 = tr/min), cherchée à ±12 % d'un régime approché
+(points d'ancrage relevés à l'analyse) pour écarter les raies d'ordre 1, 2,5 ou 4.
 
 Usage : python -I tools/audio/engine_loops.py brio <dossier des enregistrements> [--out build/audio/engines]
-L'assistant ne peut pas écouter : le jugement à l'oreille (démo et boucles) revient au propriétaire.
+L'assistant ne peut pas écouter : le jugement à l'oreille (démos et boucles) revient au propriétaire.
 """
 
 from __future__ import annotations
@@ -35,51 +38,86 @@ OUT_RATE = 48000
 
 # ============================== Profils ==============================
 
-# Brio (lot AUDIO-01, décision du propriétaire du 2026-11-05 : la Brio d'abord). Pack « The Dyno Sessions: 190E »
-# (Chippy569, CC0), micro d'échappement (Audix D6, 30 cm derrière la sortie). Régimes indiqués = attendus (±12 %),
-# remplacés par la mesure. Les points de référence sont communs aux boucles en charge et en décharge
-# (Shared/Audio/EngineSoundProfiles), espacés d'un facteur ~1,45.
-BRIO = {
-    "prefix": "audio.engine.brio.",
-    "points": [1000, 1450, 2100, 3000, 4300, 6200],
-    "idle_rpm": 850,
-    "limiter_rpm": 7200,
+# Brio : pack « The Dyno Sessions: 190E » (Chippy569, CC0). Points communs aux boucles en charge et en décharge
+# (Shared/Audio/EngineSoundProfiles). Une source est soit STABLE (régime attendu, remesuré), soit un BALAYAGE décrit
+# par des ancres (temps s, régime approché) : chaque point y prend une fenêtre de ±10 % de son régime.
+BRIO_POINTS = [1000, 1300, 1700, 2200, 2900, 3800, 4900, 6300]
+
+BRIO_MOTEUR = {
+    "label": "micro du compartiment moteur (DPA 4062) : montée et descente continues, timbre le plus homogène",
+    "sources": {
+        # Ralenti stable à la fin de la descente (6,4 à 8,6 s), ~1 420 tr/min.
+        "ralenti": {"file": "162502__chippy569__18_medsweep_4062.wav", "rpm": 1420, "span": (6.4, 8.6)},
+        "montee": {
+            "file": "162499__chippy569__acceleration-sweep-4062.wav",
+            # Arrêt à 3,55 s (~6 400 tr/min) : au-delà, le moteur approche du rupteur du banc (coupures d'allumage, niveau
+            # instable dans la boucle de 6 300 tr/min).
+            "anchors": [(0.9, 1626), (1.3, 2153), (1.7, 2856), (2.1, 3560), (2.6, 4521), (3.2, 5752), (3.55, 6400)],
+        },
+        "descente": {
+            "file": "162502__chippy569__18_medsweep_4062.wav",
+            "anchors": [(0.0, 6899), (0.5, 6108), (1.0, 5142), (1.5, 4438), (2.0, 3560), (2.5, 3076), (3.0, 2417),
+                        (3.5, 1890), (4.0, 1450), (4.3, 1318)],
+        },
+        "demarrage": {"file": "162523__chippy569__23_startismall_4062.wav"},
+        "demarrage_fort": {"file": "162526__chippy569__23_startbig_4062.wav"},
+    },
+    "loops": {
+        **{("on", p): {"source": "ralenti"} for p in (1000, 1300)},
+        **{("on", p): {"source": "montee"} for p in (1700, 2200, 2900, 3800, 4900, 6300)},
+        **{("off", p): {"source": "ralenti"} for p in (1000, 1300)},
+        **{("off", p): {"source": "descente"} for p in (1700, 2200, 2900, 3800, 4900, 6300)},
+    },
+}
+
+BRIO_ECHAPPEMENT = {
+    "label": "micro d'échappement (Audix D6) : plus « pot d'échappement », mais bas régimes pris sur d'autres prises",
     "sources": {
         "ralenti": {"file": "162515__chippy569__21_500_d6.wav", "rpm": 1030},
         "charge_1300": {"file": "162506__chippy569__19_500_d6.wav", "rpm": 1290},
-        "charge_2550": {"file": "162509__chippy569__19_2500_d6.wav", "rpm": 2556},
-        "charge_6200": {"file": "162512__chippy569__20_6500_d6.wav", "rpm": 6207},
-        "vide_2430": {"file": "162518__chippy569__21_2500_d6.wav", "rpm": 2430},
         "vide_6300": {"file": "162521__chippy569__21_6500_d6.wav", "rpm": 6297},
-        "montee": {"file": "162501__chippy569__17_shortsweep_d6.wav"},
-        "descente": {"file": "162504__chippy569__17_medsweep_d6.wav"},
+        "montee": {
+            "file": "162501__chippy569__17_shortsweep_d6.wav",
+            "anchors": [(0.2, 2021), (0.6, 2944), (1.0, 3955), (1.4, 5098), (1.8, 6152), (2.1, 6812)],
+        },
+        "descente_haute": {"file": "162504__chippy569__17_medsweep_d6.wav", "anchors": [(1.1, 5977), (2.2, 4966)]},
+        "descente": {
+            "file": "162504__chippy569__17_medsweep_d6.wav",
+            "anchors": [(3.3, 4043), (4.0, 3516), (5.0, 2812), (6.0, 2197), (7.0, 1626), (7.5, 1362)],
+        },
         "demarrage": {"file": "162528__chippy569__23_startismall_d6.wav"},
         "demarrage_fort": {"file": "162525__chippy569__23_startbig_d6.wav"},
     },
-    # Boucle : (charge ou décharge, régime de référence) → source stable, ou extrait de balayage (début, fin en s).
     "loops": {
         ("on", 1000): {"source": "ralenti"},
-        ("on", 1450): {"source": "charge_1300"},
-        ("on", 2100): {"source": "charge_2550"},
-        ("on", 3000): {"source": "charge_2550"},
-        ("on", 4300): {"source": "montee", "span": (0.95, 1.50), "approx": (3700, 5300)},
-        ("on", 6200): {"source": "charge_6200"},
+        ("on", 1300): {"source": "charge_1300"},
+        ("on", 1700): {"source": "charge_1300"},
+        **{("on", p): {"source": "montee"} for p in (2200, 2900, 3800, 4900, 6300)},
         ("off", 1000): {"source": "ralenti"},
-        ("off", 1450): {"source": "descente", "span": (6.85, 7.40), "approx": (1750, 1400)},
-        ("off", 2100): {"source": "vide_2430"},
-        ("off", 3000): {"source": "vide_2430"},
-        ("off", 4300): {"source": "descente", "span": (3.25, 4.05), "approx": (4100, 3500)},
-        ("off", 6200): {"source": "vide_6300"},
+        ("off", 1300): {"source": "ralenti"},
+        **{("off", p): {"source": "descente"} for p in (1700, 2200, 2900, 3800)},
+        ("off", 4900): {"source": "descente_haute"},
+        ("off", 6300): {"source": "vide_6300"},
     },
-    # Sons ponctuels : extrait (début, fin en s), fondus d'entrée et de sortie (s).
-    "events": {
-        "Start": {"source": "demarrage", "span": (1.85, 4.6), "fade": (0.01, 0.6)},
-        "Stop": {"source": "demarrage_fort", "span": (6.55, 8.2), "fade": (0.05, 0.4)},
-        "Stall": {"source": "demarrage_fort", "span": (6.75, 7.9), "fade": (0.02, 0.3)},
-    },
-    # Niveaux RMS visés (dBFS) : la décharge reste plus discrète que la charge, comme en vrai.
-    "rms_on": -15.0,
-    "rms_off": -21.0,
+}
+
+EVENTS = {
+    "Start": {"source": "demarrage", "span": (1.85, 4.6), "fade": (0.01, 0.6)},
+    "Stop": {"source": "demarrage_fort", "span": (6.55, 8.2), "fade": (0.05, 0.4)},
+    "Stall": {"source": "demarrage_fort", "span": (6.75, 7.9), "fade": (0.02, 0.3)},
+}
+
+BRIO = {
+    "prefix": "audio.engine.brio.",
+    "points": BRIO_POINTS,
+    "idle_rpm": 850,
+    "limiter_rpm": 7200,
+    "variants": {"moteur": BRIO_MOTEUR, "echappement": BRIO_ECHAPPEMENT},
+    "events": EVENTS,
+    # Courbe de niveau (dBFS RMS) : valeur à 6 300 tr/min et pente par octave de régime. La décharge reste plus
+    # discrète que la charge, comme en vrai.
+    "level_on": (-14.0, 3.0),
+    "level_off": (-20.0, 2.0),
     "rms_event": -18.0,
 }
 
@@ -125,7 +163,6 @@ def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None) -> flo
     lo, hi = (25.0, 260.0) if expected is None else (expected / 30 * 0.88, expected / 30 * 1.12)
     band = np.where((freqs > lo) & (freqs < hi))[0]
     i = band[np.argmax(mag[band])]
-    # Affinage parabolique du pic.
     if 0 < i < len(mag) - 1:
         a, b, c = np.log(mag[i - 1] + 1e-12), np.log(mag[i] + 1e-12), np.log(mag[i + 1] + 1e-12)
         i = i + 0.5 * (a - c) / (a - 2 * b + c + 1e-12)
@@ -135,59 +172,121 @@ def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None) -> flo
 def sweep_fit(
     signal: np.ndarray, sr: int, span: tuple[float, float], approx: tuple[float, float]
 ) -> tuple[float, float]:
-    """Régime linéaire r(t) = a + b·t sur un extrait de balayage : mesure par trames de 0,1 s, chacune cherchée à
-    ±12 % du régime approché (`approx` : début, fin, relevés à l'analyse) pour écarter les raies d'ordre 1 ou 4 ;
-    valeurs aberrantes (écart > 8 % à une première droite) écartées. Retourne (a, b) en tr/min et tr/min/s."""
+    """Régime linéaire r(t) = a + b·t (t depuis le début de l'extrait) : mesures par trames de 0,08 s cherchées à
+    ±12 % du régime approché, valeurs à plus de 8 % d'une première droite écartées."""
     t0, t1 = span
-    win, hop = int(0.1 * sr), int(0.025 * sr)
+    win, hop = int(0.08 * sr), int(0.02 * sr)
     times, rpms = [], []
     for start in range(int(t0 * sr), int(t1 * sr) - win, hop):
-        times.append((start + win / 2) / sr - t0)
-        guess = approx[0] + (approx[1] - approx[0]) * (times[-1] / (t1 - t0))
+        t = (start + win / 2) / sr - t0
+        guess = approx[0] + (approx[1] - approx[0]) * (t / (t1 - t0))
+        times.append(t)
         rpms.append(line_rpm(signal[start : start + win], sr, guess))
-    t, r = np.array(times), np.array(rpms)
-    b, a = np.polyfit(t, r, 1)
-    keep = np.abs(r - (a + b * t)) / (a + b * t) < 0.08
+    tt, r = np.array(times), np.array(rpms)
+    b, a = np.polyfit(tt, r, 1)
+    keep = np.abs(r - (a + b * tt)) / (a + b * tt) < 0.08
     if keep.sum() >= 4:
-        b, a = np.polyfit(t[keep], r[keep], 1)
+        b, a = np.polyfit(tt[keep], r[keep], 1)
     return float(a), float(b)
+
+
+def window_for(anchors: list[tuple[float, float]], rpm: float, spread: float = 1.10, min_cycles: int = 8):
+    """Fenêtre (début, fin) d'un balayage où le régime approché reste à ±10 % de `rpm`, élargie si besoin pour
+    contenir au moins `min_cycles` cycles moteur (variété des grains), sans sortir du balayage."""
+    minimum = max(0.22, min_cycles * 120.0 / rpm)
+    times = np.array([a[0] for a in anchors])
+    rpms = np.array([a[1] for a in anchors])
+    fine_t = np.linspace(times[0], times[-1], 2000)
+    fine_r = np.interp(fine_t, times, rpms)
+    inside = np.where((fine_r >= rpm / spread) & (fine_r <= rpm * spread))[0]
+    if len(inside) == 0:
+        raise ValueError(f"{rpm} tr/min hors du balayage")
+    t0, t1 = fine_t[inside[0]], fine_t[inside[-1]]
+    if t1 - t0 < minimum:
+        mid = (t0 + t1) / 2
+        t0, t1 = mid - minimum / 2, mid + minimum / 2
+        if t0 < times[0]:
+            t0, t1 = times[0], times[0] + minimum
+        if t1 > times[-1]:
+            t0, t1 = max(times[0], times[-1] - minimum), times[-1]
+    return float(t0), float(t1), float(np.interp(t0, times, rpms)), float(np.interp(t1, times, rpms))
 
 
 # ============================== Traitement ==============================
 
 
 def warp(signal: np.ndarray, sr: int, rpm_of_t, target: float, duration: float) -> np.ndarray:
-    """Rééchantillonne pour un régime CONSTANT `target` : l'échantillon de sortie τ lit l'entrée à l'instant t où la
-    phase moteur ∫ r(t) dt vaut target·τ. `rpm_of_t` donne le régime de l'entrée (tableau aligné sur `signal`)."""
-    phase = np.concatenate([[0.0], np.cumsum(rpm_of_t[:-1]) / sr])  # tr/min · s, à un facteur 1/60 près
+    """Rééchantillonne pour un régime CONSTANT `target` en conservant la phase moteur ∫ r(t) dt."""
+    phase = np.concatenate([[0.0], np.cumsum(rpm_of_t[:-1]) / sr])
     n_out = int(min(duration, phase[-1] / target) * sr)
-    tau_phase = target * np.arange(n_out) / sr
-    src_index = np.interp(tau_phase, phase, np.arange(len(signal)))
+    src_index = np.interp(target * np.arange(n_out) / sr, phase, np.arange(len(signal)))
     return np.interp(src_index, np.arange(len(signal)), signal)
 
 
 def to_out_rate(signal: np.ndarray, sr: int) -> np.ndarray:
-    """Ramène à 48 kHz : filtre passe-bas par FFT sous 20 kHz, puis rééchantillonnage."""
+    """Ramène à 48 kHz : filtre passe-bas par FFT, puis rééchantillonnage."""
     if sr == OUT_RATE:
         return signal
     spec = np.fft.rfft(signal)
-    freqs = np.fft.rfftfreq(len(signal), 1 / sr)
-    spec[freqs > 0.45 * OUT_RATE] = 0
+    spec[np.fft.rfftfreq(len(signal), 1 / sr) > 0.45 * OUT_RATE] = 0
     smooth = np.fft.irfft(spec, len(signal))
     n_out = int(len(signal) * OUT_RATE / sr)
     return np.interp(np.arange(n_out) * sr / OUT_RATE, np.arange(len(signal)), smooth)
 
 
 def highpass(signal: np.ndarray, sr: int, cutoff: float = 25.0) -> np.ndarray:
-    """Retire la composante continue et l'infra-grave (vent, choc du micro) sous `cutoff` Hz."""
+    """Retire la composante continue et l'infra-grave sous `cutoff` Hz."""
     spec = np.fft.rfft(signal)
     freqs = np.fft.rfftfreq(len(signal), 1 / sr)
     spec *= 1 / (1 + (cutoff / np.maximum(freqs, 1e-3)) ** 4)
     return np.fft.irfft(spec, len(signal))
 
 
+def flatten(signal: np.ndarray, sr: int, rpm: float, cycles: int = 6, strength: float = 1.0) -> np.ndarray:
+    """Aplanit l'enveloppe LENTE (moyenne quadratique glissante sur `cycles` cycles moteur) : un balayage devient plus
+    fort en montant ; sans cela, des grains pris à des instants différents s'enchaînent avec des sauts de niveau
+    (cause principale du « découpage » entendu par le propriétaire, version 1). Les impulsions d'allumage, plus
+    courtes qu'un cycle, sont conservées. `strength` < 1 : aplanissement partiel (irrégularité naturelle gardée)."""
+    width = max(3, int(cycles * 120.0 / rpm * sr))
+    kernel = np.hanning(width)
+    kernel /= kernel.sum()
+    padded = np.pad(signal**2, width, mode="reflect")
+    env = np.sqrt(np.convolve(padded, kernel, mode="same")[width:-width]) + 1e-9
+    return signal * (np.mean(env) / env) ** strength
+
+
+def extend(signal: np.ndarray, sr: int, rpm: float, seconds: float = 1.7, cycles: int = 6, seed: int = 0) -> np.ndarray:
+    """Allonge un extrait à régime constant par grains de `cycles` cycles moteur, recouvrement de moitié (fenêtre de
+    Hann périodique, somme constante), pris à des débuts alignés sur le cycle, dans un ordre pseudo-aléatoire sans
+    répétition immédiate. Les grains étant en phase (même régime, mêmes bornes de cycle), le raccord est continu."""
+    cycle = 120.0 / rpm * sr
+    usable = int((len(signal) - 1) // cycle)
+    cycles = max(2, min(cycles, usable - 1))
+    grain = int(round(cycles * cycle))
+    hop = grain / 2
+    starts = [int(round(k * cycle)) for k in range(0, usable - cycles + 1)]
+    if len(starts) < 2:
+        return signal
+    window = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(grain) / grain)
+    n_out = int(seconds * sr)
+    out = np.zeros(n_out + grain + 2)
+    rng = np.random.default_rng(seed)
+    previous = -1
+    position = 0.0
+    while position < n_out:
+        choice = int(rng.integers(len(starts)))
+        if choice == previous:
+            choice = (choice + 1) % len(starts)
+        previous = choice
+        s = starts[choice]
+        p = int(round(position))
+        out[p : p + grain] += signal[s : s + grain] * window
+        position += hop
+    return out[grain // 2 : grain // 2 + n_out]
+
+
 def make_loop(signal: np.ndarray, sr: int, rpm: float, crossfade: float = 0.04) -> np.ndarray:
-    """Boucle sans raccord : longueur = nombre entier de cycles moteur (2 tours), fin fondue dans le début."""
+    """Boucle sans raccord : longueur = nombre entier de cycles moteur, fin fondue dans le début (puissance constante)."""
     cycle = 120.0 / rpm * sr
     xf = int(crossfade * sr)
     cycles = int((len(signal) - xf) // cycle)
@@ -196,18 +295,16 @@ def make_loop(signal: np.ndarray, sr: int, rpm: float, crossfade: float = 0.04) 
     length = int(round(cycles * cycle))
     loop = signal[:length].copy()
     ramp = np.sin(np.linspace(0, np.pi / 2, xf)) ** 2
-    loop[:xf] = loop[:xf] * ramp + signal[length : length + xf] * (1 - ramp)
+    loop[:xf] = loop[:xf] * np.sqrt(ramp) + signal[length : length + xf] * np.sqrt(1 - ramp)
     return loop
 
 
 def level(signal: np.ndarray, rms_db: float, peak_db: float = -1.0) -> np.ndarray:
     rms = np.sqrt(np.mean(signal**2)) + 1e-12
     out = signal * (10 ** (rms_db / 20) / rms)
-    peak = np.max(np.abs(out))
     limit = 10 ** (peak_db / 20)
-    if peak > limit:
-        # Écrêtage doux (tanh) au-delà de la limite plutôt qu'une baisse globale du niveau.
-        out = np.tanh(out / limit) * limit
+    if np.max(np.abs(out)) > limit:
+        out = np.tanh(out / limit) * limit  # écrêtage doux plutôt qu'une baisse globale
     return out
 
 
@@ -215,101 +312,108 @@ def db(signal: np.ndarray) -> float:
     return float(20 * np.log10(np.sqrt(np.mean(signal**2)) + 1e-12))
 
 
+def target_level(curve: tuple[float, float], rpm: float) -> float:
+    at_top, per_octave = curve
+    return at_top + per_octave * float(np.log2(rpm / 6300))
+
+
 # ============================== Démo d'écoute ==============================
 
 
-def smoothstep(x):
-    t = np.clip(x, 0, 1)
-    return t * t * (3 - 2 * t)
-
-
-def point_weights(points: list[int], rpm: float) -> list[float]:
-    out = []
+def amplitudes(points: list[int], rpm: float, load: float, idle: float) -> dict:
+    """Amplitudes du mélange du jeu (EngineAudioModel.profileLayers) : poids triangulaires du régime et de la charge,
+    transformés à puissance constante (sinus du quart de tour)."""
+    knee = 0.25
+    t = float(np.clip((load - knee * 0.4) / knee, 0, 1))
+    on = t * t * (3 - 2 * t)
+    if rpm < idle * 1.15:
+        on *= 0.5
+    out = {}
     for i, here in enumerate(points):
         below = points[i - 1] if i > 0 else None
         above = points[i + 1] if i + 1 < len(points) else None
         if rpm <= here:
-            out.append(1.0 if below is None else float(np.clip((rpm - below) / (here - below), 0, 1)))
+            w = 1.0 if below is None else float(np.clip((rpm - below) / (here - below), 0, 1))
         else:
-            out.append(1.0 if above is None else float(np.clip((above - rpm) / (above - here), 0, 1)))
+            w = 1.0 if above is None else float(np.clip((above - rpm) / (above - here), 0, 1))
+        a = np.sin(w * np.pi / 2)
+        out[("on", here)] = a * np.sin(on * np.pi / 2)
+        out[("off", here)] = a * np.cos(on * np.pi / 2)
     return out
 
 
 def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE) -> np.ndarray:
-    """Même mélange que EngineAudioModel.profileLayers (fondu régime et charge, transposition bornée 0,7–1,45),
-    calculé par blocs de 10 ms : ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et
-    descente en 4 s, ralenti 2 s."""
-    knee = 0.25
-    keyframes = [(0, profile["idle_rpm"], 0), (1.5, profile["idle_rpm"], 0), (1.6, profile["idle_rpm"], 1),
-                 (7.6, profile["limiter_rpm"] * 0.97, 1), (7.7, profile["limiter_rpm"] * 0.97, 0),
-                 (11.7, profile["idle_rpm"], 0), (13.7, profile["idle_rpm"], 0)]
-    times = np.array([k[0] for k in keyframes])
-    block = int(0.01 * rate)
+    """Ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et descente en 4 s, ralenti 2 s.
+    Volumes interpolés linéairement dans chaque bloc de 5 ms ; transposition bornée 0,7–1,45 comme le jeu."""
+    idle, top = profile["idle_rpm"], profile["limiter_rpm"] * 0.97
+    keys = [(0, idle, 0), (1.5, idle, 0), (1.6, idle, 1), (7.6, top, 1), (7.7, top, 0), (11.7, idle, 0), (13.7, idle, 0)]
+    times = np.array([k[0] for k in keys])
+    block = int(0.005 * rate)
     total = int(times[-1] * rate)
     out = np.zeros(total)
     phases = {key: 0.0 for key in loops}
+
+    def state(t):
+        return float(np.interp(t, times, [k[1] for k in keys])), float(np.interp(t, times, [k[2] for k in keys]))
+
     for start in range(0, total, block):
-        t = start / rate
-        rpm = float(np.interp(t, times, [k[1] for k in keyframes]))
-        load = float(np.interp(t, times, [k[2] for k in keyframes]))
-        on = float(smoothstep((load - knee * 0.4) / knee))
-        if rpm < profile["idle_rpm"] * 1.15:
-            on *= 0.5
-        weights = point_weights(profile["points"], rpm)
         n = min(block, total - start)
-        for (kind, ref), loop in loops.items():
-            w = weights[profile["points"].index(ref)] * (on if kind == "on" else 1 - on)
-            speed = float(np.clip(rpm / ref, 0.7, 1.45))
-            pos = phases[(kind, ref)] + speed * np.arange(n)
-            phases[(kind, ref)] = (phases[(kind, ref)] + speed * n) % len(loop)
-            if w > 0:
+        rpm0, load0 = state(start / rate)
+        rpm1, load1 = state((start + n) / rate)
+        amp0 = amplitudes(profile["points"], rpm0, load0, idle)
+        amp1 = amplitudes(profile["points"], rpm1, load1, idle)
+        ramp = np.arange(n) / n
+        for key, loop in loops.items():
+            a = amp0[key] + (amp1[key] - amp0[key]) * ramp
+            speed = float(np.clip(rpm0 / key[1], 0.7, 1.45))
+            pos = phases[key] + speed * np.arange(n)
+            phases[key] = (phases[key] + speed * n) % len(loop)
+            if np.max(a) > 1e-4:
                 idx = pos % len(loop)
                 i0 = idx.astype(int)
                 frac = idx - i0
-                out[start : start + n] += w * (loop[i0] * (1 - frac) + loop[(i0 + 1) % len(loop)] * frac)
+                out[start : start + n] += a * (loop[i0] * (1 - frac) + loop[(i0 + 1) % len(loop)] * frac)
     return out
 
 
 # ============================== Programme ==============================
 
 
-def build(name: str, refs: Path, out_root: Path) -> dict:
-    profile = PROFILES[name]
-    out = out_root / name
-    signals: dict[str, tuple[int, np.ndarray]] = {}
-    report: dict = {"profil": name, "prefixe": profile["prefix"], "sources": {}, "boucles": {}, "evenements": {}}
-    for key, spec in profile["sources"].items():
-        path = refs / spec["file"]
-        sr, x = read_wav(path)
+def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path) -> dict:
+    report: dict = {"variante": name, "description": variant["label"], "sources": {}, "boucles": {}, "evenements": {}}
+    signals: dict = {}
+    for key, spec in variant["sources"].items():
+        sr, x = read_wav(refs / spec["file"])
         x = highpass(x, sr)
         signals[key] = (sr, x)
-        entry = {"fichier": spec["file"], "duree_s": round(len(x) / sr, 3), "frequence_hz": sr, "rms_dbfs": round(db(x), 1)}
+        entry = {"fichier": spec["file"], "duree_s": round(len(x) / sr, 3)}
         if "rpm" in spec:
-            mid = x[len(x) // 4 : 3 * len(x) // 4]
-            measured = line_rpm(mid, sr, spec["rpm"])
-            entry["regime_attendu"], entry["regime_mesure"] = spec["rpm"], round(measured)
-            spec = dict(spec, measured=measured)
-            profile["sources"][key] = spec
+            a, b = spec.get("span", (0.25 * len(x) / sr, 0.75 * len(x) / sr))
+            spec["measured"] = line_rpm(x[int(a * sr) : int(b * sr)], sr, spec["rpm"])
+            entry["regime_mesure"] = round(spec["measured"])
         report["sources"][key] = entry
 
     loops: dict = {}
-    for (kind, ref), spec in profile["loops"].items():
-        sr, x = signals[spec["source"]]
-        if "span" in spec:
-            a, b = sweep_fit(x, sr, spec["span"], spec["approx"])
-            t0, t1 = spec["span"]
+    for index, ((kind, ref), loop_spec) in enumerate(sorted(variant["loops"].items())):
+        src = variant["sources"][loop_spec["source"]]
+        sr, x = signals[loop_spec["source"]]
+        if "anchors" in src:
+            t0, t1, r0, r1 = window_for(src["anchors"], ref)
+            a, b = sweep_fit(x, sr, (t0, t1), (r0, r1))
             seg = x[int(t0 * sr) : int(t1 * sr)]
             rpm_t = a + b * (np.arange(len(seg)) / sr)
-            how = f"balayage {t0}–{t1} s : {a:.0f} → {a + b * (t1 - t0):.0f} tr/min, déplié à {ref}"
+            how = f"balayage {t0:.2f}–{t1:.2f} s ({a:.0f} → {a + b * (t1 - t0):.0f} tr/min), déplié et allongé par grains"
         else:
-            src_rpm = profile["sources"][spec["source"]]["measured"]
-            seg = x
-            rpm_t = np.full(len(seg), src_rpm)
-            how = f"boucle stable à {src_rpm:.0f} tr/min, transposée × {ref / src_rpm:.3f}"
-        steady = warp(seg, sr, rpm_t, ref, duration=4.0)
-        steady = to_out_rate(steady, sr)
+            a0, b0 = src.get("span", (0.0, len(x) / sr))
+            seg = x[int(a0 * sr) : int(b0 * sr)]
+            rpm_t = np.full(len(seg), src["measured"])
+            how = f"prise stable à {src['measured']:.0f} tr/min, transposée × {ref / src['measured']:.3f}"
+        steady = to_out_rate(warp(seg, sr, rpm_t, ref, duration=6.0), sr)
+        steady = flatten(steady, OUT_RATE, ref, strength=1.0 if "anchors" in src else 0.6)
+        if len(steady) < 1.5 * OUT_RATE:
+            steady = extend(steady, OUT_RATE, ref, seed=1000 + index)
         loop = make_loop(steady, OUT_RATE, ref)
-        loop = level(loop, profile["rms_on"] if kind == "on" else profile["rms_off"])
+        loop = level(loop, target_level(profile["level_on" if kind == "on" else "level_off"], ref))
         loops[(kind, ref)] = loop
         file = f"{kind}.{ref}.wav"
         write_wav(out / file, loop)
@@ -321,7 +425,7 @@ def build(name: str, refs: Path, out_root: Path) -> dict:
             "rms_dbfs": round(db(loop), 1),
         }
 
-    for name_, spec in profile["events"].items():
+    for event, spec in profile["events"].items():
         sr, x = signals[spec["source"]]
         t0, t1 = spec["span"]
         seg = to_out_rate(x[int(t0 * sr) : int(t1 * sr)], sr)
@@ -330,18 +434,23 @@ def build(name: str, refs: Path, out_root: Path) -> dict:
         env[:fin] = np.linspace(0, 1, fin)
         env[len(seg) - fout :] *= np.linspace(1, 0, fout)
         seg = level(seg * env, profile["rms_event"])
-        # Identifiants du manifeste en minuscules : `<préfixe>start`, `<préfixe>stop`, `<préfixe>stall`.
-        file = f"{name_.lower()}.wav"
+        file = f"{event.lower()}.wav"  # identifiants du manifeste en minuscules
         write_wav(out / file, seg)
-        report["evenements"][name_] = {"fichier": file, "extrait": f"{spec['source']} {t0}–{t1} s",
-                                        "duree_s": round(len(seg) / OUT_RATE, 3)}
+        report["evenements"][event] = {"fichier": file, "extrait": f"{spec['source']} {t0}–{t1} s"}
 
-    demo = render_demo(profile, loops)
-    demo = level(demo, -16.0)
-    write_wav(out / "demo_montee_lever_de_pied.wav", demo)
-    report["demo"] = "demo_montee_lever_de_pied.wav : ralenti, montée en charge 6 s, lever de pied 4 s, ralenti"
+    demo = level(render_demo(profile, loops), -16.0)
+    write_wav(out / f"demo_{name}.wav", demo)
+    report["demo"] = f"demo_{name}.wav : ralenti, montée en charge 6 s, lever de pied 4 s, ralenti"
     (out / "rapport.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     return report
+
+
+def build(name: str, refs: Path, out_root: Path) -> dict:
+    profile = PROFILES[name]
+    return {
+        variant: build_variant(profile, variant, spec, refs, out_root / name / variant)
+        for variant, spec in profile["variants"].items()
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -350,9 +459,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("refs", type=Path, help="dossier des enregistrements d'origine")
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "audio" / "engines")
     args = parser.parse_args(argv)
-    # Console Windows : sortie en UTF-8 (flèches et accents du rapport).
-    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     report = build(args.profile, args.refs, args.out)
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     print(json.dumps(report, ensure_ascii=False, indent=1))
     return 0
 

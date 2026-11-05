@@ -89,30 +89,36 @@ return function(T: any, H: any)
         )
     end)
 
-    T.test("3. couches d'un profil : fondu régime et charge, silence moteur coupé, transposition bornée", function()
-        local atPoint = volumes(Model.profileLayers(PROFILE, state(2700, 1), "High"))
-        T.truthy(math.abs(atPoint["audio.engine.essai.on.2700"] - PROFILE.Gain) < 1e-9, "boucle en charge pleine")
-        T.equal(atPoint["audio.engine.essai.off.2700"], 0, "décharge muette pied au plancher")
-        T.equal(atPoint["audio.engine.essai.on.1900"], 0, "voisine muette au régime exact")
-        local lifted = volumes(Model.profileLayers(PROFILE, state(3300, 0), "High"))
-        T.equal(lifted["audio.engine.essai.on.2700"], 0, "pied levé : aucune boucle en charge")
-        local sum = lifted["audio.engine.essai.off.2700"] + lifted["audio.engine.essai.off.3900"]
-        T.truthy(math.abs(sum - PROFILE.Gain) < 1e-9, "fondu entre 2 700 et 3 900 : somme constante")
-        local off = volumes(Model.profileLayers(PROFILE, state(3000, 1, { Running = false }), "High"))
-        for id, volume in off do
-            T.equal(volume, 0, id .. " : moteur coupé")
+    T.test(
+        "3. couches d'un profil : fondus à puissance constante, silence moteur coupé, transposition bornée",
+        function()
+            local atPoint = volumes(Model.profileLayers(PROFILE, state(2700, 1), "High"))
+            T.truthy(math.abs(atPoint["audio.engine.essai.on.2700"] - PROFILE.Gain) < 1e-9, "boucle en charge pleine")
+            T.truthy(atPoint["audio.engine.essai.off.2700"] < 1e-9, "décharge muette pied au plancher")
+            T.equal(atPoint["audio.engine.essai.on.1900"], 0, "voisine muette au régime exact")
+            local lifted = volumes(Model.profileLayers(PROFILE, state(3300, 0), "High"))
+            T.equal(lifted["audio.engine.essai.on.2700"], 0, "pied levé : aucune boucle en charge")
+            local a, b = lifted["audio.engine.essai.off.2700"], lifted["audio.engine.essai.off.3900"]
+            T.truthy(
+                math.abs(a * a + b * b - PROFILE.Gain * PROFILE.Gain) < 1e-9,
+                "fondu entre 2 700 et 3 900 : puissance constante"
+            )
+            local off = volumes(Model.profileLayers(PROFILE, state(3000, 1, { Running = false }), "High"))
+            for id, volume in off do
+                T.equal(volume, 0, id .. " : moteur coupé")
+            end
+            for _, layer in Model.profileLayers(PROFILE, state(9000, 1), "High") do
+                T.truthy(layer.Speed >= Model.ProfileMinSpeed and layer.Speed <= Model.ProfileMaxSpeed, layer.Id)
+            end
+            local idle = volumes(Model.profileLayers(PROFILE, state(850, 0), "High"))
+            T.truthy(idle["audio.engine.essai.turbo"] == 0, "turbo muet au ralenti")
+            local loud = 0
+            for _, layer in Model.profileLayers(PROFILE, state(3300, 0.6), "Low") do
+                loud += if layer.Volume > 0 then 1 else 0
+            end
+            T.truthy(loud <= 2, "qualité basse : deux couches au plus")
         end
-        for _, layer in Model.profileLayers(PROFILE, state(9000, 1), "High") do
-            T.truthy(layer.Speed >= Model.ProfileMinSpeed and layer.Speed <= Model.ProfileMaxSpeed, layer.Id)
-        end
-        local idle = volumes(Model.profileLayers(PROFILE, state(850, 0), "High"))
-        T.truthy(idle["audio.engine.essai.turbo"] == 0, "turbo muet au ralenti")
-        local loud = 0
-        for _, layer in Model.profileLayers(PROFILE, state(3300, 0.6), "Low") do
-            loud += if layer.Volume > 0 then 1 else 0
-        end
-        T.truthy(loud <= 2, "qualité basse : deux couches au plus")
-    end)
+    )
 
     T.test("4. événements : démarrage, arrêt, calage, rapport, rupteur, pétarades, turbo", function()
         local function has(list: { string }, name: string): boolean
@@ -168,11 +174,11 @@ return function(T: any, H: any)
                 T.truthy(asset ~= nil and asset.Category == "Audio", assetId .. " : déclaré au manifeste")
             end
         end
-        -- Brio (lot AUDIO-01) : 15 sons enregistrés (CC0), aucun identifiant Roblox avant l'envoi du propriétaire.
+        -- Brio (lot AUDIO-01) : 19 sons enregistrés (CC0), aucun identifiant Roblox avant l'envoi du propriétaire.
         local brio = Profiles.Profiles.wk_brio
         T.truthy(brio ~= nil, "profil de la Brio")
         local ids = Profiles.assetIds(brio)
-        T.equal(#ids, 15, "6 régimes × charge / décharge + démarrage, arrêt, calage")
+        T.equal(#ids, 19, "8 régimes × charge / décharge + démarrage, arrêt, calage")
         for _, assetId in ids do
             local asset = AssetManifest.get(assetId)
             T.truthy(string.find(asset.Licence, "CC0", 1, true) ~= nil, assetId .. " : licence CC0")

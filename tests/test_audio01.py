@@ -49,5 +49,23 @@ def test_brio_profile_matches_the_game_profile():
     source = (ROOT / "src/shared/Audio/EngineSoundProfiles.luau").read_text(encoding="utf-8")
     points = ", ".join(str(p) for p in el.BRIO["points"])
     assert f"Points = {{ {points} }}" in source
-    assert set(el.BRIO["loops"]) == {(kind, p) for kind in ("on", "off") for p in el.BRIO["points"]}
+    for variant in el.BRIO["variants"].values():
+        assert set(variant["loops"]) == {(kind, p) for kind in ("on", "off") for p in el.BRIO["points"]}
     assert set(el.BRIO["events"]) == {"Start", "Stop", "Stall"}
+
+
+def test_grains_extend_without_seams():
+    """Allongement par grains d'un signal à régime constant : durée demandée, niveau régulier (pas de trou)."""
+    signal = engine(np.full(int(0.4 * SR), 3000.0))
+    longer = el.extend(signal, SR, 3000, seconds=1.6)
+    assert len(longer) == int(1.6 * SR)
+    frames = longer[: len(longer) // 2400 * 2400].reshape(-1, 2400)
+    rms = np.sqrt((frames**2).mean(axis=1))
+    assert rms.min() > 0.8 * rms.mean()
+    assert abs(el.line_rpm(longer, SR, 3000) - 3000) < 30
+
+
+def test_window_holds_enough_engine_cycles():
+    anchors = [(0.0, 1500.0), (1.0, 2500.0)]
+    t0, t1, _, _ = el.window_for(anchors, 1700)
+    assert t1 - t0 >= 8 * 120 / 1700 - 1e-9 and 0.0 <= t0 < t1 <= 1.0

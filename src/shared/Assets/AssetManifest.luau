@@ -291,7 +291,7 @@ local function recordedEngine(vehicle: string, name: string, note: string)
         RobloxAssetId = nil,
     })
 end
-for _, rpm in { 1000, 1450, 2100, 3000, 4300, 6200 } do
+for _, rpm in { 1000, 1300, 1700, 2200, 2900, 3800, 4900, 6300 } do
     recordedEngine("brio", "on." .. rpm, "boucle en charge à " .. rpm .. " tr/min")
     recordedEngine("brio", "off." .. rpm, "boucle en décharge à " .. rpm .. " tr/min")
 end

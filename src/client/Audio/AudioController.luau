@@ -244,6 +244,25 @@ end
 
 local ambienceHolder: Folder? = nil
 
+-- Véhicule conduit : régime réel, recalculé À CHAQUE IMAGE (lot AUDIO-01, retour d'écoute du propriétaire : une
+-- mise à jour toutes les 0,1 s faisait entendre des marches de volume et de hauteur). Habitacle en vue cockpit.
+local lastCockpit: boolean? = nil
+local function updateDriven()
+    local data = DevHud.latest()
+    local cockpit = data ~= nil and data.CameraName == "Cockpit"
+    if cockpit ~= lastCockpit then
+        lastCockpit = cockpit
+        applyListening(cockpit)
+    end
+    local driven: Model? = if data then data.Model else nil
+    if driven and driven.PrimaryPart then
+        local layers = vehicleLayers(driven, data, UIState.prefs().Graphics.Quality)
+        if layers then
+            applyLayers(driven.PrimaryPart :: Instance, layers)
+        end
+    end
+end
+
 local function update()
     local camera = Workspace.CurrentCamera
     if camera == nil then
@@ -253,17 +272,6 @@ local function update()
     local data = DevHud.latest()
     local driven: Model? = if data then data.Model else nil
     local eye = camera.CFrame.Position
-
-    -- Habitacle (vue cockpit) : moteurs étouffés et plus graves (lot AUDIO-01).
-    applyListening(data ~= nil and data.CameraName == "Cockpit")
-
-    -- Véhicule conduit : régime réel.
-    if driven and driven.PrimaryPart then
-        local layers = vehicleLayers(driven, data, quality)
-        if layers then
-            applyLayers(driven.PrimaryPart :: Instance, layers)
-        end
-    end
     -- Véhicules observés les plus proches : régime publié par le serveur (profil) ou estimé (modèle générique).
     local nearby: { { Model: Model, Distance: number } } = {}
     for _, item in CollectionService:GetTagged(Constants.VehicleTag) do
@@ -346,6 +354,7 @@ function AudioController.start()
     ambienceHolder = holder
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
+        updateDriven()
         timer += dt
         if timer >= UPDATE_S then
             timer = 0
