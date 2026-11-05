@@ -108,3 +108,40 @@ H1, sous la forme essayée, n'est pas confirmée. Restent possibles :
 
 Impact joueur : non constaté à ce jour, sur un seul essai humain.
 
+## 6. Session VM ciblée (2026-11-05, accord du propriétaire)
+
+Commande : `toolsm\host-run.ps1 -Sessions lot08 -NoVmControl -TimeoutSec 2700`, lancée depuis la branche de diagnostic
+`diag/qa-a24` (commit `3247a39`, issu de `feat/ui-premium-v1.2-v2` ; journal TEMPORAIRE de chaque refus silencieux
+dans `onPromptTriggered` et `onOccupantChanged`, diagnostic du banc enrichi). Tâche **20261105-183402** : 26 réussis,
+2 échecs (le volant du cockpit, déjà connu, et le banc).
+
+Résultats mesurés :
+
+- **Banc 13 / 18** (contre 10 / 18 dans les deux tâches précédentes).
+- Échecs : Éclat, Mistral, Comète, Zénith, Sentier. Dune, Vigie et Atlas, en échec la fois précédente, passent.
+- Pour **chaque montée réussie** (14 véhicules, dont celui de l'essai de l'arrivée) : « invite déclenchée », puis
+  « après Sit (1 s) : occupant true ; état Seated ; conducteur youyou31110 ».
+- Pour **chaque échec** : **aucune ligne « invite déclenchée »**. Le serveur n'a jamais reçu l'invite ; aucune des
+  sorties silencieuses du serveur n'est en cause.
+- Côté client, au moment de l'échec : invite active ; personnage en état Running ; groupe de collision Default ; non
+  ancré ; à 2,0 à 2,7 st de la porte.
+
+Conclusions :
+
+1. **H1 et H2 sont écartées** : le serveur n'a pas reçu l'invite, et l'état du personnage est normal.
+2. **H3 est confirmée** : l'activation **par script** de l'invite (`InputHoldBegin`) n'aboutit pas pour ces modèles.
+3. Ce n'est pas une dégradation au fil de la séance. Les échecs dépendent du modèle : l'Éclat, la Mistral, la Comète et
+   le Zénith échouent dans les deux tâches, les grands SUV seulement parfois. L'ordre du banc mettait les petits
+   modèles en premier.
+4. Avec la vraie touche E, le propriétaire monte normalement dans la Mistral (essai du §5). **Aucun défaut du jeu
+   n'est constaté** : c'est un **défaut du banc**, révélé par les changements de l'intervalle.
+
+Mécanisme exact **non établi**. Piste principale : les corps humains imposés à tous les joueurs depuis la phase 1 de
+l'Aster (`fe89f7e`, `284ce4b`) changent la taille du personnage. Le banc le pose « 2 st au-dessus de la porte » puis
+déclenche l'invite par script ; l'invite ne serait alors pas encore « affichée » côté client. Autre piste : la priorité
+entre invites de même touche (E).
+
+Proposition : corriger le banc (attendre que l'invite soit affichée par `ProximityPromptService.PromptShown`, journaliser
+l'invite affichée), puis le rejouer une fois pour confirmer. Le journal temporaire reste sur la branche locale
+`diag/qa-a24`, qui n'est ni poussée ni fusionnée.
+
