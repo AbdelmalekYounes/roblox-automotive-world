@@ -82,10 +82,10 @@ def test_no_premature_datastore_economy_or_external_code():
     assert sorted(adapters) == sorted([DATASTORE_ADAPTER, CROSS_SERVER_ADAPTER]), f"DataStore hors de ses adaptateurs : {adapters}"
 
 
-def test_storage_environments_not_declared():
-    """Aucune expérience de test ou de production déclarée : tout reste en mémoire."""
+def test_storage_environments_declared():
+    """Seule l'expérience de TEST privée du propriétaire est déclarée (2026-11-05) ; aucune production."""
     config = (SRC / "server/Persistence/EnvironmentConfig.luau").read_text(encoding="utf-8")
-    assert "TestGameIds = table.freeze({})" in config
+    assert "TestGameIds = table.freeze({ 10774855477 })" in config
     assert "ProdGameIds = table.freeze({})" in config
 
 

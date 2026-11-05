@@ -288,3 +288,10 @@ environnements, touche F8. 22 actions :
 Correctif QA-D11 : une place publiée non déclarée passe en « Unconfigured », sans crédits synthétiques. Expérience
 privée : à créer et publier par le propriétaire, puis déclarer son identifiant (environnement Test, DataStore isolé).
 
+## Expérience de test privée (2026-11-05)
+
+Créée et publiée par le propriétaire (« Automotive World Test », GameId 10774855477, PlaceId 130603661962826) et
+déclarée dans `EnvironmentConfig.TestGameIds` : environnement **Test**, DataStore isolé `AW_TEST_Profiles_v1` (jamais de
+production). C'est la première fois que le DataStore réel peut tourner : campagne QA-D01 à QA-D10 à mener par le
+propriétaire (sauvegarde, reconnexion, deux serveurs). Aucune expérience de production déclarée.
+

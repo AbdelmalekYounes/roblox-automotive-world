@@ -59,9 +59,13 @@ return function(T: any, H: any)
 
     T.suite("Lot 0.4 — environnements de stockage (AUD-ENV-01)")
 
-    T.test("aucune expérience déclarée : tout s'exécute en mémoire, jamais en DataStore", function()
-        T.equal(#EnvironmentConfig.TestGameIds, 0)
+    T.test("expérience inconnue : tout s'exécute en mémoire, jamais en DataStore", function()
+        -- 2026-11-05 : expérience de test privée déclarée par le propriétaire ; aucune expérience de production.
+        T.equal(table.concat(EnvironmentConfig.TestGameIds, ","), "10774855477")
         T.equal(#EnvironmentConfig.ProdGameIds, 0)
+        local declared = Environment.resolve(10774855477, false, EnvironmentConfig)
+        T.equal(declared.Name, "Test")
+        T.equal(declared.StoreName, "AW_TEST_Profiles_v1", "magasin de test isolé, jamais de production")
         for _, studio in { true, false } do
             local resolved = Environment.resolve(123456, studio, EnvironmentConfig)
             -- Lot ADMIN-01 (QA-D11) : hors Studio, une expérience non déclarée n'est plus « Dev ».
