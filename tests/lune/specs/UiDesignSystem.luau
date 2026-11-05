@@ -201,7 +201,9 @@ return function(T: any, H: any)
             T.truthy(string.find(phone, glyph, 1, true) == nil, "glyphe absent : " .. glyph)
         end
         for _, needle in
-            { "PhoneIcons.image", "Tokens.Phone", "Radius.PhoneFrame", "Radius.PhoneScreen", "PhoneResize" }
+            -- 2026-11-05 : coque de smartphone moderne demandée par le propriétaire (coins 54 / 44 px au lieu des
+            -- rayons 34 / 26 de la maquette), pastille, barre d'accueil et dock.
+            { "PhoneIcons.image", "Tokens.Phone", "BarreAccueil", "Pastille", "Dock", "PhoneResize" }
         do
             T.truthy(string.find(phone, needle, 1, true) ~= nil, needle)
         end
@@ -509,4 +511,40 @@ return function(T: any, H: any)
         local manager = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.UIManager")
         T.truthy(string.find(manager, "screen.Back()", 1, true) ~= nil, "retour d'un niveau avant fermeture")
     end)
+
+    T.suite("Carte V1.2 — rognage des routes (mini-carte ronde, grande carte)")
+
+    T.test(
+        "1. segments rognés au rectangle et au disque, jamais hors du cadre ; objectif ramené au cercle",
+        function()
+            local Projection = H.require("ReplicatedStorage.Shared.Navigation.MapProjection")
+            local view = Projection.view(0, 0, 1, 0, 200, 200)
+            -- Rectangle : dedans inchangé, traversant coupé au bord, dehors rejeté.
+            local a, b, c, d = Projection.clipRect(view, 20, 20, 180, 180, 0)
+            T.truthy(a == 20 and b == 20 and c == 180 and d == 180, "segment intérieur inchangé")
+            a, b, c, d = Projection.clipRect(view, -100, 100, 300, 100, 0)
+            T.truthy(math.abs(a - 0) < 1e-6 and math.abs(c - 200) < 1e-6 and b == 100 and d == 100, "coupé aux bords")
+            a = Projection.clipRect(view, -50, -50, -10, -20, 0)
+            T.equal(a, nil, "segment extérieur rejeté")
+            -- Disque de rayon 90 centré : extrémités ramenées sur le cercle.
+            a, b, c, d = Projection.clipCircle(view, -100, 100, 300, 100, 90)
+            T.truthy(math.abs(a - 10) < 1e-6 and math.abs(c - 190) < 1e-6, "coupé sur le cercle")
+            a, b, c, d = Projection.clipCircle(view, 90, 90, 110, 110, 90)
+            T.truthy(a == 90 and c == 110, "segment intérieur inchangé")
+            a = Projection.clipCircle(view, 0, 0, 20, 0, 90)
+            T.equal(a, nil, "coin extérieur au disque rejeté")
+            -- Un segment rogné n'a aucun point hors du disque.
+            for _, seg in { { -300, -40, 400, 260 }, { 100, -500, 100, 900 }, { -10, 190, 210, 10 } } do
+                local u1, v1, u2, v2 = Projection.clipCircle(view, seg[1], seg[2], seg[3], seg[4], 90)
+                if u1 then
+                    for _, point in { { u1, v1 }, { u2, v2 } } do
+                        local r = math.sqrt((point[1] - 100) ^ 2 + (point[2] - 100) ^ 2)
+                        T.truthy(r <= 90 + 1e-6, "point dans le disque : " .. r)
+                    end
+                end
+            end
+            local u, v = Projection.clampToCircle(view, 400, 100, 12)
+            T.truthy(math.abs(u - 188) < 1e-6 and math.abs(v - 100) < 1e-6, "objectif ramené au cercle intérieur")
+        end
+    )
 end

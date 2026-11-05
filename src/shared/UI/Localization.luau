@@ -526,6 +526,7 @@ local E: { [string]: Entry } = {
     ["phone.credits"] = { "{amount} cr", "{amount} cr" },
     -- UI-02 finalisé (téléphone V1.2 : titres, cartes, boutons à valeur).
     ["phone.quickTag"] = { "Mode rapide", "Quick mode" },
+    ["map.hints"] = { "Glisser : déplacer · Molette : zoom · M : fermer", "Drag: move · Wheel: zoom · M: close" },
     ["onb.exercise.done"] = { "Réussi", "Done" },
     ["onb.exercise.todo"] = { "À faire", "To do" },
     ["phone.h.route"] = { "Itinéraire", "Route" },

@@ -67,6 +67,7 @@ local device: Frame
 local header: TextLabel
 local body: ScrollingFrame
 local quickBar: Frame
+local dock: Frame
 local backButton: TextButton
 local quickTag: TextLabel
 local clockLabel: TextLabel
@@ -146,6 +147,17 @@ local function button(
         PaddingRight = UDim.new(0, if value then 96 else Tokens.Space[3]),
     }, b)
     b.TextSize = UITheme.text(14)
+    -- Ligne d'un smartphone moderne : coins de 12 px, fond légèrement translucide, sans bordure.
+    local rounded = b:FindFirstChildOfClass("UICorner")
+    if rounded then
+        rounded.CornerRadius = UDim.new(0, 12)
+    end
+    b.BackgroundColor3 = Color3.fromRGB(32, 35, 40)
+    b.BackgroundTransparency = 0.08
+    local outline = b:FindFirstChildOfClass("UIStroke")
+    if outline then
+        outline.Transparency = 1
+    end
     if primary then
         b.BackgroundColor3 = Tokens.color("Amber")
         b.TextColor3 = Tokens.color("TextOnAmber")
@@ -253,8 +265,9 @@ local function card(title: string, subtitle: string?, accent: string?, name: str
         LayoutOrder = order,
         ClipsDescendants = true,
     }, body)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, box)
-    UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 1 }, box)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 14) }, box)
+    box.BackgroundColor3 = Color3.fromRGB(28, 31, 35)
+    box.BackgroundTransparency = 0.05
     UITheme.make("Frame", {
         Name = "Filet",
         BackgroundColor3 = Tokens.color(accent or "Line"),
@@ -324,7 +337,10 @@ end
 
 -- ======================== Applications ========================
 
-local function appTile(parent: Instance, name: string, index: number)
+-- Taille des icônes de l'accueil (style smartphone moderne : grandes icônes arrondies, nom dessous).
+local ICON_SIZE = 60
+
+local function appTile(parent: Instance, name: string, index: number, withCaption: boolean?): TextButton
     local tile = UITheme.make("TextButton", {
         Name = "App" .. name,
         BackgroundTransparency = 1,
@@ -334,15 +350,20 @@ local function appTile(parent: Instance, name: string, index: number)
         LayoutOrder = index,
         Selectable = true,
     }, parent) :: TextButton
+    -- Icône « squircle » : coins de 16 px, dégradé sombre, liseré discret.
     local square = UITheme.make("Frame", {
-        BackgroundColor3 = Tokens.color("AppTile"),
+        BackgroundColor3 = Color3.new(1, 1, 1),
         BorderSizePixel = 0,
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.fromScale(0.5, 0),
-        Size = UDim2.fromOffset(Tokens.Phone.AppTile, Tokens.Phone.AppTile),
+        Size = UDim2.fromOffset(ICON_SIZE, ICON_SIZE),
     }, tile)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.AppTile) }, square)
-    local stroke = UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 1 }, square)
+    UITheme.make("UIGradient", {
+        Color = ColorSequence.new(Color3.fromRGB(46, 50, 57), Color3.fromRGB(22, 24, 27)),
+        Rotation = 90,
+    }, square)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 16) }, square)
+    local stroke = UITheme.make("UIStroke", { Color = Color3.fromRGB(60, 64, 71), Thickness = 1 }, square)
     local image = PhoneIcons.image(name)
     if image then
         UITheme.make("ImageLabel", {
@@ -350,10 +371,10 @@ local function appTile(parent: Instance, name: string, index: number)
             BackgroundTransparency = 1,
             Image = image,
             ImageColor3 = Tokens.color(PhoneIcons.tint(name)),
-            ScaleType = Enum.ScaleType.Fit, -- planche « Icônes du téléphone » : version 128 px affichée en 28 px
+            ScaleType = Enum.ScaleType.Fit, -- planche « Icônes du téléphone » : version 128 px (affichée en 32 px)
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.fromScale(0.5, 0.5),
-            Size = UDim2.fromOffset(Tokens.Phone.AppIcon, Tokens.Phone.AppIcon),
+            Size = UDim2.fromOffset(32, 32),
         }, square)
     else
         -- Image pas encore envoyée sur Roblox : cadre vide à la place (aucun caractère de remplacement).
@@ -371,7 +392,7 @@ local function appTile(parent: Instance, name: string, index: number)
             slot
         )
     end
-    -- Nom de l'application en casse normale, 12 px (maquette).
+    -- Nom de l'application en casse normale, 12 px (maquette) ; absent dans le dock.
     local caption = Components.text(tile, Localization.t("phone.app." .. name), "Body", {
         Name = "Nom",
         AnchorPoint = Vector2.new(0.5, 1),
@@ -382,6 +403,7 @@ local function appTile(parent: Instance, name: string, index: number)
         TextColor3 = UITheme.color("Text"),
     })
     caption.TextSize = UITheme.text(12)
+    caption.Visible = withCaption ~= false
     local unread = if name == "Notifications" then NotificationService.unread() else 0
     if unread > 0 then
         local badge = UITheme.make("TextLabel", {
@@ -389,8 +411,8 @@ local function appTile(parent: Instance, name: string, index: number)
             BackgroundColor3 = UITheme.color("Accent"),
             Text = tostring(unread),
             AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, Tokens.Phone.AppTile / 2 - 2, 0, 4),
-            Size = UDim2.fromOffset(18, 18), -- pastille ambre de 18 px, chiffres Roboto Mono (planche des icônes)
+            Position = UDim2.new(0.5, ICON_SIZE / 2 - 2, 0, 4),
+            Size = UDim2.fromOffset(20, 20), -- pastille ambre, chiffres Roboto Mono (planche des icônes)
         }, tile) :: TextLabel
         badge.FontFace = UITheme.face("Value")
         badge.TextSize = UITheme.text(12)
@@ -406,10 +428,20 @@ local function appTile(parent: Instance, name: string, index: number)
         stroke.Thickness = 1
     end)
     tile.Activated:Connect(function()
+        -- Carte : ouverture directe de la grande carte (demande du propriétaire : naviguer en grand).
+        if name == "Map" then
+            UIManager.close("Phone")
+            UIManager.open("Map")
+            return
+        end
         app = name
         render()
     end)
+    return tile
 end
+
+-- Applications du dock (bas de l'écran d'accueil) ; les 8 autres sont dans la grille.
+local DOCK = { "Map", "Vehicles", "Notifications", "Settings" }
 
 local function renderHome()
     local unread = NotificationService.unread()
@@ -425,17 +457,30 @@ local function renderHome()
         AutomaticSize = Enum.AutomaticSize.Y,
         LayoutOrder = order,
     }, body)
-    -- 4 colonnes calculées sur la largeur disponible : les 12 applications tiennent en 3 rangées, sans défilement,
-    -- même dans la taille compacte (4e rangée cachée dans une petite fenêtre : VM 20261105-034325).
-    local columnWidth = math.max(60, math.floor((Components.logicalSize(body).X - 8 - 3 * 6) / 4))
+    -- 4 colonnes calculées sur la largeur disponible (pixels logiques).
+    local columnWidth = math.max(64, math.floor((Components.logicalSize(body).X - 8 - 3 * 4) / 4))
     UITheme.make("UIGridLayout", {
-        CellSize = UDim2.fromOffset(columnWidth, 88),
-        CellPadding = UDim2.fromOffset(6, Tokens.Space[3]),
+        CellSize = UDim2.fromOffset(columnWidth, 90),
+        CellPadding = UDim2.fromOffset(4, Tokens.Space[3]),
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         SortOrder = Enum.SortOrder.LayoutOrder,
     }, grid)
-    for index, name in APPS do
-        appTile(grid, name, index)
+    local index = 0
+    for _, name in APPS do
+        if not table.find(DOCK, name) then
+            index += 1
+            appTile(grid, name, index)
+        end
+    end
+    -- Dock : panneau translucide arrondi, 4 favoris sans nom.
+    for _, child in dock:GetChildren() do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    for position, name in DOCK do
+        local tile = appTile(dock, name, position, false)
+        tile.Size = UDim2.fromOffset(ICON_SIZE + 8, ICON_SIZE + 8)
     end
 end
 
@@ -1139,6 +1184,11 @@ render = function()
     quickTag.Visible = quick
     header.Size = UDim2.new(1, if quick then -(Components.logicalSize(quickTag).X + 40) else -32, 0, 34)
     backButton.Visible = not quick and app ~= "Home"
+    -- Accueil : pas de grand titre, grille plus haute et dock visible ; applications : grand titre.
+    dock.Visible = not quick and app == "Home"
+    header.Visible = quick or app ~= "Home"
+    body.Position = UDim2.fromOffset(14, if not quick and app == "Home" then 64 else 124)
+    body.Size = UDim2.new(1, -28, 1, if not quick and app == "Home" then -190 else -160)
     if quick then
         renderQuick()
         return
@@ -1225,35 +1275,171 @@ local function build()
         Enabled = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
     }, Players.LocalPlayer:WaitForChild("PlayerGui"))
-    -- Coque (rayon 34) et écran (rayon 26) de la maquette.
+    -- Smartphone moderne (demande du propriétaire, création originale sans logo ni marque) : coque fine en métal
+    -- sombre aux angles très arrondis, boutons latéraux, écran bord à bord en dégradé, pastille noire en haut, barre
+    -- d'état dessinée (heure, réseau, batterie), barre d'accueil en bas.
     device = UITheme.make("Frame", {
         Name = "Coque",
-        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BackgroundColor3 = Color3.fromRGB(40, 43, 48),
         BorderSizePixel = 0,
         Size = UDim2.fromOffset(Tokens.Phone.Normal.X, Tokens.Phone.Normal.Y),
     }, gui) :: Frame
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.PhoneFrame) }, device)
-    UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 2 }, device)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 54) }, device)
+    UITheme.make("UIGradient", {
+        Color = ColorSequence.new(Color3.fromRGB(86, 90, 97), Color3.fromRGB(34, 36, 40)),
+        Rotation = 35,
+    }, device)
+    -- Boutons latéraux (volume à gauche, marche à droite), posés hors de la coque.
+    for _, spec in { { 0, 120, 52 }, { 0, 184, 52 }, { 1, 150, 78 } } do
+        local key = UITheme.make("Frame", {
+            Name = "BoutonLateral",
+            AnchorPoint = Vector2.new(if spec[1] == 0 then 1 else 0, 0),
+            Position = UDim2.new(spec[1], 0, 0, spec[2]),
+            Size = UDim2.fromOffset(3, spec[3]),
+            BackgroundColor3 = Color3.fromRGB(70, 74, 80),
+            BorderSizePixel = 0,
+        }, device)
+        UITheme.make("UICorner", { CornerRadius = UDim.new(0, 2) }, key)
+    end
+    -- Bord noir intérieur puis écran.
+    local bezel = UITheme.make("Frame", {
+        Name = "Bord",
+        BackgroundColor3 = Color3.fromRGB(6, 7, 8),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(4, 4),
+        Size = UDim2.new(1, -8, 1, -8),
+    }, device)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 50) }, bezel)
     local screen = UITheme.make("Frame", {
         Name = "Ecran",
-        BackgroundColor3 = UITheme.color("Panel"),
+        BackgroundColor3 = Color3.new(1, 1, 1),
         BorderSizePixel = 0,
         Position = UDim2.fromOffset(10, 10),
         Size = UDim2.new(1, -20, 1, -20),
+        ClipsDescendants = true,
     }, device)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.PhoneScreen) }, screen)
-    -- Barre d'état : heure.
-    clockLabel = Components.text(screen, "", "Value", {
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 44) }, screen)
+    -- Fond d'écran : dégradé bleu nuit vers noir, lueur ambre discrète en bas.
+    UITheme.make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 37, 49)),
+            ColorSequenceKeypoint.new(0.7, Color3.fromRGB(14, 15, 18)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(34, 26, 16)),
+        }),
+        Rotation = 90,
+    }, screen)
+    -- Pastille noire en haut de l'écran (caméra et capteurs).
+    local island = UITheme.make("Frame", {
+        Name = "Pastille",
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.new(0.5, 0, 0, 11),
+        Size = UDim2.fromOffset(108, 30),
+        BackgroundColor3 = Color3.new(0, 0, 0),
+        BorderSizePixel = 0,
+        ZIndex = 5,
+    }, screen)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, island)
+    -- Barre d'état : heure à gauche, réseau et batterie dessinés à droite.
+    clockLabel = Components.text(screen, "", "Body", {
         Name = "Heure",
-        Position = UDim2.fromOffset(18, 8),
-        TextColor3 = UITheme.color("TextDim"),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.fromOffset(34, 26),
+        TextColor3 = Color3.new(1, 1, 1),
     })
+    clockLabel.FontFace = Font.new(UITheme.face("Button").Family, Enum.FontWeight.Bold)
+    clockLabel.TextSize = UITheme.text(15)
+    local status = UITheme.make("Frame", {
+        Name = "Etat",
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -30, 0, 26),
+        Size = UDim2.fromOffset(52, 14),
+        BackgroundTransparency = 1,
+    }, screen)
+    for bar = 1, 4 do
+        UITheme.make("Frame", {
+            Name = "Reseau" .. bar,
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, (bar - 1) * 4, 1, 0),
+            Size = UDim2.fromOffset(3, 3 + bar * 2.5),
+            BackgroundColor3 = Color3.new(1, 1, 1),
+            BorderSizePixel = 0,
+        }, status)
+    end
+    local battery = UITheme.make("Frame", {
+        Name = "Batterie",
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -3, 0.5, 0),
+        Size = UDim2.fromOffset(24, 12),
+        BackgroundTransparency = 1,
+    }, status)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 3) }, battery)
+    UITheme.make("UIStroke", { Color = Color3.fromRGB(200, 200, 200), Thickness = 1 }, battery)
+    local level = UITheme.make("Frame", {
+        Position = UDim2.fromOffset(2, 2),
+        Size = UDim2.new(0.78, -4, 1, -4),
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel = 0,
+    }, battery)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 2) }, level)
+    UITheme.make("Frame", {
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(1, 1, 0.5, 0),
+        Size = UDim2.fromOffset(2, 5),
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
+        BorderSizePixel = 0,
+    }, battery)
+    -- Barre d'accueil (bas de l'écran) : un clic ramène à l'accueil.
+    local homeBar = UITheme.make("TextButton", {
+        Name = "BarreAccueil",
+        Text = "",
+        AutoButtonColor = false,
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 0, 1, -8),
+        Size = UDim2.fromOffset(150, 18),
+        BackgroundTransparency = 1,
+        Selectable = false,
+        ZIndex = 6,
+    }, screen)
+    local pill = UITheme.make("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromOffset(128, 5),
+        BackgroundColor3 = Color3.fromRGB(235, 235, 235),
+        BorderSizePixel = 0,
+        ZIndex = 7,
+    }, homeBar)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, pill)
+    homeBar.Activated:Connect(function()
+        if not quick then
+            app = "Home"
+            render()
+        end
+    end)
+    -- Dock de l'accueil : panneau translucide arrondi en bas.
+    dock = UITheme.make("Frame", {
+        Name = "Dock",
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 0, 1, -30),
+        Size = UDim2.new(1, -24, 0, 88),
+        BackgroundColor3 = Color3.fromRGB(58, 62, 70),
+        BackgroundTransparency = 0.55,
+        BorderSizePixel = 0,
+        Visible = false,
+    }, screen)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 32) }, dock)
+    UITheme.make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, dock)
     -- En-tête : retour, titre, étiquette « mode rapide », agrandir et fermer.
     backButton = UITheme.button(
-        Localization.t("ui.back"),
+        Localization.t("phone.home"),
         {
             Name = "Retour",
-            Position = UDim2.fromOffset(12, 34),
+            Position = UDim2.fromOffset(12, 48),
             Size = UDim2.fromOffset(0, Tokens.MinTarget),
             AutomaticSize = Enum.AutomaticSize.X,
         },
@@ -1263,10 +1449,27 @@ local function build()
             render()
         end
     )
-    UITheme.make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, backButton)
+    -- Retour à la manière d'un smartphone moderne : texte ambre sans fond, chevron dessiné à gauche.
+    backButton.BackgroundTransparency = 1
+    backButton.TextColor3 = Tokens.color("Amber")
+    local backOutline = backButton:FindFirstChildOfClass("UIStroke")
+    if backOutline then
+        backOutline.Transparency = 1
+    end
+    UITheme.make("UIPadding", { PaddingLeft = UDim.new(0, 22), PaddingRight = UDim.new(0, 6) }, backButton)
+    for _, sign in { -1, 1 } do
+        UITheme.make("Frame", {
+            BackgroundColor3 = Tokens.color("Amber"),
+            BorderSizePixel = 0,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0, 10, 0.5, sign * 3),
+            Size = UDim2.fromOffset(2.5, 10),
+            Rotation = -sign * 45,
+        }, backButton)
+    end
     header = Components.text(screen, "", "H1", {
         Name = "Titre",
-        Position = UDim2.fromOffset(16, 72),
+        Position = UDim2.fromOffset(20, 82),
         Size = UDim2.new(1, -32, 0, 34),
         AutomaticSize = Enum.AutomaticSize.None,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1275,7 +1478,7 @@ local function build()
     quickTag = Components.text(screen, Tokens.upper(Localization.t("phone.quickTag")), "Label", {
         Name = "ModeRapide",
         AnchorPoint = Vector2.new(1, 0),
-        Position = UDim2.new(1, -16, 0, 80),
+        Position = UDim2.new(1, -20, 0, 90),
         BackgroundTransparency = 0,
         TextColor3 = UITheme.color("AccentSoftText"),
         Visible = false,
@@ -1294,7 +1497,7 @@ local function build()
         {
             Name = "Agrandir",
             AnchorPoint = Vector2.new(1, 0),
-            Position = UDim2.new(1, -56, 0, 34),
+            Position = UDim2.new(1, -60, 0, 50),
             Size = UDim2.fromOffset(Tokens.MinTarget, Tokens.MinTarget),
         },
         screen,
@@ -1308,7 +1511,7 @@ local function build()
         {
             Name = "Fermer",
             AnchorPoint = Vector2.new(1, 0),
-            Position = UDim2.new(1, -16, 0, 34),
+            Position = UDim2.new(1, -18, 0, 50),
             Size = UDim2.fromOffset(Tokens.MinTarget, Tokens.MinTarget),
         },
         screen,
@@ -1316,10 +1519,26 @@ local function build()
             UIManager.close("Phone")
         end
     )
+    -- Boutons ronds translucides (agrandir, fermer) : à la manière des commandes d'un smartphone.
+    for _, name in { "Agrandir", "Fermer" } do
+        local item = screen:FindFirstChild(name) :: TextButton?
+        if item then
+            item.BackgroundColor3 = Color3.fromRGB(58, 62, 70)
+            item.BackgroundTransparency = 0.35
+            local rounded = item:FindFirstChildOfClass("UICorner")
+            if rounded then
+                rounded.CornerRadius = UDim.new(1, 0)
+            end
+            local outline = item:FindFirstChildOfClass("UIStroke")
+            if outline then
+                outline.Transparency = 1
+            end
+        end
+    end
     body = UITheme.make("ScrollingFrame", {
         Name = "Contenu",
-        Position = UDim2.fromOffset(12, 114),
-        Size = UDim2.new(1, -24, 1, -176),
+        Position = UDim2.fromOffset(14, 124),
+        Size = UDim2.new(1, -28, 1, -160),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
@@ -1334,7 +1553,7 @@ local function build()
     -- Réglages rapides autorisés en roulant (souris ou raccourcis, jamais une sélection manette).
     quickBar = UITheme.make(
         "Frame",
-        { Position = UDim2.new(0, 12, 1, -54), Size = UDim2.new(1, -24, 0, 44), BackgroundTransparency = 1 },
+        { Position = UDim2.new(0, 14, 1, -82), Size = UDim2.new(1, -28, 0, 44), BackgroundTransparency = 1 },
         screen
     )
     UITheme.make(

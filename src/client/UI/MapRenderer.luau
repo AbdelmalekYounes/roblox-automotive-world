@@ -55,40 +55,44 @@ type Fields = {
     MaxLines: number,
     OnMarker: ((Marker) -> ())?,
     Arrow: Frame,
+    Clip: string?,
 }
 
 export type Renderer = typeof(setmetatable({} :: Fields, MapRenderer))
 
 function MapRenderer.new(root: Frame, maxLines: number, onMarker: ((Marker) -> ())?): Renderer
     root.ClipsDescendants = true
-    -- Flèche du joueur dessinée (maquette : « flèche joueur ambre ») : chevron et point central, tournés au cap.
+    -- Flèche du joueur : triangle BLANC dessiné (bandes empilées), contour sombre pour rester lisible sur les routes
+    -- claires ; tournée au cap (demande du propriétaire : « une flèche blanche pour le curseur du joueur »).
     local arrow = UITheme.make("Frame", {
         Name = "FlecheJoueur",
         AnchorPoint = Vector2.new(0.5, 0.5),
         Size = UDim2.fromOffset(22, 22),
         BackgroundTransparency = 1,
-        ZIndex = 5,
+        ZIndex = 7,
     }, root)
-    for _, sign in { -1, 1 } do
-        UITheme.make("Frame", {
-            BackgroundColor3 = Tokens.color("Amber"),
-            BorderSizePixel = 0,
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, sign * 4, 0.5, -1),
-            Size = UDim2.fromOffset(3, 13),
-            Rotation = -sign * 30,
-            ZIndex = 6,
-        }, arrow)
+    local function triangle(width: number, height: number, color: Color3, z: number)
+        local rows = math.floor(height / 2)
+        for row = 1, rows do
+            -- Pointe en haut ; base échancrée sur les deux dernières bandes (flèche de navigation).
+            local fraction = row / rows
+            local rowWidth = math.max(2, math.floor(width * fraction + 0.5))
+            local notch = if row > rows - 2 then math.floor(width * 0.28) else 0
+            local sides: { number } = if notch > 0 then { -1, 1 } else { 0 }
+            for _, side in sides do
+                UITheme.make("Frame", {
+                    BackgroundColor3 = color,
+                    BorderSizePixel = 0,
+                    AnchorPoint = Vector2.new(if side == 0 then 0.5 elseif side < 0 then 1 else 0, 0),
+                    Position = UDim2.new(0.5, side * math.floor(notch / 2), 0.5, -height / 2 + (row - 1) * 2),
+                    Size = UDim2.fromOffset(if side == 0 then rowWidth else math.floor((rowWidth - notch) / 2), 2),
+                    ZIndex = z,
+                }, arrow)
+            end
+        end
     end
-    local dot = UITheme.make("Frame", {
-        BackgroundColor3 = Tokens.color("Amber"),
-        BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 4),
-        Size = UDim2.fromOffset(6, 6),
-        ZIndex = 6,
-    }, arrow)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, dot)
+    triangle(19, 22, Color3.fromRGB(14, 15, 17), 7) -- contour
+    triangle(14, 16, Color3.fromRGB(255, 255, 255), 8) -- flèche blanche
     return setmetatable(
         { Root = root, Lines = {}, Icons = {}, MaxLines = maxLines, OnMarker = onMarker, Arrow = arrow },
         MapRenderer
@@ -174,11 +178,18 @@ local function drawSegment(
     bx: number,
     bz: number,
     color: Color3,
-    thickness: number
+    thickness: number,
+    z: number?
 ): number
-    local u1, v1 = MapProjection.toMap(view, ax, az)
-    local u2, v2 = MapProjection.toMap(view, bx, bz)
-    if not MapProjection.inside(view, u1, v1, 40) and not MapProjection.inside(view, u2, v2, 40) then
+    local a1, b1 = MapProjection.toMap(view, ax, az)
+    local a2, b2 = MapProjection.toMap(view, bx, bz)
+    local u1, v1, u2, v2
+    if self.Clip == "Circle" then
+        u1, v1, u2, v2 = MapProjection.clipCircle(view, a1, b1, a2, b2, math.min(view.Width, view.Height) / 2 - 2)
+    else
+        u1, v1, u2, v2 = MapProjection.clipRect(view, a1, b1, a2, b2, 0)
+    end
+    if u1 == nil or v1 == nil or u2 == nil or v2 == nil then
         return n
     end
     local du, dv = u2 - u1, v2 - v1
@@ -191,9 +202,9 @@ local function drawSegment(
     item.Visible = true
     item.BackgroundColor3 = color
     item.Position = UDim2.fromOffset((u1 + u2) / 2, (v1 + v2) / 2)
-    item.Size = UDim2.fromOffset(length + thickness * 0.6, thickness)
+    item.Size = UDim2.fromOffset(length, thickness)
     item.Rotation = math.deg(math.atan2(dv, du))
-    item.ZIndex = if thickness > 3 then 3 else 2
+    item.ZIndex = z or (if thickness > 3 then 3 else 2)
     return n
 end
 
@@ -278,10 +289,13 @@ export type Scene = {
     PlayerX: number,
     PlayerZ: number,
     ClampMarkers: boolean, -- objectifs hors vue ramenés au bord (mini-carte)
+    Clip: string?, -- « Circle » (mini-carte ronde) ou « Rect » (par défaut)
+    ShowNorth: boolean?, -- repère « N » sur le bord (mini-carte)
 }
 
 function MapRenderer.draw(self: Renderer, scene: Scene)
     local view = scene.View
+    self.Clip = scene.Clip or "Rect"
     local n = 0
     local index = scene.Index
     if index then
@@ -289,12 +303,13 @@ function MapRenderer.draw(self: Renderer, scene: Scene)
         local span = math.max(maxX - minX, maxZ - minZ)
         local segments =
             MapIndex.query(index :: MapIndex.Index, minX, minZ, maxX, maxZ, MapIndex.minImportanceFor(span))
-        local road, major = UITheme.color("Road"), UITheme.color("RoadMajor")
+        -- Hiérarchie lisible : routes principales plus claires et plus larges, secondaires discrètes.
+        local road, major = Color3.fromRGB(58, 62, 69), Color3.fromRGB(104, 109, 117)
         for _, segment in segments do
             if n >= self.MaxLines then
                 break
             end
-            local thick = if segment.Importance >= 5 then 3 elseif segment.Importance >= 3 then 2 else 1.5
+            local thick = if segment.Importance >= 5 then 4 elseif segment.Importance >= 3 then 2.5 else 1.5
             n = drawSegment(
                 self,
                 view,
@@ -310,12 +325,15 @@ function MapRenderer.draw(self: Renderer, scene: Scene)
     end
     local route = scene.Route
     if route then
-        local color = UITheme.color("Route")
-        local step = math.max(1, math.floor(#route / 400))
+        -- Itinéraire cyan bordé de sombre (lisible sur les routes claires).
+        local color = Tokens.color("GpsCyan")
+        local casing = Color3.fromRGB(14, 15, 17)
+        local step = math.max(1, math.floor(#route / 300))
         local i = 1
-        while i < #route and n < self.MaxLines + 400 do
+        while i < #route and n < self.MaxLines + 600 do
             local j = math.min(i + step, #route)
-            n = drawSegment(self, view, n, route[i].X, route[i].Z, route[j].X, route[j].Z, color, 4)
+            n = drawSegment(self, view, n, route[i].X, route[i].Z, route[j].X, route[j].Z, casing, 7, 3)
+            n = drawSegment(self, view, n, route[i].X, route[i].Z, route[j].X, route[j].Z, color, 4, 4)
             i = j
         end
     end
@@ -328,12 +346,20 @@ function MapRenderer.draw(self: Renderer, scene: Scene)
     for markerIndex, marker in scene.Markers do
         local u, v = MapProjection.toMap(view, marker.X, marker.Z)
         local inside = MapProjection.inside(view, u, v, -6)
+        if inside and self.Clip == "Circle" then
+            local cx, cy = view.Width / 2, view.Height / 2
+            inside = (u - cx) ^ 2 + (v - cy) ^ 2 <= (math.min(cx, cy) - 8) ^ 2
+        end
         if not inside then
             if
                 scene.ClampMarkers
                 and (marker.Kind == "MissionTarget" or marker.Kind == "Destination" or marker.Kind == "GroupMember")
             then
-                u, v = MapProjection.clampToEdge(view, u, v, 12)
+                if self.Clip == "Circle" then
+                    u, v = MapProjection.clampToCircle(view, u, v, 12)
+                else
+                    u, v = MapProjection.clampToEdge(view, u, v, 12)
+                end
             else
                 continue
             end
@@ -349,11 +375,51 @@ function MapRenderer.draw(self: Renderer, scene: Scene)
     for k = count + 1, #self.Icons do
         self.Icons[k].Visible = false
     end
+    if scene.ShowNorth then
+        local north = (self :: any).North :: TextLabel?
+        if north == nil then
+            local created = UITheme.make("TextLabel", {
+                Name = "Nord",
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.fromOffset(16, 16),
+                BackgroundColor3 = Color3.fromRGB(14, 15, 17),
+                BackgroundTransparency = 0,
+                Text = "N",
+                TextColor3 = Tokens.color("Text"),
+                ZIndex = 9,
+            }, self.Root)
+            created.FontFace = Font.new(UITheme.face("Value").Family, Enum.FontWeight.Bold)
+            created.TextSize = 11
+            UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, created);
+            (self :: any).North = created
+            north = created
+        end
+        local cx, cy = view.Width / 2, view.Height / 2
+        local radius = math.min(cx, cy) - 10
+        -- Nord du monde (−Z) vu dans la vue tournée de -Rotation.
+        local angle = -view.Rotation;
+        (north :: TextLabel).Position = UDim2.fromOffset(cx + math.sin(angle) * radius, cy - math.cos(angle) * radius)
+    end
     -- Joueur : flèche au centre (mini-carte tournante) ou à sa position.
     local pu, pv = MapProjection.toMap(view, scene.PlayerX, scene.PlayerZ)
     self.Arrow.Position = UDim2.fromOffset(pu, pv)
     self.Arrow.Rotation = math.deg(scene.PlayerHeading - view.Rotation)
     self.Arrow.Visible = MapProjection.inside(view, pu, pv, 0)
+end
+
+-- Échantillon fixe d'un repère (légende) : même dessin que sur la carte, sans action.
+function MapRenderer.sample(parent: Instance, kind: string): TextButton
+    local fake = setmetatable(
+        { Root = parent, Lines = {}, Icons = {}, MaxLines = 0, OnMarker = nil, Arrow = nil :: any },
+        MapRenderer
+    ) :: any
+    local item = icon(fake, 1)
+    styleMarker(item, kind)
+    item.Active = false
+    item.Selectable = false
+    item.AnchorPoint = Vector2.zero
+    item.Position = UDim2.new()
+    return item
 end
 
 return MapRenderer

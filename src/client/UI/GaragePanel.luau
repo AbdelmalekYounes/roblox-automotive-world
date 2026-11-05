@@ -277,7 +277,8 @@ local function confirmThen(question: string, onConfirm: () -> ())
         Name = "VoileConfirmation",
         Size = UDim2.fromScale(1, 1),
         BackgroundColor3 = color("BgBase"),
-        BackgroundTransparency = 0.25,
+        -- Voile léger (retour du propriétaire : l'écran devenait trop sombre, contenu illisible).
+        BackgroundTransparency = 0.6,
         BorderSizePixel = 0,
         ZIndex = 50,
         Active = true,
@@ -2221,31 +2222,6 @@ function GaragePanel.start()
         end)
         viewButtons[view.Id] = item
     end
-    -- Rotation par boutons (gauche, droite) : 15° par appui.
-    local turns: { { Name: string, Delta: number, Side: number, Offset: number } } = {
-        { Name = "TournerGauche", Delta = -15, Side = 0, Offset = 20 },
-        { Name = "TournerDroite", Delta = 15, Side = 1, Offset = -20 },
-    }
-    for _, spec in turns do
-        local item = make("TextButton", {
-            Name = spec.Name,
-            Text = "",
-            AutoButtonColor = false,
-            AnchorPoint = Vector2.new(spec.Side, 0.5),
-            Position = UDim2.new(spec.Side, spec.Offset, 0.5, 0),
-            Size = UDim2.fromOffset(48, 48),
-            BackgroundColor3 = color("BgBase"),
-            BackgroundTransparency = 0.2,
-            ZIndex = 5,
-        }, stage)
-        corner(item, 24)
-        stroke(item)
-        chevron(item, spec.Delta < 0, 14)
-        item.Activated:Connect(function()
-            VehiclePreview.rotate(spec.Delta)
-            renderStage()
-        end)
-    end
     -- Caméra : libellé et réinitialisation (en bas à gauche).
     local cam = make("Frame", {
         Name = "Camera",
@@ -2274,7 +2250,65 @@ function GaragePanel.start()
     end, nil, nil, 28, "Reinitialiser")
     reset.ZIndex = 4
     reset.LayoutOrder = 2
-    VehiclePreview.onChange(updateCamLabel)
+    -- Case à cocher « Rotation automatique » (demande du propriétaire) : dessinée (carré à filet, coche ambre).
+    local autoBox = make("TextButton", {
+        Name = "RotationAuto",
+        Text = "",
+        AutoButtonColor = false,
+        BackgroundTransparency = 1,
+        Size = UDim2.fromOffset(0, 28),
+        AutomaticSize = Enum.AutomaticSize.X,
+        LayoutOrder = 3,
+        ZIndex = 4,
+    }, cam)
+    make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 8),
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, autoBox)
+    local square = make("Frame", {
+        Name = "Case",
+        Size = UDim2.fromOffset(18, 18),
+        BackgroundColor3 = color("BgBase"),
+        BackgroundTransparency = 0.2,
+        LayoutOrder = 1,
+        ZIndex = 5,
+    }, autoBox)
+    corner(square, 3)
+    local squareEdge = make("UIStroke", { Color = color("Line"), Thickness = 1.5 }, square)
+    local tick = make("Frame", {
+        Name = "Coche",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromOffset(10, 10),
+        BackgroundColor3 = color("Amber"),
+        BorderSizePixel = 0,
+        ZIndex = 6,
+    }, square)
+    corner(tick, 2)
+    local autoLabel = Components.text(autoBox, tr("Rotation automatique"), "Body", {
+        Name = "Libelle",
+        LayoutOrder = 2,
+        ZIndex = 5,
+    })
+    autoLabel.TextSize = UITheme.text(13)
+    local function paintAuto()
+        local on = VehiclePreview.spinning()
+        tick.Visible = on
+        squareEdge.Color = if on then color("Amber") else color("Line")
+        autoBox:SetAttribute("AWChecked", on)
+    end
+    autoBox.Activated:Connect(function()
+        VehiclePreview.setAutoRotate(not VehiclePreview.spinning())
+        paintAuto()
+        renderStage()
+    end)
+    paintAuto()
+    VehiclePreview.onChange(function()
+        updateCamLabel()
+        paintAuto()
+    end)
     -- Barre d'actions (en bas au centre, onglet Véhicule).
     actionBar = make("Frame", {
         Name = "Actions",
@@ -2462,6 +2496,7 @@ function GaragePanel.start()
         title.Text = Tokens.upper(tr("Garage"))
         backButton.Text = tr("Collection")
         reset.Text = tr("Réinitialiser")
+        autoLabel.Text = tr("Rotation automatique")
         for _, view in GarageView.Views do
             local item = viewButtons[view.Id]
             if item then

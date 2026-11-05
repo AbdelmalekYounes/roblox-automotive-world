@@ -626,6 +626,8 @@ local T: { [string]: string } = {
     ["Épreuves ouvertes"] = "Open events",
     ["à %s"] = "%s away",
     ["épreuve ouverte"] = "open event",
+    -- ===================== Garage : rotation automatique =====================
+    ["Rotation automatique"] = "Auto-rotate",
 }
 
 return T
