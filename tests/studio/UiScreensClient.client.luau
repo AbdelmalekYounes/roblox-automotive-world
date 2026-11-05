@@ -56,10 +56,26 @@ if skip then
     Gui.click(skip, "Passer l'introduction")
     task.wait(1.5)
 end
-local masculin = Gui.findButton(playerGui, "Masculin")
-if masculin and Gui.shown(masculin) then
+-- La fenêtre de silhouette d'un profil neuf apparaît quelques secondes après l'arrivée : on l'attend (sans cela elle
+-- restait ouverte par-dessus les écrans testés, VM 20261105-123345).
+local masculin = nil
+waitFor(function()
+    masculin = Gui.findButton(playerGui:FindFirstChild("AWBodyChoice"), "Masculin")
+    return masculin ~= nil
+end, 10)
+-- Un clic pendant le chargement de l'apparence est refusé par le serveur (« apparence en chargement ») et la
+-- fenêtre reste ouverte : on reclique, comme un joueur, jusqu'à sa fermeture.
+for _ = 1, 4 do
+    local dialog = playerGui:FindFirstChild("AWBodyChoice")
+    if dialog == nil then
+        break
+    end
+    masculin = Gui.findButton(dialog, "Masculin")
+    if masculin == nil or not Gui.shown(masculin) then
+        break
+    end
     Gui.click(masculin, "Masculin")
-    task.wait(2)
+    task.wait(2.5)
 end
 for _ = 1, 4 do
     if not UIState.capturesDriving() then

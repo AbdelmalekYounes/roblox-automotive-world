@@ -524,6 +524,58 @@ local E: { [string]: Entry } = {
     ["phone.market.line"] = { "{model} — {price}", "{model} — {price}" },
     ["phone.market.mine"] = { "Mes annonces : {count}", "My listings: {count}" },
     ["phone.credits"] = { "{amount} cr", "{amount} cr" },
+    -- UI-02 finalisé (téléphone V1.2 : titres, cartes, boutons à valeur).
+    ["phone.quickTag"] = { "Mode rapide", "Quick mode" },
+    ["phone.h.route"] = { "Itinéraire", "Route" },
+    ["phone.map.full"] = { "Ouvrir la carte complète", "Open the full map" },
+    ["phone.h.collection"] = { "Collection · {count}", "Collection · {count}" },
+    ["phone.vehicle.energy"] = { "réserve {energy} %", "reserve {energy}%" },
+    ["phone.vehicles.empty"] = { "Aucun véhicule dans votre collection.", "No vehicles in your collection." },
+    ["phone.vehicles.emptyNote"] = {
+        "Le parcours d'arrivée propose un véhicule de départ.",
+        "The arrival flow offers a starter vehicle.",
+    },
+    ["phone.vehicles.garageNote"] = {
+        "Le garage s'ouvre à l'arrêt ou à pied. À la manette, il s'ouvre d'ici.",
+        "The garage opens when stopped or on foot. On a gamepad, it opens from here.",
+    },
+    ["phone.serviceDown"] = {
+        "Service injoignable : informations non à jour. Aucune action n'est envoyée.",
+        "Service unreachable: information is out of date. No action is sent.",
+    },
+    ["phone.h.properties"] = { "Mes propriétés", "My properties" },
+    ["phone.property.sub"] = {
+        "Niveau {level} · {used} / {capacity} place(s) exposée(s)",
+        "Level {level} · {used} / {capacity} bay(s) in use",
+    },
+    ["phone.h.mission"] = { "Mission en cours", "Active job" },
+    ["phone.h.jobs"] = { "Métiers", "Jobs" },
+    ["phone.job.sub"] = { "{completed} réussie(s)", "{completed} completed" },
+    ["phone.mission.busy"] = {
+        "Une mission est déjà en cours : terminez-la ou abandonnez-la depuis l'économie (J).",
+        "A job is already active: finish or abandon it from the economy panel (J).",
+    },
+    ["phone.rank.sub"] = { "{rank} · {points} pts", "{rank} · {points} pts" },
+    ["phone.h.events"] = { "Épreuves", "Events" },
+    ["phone.race.sub"] = { "{discipline} · {distance}", "{discipline} · {distance}" },
+    ["phone.h.listings"] = { "Annonces", "Listings" },
+    ["phone.market.mineTag"] = { "mon annonce", "my listing" },
+    ["phone.market.empty"] = { "Aucune annonce.", "No listings." },
+    ["phone.market.note"] = {
+        "Achat et vente se font dans l'économie (J), après validation du serveur.",
+        "Buying and selling happen in the economy panel (J), after server validation.",
+    },
+    ["phone.h.intro"] = { "Introduction", "Introduction" },
+    ["phone.notif.empty"] = { "Aucune notification.", "No notifications." },
+    ["phone.notif.note"] = {
+        "Priorités : critique, importante, information. En conduite, les secondaires sont différées.",
+        "Priorities: critical, important, info. While driving, secondary ones are deferred.",
+    },
+    ["photo.note"] = {
+        "Caméra bornée, effets locaux, capture par Roblox. Galerie propre au jeu non disponible.",
+        "Bounded camera, local effects, capture by Roblox. No in-game gallery.",
+    },
+    ["radio.unavailableList"] = { "Stations indisponibles : {stations}", "Unavailable stations: {stations}" },
     -- ===================== Social =====================
     ["social.group"] = { "Groupe", "Group" },
     ["social.noGroup"] = { "Vous n'êtes dans aucun groupe.", "You are not in a group." },

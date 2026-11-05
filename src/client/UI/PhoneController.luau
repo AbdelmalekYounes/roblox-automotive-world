@@ -32,6 +32,9 @@ local UITheme = require(script.Parent.UITheme)
 local Components = require(script.Parent.Components)
 local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
 local PhoneIcons = require(Shared:WaitForChild("UI"):WaitForChild("PhoneIcons"))
+local GarageView = require(Shared:WaitForChild("UI"):WaitForChild("GarageView"))
+local VehicleCatalog = require(Shared:WaitForChild("Economy"):WaitForChild("VehicleCatalog"))
+local VehicleDefinitions = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleDefinitions"))
 local UIManager = require(script.Parent.UIManager)
 local GPSController = require(script.Parent.GPSController)
 local NotificationService = require(script.Parent.NotificationService)
@@ -120,25 +123,180 @@ local function line(text: string, bold: boolean?, dim: boolean?)
     })
 end
 
--- Bouton de ligne (44 px) ; inactif : opacité 0,45, aucune action (la raison est donnée par la ligne qui suit).
-local function button(text: string, fn: () -> (), enabled: boolean?)
+-- Bouton de ligne (44 px, maquette) : libellé à gauche, valeur à droite en Roboto Mono (raccourci, état, distance) ;
+-- principal en ambre ; inactif : opacité 0,45, aucune action (la raison est donnée par la ligne qui suit).
+local function button(
+    text: string,
+    fn: () -> (),
+    enabled: boolean?,
+    value: string?,
+    primary: boolean?,
+    name: string?
+): TextButton
     order += 1
     local b = UITheme.button(text, {
+        Name = name or "Bouton",
         Size = UDim2.new(1, -8, 0, Tokens.PrimaryButtonHeight),
         LayoutOrder = order,
         TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
     }, body, if enabled == false then nil else fn)
-    UITheme.make(
-        "UIPadding",
-        { PaddingLeft = UDim.new(0, Tokens.Space[3]), PaddingRight = UDim.new(0, Tokens.Space[3]) },
-        b
-    )
+    UITheme.make("UIPadding", {
+        PaddingLeft = UDim.new(0, Tokens.Space[3]),
+        PaddingRight = UDim.new(0, if value then 96 else Tokens.Space[3]),
+    }, b)
+    b.TextSize = UITheme.text(14)
+    if primary then
+        b.BackgroundColor3 = Tokens.color("Amber")
+        b.TextColor3 = Tokens.color("TextOnAmber")
+        b.FontFace = Font.new(UITheme.face("Button").Family, Enum.FontWeight.Bold)
+        local edge = b:FindFirstChildOfClass("UIStroke")
+        if edge then
+            edge.Color = Tokens.color("Amber")
+        end
+    end
+    if value then
+        local label = Components.text(b, value, "Value", {
+            Name = "Valeur",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, 84, 0.5, 0),
+            Size = UDim2.fromOffset(84, 20),
+            TextXAlignment = Enum.TextXAlignment.Right,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            TextColor3 = if primary then Tokens.color("TextOnAmber") else UITheme.color("TextDim"),
+        })
+        label.TextSize = UITheme.text(12)
+    end
     if enabled == false then
         b.Active = false
         b.Selectable = false
         b.BackgroundTransparency = Tokens.DisabledTransparency
         b.TextTransparency = Tokens.DisabledTransparency
     end
+    return b
+end
+
+-- « Libellé : valeur » (textes existants des réglages) découpé pour le bouton à valeur de la maquette.
+local function pair(text: string): (string, string?)
+    local label, value = string.match(text, "^(.-)%s?:%s+(.+)$")
+    if label and value and #label > 0 then
+        return label, value
+    end
+    return text, nil
+end
+
+local function pairButton(text: string, fn: () -> (), enabled: boolean?, name: string?): TextButton
+    local label, value = pair(text)
+    return button(label, fn, enabled, value, nil, name)
+end
+
+-- Titre de section (capitales, discret).
+local function heading(text: string)
+    line(text, true)
+end
+
+-- Note discrète (12 px).
+local function note(text: string)
+    order += 1
+    local label = Components.text(body, text, "Body", {
+        Name = "Note",
+        Size = UDim2.new(1, -8, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = Color3.fromRGB(142, 140, 134),
+        LayoutOrder = order,
+    })
+    label.TextSize = UITheme.text(12)
+end
+
+-- Avertissement (fond ambre sombre) : action indisponible, service injoignable.
+local function warn(text: string)
+    order += 1
+    local box = UITheme.make("Frame", {
+        Name = "Avertissement",
+        Size = UDim2.new(1, -8, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Tokens.color("WarnBg"),
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    }, body)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, box)
+    UITheme.make("UIStroke", { Color = Tokens.color("WarnLine"), Thickness = 1 }, box)
+    UITheme.make("UIPadding", {
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8),
+    }, box)
+    Components.text(box, text, "Body", {
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = Tokens.color("WarnText"),
+    }).TextSize =
+        UITheme.text(13)
+end
+
+-- Carte de la maquette : surface 1, filet gauche de 3 px (couleur d'état), titre 15 px, sous-titre 12 px discret.
+-- Le filet est posé sur le cadre extérieur, hors de la liste du contenu (dans la liste, sa hauteur relative étirait
+-- la carte sans fin : capture VM 20261105-123345).
+local function card(title: string, subtitle: string?, accent: string?, name: string?): Frame
+    order += 1
+    local box = UITheme.make("Frame", {
+        Name = name or "Carte",
+        Size = UDim2.new(1, -8, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = Tokens.color("Surface1"),
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+        ClipsDescendants = true,
+    }, body)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, box)
+    UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 1 }, box)
+    UITheme.make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = Tokens.color(accent or "Line"),
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, Tokens.StatusRail, 1, 0),
+    }, box)
+    local inner = UITheme.make("Frame", {
+        Name = "CarteCorps",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+    }, box)
+    UITheme.make("UIPadding", {
+        PaddingLeft = UDim.new(0, 12 + Tokens.StatusRail),
+        PaddingRight = UDim.new(0, 12),
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+    }, inner)
+    UITheme.make("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }, inner)
+    local titleLabel = Components.text(inner, title, "Body", {
+        Name = "Titre",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        LayoutOrder = 1,
+    })
+    titleLabel.FontFace = UITheme.face("Button")
+    titleLabel.TextSize = UITheme.text(15)
+    if subtitle and subtitle ~= "" then
+        Components.text(inner, subtitle, "Body", {
+            Name = "SousTitre",
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = UITheme.color("TextDim"),
+            LayoutOrder = 2,
+        }).TextSize =
+            UITheme.text(12)
+    end
+    return box
 end
 
 local function onoff(value: boolean): string
@@ -282,19 +440,33 @@ local function renderHome()
 end
 
 local function renderMap()
-    button(Localization.t("ui.panel.map"), function()
-        UIManager.close("Phone")
-        UIManager.open("Map")
-    end)
+    heading(Localization.t("phone.h.route"))
     local gps = GPSController.state()
     if gps.Destination then
-        line(gps.Destination.Label, true)
+        local progress = gps.Progress
+        card(
+            gps.Destination.Label,
+            if progress
+                then Localization.t("gps.remaining", {
+                    distance = Localization.distance(progress.RemainingM),
+                    minutes = math.max(1, math.ceil(progress.RemainingS / 60)),
+                })
+                else nil,
+            "GpsCyan",
+            "Destination"
+        )
         button(Localization.t("gps.clear"), function()
             GPSController.clear()
             render()
-        end)
+        end, nil, "X", nil, "EffacerItineraire")
+    else
+        line(Localization.t("gps.noDestination"), false, true)
     end
-    line(Localization.t("map.search"), true)
+    button(Localization.t("phone.map.full"), function()
+        UIManager.close("Phone")
+        UIManager.open("Map")
+    end, nil, "M", nil, "CarteComplete")
+    heading(Localization.t("map.search"))
     local character = Players.LocalPlayer.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
     local x, z = 0, 0
@@ -310,17 +482,9 @@ local function renderMap()
             break
         end
         local d = math.sqrt((marker.X - x) ^ 2 + (marker.Z - z) ^ 2)
-        button(
-            string.format(
-                "%s — %s (%s)",
-                Localization.t("poi." .. marker.Kind),
-                marker.Name or "",
-                Localization.distance(d)
-            ),
-            function()
-                goTo(marker.X, marker.Z, marker.Name or "")
-            end
-        )
+        button(string.format("%s · %s", Localization.t("poi." .. marker.Kind), marker.Name or ""), function()
+            goTo(marker.X, marker.Z, marker.Name or "")
+        end, nil, Localization.distance(d), nil, "PointInteret")
     end
 end
 
@@ -331,215 +495,304 @@ local function progressionSnapshot(): any
         else nil
 end
 
+local STORAGE_ACCENT = { Stored = "Line", Displayed = "Amber", Out = "GpsCyan" }
+
 local function renderVehicles()
     local snap = cache.Progression
     if snap == nil or snap.Vehicles == nil then
-        line(Localization.t("ui.loading"))
+        if cache.ProgressionFailed then
+            warn(Localization.t("phone.serviceDown"))
+        else
+            line(Localization.t("ui.loading"))
+        end
         return
+    end
+    if #snap.Vehicles == 0 then
+        line(Localization.t("phone.vehicles.empty"))
+        note(Localization.t("phone.vehicles.emptyNote"))
+    else
+        heading(Localization.t("phone.h.collection", { count = snap.TotalVehicles or #snap.Vehicles }))
     end
     for _, vehicle in snap.Vehicles do
         local storage = vehicle.Storage and vehicle.Storage.State or "Stored"
-        line(
-            Localization.t("phone.vehicle.state", {
-                model = vehicle.DisplayName,
-                state = Localization.t("phone.vehicle." .. storage),
+        local definition = VehicleDefinitions.get(vehicle.ModelId)
+        local entry = VehicleCatalog.forDefinition(vehicle.ModelId)
+        local parts = {
+            Localization.tr(GarageView.category(definition, entry)),
+            Localization.t("phone.vehicle." .. storage),
+        }
+        if vehicle.Untransferable then
+            table.insert(parts, Localization.tr("incessible"))
+        end
+        if vehicle.Reserved then
+            table.insert(parts, Localization.tr("réservé"))
+        end
+        table.insert(
+            parts,
+            Localization.t("phone.vehicle.energy", {
                 energy = math.floor((vehicle.Energy or 0) * 100 + 0.5),
-            }),
-            true
+            })
         )
-        line(Localization.t("phone.vehicle.configs", { count = #(vehicle.Configurations or {}) }), false, true)
+        card(
+            vehicle.DisplayName,
+            table.concat(parts, " · "),
+            STORAGE_ACCENT[storage] or "Line",
+            "Vehicule_" .. tostring(vehicle.Id)
+        )
         if storage == "Displayed" and vehicle.Storage.PropertyId then
             local point = poiById("P:" .. vehicle.Storage.PropertyId)
             if point then
                 button(Localization.t("phone.property.navigate"), function()
                     goTo(point.X, point.Z, point.Name)
-                end)
+                end, nil, "GPS", nil, "AllerVehicule")
             end
         end
     end
     button(Localization.t("ui.panel.garage"), function()
         openPanel("Garage")
-    end)
+    end, nil, "P", true, "OuvrirGarage")
+    note(Localization.t("phone.vehicles.garageNote"))
 end
 
 -- Lot 0.8 : radio (AUD-RADIO-01). Le conducteur choisit ; chacun règle ou coupe son écoute.
 local function renderRadio()
     local seat = RadioController.seat()
     local current = RadioController.current()
-    line(Localization.t("radio.seat." .. seat), true)
+    heading(Localization.t("radio.seat." .. seat))
     line(Localization.t("radio.current", { station = Localization.t("radio.station." .. current) }))
+    local unavailable = {}
     for _, station in RadioController.stations() do
         local label = Localization.t("radio.station." .. station.Id)
         if not station.Available then
-            line(Localization.t("radio.unavailable", { station = label }))
+            table.insert(unavailable, label)
         elseif seat == "Driver" then
             button(label, function()
                 RadioController.setStation(station.Id)
                 render()
-            end)
+            end, nil, if station.Id == current then Localization.t("ui.on") else nil, nil, "Station")
         else
             line(label)
         end
+    end
+    if #unavailable > 0 then
+        warn(Localization.t("radio.unavailableList", { stations = table.concat(unavailable, ", ") }))
     end
     if seat == "Driver" and current ~= "Off" then
         button(Localization.t("radio.station.Off"), function()
             RadioController.setStation("Off")
             render()
-        end)
+        end, nil, nil, nil, "Arreter")
     end
     local audio = UIState.prefs().Audio
-    button(Localization.t("radio.mute", { state = onoff(audio.RadioMuted) }), function()
+    pairButton(Localization.t("radio.mute", { state = onoff(audio.RadioMuted) }), function()
         SettingsController.update(function(p)
             p.Audio.RadioMuted = not p.Audio.RadioMuted
         end)
         render()
-    end)
-    button(
+    end, nil, "Couper")
+    pairButton(
         Localization.t("settings.volume", { category = Localization.t("settings.volume.Radio"), value = audio.Radio }),
         function()
             SettingsController.update(function(p)
                 p.Audio.Radio = if p.Audio.Radio >= 100 then 0 else p.Audio.Radio + 10
             end)
             render()
-        end
+        end,
+        nil,
+        "Volume"
     )
-    line(Localization.t("radio.note"))
+    note(Localization.t("radio.note"))
 end
 
 -- Lot 0.8 : introduction consultable à tout moment et exercices de formation.
 local function renderGuide()
-    for _, step in { "Welcome", "World", "Controls", "Phone" } do
-        line(Localization.t("onb.title." .. step), true)
-        line(Localization.t("onb.text." .. step))
+    heading(Localization.t("phone.h.intro"))
+    for index, step in { "Welcome", "World", "Controls", "Phone" } do
+        card(Localization.t("onb.title." .. step), Localization.t("onb.text." .. step), nil, "Etape" .. index)
     end
     button(Localization.t("onb.training"), function()
         UIManager.close("Phone")
         OnboardingController.openTraining()
-    end)
+    end, nil, nil, true, "Formation")
 end
 
 local function renderProperties()
     local snap = cache.Progression
     if snap == nil or snap.Properties == nil then
-        line(Localization.t("ui.loading"))
+        if cache.ProgressionFailed then
+            warn(Localization.t("phone.serviceDown"))
+        else
+            line(Localization.t("ui.loading"))
+        end
         return
     end
+    heading(Localization.t("phone.h.properties"))
+    if #snap.Properties == 0 then
+        line(Localization.tr("Aucune propriété."), false, true)
+    end
     for _, property in snap.Properties do
-        line(Localization.t("phone.property.line", { name = property.Label, level = property.GarageLevel }), true)
+        local used = 0
+        for _ in property.Slots or {} do
+            used += 1
+        end
+        card(
+            property.Label,
+            Localization.t("phone.property.sub", {
+                level = property.GarageLevel or 1,
+                used = used,
+                capacity = property.Capacity or 0,
+            }),
+            "Amber",
+            "Propriete"
+        )
         local point = poiById("P:" .. property.Id)
         if point then
             button(Localization.t("phone.property.navigate"), function()
                 goTo(point.X, point.Z, point.Name)
-            end)
+            end, nil, "GPS", nil, "AllerPropriete")
         end
     end
     if snap.Invitations and #snap.Invitations > 0 then
-        line(Localization.t("social.invite"), true)
+        heading(Localization.t("social.invite"))
         for _, invitation in snap.Invitations do
-            line(
+            card(
+                invitation.GuestName or tostring(invitation.GuestUserId),
                 string.format(
-                    "%s — %s%s",
-                    invitation.GuestName or tostring(invitation.GuestUserId),
+                    "%s%s",
                     if invitation.Visit then Localization.t("social.tag.visit") else "",
                     if invitation.Drive then " · " .. Localization.t("social.tag.drive") else ""
                 ),
-                false,
-                true
+                if invitation.Active then "GpsCyan" else "Line",
+                "Invitation"
             )
         end
     end
-    line(Localization.t("social.privacy"), false, true)
+    note(Localization.t("social.privacy"))
     button(Localization.t("ui.panel.garage"), function()
         openPanel("Garage")
-    end)
+    end, nil, "P", nil, "OuvrirGarage")
 end
 
 local function renderMissions()
     local snap = cache.Economy
     if snap == nil or snap.Jobs == nil then
-        line(Localization.t("ui.loading"))
+        if cache.EconomyFailed then
+            warn(Localization.t("phone.serviceDown"))
+        else
+            line(Localization.t("ui.loading"))
+        end
         return
     end
     if snap.Mission then
-        line(Localization.t("phone.mission.active", { job = snap.Mission.Job }), true)
-        line(snap.Mission.Label or "")
+        heading(Localization.t("phone.h.mission"))
+        card(snap.Mission.Job or "", snap.Mission.Label, "GpsCyan", "MissionEnCours")
         if snap.Mission.Point then
             button(Localization.t("phone.property.navigate"), function()
                 GPSController.missionTarget(snap.Mission.Point, snap.Mission.Label)
-            end)
+            end, nil, "GPS", nil, "GuiderMission")
         end
     end
+    heading(Localization.t("phone.h.jobs"))
     for _, job in snap.Jobs do
-        line(Localization.t("phone.mission.line", { job = job.Label, completed = job.Completed }))
+        card(job.Label, Localization.t("phone.job.sub", { completed = job.Completed }), nil, "Metier")
         button(Localization.t("phone.mission.start"), function()
             local response = ask("AWEconomy", "StartMission", { Job = job.Id })
             if response and response.Status ~= "Ok" then
                 NotificationService.notify(response.Error or "ServerError", "Warning")
             end
-        end, snap.Mission == nil)
+        end, snap.Mission == nil, nil, nil, "Demarrer")
+    end
+    if snap.Mission then
+        note(Localization.t("phone.mission.busy"))
     end
     button(Localization.t("ui.panel.economy"), function()
         openPanel("Economy")
-    end)
+    end, nil, "J", nil, "OuvrirEconomie")
 end
 
 local function renderRaces()
     local catalog = cache.Races
     if catalog == nil then
-        line(Localization.t("ui.loading"))
+        if cache.RacesFailed then
+            warn(Localization.t("phone.serviceDown"))
+        else
+            line(Localization.t("ui.loading"))
+        end
         return
     end
-    line(Localization.t("phone.race.season", { index = catalog.Season.Index }), true)
+    heading(Localization.t("phone.race.season", { index = catalog.Season.Index }))
     local profile = catalog.Profile
     if profile then
         for _, ladder in { "Race", "Drift" } do
             local data = profile.Ladders[ladder]
-            line(Localization.t("phone.race.rank", { ladder = ladder, rank = data.Rank, points = data.Points }))
+            card(
+                ladder,
+                Localization.t("phone.rank.sub", { rank = data.Rank, points = data.Points }),
+                "Amber",
+                "Classement"
+            )
         end
     end
+    heading(Localization.t("phone.h.events"))
     for index, course in catalog.Courses do
         if index > 10 then
             break
         end
-        line(Localization.t("phone.race.line", {
-            name = course.Name,
-            discipline = course.DisciplineLabel,
-            distance = Localization.distance(course.DistanceM),
-        }))
+        card(
+            course.Name,
+            Localization.t("phone.race.sub", {
+                discipline = course.DisciplineLabel,
+                distance = Localization.distance(course.DistanceM),
+            }),
+            "RaceRed",
+            "Epreuve"
+        )
         button(Localization.t("phone.property.navigate"), function()
             goTo(course.Registration.X, course.Registration.Z, course.Name, "Race")
-        end)
+        end, nil, "GPS", nil, "AllerEpreuve")
         if SocialController.view() and SocialController.view().Group and SocialController.view().Group.IsLeader then
             button(Localization.t("social.suggestRace"), function()
                 SocialController.send("SuggestRace", { CourseId = course.Id })
-            end)
+            end, nil, nil, nil, "Proposer")
         end
     end
     button(Localization.t("ui.panel.races"), function()
         openPanel("Races")
-    end)
+    end, nil, "K", nil, "OuvrirCourses")
 end
 
 local function renderMarket()
     local snap = cache.Economy
     if snap == nil then
-        line(Localization.t("ui.loading"))
+        if cache.EconomyFailed then
+            warn(Localization.t("phone.serviceDown"))
+        else
+            line(Localization.t("ui.loading"))
+        end
         return
     end
     local mine = 0
+    heading(Localization.t("phone.h.listings"))
     for _, listing in snap.Listings or {} do
         if listing.Mine then
             mine += 1
         end
-        line(Localization.t("phone.market.line", {
-            model = listing.Model,
-            price = Localization.t("phone.credits", { amount = Localization.amount(listing.Price) }),
-        }))
+        card(
+            listing.Model,
+            Localization.t("phone.credits", { amount = Localization.amount(listing.Price) })
+                .. (if listing.Mine then " · " .. Localization.t("phone.market.mineTag") else ""),
+            if listing.Mine then "Amber" else nil,
+            "Annonce"
+        )
+    end
+    if #(snap.Listings or {}) == 0 then
+        line(Localization.t("phone.market.empty"), false, true)
     end
     line(Localization.t("phone.market.mine", { count = mine }), true)
+    note(Localization.t("phone.market.note"))
     button(Localization.t("ui.panel.economy"), function()
         openPanel("Economy")
-    end)
+    end, nil, "J", nil, "OuvrirEconomie")
 end
 
 local function renderSocial()
@@ -560,17 +813,19 @@ local function renderSocial()
     end
     local group = view.Group
     if group then
-        line(Localization.t("social.members", { count = #group.Members }), true)
+        heading(Localization.t("social.members", { count = #group.Members }))
         for _, member in group.Members do
-            line(
-                string.format(
-                    "%s%s%s%s",
-                    member.Name,
-                    if member.Leader then " — " .. Localization.t("social.leader") else "",
-                    if member.Online then "" else " (" .. Localization.t("social.offline") .. ")",
-                    if member.Sharing then " · " .. Localization.t("social.tag.sharing") else ""
-                )
-            )
+            local tags = {}
+            if member.Leader then
+                table.insert(tags, Localization.t("social.leader"))
+            end
+            if not member.Online then
+                table.insert(tags, Localization.t("social.offline"))
+            end
+            if member.Sharing then
+                table.insert(tags, Localization.t("social.tag.sharing"))
+            end
+            card(member.Name, table.concat(tags, " · "), if member.Sharing then "GpsCyan" else nil, "Membre")
             if group.IsLeader and member.UserId ~= Players.LocalPlayer.UserId then
                 button(Localization.t("social.promote") .. " : " .. member.Name, function()
                     SocialController.send("Promote", { UserId = member.UserId })
@@ -580,16 +835,16 @@ local function renderSocial()
                 end)
             end
         end
-        button(Localization.t("social.shareLocation") .. " : " .. onoff(group.Sharing), function()
+        button(Localization.t("social.shareLocation"), function()
             SocialController.send("SetSharing", { On = not group.Sharing })
-        end)
+        end, nil, onoff(group.Sharing), nil, "PartagePosition")
         local prefs = UIState.prefs()
-        button(Localization.t("social.showMembers") .. " : " .. onoff(prefs.Social.ShowSharedMembers), function()
+        button(Localization.t("social.showMembers"), function()
             SettingsController.update(function(p)
                 p.Social.ShowSharedMembers = not p.Social.ShowSharedMembers
             end)
             render()
-        end)
+        end, nil, onoff(prefs.Social.ShowSharedMembers), nil, "AfficherMembres")
         button(Localization.t("social.leave"), function()
             SocialController.send("Leave")
         end)
@@ -604,13 +859,9 @@ local function renderSocial()
             SocialController.send("CreateGroup")
         end)
     end
-    line(Localization.t("social.players"), true)
+    heading(Localization.t("social.players"))
     for _, other in view.Players or {} do
-        line(
-            string.format("%s%s", other.Name, if other.Friend then " — " .. Localization.t("social.friend") else ""),
-            false,
-            other.InGroup
-        )
+        card(other.Name, if other.Friend then Localization.t("social.friend") else nil, nil, "Joueur")
         if not other.InGroup and (group == nil or group.IsLeader) then
             button(Localization.t("social.invite") .. " : " .. other.Name, function()
                 local response = SocialController.send("Invite", { UserId = other.UserId })
@@ -647,20 +898,36 @@ end
 local function renderSettings()
     local prefs = UIState.prefs()
     for _, page in { "Interface", "Controls", "Accessibility", "Notifications", "Audio", "Graphics", "Credits" } do
-        button(Localization.t("settings." .. string.lower(string.sub(page, 1, 1)) .. string.sub(page, 2)), function()
-            settingsPage = page
-            render()
-        end)
+        local b = button(
+            Localization.t("settings." .. string.lower(string.sub(page, 1, 1)) .. string.sub(page, 2)),
+            function()
+                settingsPage = page
+                render()
+            end,
+            nil,
+            nil,
+            nil,
+            "Page_" .. page
+        )
+        if page == settingsPage then
+            b.BackgroundColor3 = Tokens.color("AmberSoft")
+            b.TextColor3 = Tokens.color("AmberSoftText")
+            local edge = b:FindFirstChildOfClass("UIStroke")
+            if edge then
+                edge.Color = Tokens.color("Amber")
+            end
+            b:SetAttribute("AWSelected", true)
+        end
     end
     line(
         Localization.t("settings." .. string.lower(string.sub(settingsPage, 1, 1)) .. string.sub(settingsPage, 2)),
         true
     )
     local function set(text: string, mutate: (any) -> ())
-        button(text, function()
+        pairButton(text, function()
             SettingsController.update(mutate)
             render()
-        end)
+        end, nil, "Reglage")
     end
     if settingsPage == "Interface" then
         set(
@@ -701,7 +968,7 @@ local function renderSettings()
         end)
         -- Silhouette (avatars humains) : état tenu par le serveur, pas une préférence.
         local worn = BodyChoice.current()
-        button(
+        pairButton(
             Localization.t(
                 "settings.avatarBody",
                 { body = if worn then Localization.t("avatar.body." .. worn) else "…" }
@@ -736,7 +1003,7 @@ local function renderSettings()
         for _, binding in InputMap.Defaults do
             if binding.Rebindable then
                 local key = InputMap.keyFor(binding.Action, prefs.Bindings) or "—"
-                button(
+                pairButton(
                     Localization.t(
                         "settings.rebind",
                         { action = Localization.t("action." .. binding.Action), key = key }
@@ -781,7 +1048,7 @@ local function renderSettings()
         set(Localization.t("notif.level.Warning") .. " : " .. onoff(prefs.Notifications.Warning), function(p)
             p.Notifications.Warning = not p.Notifications.Warning
         end)
-        line(Localization.t("notif.level.Critical") .. " : " .. Localization.t("ui.on"), false, true)
+        button(Localization.t("notif.level.Critical"), function() end, false, Localization.t("ui.on"), nil, "Critiques")
     elseif settingsPage == "Graphics" then
         -- Lot 0.8 : qualité (habillage, détails, lumières, effets ; ArtDirection.Profiles).
         set(
@@ -791,7 +1058,7 @@ local function renderSettings()
                 p.Graphics.Quality = qualities[(table.find(qualities, p.Graphics.Quality) or 2) % 3 + 1]
             end
         )
-        line(Localization.t("settings.quality.note"))
+        note(Localization.t("settings.quality.note"))
     else
         set(Localization.t("radio.mute", { state = onoff(prefs.Audio.RadioMuted) }), function(p)
             p.Audio.RadioMuted = not p.Audio.RadioMuted
@@ -810,40 +1077,53 @@ local function renderSettings()
     end
 end
 
+local NOTIF_ACCENT = { Critical = "RaceRed", Warning = "Amber", Info = "GpsCyan" }
+
 local function renderNotifications()
+    local items = NotificationService.history(30)
+    if #items == 0 then
+        line(Localization.t("phone.notif.empty"), false, true)
+    end
+    for _, item in items do
+        card(
+            NotificationService.text(item),
+            Localization.t("notif.level." .. item.Level),
+            NOTIF_ACCENT[item.Level] or "Line",
+            "Notification"
+        )
+    end
     button(Localization.t("notif.clear"), function()
         NotificationService.clear()
         render()
-    end)
-    for _, item in NotificationService.history(30) do
-        line(
-            string.format("%s — %s", Localization.t("notif.level." .. item.Level), NotificationService.text(item)),
-            item.Level == "Critical"
-        )
-    end
+    end, #items > 0, nil, nil, "ToutEffacer")
+    note(Localization.t("phone.notif.note"))
     NotificationService.markRead()
 end
 
 -- Mode rapide (conduite) : lecture et réglages rapides, aucune saisie.
 local function renderQuick()
-    line(Localization.t("phone.quickMode"), true)
+    heading(Localization.t("phone.quickMode"))
     local gps = GPSController.state()
     if gps.Destination then
-        line(gps.Destination.Label)
         local progress = gps.Progress
-        if progress then
-            line(Localization.t("gps.remaining", {
-                distance = Localization.distance(progress.RemainingM),
-                minutes = math.max(1, math.ceil(progress.RemainingS / 60)),
-            }))
-        end
+        card(
+            gps.Destination.Label,
+            if progress
+                then Localization.t("gps.remaining", {
+                    distance = Localization.distance(progress.RemainingM),
+                    minutes = math.max(1, math.ceil(progress.RemainingS / 60)),
+                })
+                else nil,
+            "GpsCyan",
+            "Destination"
+        )
     else
         line(Localization.t("gps.noDestination"), false, true)
     end
     for _, item in NotificationService.history(3) do
-        line(NotificationService.text(item), false, true)
+        note(NotificationService.text(item))
     end
-    line(Localization.t("phone.fullOnlyStopped"), false, true)
+    warn(Localization.t("phone.fullOnlyStopped"))
 end
 
 render = function()
@@ -857,6 +1137,7 @@ render = function()
     clockLabel.Text = os.date("%H:%M") :: string
     quickBar.Visible = quick
     quickTag.Visible = quick
+    header.Size = UDim2.new(1, if quick then -(quickTag.AbsoluteSize.X + 40) else -32, 0, 34)
     backButton.Visible = not quick and app ~= "Home"
     if quick then
         renderQuick()
@@ -887,7 +1168,8 @@ render = function()
         button(Localization.t("photo.open"), function()
             UIManager.close("Phone")
             PhotoMode.request()
-        end)
+        end, nil, nil, true, "ModePhoto")
+        note(Localization.t("photo.note"))
     elseif app == "Settings" then
         renderSettings()
     else
@@ -898,11 +1180,15 @@ end
 -- Données des applications (lecture seule), chargées à l'ouverture.
 local function load()
     task.spawn(function()
+        -- Lecture seule ; un service injoignable est signalé (« informations non à jour »), jamais simulé.
         cache.Progression = progressionSnapshot()
+        cache.ProgressionFailed = cache.Progression == nil
         local economy = ask("AWEconomy", "Snapshot")
         cache.Economy = if economy then (economy.Snapshot or economy.Result) else nil
+        cache.EconomyFailed = cache.Economy == nil
         local races = ask("AWRacing", "Catalog")
         cache.Races = if races then races.Result else nil
+        cache.RacesFailed = cache.Races == nil
         render()
     end)
 end
@@ -981,13 +1267,22 @@ local function build()
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
     })
-    quickTag = Components.text(screen, Localization.t("phone.quickMode"), "Label", {
+    quickTag = Components.text(screen, Tokens.upper(Localization.t("phone.quickTag")), "Label", {
         Name = "ModeRapide",
         AnchorPoint = Vector2.new(1, 0),
         Position = UDim2.new(1, -16, 0, 80),
+        BackgroundTransparency = 0,
         TextColor3 = UITheme.color("AccentSoftText"),
         Visible = false,
     })
+    quickTag.BackgroundColor3 = Tokens.color("AmberSoft")
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 3) }, quickTag)
+    UITheme.make("UIPadding", {
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8),
+        PaddingTop = UDim.new(0, 3),
+        PaddingBottom = UDim.new(0, 3),
+    }, quickTag)
     -- Lot 0.9.1 (QA-F14) : signes latins, toujours rendus par la police.
     UITheme.button(
         "+",
