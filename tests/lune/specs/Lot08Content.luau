@@ -429,6 +429,10 @@ return function(T: any, H: any)
         T.equal(#errors, 0, table.concat(errors, " ; "))
         local audio, prefixes = 0, {}
         for _, asset in AssetManifest.Assets do
+            -- Seules exceptions : les icônes du téléphone envoyées par le propriétaire (lot UI-02, essai UiDesignSystem).
+            if string.sub(asset.Id, 1, 14) == "ui.icon.phone." then
+                continue
+            end
             T.equal(asset.RobloxAssetId, nil, asset.Id .. " : aucun identifiant Roblox inventé")
             T.equal(AssetManifest.contentId(asset.Id), nil, asset.Id .. " : non jouable")
             T.truthy(not AssetManifest.playable(asset.Id))

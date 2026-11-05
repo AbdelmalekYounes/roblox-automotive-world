@@ -280,7 +280,25 @@ add({
     RobloxAssetId = nil,
 })
 
--- Lot UI-02 : 12 icônes du téléphone (une entrée par icône : identifiant Roblox après l'envoi du propriétaire).
+-- Lot UI-02 : 12 icônes du téléphone (une entrée par icône). Identifiants d'IMAGE réels (type 1), envoyés par le
+-- propriétaire le 2026-11-05 (décalques importés sur create.roblox.com, convertis en images par la barre de
+-- commande de Studio) ; type, nom (« <App>_128 ») et créateur vérifiés sur l'API publique economy.roblox.com.
+local PHONE_ICON_IDS: { [string]: number } = {
+    Map = 139759611688719,
+    Vehicles = 75819885655066,
+    Properties = 86911212052819,
+    Missions = 123109347713390,
+    Races = 135512154723543,
+    Market = 79661493327089,
+    Social = 104529493537486,
+    Radio = 97090714931696,
+    Photo = 124133194296037,
+    Guide = 78344066959818,
+    Settings = 117473178109905,
+    Notifications = 77842663800346,
+}
+AssetManifest.PhoneIconIds = table.freeze(PHONE_ICON_IDS)
+
 for _, appName in
     {
         "Map",
@@ -306,11 +324,11 @@ do
         Lod = "Aucun",
         Provenance = ORIGINAL
             .. " : icône de la maquette V1.2 du propriétaire (tracé SVG de Smartphone.dc.html), rastérisée en PNG "
-            .. "blanc teinté dans le jeu (script de Source) ; à envoyer sur Roblox par le propriétaire",
+            .. "blanc teinté dans le jeu (script de Source) ; envoyée sur Roblox par le propriétaire (version 128 px)",
         Licence = LICENCE,
         Source = { Kind = "File", Path = "tools/ui/make_phone_icons.py" },
         Output = "assets/ui/icons/" .. appName .. "_128.png",
-        RobloxAssetId = nil,
+        RobloxAssetId = PHONE_ICON_IDS[appName],
     })
 end
 

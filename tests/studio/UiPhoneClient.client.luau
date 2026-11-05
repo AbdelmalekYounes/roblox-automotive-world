@@ -103,21 +103,53 @@ record(
         else "coque absente"
 )
 
--- 2. Accueil : 12 tuiles nommées, emplacement d'icône (images pas encore envoyées), aucune icône en caractère.
-local tiles, slots = 0, 0
+-- 2. Accueil : 12 tuiles nommées, chacune avec son image envoyée par le propriétaire (plus aucun cadre vide).
+local tiles, images, empty = 0, {}, 0
 for _, item in phone:GetDescendants() do
     if item:IsA("TextButton") and string.sub(item.Name, 1, 3) == "App" then
         tiles += 1
-        if item:FindFirstChild("IconeAEnvoyer", true) or item:FindFirstChild("Icone", true) then
-            slots += 1
+        local icon = item:FindFirstChild("Icone", true)
+        if icon and icon:IsA("ImageLabel") then
+            table.insert(images, icon)
+        end
+        if item:FindFirstChild("IconeAEnvoyer", true) then
+            empty += 1
         end
     end
 end
 record(
     "ui_phone.accueil_douze_tuiles",
-    tiles == 12 and slots == 12,
-    string.format("%d tuiles, %d icônes", tiles, slots)
+    tiles == 12 and #images == 12 and empty == 0,
+    string.format("%d tuiles, %d images, %d cadres vides", tiles, #images, empty)
 )
+-- Chargement réel des 12 images depuis Roblox (IsLoaded), teinte de la planche : cyan pour la carte, ambre sinon.
+local loaded = waitFor(function()
+    for _, icon in images do
+        if not icon.IsLoaded then
+            return false
+        end
+    end
+    return #images == 12
+end, 20)
+local missing = {}
+local tintOk = true
+for _, icon in images do
+    local app = string.sub((icon:FindFirstAncestorWhichIsA("TextButton") :: Instance).Name, 4)
+    if not icon.IsLoaded then
+        table.insert(missing, app)
+    end
+    local c = icon.ImageColor3
+    local expected = if app == "Map" then Color3.fromRGB(92, 200, 214) else Color3.fromRGB(232, 163, 61)
+    if math.abs(c.R - expected.R) + math.abs(c.G - expected.G) + math.abs(c.B - expected.B) > 0.02 then
+        tintOk = false
+    end
+end
+record(
+    "ui_phone.icones_chargees",
+    loaded,
+    if #missing == 0 then "12 / 12 chargées" else "non chargées : " .. table.concat(missing, ", ")
+)
+record("ui_phone.icones_teinte", tintOk, "carte cyan 92,200,214 ; autres ambre 232,163,61")
 Gui.shot("ui_phone_accueil", { lot = "UI-02" })
 
 -- 3. Applications : vrai clic sur la tuile, titre de l'en-tête, retour par l'en-tête.
