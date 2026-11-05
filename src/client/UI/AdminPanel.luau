@@ -22,8 +22,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AdminRules = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRules"))
 local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localization"))
 local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
+local GarageView = require(Shared:WaitForChild("UI"):WaitForChild("GarageView"))
 
 local UIManager = require(script.Parent.UIManager)
+local Components = require(script.Parent.Components)
 local UITheme = require(script.Parent.UITheme)
 local PanelKit = require(script.Parent.PanelKit)
 
@@ -61,7 +63,8 @@ local CYCLES: { Preset } = {
 
 local request: RemoteFunction
 local gui: ScreenGui
-local shell: PanelKit.Shell
+-- Coquille compacte (panneau latéral) : mêmes champs que PanelKit.Shell utilisés par les aides de PanelKit.
+local shell: any
 local tab = TABS[1]
 local state: any = nil
 local busy = false
@@ -452,6 +455,211 @@ local function updateOverlay()
     )
 end
 
+local SIDE_WIDTH = 400 -- pixels logiques (1080 p ; ×1,333 en 1440 p)
+
+-- Panneau latéral à droite, hauteur 82 % de l'écran : en-tête, onglets en pastilles (deux lignes), bandeau d'état,
+-- contenu défilant. Ne capture pas la conduite (écran « Overlay ») : on peut rouler ou voler menu ouvert.
+local function compactShell(parent: ScreenGui): any
+    local screen = make("Frame", {
+        Name = "EcranAdmin",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+    }, parent)
+    local logical = Components.logicalRoot(screen)
+    local panel = make("Frame", {
+        Name = "MenuAdmin",
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -16, 0.5, 0),
+        Size = UDim2.new(0, SIDE_WIDTH, 0.82, 0),
+        BackgroundColor3 = PanelKit.color("BgBase"),
+        BackgroundTransparency = 0.04,
+        BorderSizePixel = 0,
+        Visible = false,
+    }, logical)
+    make("UICorner", { CornerRadius = UDim.new(0, 14) }, panel)
+    make("UIStroke", { Color = PanelKit.color("Line"), Thickness = 1 }, panel)
+    make("UIPadding", {
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 12),
+        PaddingTop = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, 10),
+    }, panel)
+    make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, panel)
+
+    -- En-tête : titre ambre et bouton de fermeture.
+    local header = make("Frame", {
+        Name = "EnTete",
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+    }, panel)
+    local title = make("TextLabel", {
+        Name = "Titre",
+        Size = UDim2.new(1, -96, 1, 0),
+        BackgroundTransparency = 1,
+        Text = Tokens.upper(tr("Administration")),
+        TextColor3 = PanelKit.color("Amber"),
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, header)
+    title.FontFace = Font.new(UITheme.face("Button").Family, Enum.FontWeight.Bold)
+    title.TextSize = UITheme.text(17)
+    local close = UITheme.button(
+        tr("Fermer"),
+        {
+            Name = "Fermer",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, 0, 0.5, 0),
+            Size = UDim2.fromOffset(88, 30),
+        },
+        header,
+        function()
+            UIManager.close("Admin")
+        end
+    )
+    close.TextSize = UITheme.text(13)
+
+    -- Onglets : pastilles qui passent à la ligne.
+    local tabsRow = make("Frame", {
+        Name = "Onglets",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        LayoutOrder = 2,
+    }, panel)
+    local tabsLayout = make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, tabsRow);
+    (tabsLayout :: any).Wraps = true
+    local tabs: { [string]: TextButton } = {}
+    for index, id in TABS do
+        local chip = UITheme.button(
+            tr(id),
+            {
+                Name = "Onglet_" .. id,
+                Size = UDim2.fromOffset(0, 28),
+                AutomaticSize = Enum.AutomaticSize.X,
+                LayoutOrder = index,
+            },
+            tabsRow,
+            function()
+                tab = id
+                render()
+            end
+        )
+        chip.TextSize = UITheme.text(13)
+        make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, chip)
+        tabs[id] = chip
+    end
+
+    -- Bandeau d'état (une ligne, couleur selon l'état du serveur).
+    local status = make("TextLabel", {
+        Name = "EtatServeur",
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundColor3 = PanelKit.color("Surface1"),
+        TextColor3 = PanelKit.color("Text"),
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Text = "",
+        Visible = false,
+        LayoutOrder = 3,
+    }, panel)
+    status.FontFace = UITheme.face("Body")
+    status.TextSize = UITheme.text(13)
+    make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, status)
+    make("UIPadding", {
+        PaddingLeft = UDim.new(0, 10),
+        PaddingRight = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, 6),
+        PaddingBottom = UDim.new(0, 6),
+    }, status)
+
+    -- Contenu défilant : occupe le reste de la hauteur (mesurée sur la taille réelle du panneau).
+    local content = make("ScrollingFrame", {
+        Name = "Contenu",
+        Size = UDim2.new(1, 0, 1, -120),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = PanelKit.color("Line"),
+        LayoutOrder = 4,
+    }, panel)
+    make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, content)
+    make("UIPadding", { PaddingRight = UDim.new(0, 6) }, content)
+    local function fit()
+        local used = 20 + 8 * 3
+        for _, child in { header, tabsRow, status } do
+            if child.Visible then
+                used += Components.logicalSize(child).Y
+            end
+        end
+        content.Size = UDim2.new(1, 0, 1, -used)
+    end
+    tabsRow:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+    status:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+    panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+
+    local result: any = {
+        Gui = parent,
+        Panel = panel,
+        Title = title,
+        Body = content,
+        Tabs = tabs,
+        Close = close,
+        Status = { Kind = nil, Text = "" },
+        order = 0,
+    }
+    function result.next(self: any): number
+        self.order += 1
+        return self.order
+    end
+    function result.clear(self: any)
+        for _, child in content:GetChildren() do
+            if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                child:Destroy()
+            end
+        end
+        self.order = 0
+    end
+    function result.selectTab(_self: any, id: string)
+        for key, chip in tabs do
+            local on = key == id
+            chip.BackgroundColor3 = if on then PanelKit.color("AmberSoft") else PanelKit.color("Surface1")
+            chip.TextColor3 = if on then PanelKit.color("AmberSoftText") else PanelKit.color("TextMuted")
+            local edge = chip:FindFirstChildOfClass("UIStroke")
+            if edge then
+                edge.Color = if on then PanelKit.color("Amber") else PanelKit.color("Line")
+            end
+        end
+        panel:SetAttribute("AWTab", id)
+    end
+    function result.setStatus(self: any, kind: string?, text: string)
+        local entry = { Kind = kind, Text = text }
+        self.Status = entry
+        status.Visible = text ~= ""
+        local bg, fg = GarageView.statusTokens((kind or "Info") :: any)
+        status.BackgroundColor3 = PanelKit.color(bg)
+        status.TextColor3 = PanelKit.color(fg)
+        status.Text = text
+        panel:SetAttribute("AWStatusKind", kind)
+        fit()
+        if kind == "Confirmed" or kind == "Info" then
+            task.delay(5, function()
+                if self.Status == entry then
+                    self:setStatus(nil, "")
+                end
+            end)
+        end
+    end
+    function result.hints(_self: any, _list: { { string } }) end
+    task.defer(fit)
+    return result
+end
+
 local function build()
     built = true
     gui = make(
@@ -459,13 +667,7 @@ local function build()
         { Name = "AWAdmin", ResetOnSpawn = false, DisplayOrder = 25 },
         player:WaitForChild("PlayerGui")
     )
-    shell = PanelKit.shell(gui, "MenuAdmin", tr("Administration"), TABS, tr, function(id: string)
-        tab = id
-        render()
-    end, function()
-        UIManager.close("Admin")
-    end)
-    shell:hints({ { "F8", tr("Fermer") } })
+    shell = compactShell(gui)
     overlay = make("TextLabel", {
         Name = "SurcoucheDiagnostic",
         Position = UDim2.fromOffset(12, 12),
@@ -500,10 +702,11 @@ local function build()
             end
         end)
     end
+    -- « Overlay » : panneau latéral qui ne ferme pas les autres écrans et ne capture pas la conduite.
     UIManager.register({
         Name = "Admin",
-        Kind = "Modal",
-        Full = true,
+        Kind = "Overlay",
+        Full = false,
         Open = function()
             shell.Panel.Visible = true
             render()
@@ -519,9 +722,7 @@ local function build()
                 veil:Destroy()
             end
         end,
-        Focus = function()
-            return shell.Tabs[tab]
-        end,
+        -- Aucun focus imposé : le panneau latéral ne doit pas détourner la conduite ni le déplacement libre.
     })
     -- F8 (client Roblox) et F2 (Studio intercepte F8 pendant le jeu) : clavier, administrateurs seulement.
     -- Accès sans clavier : Téléphone › Paramètres › Administration.
@@ -537,6 +738,7 @@ local function build()
             item.Text = tr(name)
         end
         shell.Title.Text = Tokens.upper(tr("Administration"))
+        shell.Close.Text = tr("Fermer")
         render()
     end)
 end

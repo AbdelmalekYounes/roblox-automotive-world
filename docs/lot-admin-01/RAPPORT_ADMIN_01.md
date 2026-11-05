@@ -158,3 +158,17 @@ Résultat du diagnostic, rapporté par le propriétaire : « Menu indisponible :
 n'est pas administrateur ». **Cause établie** : le compte Studio du propriétaire n'était pas dans la liste. Akroniik
 (7835831473) est ajouté à `AdminConfig`, à côté de youyou31110 (941826283).
 
+## 7. Validation du propriétaire et menu latéral (2026-11-05)
+
+- **Validation en jeu** : « ok tout est bon pour la partie admin ». La liste du §5 est validée par le propriétaire avec
+  son compte Akroniik.
+- **Demande** : « au lieu que ça soit un menu qui s'affiche en plein écran, que ça soit plutôt un petit menu sur le côté
+  dans lequel on peut naviguer ».
+- **Modification** :
+  - panneau latéral à droite (400 px logiques de large, 82 % de la hauteur, mis à l'échelle en 1440 p) ;
+  - en-tête avec « Fermer », onglets en pastilles sur deux lignes, bandeau d'état, contenu défilant ;
+  - écran de type « Overlay » : il ne ferme pas les autres écrans, ne capture pas la conduite et n'impose aucun focus.
+    On peut rouler ou voler avec le menu ouvert.
+- Contenu et actions inchangés.
+- `verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK, Lune 398/398. **Nouvel aspect non essayé en jeu.**
+
