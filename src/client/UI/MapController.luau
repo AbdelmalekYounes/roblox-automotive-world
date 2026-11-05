@@ -23,6 +23,7 @@ local MapProjection = require(Shared:WaitForChild("Navigation"):WaitForChild("Ma
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local UITheme = require(script.Parent.UITheme)
+local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
 local UIManager = require(script.Parent.UIManager)
 local GPSController = require(script.Parent.GPSController)
 local MapRenderer = require(script.Parent.MapRenderer)
@@ -40,6 +41,7 @@ local window: Frame
 local canvas: Frame
 local listFrame: ScrollingFrame
 local titleLabel: TextLabel
+local statusLabel: TextLabel
 local renderer: MapRenderer.Renderer
 local center = { X = 0, Z = 0 }
 local spanM = 3000
@@ -98,20 +100,47 @@ local function rebuildList()
             break
         end
         local distance = math.sqrt((marker.X - x) ^ 2 + (marker.Z - z) ^ 2)
-        UITheme.button(
-            string.format(
-                "%s %s — %s",
-                MapRenderer.Icons[marker.Kind] or "•",
-                marker.Name or "",
-                Localization.distance(distance)
-            ),
-            { Size = UDim2.new(1, -8, 0, 30), LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left },
+        local item = UITheme.button(
+            "",
+            {
+                Name = "Lieu",
+                Size = UDim2.new(1, -8, 0, 52),
+                LayoutOrder = index,
+            },
             listFrame,
             function()
                 center = { X = marker.X, Z = marker.Z }
                 setDestination(marker)
             end
         )
+        local nameLabel = UITheme.label(marker.Name or Localization.t("poi." .. marker.Kind), 14, {
+            Name = "Nom",
+            Position = UDim2.fromOffset(12, 7),
+            Size = UDim2.new(1, -100, 0, 20),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+        }, item)
+        nameLabel.FontFace = UITheme.face("Button")
+        UITheme.label(Localization.t("poi." .. marker.Kind), 12, {
+            Name = "Categorie",
+            Position = UDim2.fromOffset(12, 27),
+            Size = UDim2.new(1, -100, 0, 18),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            TextColor3 = Tokens.color("TextMuted"),
+        }, item)
+        local value = UITheme.make("TextLabel", {
+            Name = "Valeur",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -10, 0.5, 0),
+            Size = UDim2.fromOffset(80, 20),
+            BackgroundTransparency = 1,
+            Text = Localization.distance(distance),
+            TextXAlignment = Enum.TextXAlignment.Right,
+            TextColor3 = Tokens.color("TextMuted"),
+        }, item)
+        value.FontFace = UITheme.face("Value")
+        value.TextSize = UITheme.text(12)
     end
 end
 
@@ -147,7 +176,8 @@ local function draw()
         ClampMarkers = false,
     })
     local status = if gps.Destination then gps.Destination.Label else Localization.t("gps.noDestination")
-    titleLabel.Text = Localization.t("ui.panel.map") .. " — " .. status
+    titleLabel.Text = Tokens.upper(Localization.t("ui.panel.map"))
+    statusLabel.Text = status
 end
 
 local function build()
@@ -156,24 +186,48 @@ local function build()
         { Name = "AWMap", ResetOnSpawn = false, DisplayOrder = 10, Enabled = false },
         Players.LocalPlayer:WaitForChild("PlayerGui")
     )
+    -- Système de conception V1.2 : fenêtre sombre à filet, barre de titre (titre en capitales, destination en
+    -- cyan), fond de carte des instruments (#0F1214, liseré #2A4A50), liste des lieux à droite, barre d'outils.
     window = UITheme.panel({
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.fromScale(0.82, 0.8),
+        Size = UDim2.fromScale(0.86, 0.84),
     }, gui)
-    titleLabel = UITheme.label("", 18, {
-        Position = UDim2.fromOffset(14, 8),
-        Size = UDim2.new(1, -28, 0, 26),
+    window.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, window)
+    titleLabel = UITheme.label("", 22, {
+        Name = "Titre",
+        Position = UDim2.fromOffset(20, 14),
+        Size = UDim2.fromOffset(160, 28),
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, window)
+    titleLabel.FontFace = UITheme.face("H1")
+    statusLabel = UITheme.label("", 14, {
+        Name = "Destination",
+        Position = UDim2.fromOffset(180, 16),
+        Size = UDim2.new(1, -200, 0, 24),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        TextColor3 = Tokens.color("GpsCyan"),
+    }, window)
+    UITheme.make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = Tokens.color("Line"),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(0, 55),
+        Size = UDim2.new(1, 0, 0, 1),
+    }, window)
     canvas = UITheme.make("Frame", {
-        Position = UDim2.fromOffset(12, 44),
-        Size = UDim2.new(0.7, -18, 1, -100),
-        BackgroundColor3 = UITheme.color("Panel"),
+        Name = "Carte",
+        Position = UDim2.fromOffset(16, 72),
+        Size = UDim2.new(0.7, -24, 1, -140),
+        BackgroundColor3 = Color3.fromRGB(15, 18, 20),
         BorderSizePixel = 0,
         Active = true,
     }, window)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Card) }, canvas)
+    UITheme.make("UIStroke", { Color = Color3.fromRGB(42, 74, 80), Thickness = 2 }, canvas)
     renderer = MapRenderer.new(canvas, 1800, function(marker)
         setDestination(marker)
     end)
@@ -185,22 +239,52 @@ local function build()
         ZIndex = 6,
     }, canvas)
     listFrame = UITheme.make("ScrollingFrame", {
-        Position = UDim2.new(0.7, 0, 0, 44),
-        Size = UDim2.new(0.3, -12, 1, -100),
+        Name = "Lieux",
+        Position = UDim2.new(0.7, 0, 0, 72),
+        Size = UDim2.new(0.3, -16, 1, -140),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollBarThickness = 6,
     }, window)
     UITheme.make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, listFrame)
-    local bar = UITheme.make(
-        "Frame",
-        { Position = UDim2.new(0, 12, 1, -48), Size = UDim2.new(1, -24, 0, 38), BackgroundTransparency = 1 },
-        window
-    )
-    UITheme.make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }, bar)
-    local function button(key: string, width: number, fn: () -> ())
-        UITheme.button(Localization.t(key), { Size = UDim2.fromOffset(width, 34) }, bar, fn)
+    local bar = UITheme.make("Frame", {
+        Name = "Outils",
+        AnchorPoint = Vector2.new(0, 1),
+        Position = UDim2.new(0, 16, 1, -12),
+        Size = UDim2.new(1, -32, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+    }, window)
+    -- Carte et liste au-dessus de la barre d'outils, quelle que soit sa hauteur (une ou deux rangées).
+    local function fitBody()
+        local reserved = 72 + bar.AbsoluteSize.Y + 24
+        canvas.Size = UDim2.new(0.7, -24, 1, -reserved)
+        listFrame.Size = UDim2.new(0.3, -16, 1, -reserved)
+    end
+    bar:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitBody)
+    local barLayout = UITheme.make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 6),
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+    }, bar);
+    (barLayout :: any).Wraps = true
+    local function button(key: string, _width: number, fn: () -> ())
+        local item = UITheme.button(Localization.t(key), {
+            Name = key,
+            Size = UDim2.fromOffset(0, 36),
+            AutomaticSize = Enum.AutomaticSize.X,
+        }, bar, fn)
+        UITheme.make("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }, item)
+        -- « Définir ici » : action principale (ambre).
+        if key == "gps.setDestination" then
+            item.BackgroundColor3 = Tokens.color("Amber")
+            item.TextColor3 = Tokens.color("TextOnAmber")
+            local edge = item:FindFirstChildOfClass("UIStroke")
+            if edge then
+                edge.Color = Tokens.color("Amber")
+            end
+        end
     end
     button("map.zoomIn", 90, function()
         spanM = math.max(300, spanM / 1.6)
