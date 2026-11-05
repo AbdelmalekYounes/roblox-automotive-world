@@ -86,15 +86,15 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
 Validé par le propriétaire : garage, confirmations de l'économie et des métiers, fluidité de la mini-carte, routes
 rognées au cercle de la mini-carte, courses. Grande carte : conservée en l'état pour l'instant.
 
-Corrigé ensuite (contrôles statiques au vert, **NON TESTÉ en jeu**) :
+Corrigé ensuite (contrôles statiques au vert), puis **validé par le propriétaire en jeu le 2026-11-05** (« c'est bon ») :
 
-- [ ] **Flèche du joueur** (mini-carte et grande carte) : flèche de navigation blanche pointue à base échancrée,
+- [x] **Flèche du joueur** (mini-carte et grande carte) : flèche de navigation blanche pointue à base échancrée,
       contour sombre, dessinée ligne par ligne au pixel (l'ancienne ressemblait à un « A »). Vérifier qu'elle suit le
       cap en tournant, sans couture visible. Aperçu calculé (pas une capture du jeu) : `apercu_fleche_joueur.png`.
-- [ ] Si un **disque sombre** reste visible sous la flèche à l'arrêt, noter l'endroit : c'est probablement le repère
+- [x] Si un **disque sombre** reste visible sous la flèche à l'arrêt, noter l'endroit : c'est probablement le repère
       d'un lieu à cet emplacement (non établi).
-- [ ] **Téléphone, accueil** : la première rangée d'icônes commence sous les boutons ronds « + » et « × » ; le nom de
+- [x] **Téléphone, accueil** : la première rangée d'icônes commence sous les boutons ronds « + » et « × » ; le nom de
       chaque application est plus près de son icône ; le dock reste en bas sans chevaucher la grille.
-- [ ] **Téléphone, applications** : chevron « < » à gauche de « Accueil » sans chevauchement ; grand titre sous la
+- [x] **Téléphone, applications** : chevron « < » à gauche de « Accueil » sans chevauchement ; grand titre sous la
       ligne « Accueil » / « + » / « × » ; contenu sous le titre. En conduite, l'étiquette « MODE RAPIDE » est alignée
       sur le titre.
