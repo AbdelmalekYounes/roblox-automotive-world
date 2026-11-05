@@ -10,6 +10,7 @@ Copie des fichiers de l'archive `Automotive_World_Design_v1.2_Handoff_COMPLET.zi
 | `Design System.dc.html` | référence unique : couleurs, typographie, mesures, composants, icônes, états, animations, accessibilité, règles, raccourcis |
 | `Smartphone.dc.html` | téléphone, 12 applications (étape UI-02) |
 | `Garage.dc.html` | garage, 6 onglets (étape UI-03) |
+| `Icônes Téléphone.dc.html` | planche des 12 icônes et consignes d'intégration Roblox (fournie le 2026-11-05, SHA-256 `715d96ba…dab3fa`) ; tracés identiques à ceux de `Smartphone.dc.html` (vérifié) |
 
 **Ce ne sont pas du code du jeu** : ces pages illustrent le comportement et ne sont jamais exécutées par le jeu ni par
 les essais. Elles dépendent de `support.js` (environnement d'exécution de l'outil de conception, qui charge des
