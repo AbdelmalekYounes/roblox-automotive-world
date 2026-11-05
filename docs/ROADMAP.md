@@ -162,6 +162,18 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   placement** (QA-A15), conducteur parfois couché après la sortie (QA-A16) : à arbitrer.
 - Rapport : `docs/lot-avatar-01/RAPPORT_AVATAR_R15.md`. Production graphique des tenues non engagée.
 
+## Préparation des véhicules 3D (branche `feat/vehicle-3d-references`, base : lot AVATAR-01)
+
+- Références de direction artistique des 18 modèles (121 images libres de Wikimedia Commons, stockées hors dépôt,
+  manifestes versionnés), 18 fiches de design, spécification des modèles 3D, pipeline Blender → Roblox, plan de
+  production, dossier du véhicule pilote **Aster** (trois directions).
+- Aucune géométrie définitive, aucun actif importé ou publié, physique et carrosseries provisoires inchangées.
+- Documents : `docs/vehicle-3d/`. Direction A « Trait » retenue pour l'Aster et habitacle « échelle Roblox + assise basse »
+  (D1), pose assise propre au jeu (D3), ouvrants animés reportés (D4), critère de performance +2 ms (D5), publication par le
+  propriétaire sous le créateur de l'expérience et sources dans un dépôt d'art privé (D6), plusieurs marques fictives et
+  signature par famille, répartition en 4 marques le 2026-11-04 ; noms (Mivale, Orvane, Rocalt, Celvar) et
+  emblèmes validés, dans le dépôt d'art privé (https://github.com/AbdelmalekYounes/roblox-automotive-world-art) ; recherche d'antériorité officielle à faire.
+
 ## Critères de passage du socle 0.0.1
 
 - Arborescence source entièrement nouvelle.

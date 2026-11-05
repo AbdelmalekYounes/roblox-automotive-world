@@ -1,0 +1,349 @@
+{
+ "wk_pixel": {
+  "name": "Pixel",
+  "real": "Smart EQ Fortwo",
+  "kept": 7,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": false,
+   "detail": false
+  },
+  "official": null,
+  "categories": [
+   "Category:Smart EQ fortwo",
+   "Category:Smart Fortwo (2019–2024)"
+  ]
+ },
+ "wk_brio": {
+  "name": "Brio",
+  "real": "Hyundai i10 N Line",
+  "kept": 6,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": "https://www.hyundai.news/uk/articles/press-releases/world-premiere-of-all-new-i10-n-line-at-2019-frankfurt-motor-show.html",
+  "categories": [
+   "Category:Hyundai i10 N Line",
+   "Category:Hyundai i10 (AC3)"
+  ]
+ },
+ "wk_fil": {
+  "name": "Fil",
+  "real": "Renault 5 E-Tech Electric",
+  "kept": 5,
+  "rejected": 5,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": false,
+   "face": false,
+   "interieur": true,
+   "detail": true
+  },
+  "official": "https://renault.co.uk/renault-news/renault-5-e-tech-electric-will-premiere-at-geneva-international-.html",
+  "categories": [
+   "Category:Renault 5 E-Tech Electric"
+  ]
+ },
+ "wk_aster": {
+  "name": "Aster",
+  "real": "Volkswagen Golf VIII",
+  "kept": 8,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": true
+  },
+  "official": null,
+  "categories": [
+   "Category:Volkswagen Golf VIII"
+  ]
+ },
+ "wk_nova": {
+  "name": "Nova",
+  "real": "Nissan Versa",
+  "kept": 6,
+  "rejected": 2,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": true,
+   "interieur": true,
+   "detail": false
+  },
+  "official": "https://global.nissannews.com/en/channels/sunny-almera-versa",
+  "categories": [
+   "Category:Nissan Versa (N18)"
+  ]
+ },
+ "wk_cadence": {
+  "name": "Cadence",
+  "real": "Peugeot 508 II",
+  "kept": 7,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": "https://www.media.stellantis.com/uk-en/peugeot/508-508-sw-pse",
+  "categories": [
+   "Category:Peugeot 508 II"
+  ]
+ },
+ "wk_lumen": {
+  "name": "Lumen",
+  "real": "Škoda Octavia Combi",
+  "kept": 6,
+  "rejected": 2,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": false,
+   "detail": false
+  },
+  "official": "https://www.skoda-storyboard.com/en/octavia_combi_027",
+  "categories": [
+   "Category:Škoda Octavia IV Combi"
+  ]
+ },
+ "wk_oree": {
+  "name": "Orée",
+  "real": "Hyundai Ioniq 6",
+  "kept": 8,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": false,
+   "face": true,
+   "interieur": true,
+   "detail": true
+  },
+  "official": "https://www.hyundai.news/uk/models/electrified/ioniq-6/press-kit.html",
+  "categories": [
+   "Category:Hyundai Ioniq 6",
+   "Category:Hyundai Ioniq 6 (2022)"
+  ]
+ },
+ "wk_brise": {
+  "name": "Brise",
+  "real": "Mazda MX-5 ND",
+  "kept": 7,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": true
+  },
+  "official": "https://www.mazda-press.com/uk/news/2014/all-new-mazda-mx-5-european-debut-at-paris-motor-show-2014/",
+  "categories": [
+   "Category:Mazda MX-5 (ND)"
+  ]
+ },
+ "wk_rafale": {
+  "name": "Rafale",
+  "real": "Volkswagen Golf GTI Clubsport",
+  "kept": 6,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": null,
+  "categories": [
+   "Category:Volkswagen Golf VIII GTI Clubsport",
+   "Category:Volkswagen Golf VIII GTI"
+  ]
+ },
+ "wk_eclat": {
+  "name": "Éclat",
+  "real": "Toyota GR86",
+  "kept": 7,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": "https://pressroom.toyota.com/album/2022-toyota-gr86/",
+  "categories": [
+   "Category:Toyota GR86"
+  ]
+ },
+ "wk_mistral": {
+  "name": "Mistral",
+  "real": "Aston Martin DB11 V8",
+  "kept": 8,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": true
+  },
+  "official": "https://www.astonmartinlagonda.com/news?page=34",
+  "categories": [
+   "Category:Aston Martin DB11"
+  ]
+ },
+ "wk_comete": {
+  "name": "Comète",
+  "real": "McLaren 720S",
+  "kept": 5,
+  "rejected": 3,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": false,
+   "face": true,
+   "interieur": false,
+   "detail": false
+  },
+  "official": "https://cars.mclaren.com/zh_zh/legacy/720s",
+  "categories": [
+   "Category:McLaren 720S"
+  ]
+ },
+ "wk_zenith": {
+  "name": "Zénith",
+  "real": "Rimac Nevera",
+  "kept": 7,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": false,
+   "detail": true
+  },
+  "official": "https://www.rimac-newsroom.com/",
+  "categories": [
+   "Category:Rimac Nevera"
+  ]
+ },
+ "wk_dune": {
+  "name": "Dune",
+  "real": "Mazda CX-5",
+  "kept": 7,
+  "rejected": 1,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": true,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": null,
+  "categories": [
+   "Category:Mazda CX-5 (KF)",
+   "Category:Mazda CX-5 (KF, 2021)"
+  ]
+ },
+ "wk_vigie": {
+  "name": "Vigie",
+  "real": "BMW X5",
+  "kept": 7,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": true
+  },
+  "official": "https://www.press.bmwgroup.com/usa/photo/topic/4249",
+  "categories": [
+   "Category:BMW G05"
+  ]
+ },
+ "wk_sentier": {
+  "name": "Sentier",
+  "real": "Suzuki Jimny 5 portes",
+  "kept": 6,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": null,
+  "categories": [
+   "Category:Suzuki Jimny 5-Door"
+  ]
+ },
+ "wk_atlas": {
+  "name": "Atlas",
+  "real": "Ford Ranger",
+  "kept": 8,
+  "rejected": 0,
+  "unreviewed": 0,
+  "angles": {
+   "trois_quarts_avant": true,
+   "profil": false,
+   "trois_quarts_arriere": true,
+   "face": false,
+   "interieur": true,
+   "detail": false
+  },
+  "official": null,
+  "categories": [
+   "Category:Ford Ranger (T6, P703)"
+  ]
+ }
+}
