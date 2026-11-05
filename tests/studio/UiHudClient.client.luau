@@ -158,7 +158,8 @@ if list then
 end
 -- Le dernier lieu peut être hors de la vue de la liste : défilement réel (molette) jusqu'à lui.
 if first then
-    Gui.reveal(first, 12)
+    -- Monde ouvert : jusqu'à 40 lieux dans la liste (défilement plus long).
+    Gui.reveal(first, 60)
 end
 Gui.click(first, "lieu le plus lointain")
 local destination = waitFor(function()

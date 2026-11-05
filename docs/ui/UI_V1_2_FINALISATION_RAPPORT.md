@@ -73,7 +73,7 @@ pytest 14 / 14, luau-lsp strict 0 erreur (dernière exécution après le commit 
 | `ui_resolutions` (4 résolutions × 5 écrans) | 20261105-131603 | 26 / 26 |
 | `ui_navigation` (focus, refusé, hors ligne, double clic) | 20261105-132328 | 21 / 21 |
 
-Campagne de non-régression transversale : voir §4.
+Campagne de non-régression transversale : voir §4. Essais à faire par le propriétaire : `UI_V1_2_A_VERIFIER.md`.
 
 ## 3. Écarts, limites et NON TESTÉ
 
@@ -90,9 +90,36 @@ Campagne de non-régression transversale : voir §4.
 - Proposition à valider (pas de maquette) : économie, courses, HUD, carte, notifications, arrivée, photo, silhouette.
 - Les signes « × », « ! » et « ● » des aides au pilotage du HUD (décision QA-F14) sont conservés.
 
-## 4. Campagne de non-régression transversale
+## 4. Campagne de non-régression transversale (2026-11-05)
 
-À compléter à la fin de la campagne.
+Commande : `test-vm.cmd -Sessions <liste> -GuiInput` (place de développement), `-Place OpenWorld` pour le monde ouvert.
+Séries courtes : l'agent de la VM coupe une tâche au-delà d'environ 25 min (deux tâches coupées : `132615` pendant
+`metiers`, `155234` pendant `gps`). Comparaison : référence 0.9.2 (`docs/lot-0.9.2/RAPPORT_STABILISATION.md` §7) et,
+pour les échecs hors référence, **même session sur la branche de base** `feat/veh3d-01-comete` (`84cefab`). Aucun
+échec n'a été réessayé pour améliorer le taux.
+
+| Série | Tâche | Résultat | Classement des échecs |
+|---|---|---|---|
+| solo, multijoueur, latence, scenarios | 20261105-143427 | 209 réussis, 0 échec, 1 limite | QA-A05 (limite connue) |
+| collision, collision_latence, lot02 | 20261105-144014 | 256 réussis, 1 échec | QA-A01 connu (réattribution de propriété réseau) |
+| lot04, lot05 (et lot06, lot08) | 20261105-132615 | lot04 et lot05 sans échec | — |
+| lot06, metiers | 20261105-145247 | 55 réussis, 6 échecs | `lot06` drag, circuit, rallye, drift : **identiques sur la branche de base** (`20261105-141629`), défauts connus du pilote ; `metiers.Precision` : pilote bloqué après un choc mécanique sur une rampe (7 / 8 métiers) |
+| lot08 | 20261105-132615 | 2 échecs | volant du cockpit, banc des 18 modèles : **identiques sur la branche de base** (`20261105-141629`) |
+| social, ui_marche | 20261105-135409 | sans échec | — |
+| ui, ui_marche, ui_design, ui_phone, ui_garage | 20261105-153107 | 320 réussis, 1 échec | touche O jamais reçue dans Studio (limite connue depuis 0.9.1) |
+| ui_garage3d, ui_garage2, ui_panels, ui_panels2 | 20261105-153757 | 77 réussis, 0 échec, 1 limite | PageDown non transmis par le pont de la VM |
+| ui_hud, ui_resolutions, ui_navigation | 20261105-154150 | 59 réussis, 0 échec | — |
+| monde ouvert : monde, ui_monde | 20261105-154646 | 105 réussis, 3 échecs | trafic × 2 : défaut connu de l'essai (relevé ponctuel, 0.9.2) ; `ui_monde.telephone_en_marchant` : bras levé de 8° en marchant (critère 25°, 31° en 0.9.2) — **non classé** : la comparaison sur la branche de base a été arrêtée (fin des essais automatiques demandée par le propriétaire) |
+| monde ouvert : ui_phone, ui_hud | 20261105-161751 | 54 réussis, 2 échecs | `ui_hud` : destination non choisie (liste de 40 lieux, défilement de l'essai trop court ; essai corrigé, **non relancé**) |
+| monde ouvert : gps, gps2 | 20261105-155234 | non exécuté | tâche coupée par le délai de l'agent ; **GPS NON TESTÉ** sur ce code |
+
+Incidents d'environnement : pendant la tâche `140137`, la fenêtre de jeu de la VM est passée de 812 × 635 à
+1890 × 953 et le pont a refusé les clics « hors de la vue » (32 échecs en cascade, sans défaut du jeu ; reproduction
+ciblée réussie dans `140942`). L'essai général `ui` a été adapté à la V1.2 (cartes, confirmations modales) ; ses
+premiers échecs venaient de l'ancienne structure.
+
+Le 2026-11-05, le propriétaire a demandé l'arrêt des essais automatiques : les vérifications restantes sont dans
+`UI_V1_2_A_VERIFIER.md`.
 
 ## 5. Anomalies constatées (hors interface)
 
