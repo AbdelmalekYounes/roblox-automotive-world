@@ -28,6 +28,7 @@ local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleC
 
 local UIState = require(script.Parent.UIState)
 local UITheme = require(script.Parent.UITheme)
+local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
 local DevHud = require(script.Parent.DevHud)
 local GPSController = require(script.Parent.GPSController)
 local MapRenderer = require(script.Parent.MapRenderer)
@@ -44,6 +45,7 @@ local gui: ScreenGui
 local cluster: Frame
 local scale: UIScale
 local speedLabel: TextLabel
+local unitLabel: TextLabel
 local gearLabel: TextLabel
 local subLabel: TextLabel
 local rpmBar: Frame
@@ -53,6 +55,7 @@ local energyFill: Frame
 local infoLabel: TextLabel
 local alertLabel: TextLabel
 local minimapFrame: Frame
+local minimapMask: CanvasGroup
 local renderer: MapRenderer.Renderer
 local turnFrame: Frame
 local turnLabel: TextLabel
@@ -73,15 +76,18 @@ function HUDController.setMarkerSource(fn: () -> { MapRenderer.Marker })
     poiSource = fn
 end
 
+-- Barre de jauge V1.2 : piste discrète, remplissage d'un jeton, coins arrondis.
 local function bar(parent: Instance, y: number, color: Color3): (Frame, Frame)
     local frame = UITheme.make("Frame", {
         Position = UDim2.fromOffset(14, y),
         Size = UDim2.new(1, -28, 0, 6),
-        BackgroundColor3 = UITheme.color("PanelRaised"),
+        BackgroundColor3 = Color3.fromRGB(34, 37, 42),
         BorderSizePixel = 0,
     }, parent)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 3) }, frame)
     local fill =
         UITheme.make("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = color, BorderSizePixel = 0 }, frame)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 3) }, fill)
     return frame, fill
 end
 
@@ -92,20 +98,32 @@ local function build()
         { Name = "AWHud", ResetOnSpawn = false, DisplayOrder = 5 },
         player:WaitForChild("PlayerGui")
     )
+    -- Tableau V1.2 : carte sombre à filet ; vitesse en Roboto Mono gras, unité discrète à côté ; rapport en ambre.
     cluster = UITheme.panel({ Name = "Tableau", Size = UDim2.fromOffset(260, 132), Visible = false }, gui)
+    cluster.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, cluster)
     scale = UITheme.make("UIScale", {}, cluster)
     speedLabel = UITheme.label("0", 40, {
+        Name = "Vitesse",
         Position = UDim2.fromOffset(14, 6),
-        Size = UDim2.fromOffset(150, 46),
+        Size = UDim2.fromOffset(110, 46),
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, cluster)
+    unitLabel = UITheme.label("", 13, {
+        Name = "Unite",
+        Position = UDim2.fromOffset(14, 6),
+        Size = UDim2.fromOffset(60, 20),
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextColor3 = Tokens.color("TextMuted"),
+    }, cluster)
+    unitLabel.FontFace = UITheme.face("Label")
     gearLabel = UITheme.label("N", 36, {
         Position = UDim2.new(1, -74, 0, 6),
         Size = UDim2.fromOffset(60, 46),
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Right,
-        TextColor3 = UITheme.color("Accent"),
+        TextColor3 = Tokens.color("Amber"),
     }, cluster)
     -- Lot UI-04 : chiffres en Roboto Mono gras (maquette V1.2, « vitesse · Mono »), tailles du tableau inchangées.
     speedLabel.FontFace = UITheme.face("Speed")
@@ -116,8 +134,8 @@ local function build()
         TextXAlignment = Enum.TextXAlignment.Left,
         TextColor3 = UITheme.color("TextDim"),
     }, cluster)
-    rpmBar, rpmFill = bar(cluster, 70, UITheme.color("Warn"))
-    energyBar, energyFill = bar(cluster, 82, UITheme.color("Good"))
+    rpmBar, rpmFill = bar(cluster, 70, Tokens.color("Amber"))
+    energyBar, energyFill = bar(cluster, 82, Tokens.color("Ok"))
     infoLabel = UITheme.label("", 12, {
         Position = UDim2.fromOffset(14, 92),
         Size = UDim2.new(1, -28, 0, 18),
@@ -129,30 +147,60 @@ local function build()
         Position = UDim2.fromOffset(14, 110),
         Size = UDim2.new(1, -28, 0, 18),
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = UITheme.color("Danger"),
+        TextColor3 = Tokens.color("DangerText"),
         Font = UITheme.FontMedium,
     }, cluster)
-    minimapFrame = UITheme.panel({ Name = "MiniCarte", Size = UDim2.fromOffset(MINIMAP_SIZE, MINIMAP_SIZE) }, gui)
+    -- Mini-carte ronde (système de conception : fond des instruments #0F1214, liseré 2 px #2A4A50, itinéraire cyan,
+    -- flèche joueur ambre) : masque circulaire par CanvasGroup (les routes ne débordent pas dans les coins).
+    minimapMask = UITheme.make("CanvasGroup", {
+        Name = "MiniCarteMasque",
+        Size = UDim2.fromOffset(MINIMAP_SIZE, MINIMAP_SIZE),
+        BackgroundColor3 = Color3.fromRGB(15, 18, 20),
+        BorderSizePixel = 0,
+    }, gui)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, minimapMask)
+    UITheme.make("UIStroke", { Color = Color3.fromRGB(42, 74, 80), Thickness = 2 }, minimapMask)
+    minimapFrame = UITheme.make("Frame", {
+        Name = "MiniCarte",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+    }, minimapMask)
     renderer = MapRenderer.new(minimapFrame, 450, nil)
+    -- Guidage : carte à filet cyan (GPS), consigne en blanc, reste en Roboto Mono discret.
     turnFrame = UITheme.panel({
         Name = "Guidage",
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 100),
-        Size = UDim2.fromOffset(380, 54),
+        Size = UDim2.fromOffset(380, 58),
         Visible = false,
     }, gui)
+    turnFrame.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, turnFrame)
+    UITheme.make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = Tokens.color("GpsCyan"),
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, Tokens.StatusRail, 1, 0),
+    }, turnFrame)
     turnLabel = UITheme.label("", 18, {
-        Position = UDim2.fromOffset(12, 4),
-        Size = UDim2.new(1, -24, 0, 26),
+        Name = "Consigne",
+        Position = UDim2.fromOffset(16, 5),
+        Size = UDim2.new(1, -28, 0, 26),
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
     }, turnFrame)
+    turnLabel.FontFace = UITheme.face("Button")
     remainingLabel = UITheme.label("", 13, {
-        Position = UDim2.fromOffset(12, 30),
-        Size = UDim2.new(1, -24, 0, 18),
+        Name = "Reste",
+        Position = UDim2.fromOffset(16, 32),
+        Size = UDim2.new(1, -28, 0, 18),
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = UITheme.color("TextDim"),
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        TextColor3 = Tokens.color("TextMuted"),
     }, turnFrame)
+    remainingLabel.FontFace = UITheme.face("Value")
 end
 
 -- Placement selon les préférences (coin, taille).
@@ -162,11 +210,11 @@ local function layout()
     local left = prefs.Hud.Corner == "BottomLeft"
     cluster.AnchorPoint = Vector2.new(if left then 0 else 1, 1)
     cluster.Position = if left then UDim2.new(0, 16, 1, -16) else UDim2.new(1, -16, 1, -16)
-    minimapFrame.AnchorPoint = Vector2.new(if left then 0 else 1, 1)
+    minimapMask.AnchorPoint = Vector2.new(if left then 0 else 1, 1)
     local lift = math.floor(132 * scale.Scale) + 26
-    minimapFrame.Position = if left then UDim2.new(0, 16, 1, -lift) else UDim2.new(1, -16, 1, -lift)
+    minimapMask.Position = if left then UDim2.new(0, 16, 1, -lift) else UDim2.new(1, -16, 1, -lift)
     cluster.BackgroundTransparency = UITheme.panelTransparency()
-    minimapFrame.BackgroundTransparency = UITheme.panelTransparency()
+    minimapMask.BackgroundTransparency = UITheme.panelTransparency()
 end
 
 local function gearText(data: any): string
@@ -244,7 +292,10 @@ local function updateCluster()
     local level = prefs.Hud.Level
     local racing = racingCheck()
     local cockpit = data.CameraName == "Cockpit"
-    speedLabel.Text = string.format("%d %s", math.floor(data.SpeedKmh + 0.5), Localization.t("hud.kmh"))
+    speedLabel.Text = tostring(math.floor(data.SpeedKmh + 0.5))
+    unitLabel.Text = Tokens.upper(Localization.t("hud.kmh"))
+    -- Unité placée juste après le nombre (largeur mesurée par Roblox).
+    unitLabel.Position = UDim2.fromOffset(14 + speedLabel.TextBounds.X + 6, 30)
     gearLabel.Text = gearText(data)
     local standard = level ~= "Minimal" and not cockpit
     local full = level == "Full" and not cockpit
@@ -252,10 +303,10 @@ local function updateCluster()
     energyBar.Visible = standard
     rpmFill.Size = UDim2.fromScale(math.clamp(data.EngineRpm / math.max(data.RedlineRpm, 1), 0, 1), 1)
     rpmFill.BackgroundColor3 = if data.EngineRpm >= data.RedlineRpm * 0.92
-        then UITheme.color("Danger")
-        else UITheme.color("Warn")
+        then Tokens.color("RaceRed")
+        else Tokens.color("Amber")
     energyFill.Size = UDim2.fromScale(math.clamp(data.EnergyFraction, 0, 1), 1)
-    energyFill.BackgroundColor3 = if data.EnergyFraction < 0.15 then UITheme.color("Danger") else UITheme.color("Good")
+    energyFill.BackgroundColor3 = if data.EnergyFraction < 0.15 then Tokens.color("RaceRed") else Tokens.color("Ok")
     local transmission = if data.TransmissionKind
         then Localization.t("hud.transmission." .. data.TransmissionKind)
         else ""
@@ -332,9 +383,9 @@ end
 
 local function updateMinimap()
     local prefs = UIState.prefs()
-    minimapFrame.Visible = prefs.Hud.ShowMinimap
+    minimapMask.Visible = prefs.Hud.ShowMinimap
         and (prefs.Hud.Level ~= "Minimal" or GPSController.state().Status ~= "Idle")
-    if not minimapFrame.Visible then
+    if not minimapMask.Visible then
         return
     end
     local character = Players.LocalPlayer.Character

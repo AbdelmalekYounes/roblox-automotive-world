@@ -48,6 +48,7 @@ if
     or sessionName == "ui_garage3d"
     or sessionName == "ui_garage2"
     or sessionName == "ui_panels2"
+    or sessionName == "ui_hud"
 then
     return
 end

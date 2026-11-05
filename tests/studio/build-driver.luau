@@ -66,6 +66,8 @@ local KNOWN_SESSIONS = {
     ui_garage2 = { Name = "ui_garage2", Players = 1 },
     -- Lot UI-04 : panneaux économie et courses recomposés (PanelKit).
     ui_panels2 = { Name = "ui_panels2", Players = 1 },
+    -- Lot UI-04 : HUD, carte complète et notifications en V1.2.
+    ui_hud = { Name = "ui_hud", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -100,6 +102,7 @@ local EXTRA = {
     { "AW_TestUiGarage3DClient", "UiGarage3DClient.client.luau", true },
     { "AW_TestUiGarage2Client", "UiGarage2Client.client.luau", true },
     { "AW_TestUiPanels2Client", "UiPanels2Client.client.luau", true },
+    { "AW_TestUiHudClient", "UiHudClient.client.luau", true },
 }
 
 local output = process.args[1]
