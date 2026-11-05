@@ -9,6 +9,9 @@
 local Players = game:GetService("Players")
 
 local Messages = require(script.Parent.Messages)
+local TireAudioModel = require(
+    game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Audio"):WaitForChild("TireAudioModel")
+)
 local UITheme = require(script.Parent.UITheme)
 
 local DevHud = {}
@@ -235,6 +238,8 @@ export type HudData = {
     EngineRunning: boolean?,
     -- Lot AUDIO-01 : charge réelle du moteur (0 pendant un passage de rapport), pour le son.
     EngineLoad: number?,
+    -- Lot AUDIO-03 : résumé sonore des pneus (TireAudioModel.Summary), nil si le véhicule n'est pas simulé ici.
+    TireAudio: TireAudioModel.Summary?,
     Model: Model?,
 }
 

@@ -35,6 +35,7 @@ local DriverInput = require(script.Parent.DriverInput)
 local VehicleCamera = require(script.Parent.VehicleCamera)
 local WheelVisuals = require(script.Parent.WheelVisuals)
 local DevHud = require(script.Parent.Parent.UI.DevHud)
+local TireAudioModel = require(ReplicatedStorage.Shared:WaitForChild("Audio"):WaitForChild("TireAudioModel"))
 
 local VehicleController = {}
 
@@ -394,12 +395,16 @@ local function newSimulator(current: Session): VehicleSimulator.VehicleSimulator
     return simulator
 end
 
+-- Lot AUDIO-03 : dernier résumé sonore des pneus du véhicule conduit (voir tireSummary).
+local lastTireSummary: TireAudioModel.Summary? = nil
+
 local function endSession()
     local current = session
     if current == nil then
         return
     end
     session = nil
+    lastTireSummary = nil
     current.Simulator:release()
     input:reset()
     unbindActions()
@@ -502,6 +507,38 @@ local function evaluateSession()
     end
 end
 
+-- ======================== Lot AUDIO-03 : sons des pneus ========================
+-- Résumé sonore des quatre roues du véhicule simulé ici (glissements de la dynamique, revêtement, humidité), recalculé
+-- à chaque image ; nil si ce client ne simule pas le véhicule. Le dernier résumé (lastTireSummary, déclaré avant
+-- endSession) sert aussi à la déclaration envoyée au serveur pour le son des autres joueurs.
+local function tireSummary(current: Session): TireAudioModel.Summary?
+    if not current.Simulating then
+        return nil
+    end
+    local simulator = current.Simulator
+    local tires = current.Definition.Tires
+    local samples: { TireAudioModel.WheelSample } = table.create(4)
+    for index, wheel in simulator.State.Wheels do
+        local contact = simulator.Contacts[index]
+        table.insert(samples, {
+            Grounded = contact.Grounded,
+            SlipRatio = wheel.SlipRatio,
+            SlipAngle = wheel.SlipAngle,
+            ContactVx = contact.LongitudinalVelocity,
+            ContactVy = contact.LateralVelocity,
+            RollingSpeed = wheel.AngularVelocity * tires.RadiusM,
+            Surface = TireAudioModel.surfaceOf(contact.Material),
+            Wetness = math.max(if contact.Wet then 1 else 0, contact.Wetness or 0),
+        })
+    end
+    return TireAudioModel.summarize(
+        samples,
+        tires.PeakSlipRatio,
+        math.rad(tires.PeakSlipAngleDeg),
+        simulator.State.AidActivity.Abs
+    )
+end
+
 local function sendInput(current: Session, driverInput: Types.DriverInput, dt: number)
     local activeRemotes = remotes
     if activeRemotes == nil then
@@ -517,6 +554,13 @@ local function sendInput(current: Session, driverInput: Types.DriverInput, dt: n
     local telemetry = if current.Simulating then current.Simulator.Telemetry else nil
     local rpm = if telemetry and telemetry.EngineRunning and not telemetry.EngineStalled then telemetry.EngineRpm else 0
     local encoded = InputCodec.encode(driverInput, sessionEnergyUsed(current), rpm)
+    -- Lot AUDIO-03 : glissement sonore des pneus et revêtement déclarés (0 si le véhicule n'est pas simulé ici).
+    local tires = if current.Simulating then lastTireSummary else nil
+    InputCodec.appendTire(
+        encoded,
+        if tires then tires.Squeal else 0,
+        TireAudioModel.surfaceCode(if tires then tires.Surface else "Hard")
+    )
     local previous = current.LastSent
     local changed = previous == nil
     if previous then
@@ -799,6 +843,7 @@ local function onPreRender(dt: number)
             then powertrain.Engine.RedlineRpm
             else (powertrain.Motor :: Types.ElectricMotorDefinition).MaxRpm
 
+        lastTireSummary = tireSummary(current)
         DevHud.update({
             SpeedKmh = telemetry.SpeedKmh,
             Gear = telemetry.Gear,
@@ -833,6 +878,7 @@ local function onPreRender(dt: number)
             -- Charge RÉELLE du moteur pour le son (lot AUDIO-01) : nulle pendant un passage de rapport (couple coupé par
             -- la boîte, VehicleDynamics), sinon accélérateur effectif après les aides.
             EngineLoad = if state.ShiftTimer > 0 then 0 else telemetry.DriveThrottle,
+            TireAudio = lastTireSummary,
             Model = current.Model,
         })
     end

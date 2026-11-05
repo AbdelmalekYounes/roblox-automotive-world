@@ -49,6 +49,8 @@ for _, spec in
         require("./specs/Admin01"),
         require("./specs/Veh3d02Brio"),
         require("./specs/Audio01"),
+        -- Lot AUDIO-03 : sons des pneus.
+        require("./specs/Audio03"),
     }
 do
     spec(TestKit, Harness)

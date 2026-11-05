@@ -60,6 +60,11 @@ local VehicleConstants = {
         -- conducteur, bornée : régime (tr/min, 0 = moteur arrêté) et charge (accélérateur, 0 à 1). Aucun effet de jeu.
         AudioRpm = "AudioRpm",
         AudioLoad = "AudioLoad",
+        -- Sons des pneus vus par les autres joueurs (lot AUDIO-03), écrits par le serveur d'après la déclaration du
+        -- conducteur, bornée : glissement sonore (0 à 1, pas de 0,1) et famille de revêtement (code 0 à 3,
+        -- TireAudioModel.Surfaces). Aucun effet de jeu.
+        AudioTireSlip = "AudioTireSlip",
+        AudioTireSurface = "AudioTireSurface",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",
         -- Énergie (écrite par le serveur seul) : niveau en L ou kWh, réserve vide.

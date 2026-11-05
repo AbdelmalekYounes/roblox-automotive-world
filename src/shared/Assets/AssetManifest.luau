@@ -324,6 +324,35 @@ recordedEngine("brio", "start", "démarrage")
 recordedEngine("brio", "stop", "arrêt")
 recordedEngine("brio", "stall", "calage")
 
+-- ======================== Audio enregistré (lot AUDIO-03 : pneus) ========================
+-- Boucles des pneus (TireAudioModel), tirées d'enregistrements libres de Freesound (CC0) relevés au registre
+-- docs/audio/SONS_TIERS.md (§ pneus) et transformées par tools/audio/tire_loops.py. Catégorie « Effets » (préfixe
+-- audio.effect.). Aucun identifiant Roblox tant que le propriétaire ne les a pas envoyés.
+local TIRE_LOOPS = "tools/audio/tire_loops.py"
+local function recordedTire(name: string, note: string)
+    add({
+        Id = "audio.effect.tire." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "Provisional",
+        Variants = { Low = "2 couches", Medium = "4 couches", High = "Toutes les couches" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = "Tiers : enregistrements CC0 de Freesound, transformés ("
+            .. note
+            .. ") ; docs/audio/SONS_TIERS.md",
+        Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
+        Source = { Kind = "File", Path = TIRE_LOOPS },
+        Output = "build/audio/tires/" .. name .. ".wav",
+        RobloxAssetId = nil,
+    })
+end
+recordedTire("roll.dry", "roulement sur revêtement dur")
+recordedTire("roll.loose", "roulement sur gravier et terre")
+recordedTire("roll.wet", "chuintement sur chaussée mouillée")
+recordedTire("squeal", "crissement de glissement")
+recordedTire("scrub", "frottement de glissade franche")
+recordedTire("slide.loose", "glissade sur gravier")
+
 local LAYERS = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" }
 for _, layer in { "idle", "low", "mid", "high" } do
     sound("engine.petrol." .. layer, "engine_petrol_" .. layer .. ".wav", "moteur essence, couche " .. layer, LAYERS)
