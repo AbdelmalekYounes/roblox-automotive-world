@@ -31,6 +31,7 @@ export type Options = {
     -- Revêtement : multiplicateur d'adhérence (par roue possible) et mouillé.
     Surface: (number | { number })?,
     Wet: boolean?,
+    Wetness: number?, -- humidité météo (0 à 1)
     -- Préparation de l'état avant le départ (aides, rapport, réserve…).
     Prepare: ((state: any) -> ())?,
     -- Moteur arrêté au départ (par défaut : démarré, comme un conducteur à bord).
@@ -119,6 +120,7 @@ function PlanarSim.run(Dynamics: any, definition: any, options: Options): ({ Sna
                 LateralVelocity = -vLong * s + vLat * c,
                 SurfaceFriction = if type(surface) == "table" then surface[index] else surface,
                 Wet = options.Wet == true,
+                Wetness = options.Wetness,
             }
         end
 

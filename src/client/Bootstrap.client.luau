@@ -9,6 +9,8 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local Settings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ProjectSettings"))
 local VehicleController = require(script.Parent:WaitForChild("Vehicles"):WaitForChild("VehicleController"))
+local PlaceConfig = require(ReplicatedStorage:WaitForChild("PlaceConfig")) :: { Mode: string }
+local openWorld = PlaceConfig.Mode == "OpenWorld"
 
 -- Attente événementielle : pas de boucle active consommatrice de ressources.
 while ReplicatedStorage:GetAttribute("AutomotiveWorldReady") ~= true do
@@ -33,7 +35,8 @@ statusLabel.Font = Enum.Font.GothamMedium
 statusLabel.TextSize = 16
 statusLabel.TextWrapped = true
 statusLabel.Text = string.format(
-    "Zone d'essai véhicule • DEV %s • CdC %s • approchez un véhicule et maintenez E",
+    "%s • DEV %s • CdC %s • approchez un véhicule et maintenez E",
+    if openWorld then "Monde ouvert (maquette lot 0.3)" else "Zone d'essai véhicule",
     Settings.DevelopmentVersion,
     Settings.RequirementsVersion
 )
@@ -42,4 +45,14 @@ statusLabel.Parent = screenGui
 screenGui.Parent = playerGui
 
 VehicleController.start()
+if openWorld then
+    local WorldClient = script.Parent:WaitForChild("World")
+    require(WorldClient:WaitForChild("Environment")).start()
+    require(WorldClient:WaitForChild("TrafficLights")).start()
+    require(WorldClient:WaitForChild("StreamAhead")).start()
+    -- L'index des trottoirs se calcule une fois, sans retarder la conduite.
+    task.defer(function()
+        require(WorldClient:WaitForChild("Pedestrians")).start()
+    end)
+end
 print("[AutomotiveWorld] Client de développement initialisé")

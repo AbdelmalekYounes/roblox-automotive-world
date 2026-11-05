@@ -111,6 +111,9 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
 
     local model = Instance.new("Model")
     model.Name = "VehiculeEssai_" .. padIndex
+    -- Monde ouvert (StreamingEnabled) : le véhicule arrive entier chez chaque
+    -- client, jamais à moitié (le simulateur exige toutes ses pièces).
+    model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 
     -- Hauteurs exprimées par rapport au centre de gravité (Y = 0 local).
     local groundY = -studs(chassis.CgHeightM)
@@ -385,7 +388,13 @@ end
 function VehicleFactory.spawnPivotForPad(definition: Types.VehicleDefinition, pad: BasePart): CFrame
     local groundTop = pad.Position.Y + pad.Size.Y / 2
     local height = studs(definition.Chassis.CgHeightM) + 0.3
-    return CFrame.new(pad.Position.X, groundTop + height, pad.Position.Z)
+    -- Orientation : axe long du plot, à plat (le véhicule regarde vers -Z local).
+    local look = pad.CFrame.LookVector * Vector3.new(1, 0, 1)
+    if look.Magnitude < 1e-3 then
+        look = Vector3.new(0, 0, -1)
+    end
+    local position = Vector3.new(pad.Position.X, groundTop + height, pad.Position.Z)
+    return CFrame.lookAt(position, position + look.Unit)
 end
 
 return VehicleFactory

@@ -1,14 +1,15 @@
-# Automotive World — Lot 0.2 (physique automobile avancée)
+# Automotive World — Lot 0.3 (monde ouvert)
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
-> **Périmètre** : une zone d'essai isolée et des **prototypes techniques fictifs** (P-01 essence/automatique/propulsion,
-> P-02 diesel/manuelle/traction, P-03 électrique/rapport unique/intégrale, et trois configurations de validation
-> des boîtes double embrayage, séquentielle et CVT). Ni catalogue, ni carte, ni économie, ni sauvegarde : énergie
-> et dégâts n'existent que pendant la session.
-> **Statut** : lot 0.2 en développement sur `feat/advanced-vehicle-physics-0.2` (PR brouillon #2, base : lot 0.1,
-> PR #1 non fusionnée). Résultats réellement mesurés : [docs/lot-0.2/RAPPORT_LOT_0.2.md](docs/lot-0.2/RAPPORT_LOT_0.2.md).
-> Clavier/manette réels et ressenti restent à vérifier par un humain.
+> **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
+> trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée et des **prototypes techniques fictifs** (P-01
+> essence/automatique/propulsion, P-02 diesel/manuelle/traction, P-03 électrique/rapport unique/intégrale, et trois
+> configurations de validation des boîtes double embrayage, séquentielle et CVT). Ni catalogue, ni économie, ni
+> sauvegarde : énergie et dégâts n'existent que pendant la session.
+> **Statut** : lot 0.3 en développement sur `feat/open-world-map-0.3` (PR brouillon, base : lot 0.2 ; PR #1 et #2
+> non fusionnées). Rapport : [docs/lot-0.3/RAPPORT_LOT_0.3.md](docs/lot-0.3/RAPPORT_LOT_0.3.md). Les essais Studio,
+> humains et de charge sont regroupés dans [docs/QA_BACKLOG.md](docs/QA_BACKLOG.md) (**NON TESTÉS** à ce jour).
 
 ## Prérequis (Windows)
 
@@ -36,6 +37,18 @@ rojo build -o build\AutomotiveWorld.rbxlx
    (sud-ouest), des bordures et bosses (est), un mur de choc (sud) et la bosse à 10 %.
 4. S'approcher de la portière gauche d'un véhicule et **maintenir E** (manette : **X**) pour monter.
 5. Pour la synchronisation en direct pendant le développement : `rojo serve`, puis connecter le plugin Rojo.
+
+## Construire la place du monde ouvert (lot 0.3)
+
+```powershell
+rojo build -o build\AutomotiveWorld.rbxlx
+lune run tools/world/build-world.luau build\AutomotiveWorld.rbxlx build\world\OpenWorld.rbxm
+rojo build openworld.project.json -o build\AutomotiveWorld-OpenWorld.rbxl
+```
+
+La carte est générée hors ligne, de façon déterministe, à partir des données versionnées de `src/shared/World/Data`.
+La place `build\AutomotiveWorld-OpenWorld.rbxl` contient la carte, le streaming activé, le parc des neuf prototypes en
+métropole et le point d'apparition voisin. Comportement en jeu **non encore vérifié** (`docs/QA_BACKLOG.md` §3).
 
 ## Commandes de conduite
 
@@ -94,13 +107,18 @@ hors du dépôt. Préparation, permissions et fonctionnement : [docs/VM_TESTS.md
 
 | Dossier | Contenu |
 |---|---|
+| `src/shared/World` | Données de carte versionnées, réseau routier, mise en page, graphe (A*), feux, météo, trafic et piétons **purs** |
 | `src/shared/Vehicles` | Types, définitions, dynamique **pure** (pneu, suspension, moteurs, boîtes, différentiels, aides, énergie, dégâts), adaptateur Roblox `VehicleSimulator`, codec réseau, mesures |
-| `src/server` | Zone d'essai, fabrique des véhicules, service autoritaire (embarquement, propriété réseau vérifiée, validation des mouvements, énergie, aides, dégâts confirmés serveur, médiation des collisions entre joueurs), limiteur de débit |
-| `src/client` | Commandes clavier/manette (arbitrage des périphériques), caméras, animation des roues, HUD de développement |
+| `src/server` | Monde ouvert (parc, météo, trafic PNJ), zone d'essai, fabrique des véhicules, service autoritaire (embarquement, propriété réseau vérifiée, validation des mouvements, énergie, aides, dégâts confirmés serveur, médiation des collisions entre joueurs), limiteur de débit |
+| `src/client` | Commandes clavier/manette (arbitrage des périphériques), caméras, animation des roues, HUD de développement, ambiance, feux, piétons, chargement anticipé |
+| `tools/world` | Générateur hors ligne de la carte (Lune) |
+| `places` | Configuration des deux places (développement, monde ouvert) |
 | `tests/lune` | Tests exécutés par Lune sur la place construite par Rojo (modules purs + structure) |
 | `tests/test_scaffold.py` | Contrôles statiques Python |
 | `docs/lot-0.1` | Rapport de validation, rapport de tests, analyse des écarts et arbitrages, proposition du lot 0.2 |
 | `docs/lot-0.2` | Rapport du lot 0.2 (mesures réelles), écarts, changements d'architecture |
+| `docs/lot-0.3` | Rapport du lot 0.3, architecture du monde ouvert |
+| `docs/QA_BACKLOG.md` | Registre unique des essais reportés et des anomalies ouvertes |
 | `tools/vm` | Essais Studio dans la VM (hôte, agent, préparation, partage) |
 
 Architecture détaillée : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

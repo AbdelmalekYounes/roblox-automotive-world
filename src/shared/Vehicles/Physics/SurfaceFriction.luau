@@ -28,6 +28,8 @@ local BY_MATERIAL: { [string]: number } = {
     Sand = 0.5,
     Sandstone = 0.75,
     Gravel = 0.6,
+    -- Matériau de pièce des chemins (le gravier n'existe que pour le terrain).
+    Pebble = 0.6,
     Snow = 0.3,
     Glacier = 0.15,
     Ice = 0.12,

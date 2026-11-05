@@ -294,7 +294,10 @@ export type WheelContact = {
     LongitudinalVelocity: number, -- m/s, vitesse du point de contact selon l'axe de la roue
     LateralVelocity: number, -- m/s, positive vers la droite de la roue
     SurfaceFriction: number, -- multiplicateur d'adhérence du revêtement
-    Wet: boolean, -- revêtement mouillé
+    Wet: boolean, -- revêtement mouillé par conception (attribut AWWet)
+    -- Humidité de chaussée due à la météo (0 = sèche, 1 = détrempée). Combinée
+    -- à `Wet` par maximum : la réduction d'adhérence n'est appliquée qu'une fois.
+    Wetness: number?,
 }
 
 -- Mouvement du châssis vu par la dynamique (repère véhicule).

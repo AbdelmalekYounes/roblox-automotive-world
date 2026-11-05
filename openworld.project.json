@@ -1,0 +1,43 @@
+{
+  "name": "AutomotiveWorld_OpenWorld",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "PlaceConfig": {
+        "$path": "places/openworld/PlaceConfig.luau"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "AutomotiveWorldServer": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "AutomotiveWorldClient": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 1024,
+        "StreamingTargetRadius": 3072,
+        "StreamingIntegrityMode": "PauseOutsideLoadedArea",
+        "ModelStreamingBehavior": "Improved"
+      },
+      "OpenWorld": {
+        "$path": "build/world/OpenWorld.rbxm"
+      }
+    }
+  }
+}

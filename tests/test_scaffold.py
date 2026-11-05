@@ -36,7 +36,7 @@ def test_contract_values_and_bootstrap():
     """Contrôle les valeurs approuvées et les points d'entrée présents."""
     config = (SRC / "shared/ProjectSettings.luau").read_text(encoding="utf-8")
     assert 'RequirementsVersion = "1.0"' in config
-    assert 'DevelopmentVersion = "0.2.0-dev"' in config
+    assert 'DevelopmentVersion = "0.3.0-dev"' in config
     assert "LaunchVehicleModelCount = 18" in config
     assert "LaunchZoneCount = 7" in config
     assert "MaximumPlayersTarget = 24" in config
@@ -103,3 +103,17 @@ def test_strict_typing_in_modules():
             continue
         first_line = script.read_text(encoding="utf-8").splitlines()[0]
         assert first_line.strip() == "--!strict", f"--!strict manquant dans {script.name}"
+
+
+def test_open_world_place_separated_from_dev_place():
+    """Lot 0.3 : la place monde ouvert est distincte ; la zone d'essai reste en développement."""
+    dev = json.loads((ROOT / "default.project.json").read_text(encoding="utf-8"))
+    world = json.loads((ROOT / "openworld.project.json").read_text(encoding="utf-8"))
+    assert dev["tree"]["ReplicatedStorage"]["PlaceConfig"]["$path"] == "places/dev/PlaceConfig.luau"
+    assert world["tree"]["ReplicatedStorage"]["PlaceConfig"]["$path"] == "places/openworld/PlaceConfig.luau"
+    assert 'Mode = "Dev"' in (ROOT / "places/dev/PlaceConfig.luau").read_text(encoding="utf-8")
+    assert 'Mode = "OpenWorld"' in (ROOT / "places/openworld/PlaceConfig.luau").read_text(encoding="utf-8")
+    workspace = world["tree"]["Workspace"]
+    assert workspace["$properties"]["StreamingEnabled"] is True
+    assert workspace["OpenWorld"]["$path"] == "build/world/OpenWorld.rbxm"
+    assert "Workspace" not in dev["tree"], "la place de développement ne doit pas inclure la carte"
