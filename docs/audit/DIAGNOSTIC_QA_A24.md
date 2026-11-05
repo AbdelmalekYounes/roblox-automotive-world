@@ -110,7 +110,7 @@ Impact joueur : non constaté à ce jour, sur un seul essai humain.
 
 ## 6. Session VM ciblée (2026-11-05, accord du propriétaire)
 
-Commande : `toolsm\host-run.ps1 -Sessions lot08 -NoVmControl -TimeoutSec 2700`, lancée depuis la branche de diagnostic
+Commande : `tools/vm/host-run.ps1 -Sessions lot08 -NoVmControl -TimeoutSec 2700`, lancée depuis la branche de diagnostic
 `diag/qa-a24` (commit `3247a39`, issu de `feat/ui-premium-v1.2-v2` ; journal TEMPORAIRE de chaque refus silencieux
 dans `onPromptTriggered` et `onOccupantChanged`, diagnostic du banc enrichi). Tâche **20261105-183402** : 26 réussis,
 2 échecs (le volant du cockpit, déjà connu, et le banc).
