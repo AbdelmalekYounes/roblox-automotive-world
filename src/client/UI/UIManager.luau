@@ -39,6 +39,8 @@ export type Screen = {
     Close: () -> (),
     Quick: ((boolean) -> ())?, -- bascule en mode rapide (conduite), sans perte de contenu
     Focus: (() -> GuiObject?)?,
+    -- Lot UI-03 : retour d'un niveau à l'intérieur de l'écran (onglets du garage) ; vrai = traité, ne pas fermer.
+    Back: (() -> boolean)?,
 }
 
 local screens: { [string]: Screen } = {}
@@ -156,6 +158,10 @@ function UIManager.back(): boolean
     local top = UIStack.top(stack)
     if top == nil then
         return false
+    end
+    local screen = screens[top.Name]
+    if screen and screen.Back and screen.Back() then
+        return true
     end
     UIManager.close(top.Name)
     return true

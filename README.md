@@ -1,4 +1,4 @@
-# Automotive World — Lot 0.9.2 (stabilisation finale)
+# Automotive World — consolidation vers la V1.0
 
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
@@ -32,8 +32,14 @@
 > Phase 1 de l'Aster (branche `feat/aster-phase1`) : pose assise du jeu, gabarit mesuré en VM, avatars humains
 > (corps 995 ou 994 au choix du joueur, tête classique « bloc » remplacée par celle du corps) ([rapport](docs/vehicle-3d/ASTER_PHASE1.md),
 > [clôture](docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md), [lancement d'ASTER-02](docs/vehicle-3d/ASTER_02_LANCEMENT.md)).
-> **Statut** : lot 0.9.2 sur `feat/final-stabilization-0.9.2` (PR brouillon #11, base : lot 0.9.1 ; PR #1 à #10 non
-> fusionnées). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
+> **ASTER-02 (PR #15) suspendu par le propriétaire le 2026-11-04** : travail conservé, à ne pas réactiver.
+> VEH3D-01 (PR #16) : Comète 3D (modèle tiers CC BY, exception du propriétaire), revue du propriétaire faite
+> ([clôture](docs/vehicle-3d/VEH3D_01_CLOTURE.md), [crédits](docs/CREDITS_ACTIFS.md)). UI PREMIUM V1.2 (PR #17) :
+> validée en jeu par le propriétaire le 2026-11-05 ([rapport](docs/ui/UI_V1_2_FINALISATION_RAPPORT.md)).
+> **Intégration V1.0** : [audit et stratégie](docs/audit/AUDIT_INTEGRATION_V1.0.md) ; option B choisie le 2026-11-05
+> (branches reconstruites sans ASTER-02 : `feat/veh3d-01-comete-v2`, `feat/ui-premium-v1.2-v2`).
+> **Statut** (2026-11-05) : pile de 17 PR non fusionnées (#1 lot 0.1 → #17 UI V1.2) ; sommet reconstruit :
+> `feat/ui-premium-v1.2-v2`. Lot 0.9.2 : `feat/final-stabilization-0.9.2` (PR #11). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
 > [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
 > humains : [checklist](docs/lot-0.9/CHECKLIST_TESTS_HUMAINS.md) ; DataStore, charge et appareils réels : **NON
 > TESTÉS** ([docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)).
@@ -79,7 +85,7 @@ métropole et le point d'apparition voisin. Comportement en jeu **non encore vé
 
 ## Collection, propriétés et garages (lot 0.4)
 
-Touche **P** (manette : **Select**) : panneau provisoire (collection, véhicule, propriétés, préparation,
+Touche **P** (manette : par le téléphone, application Véhicules ; Select ouvre le téléphone) : panneau (collection, véhicule, propriétés, préparation,
 configurations, invitations) et badge d'état de sauvegarde. En développement, chaque joueur reçoit une propriété
 gratuite et des données **synthétiques** (trois prototypes, une propriété moyenne, une pièce de chaque type),
 perdues à l'arrêt du serveur. Zone d'essai : entrée de propriété (repère bleu) et garage public (repère orange)
@@ -182,6 +188,10 @@ Détail des moyens et limites : [docs/lot-0.1/RAPPORT_TESTS.md](docs/lot-0.1/RAP
 
 ## Tests dans Roblox Studio, via la VM (sans prendre ton PC)
 
+> **Depuis le 2026-11-05**, à la demande du propriétaire, les campagnes VM automatiques sont arrêtées : le
+> propriétaire teste lui-même à partir de listes de vérification (ex. `docs/ui/UI_V1_2_A_VERIFIER.md`).
+> `scripts/verify.ps1` reste exigé. La VM est conservée comme outil, lancée seulement sur sa demande.
+
 ```powershell
 test-vm.cmd
 ```
@@ -238,7 +248,10 @@ Règles permanentes : [CLAUDE.md](CLAUDE.md).
 
 - Le cahier des charges validé et les 33 décisions AUD font foi.
 - Aucun code, modèle, interface, texture ni donnée de Collectverse ou Mimic Hunters n'est réutilisé ;
-  la géométrie du prototype est générée par code à partir de primitives.
+  la géométrie du prototype est générée par code à partir de primitives. **Exception** accordée par le
+  propriétaire : carrosserie de la Comète issue d'un modèle tiers CC BY 4.0 (`docs/vehicle-3d/MODELES_TIERS.md`,
+  `docs/CREDITS_ACTIFS.md`) ; l'écart avec le cahier des charges (§1.2, véhicules fictifs originaux) reste à
+  arbitrer (`docs/audit/AUDIT_INTEGRATION_V1.0.md` §7.6).
 - Les crédits (lot 0.5) ne sont gagnés que par des activités mesurées par le serveur ; aucun achat Robux. La
   persistance n'écrit dans un DataStore que pour une
   expérience de test ou de production explicitement déclarée (aucune aujourd'hui).

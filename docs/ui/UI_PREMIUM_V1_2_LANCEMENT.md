@@ -1,4 +1,8 @@
-# UI PREMIUM V1.2 — dossier de lancement (préparation, chantier NON commencé)
+# UI PREMIUM V1.2 — dossier de lancement (historique)
+
+> **Chantier terminé** (2026-11-05) : voir `UI_V1_2_FINALISATION_RAPPORT.md`. Le préalable « PR #16 fusionnée » n'a
+> pas été rempli : le chantier a commencé sur exception du propriétaire (`UI_01_RAPPORT.md`). La méthode du §3
+> (sessions VM à chaque lot) n'est plus en vigueur depuis le 2026-11-05.
 
 Préparé le 2026-11-05 à la demande du propriétaire (« priorité officielle V1.0 », priorité 2 : interfaces, après la
 Comète). **Aucun code d'interface n'est écrit dans ce dossier.** Le chantier commence sur décision du propriétaire,
@@ -14,7 +18,9 @@ après la clôture de VEH3D-01 (PR #16 validée et fusionnée par lui, règle CL
 | Références écrites | `docs/lot-0.7/ARCHITECTURE_LOT_0.7.md` (§2 à §9), `docs/lot-0.8/DIRECTION_ARTISTIQUE.md` §6, cahier des charges chapitre CH07, décisions AUD-UI-01 et AUD-UI-02, AUD-INPUT-01, AUD-ACCESS-01 | « direction visuelle provisoire » (lot 0.7) ; assets définitifs annoncés au lot 0.8 mais restés en glyphes texte |
 | Essais | sessions VM `ui`, `ui_monde`, `ui_marche` (vrais clics, `GuiDriver`) | parcours vérifiés par vrais clics (lot 0.9.1) |
 
-**Maquettes graphiques** : aucune maquette d'interface (image, fichier de conception) n'a été trouvée dans le dépôt de
+**Mise à jour du 2026-11-05** : le propriétaire a fourni les maquettes V1.2 (`docs/ui/handoff-v1.2/`) et demandé de commencer ; lot UI-01 réalisé (`UI_01_RAPPORT.md`).
+
+**Maquettes graphiques (constat initial)** : aucune maquette d'interface (image, fichier de conception) n'a été trouvée dans le dépôt de
 jeu. Le dépôt d'art contient des emblèmes de marques (SVG), pas d'écrans. Les « maquettes existantes » citées par la
 demande sont donc à fournir ou à désigner par le propriétaire (§4), sinon la base est le thème actuel et les documents
 ci-dessus.

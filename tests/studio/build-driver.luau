@@ -53,6 +53,25 @@ local KNOWN_SESSIONS = {
     comete_perf = { Name = "comete_perf", Players = 1 },
     comete2 = { Name = "comete2", Players = 2 },
     comete_avatar = { Name = "comete_avatar", Players = 1 },
+    -- Lot UI-01 : système de conception V1.2 (page de démonstration, vrais clics).
+    ui_design = { Name = "ui_design", Players = 1 },
+    -- Lot UI-02 : téléphone V1.2 seul (vraies touches et vrais clics).
+    ui_phone = { Name = "ui_phone", Players = 1 },
+    -- Lots UI-03 et UI-04 : garage seul ; panneaux économie et courses seuls.
+    ui_garage = { Name = "ui_garage", Players = 1 },
+    ui_panels = { Name = "ui_panels", Players = 1 },
+    -- Lot UI-03 : aperçu 3D du garage (ViewportFrame) seul.
+    ui_garage3d = { Name = "ui_garage3d", Players = 1 },
+    -- Lot UI-03 : garage V1.2 recomposé (six onglets, brouillon, réponses du serveur), au garage public d'essai.
+    ui_garage2 = { Name = "ui_garage2", Players = 1 },
+    -- Lot UI-04 : panneaux économie et courses recomposés (PanelKit).
+    ui_panels2 = { Name = "ui_panels2", Players = 1 },
+    -- Lot UI-04 : HUD, carte complète et notifications en V1.2.
+    ui_hud = { Name = "ui_hud", Players = 1 },
+    -- UI V1.2 : résolutions 1280 × 720 à 3440 × 1440 (écran virtuel, surcharge de la vue en Studio).
+    ui_resolutions = { Name = "ui_resolutions", Players = 1 },
+    -- UI V1.2 : navigation, focus manette, états refusé et hors ligne, anti double envoi.
+    ui_navigation = { Name = "ui_navigation", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -80,6 +99,16 @@ local EXTRA = {
     { "AW_TestAvatarClient", "AvatarClient.client.luau", true },
     { "AW_TestCometeServer", "CometeServer.server.luau", false },
     { "AW_TestCometeClient", "CometeClient.client.luau", true },
+    { "AW_TestUiDesignServer", "UiDesignServer.server.luau", false },
+    { "AW_TestUiDesignClient", "UiDesignClient.client.luau", true },
+    { "AW_TestUiPhoneClient", "UiPhoneClient.client.luau", true },
+    { "AW_TestUiScreensClient", "UiScreensClient.client.luau", true },
+    { "AW_TestUiGarage3DClient", "UiGarage3DClient.client.luau", true },
+    { "AW_TestUiGarage2Client", "UiGarage2Client.client.luau", true },
+    { "AW_TestUiPanels2Client", "UiPanels2Client.client.luau", true },
+    { "AW_TestUiHudClient", "UiHudClient.client.luau", true },
+    { "AW_TestUiResolutionsClient", "UiResolutionsClient.client.luau", true },
+    { "AW_TestUiNavigationClient", "UiNavigationClient.client.luau", true },
 }
 
 local output = process.args[1]

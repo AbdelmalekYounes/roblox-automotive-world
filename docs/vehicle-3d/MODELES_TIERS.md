@@ -27,7 +27,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
-| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | s0h1o9b | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; LOD0 exporté et **importé dans Studio par le propriétaire : géométrie conforme, vitrage opaque** (§5) ; non intégré |
+| 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | _Sheep19 (crédit retenu ; l'API affichait « s0h1o9b » le 2026-11-04, renommage supposé, non prouvé) | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; LOD0 exporté et **importé dans Studio par le propriétaire : géométrie conforme, vitrage opaque** (§5) ; intégré par VEH3D-01 (`VEH3D_01_CLOTURE.md`) |
 
 ## Modèles examinés et refusés
 
@@ -239,9 +239,10 @@ est à essayer.
 
 Lot VEH3D-01 (2026-11-04) : feux séparés en `COMETE_Feu_Av` (`AWLight = Head`) et `COMETE_Feu_Ar` (`Tail`), de 44 triangles chacun. Le LOD0 est réexporté (28 pièces, relu : centres à 0,0005 st près) et attend l'envoi sur Roblox par le propriétaire (`VEH3D_01_INTEGRATION_COMETE.md` §2).
 
-Lot VEH3D-01 : maillages envoyés sur Roblox par le propriétaire (`.rbxm` du premier export, sans feux séparés). Le kit est intégré à la fabrique, mais n'est pas essayé en jeu (`VEH3D_01_INTEGRATION_COMETE.md` §5 et §6).
+Lot VEH3D-01 : maillages envoyés sur Roblox par le propriétaire (`.rbxm` du premier export, sans feux séparés). Le kit est intégré à la fabrique, mais n'est pas essayé en jeu (`VEH3D_01_INTEGRATION_COMETE.md` §5 et §6). État
+du 2026-11-04 : essais VM du 2026-11-05 et revue du propriétaire dans `VEH3D_01_CLOTURE.md`.
 
-Non vérifié :
+Non vérifié (état du 2026-11-04, suite dans `VEH3D_01_CLOTURE.md`) :
 - l'envoi sur Roblox des maillages (choix « Importer sur Roblox » du propriétaire) ;
 - l'éclairage des feux (`AWLight`) ;
 - la conduite, les LOD, les performances D5, les avatars à bord.

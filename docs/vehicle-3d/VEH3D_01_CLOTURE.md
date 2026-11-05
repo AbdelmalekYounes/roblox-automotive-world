@@ -1,6 +1,7 @@
 # VEH3D-01 — rapport de finalisation de la Comète 3D
 
-Branche `feat/veh3d-01-comete`, PR #16 (brouillon, non fusionnée). Rapport du 2026-11-05, rédigé à la demande du
+Branche `feat/veh3d-01-comete`, PR #16 (brouillon, non fusionnée) ; reconstruite sans ASTER-02 dans
+`feat/veh3d-01-comete-v2` le 2026-11-05 (option B de `docs/audit/AUDIT_INTEGRATION_V1.0.md`, code identique). Rapport du 2026-11-05, rédigé à la demande du
 propriétaire (« priorité officielle V1.0 » : finaliser la Comète, puis les interfaces). Physique et modèle 3D intégré
 conservés. Seule la Comète est essayée (demande du propriétaire du 2026-11-05 : pas les 18 modèles).
 
@@ -152,7 +153,7 @@ capture ; finition du garage appliquée à aucun véhicule ; essai humain.
 | Décider : LOD1/LOD2 dans l'envoi ? | coût mesuré faible | export prêt à faire |
 | Décider : panneaux de dégâts déformables ? | marques actuelles rectangulaires | découpe Blender à faire |
 | Décider : titre et lien dans les crédits | conformité CC BY et règles Roblox | bascule `ShowTitle` / `ShowUrl` |
-| Revue visuelle et conduite | aucune validation humaine à ce jour | captures des tâches citées |
+| Revue visuelle et conduite | **faite le 2026-11-05** (« tout fonctionne correctement », points non notés un par un) | `VEH3D_01_REVUE.md` |
 | Mesure D5 sur un poste réel | la VM ne fournit pas les temps de rendu | session `comete_perf` réutilisable |
 | Arbitrer le risque lié au dessin commercial | §3.F | — |
 
@@ -166,4 +167,5 @@ ne demande pas d'envoi d'actifs ; les sorties sont corrigées (16 / 16) ; le con
 2. ta décision sur l'envoi groupé (feux lumineux, peinture), ou l'acceptation de ces limites pour cette version ;
 3. ta décision sur le titre et le lien des crédits, et sur le risque lié au dessin commercial.
 
-Le chantier UI PREMIUM V1.2 n'est pas commencé. Il sera préparé après l'acceptation de la Comète.
+État au moment de la rédaction : le chantier UI PREMIUM V1.2 n'était pas commencé. Il a été mené ensuite
+(`docs/ui/UI_V1_2_FINALISATION_RAPPORT.md`).

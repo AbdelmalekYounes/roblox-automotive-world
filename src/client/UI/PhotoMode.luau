@@ -33,6 +33,9 @@ local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localizatio
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local UITheme = require(script.Parent.UITheme)
+local Tokens =
+    require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
+local UIState = require(script.Parent.UIState)
 local UIManager = require(script.Parent.UIManager)
 local NotificationService = require(script.Parent.NotificationService)
 
@@ -356,11 +359,21 @@ function PhotoMode.start()
         { Name = "AWPhoto", ResetOnSpawn = false, DisplayOrder = 30, Enabled = false },
         Players.LocalPlayer:WaitForChild("PlayerGui")
     )
+    -- Barre du mode photo V1.2 : carte sombre à filet, état en tête, commandes de 36 px ; échelle 1440 p.
     panel = UITheme.panel({
+        Name = "BarrePhoto",
         AnchorPoint = Vector2.new(0.5, 1),
         Position = UDim2.new(0.5, 0, 1, -16),
-        Size = UDim2.fromOffset(760, 132),
+        Size = UDim2.fromOffset(760, 140),
     }, gui)
+    panel.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, panel)
+    local panelScale = UITheme.make("UIScale", {}, panel)
+    local function rescale()
+        panelScale.Scale = UIState.layout().Scale
+    end
+    rescale()
+    UIState.onViewport(rescale)
     statusLabel = UITheme.label("", 14, {
         Position = UDim2.fromOffset(12, 6),
         Size = UDim2.new(1, -24, 0, 22),
@@ -378,10 +391,10 @@ function PhotoMode.start()
     end)
     local row = UITheme.make("Frame", {
         Position = UDim2.fromOffset(12, 54),
-        Size = UDim2.new(1, -24, 0, 70),
+        Size = UDim2.new(1, -24, 0, 78),
         BackgroundTransparency = 1,
     }, panel)
-    UITheme.make("UIGridLayout", { CellSize = UDim2.fromOffset(140, 30), CellPadding = UDim2.fromOffset(6, 6) }, row)
+    UITheme.make("UIGridLayout", { CellSize = UDim2.fromOffset(140, 36), CellPadding = UDim2.fromOffset(6, 6) }, row)
     local function control(key: string, fn: () -> ())
         UITheme.button(Localization.t(key), { Name = key }, row, function()
             fn()

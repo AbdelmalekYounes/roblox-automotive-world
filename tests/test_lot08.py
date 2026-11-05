@@ -16,12 +16,35 @@ def test_asset_manifest_sources_exist():
         assert (ROOT / path).is_file(), f"source absente : {path}"
 
 
+# Identifiants d'image envoyés par le propriétaire (lot UI-02, 2026-11-05) : les seuls déclarés au manifeste.
+PHONE_ICON_IDS = {
+    "Map": 139759611688719,
+    "Vehicles": 75819885655066,
+    "Properties": 86911212052819,
+    "Missions": 123109347713390,
+    "Races": 135512154723543,
+    "Market": 79661493327089,
+    "Social": 104529493537486,
+    "Radio": 97090714931696,
+    "Photo": 124133194296037,
+    "Guide": 78344066959818,
+    "Settings": 117473178109905,
+    "Notifications": 77842663800346,
+}
+
+
 def test_asset_manifest_declares_no_roblox_id():
-    """Aucun identifiant Roblox n'est inventé : tous les RobloxAssetId sont nil."""
+    """Aucun identifiant Roblox n'est inventé : RobloxAssetId vaut nil, sauf les 12 icônes du téléphone envoyées par
+    le propriétaire, lues dans une table unique dont le contenu doit être exactement celui qu'il a fourni."""
     source = MANIFEST.read_text(encoding="utf-8")
     values = re.findall(r"RobloxAssetId\s*=\s*([^,\n]+)", source)
     assert values, "champ RobloxAssetId absent"
-    assert all(value.strip() == "nil" for value in values), values
+    others = [value.strip() for value in values if value.strip() != "nil"]
+    assert others == ["PHONE_ICON_IDS[appName]"], others
+    block = re.search(r"local PHONE_ICON_IDS[^{]*\{(.*?)\n\}", source, re.S)
+    assert block, "table PHONE_ICON_IDS absente"
+    declared = {name: int(number) for name, number in re.findall(r"(\w+) = (\d+),", block.group(1))}
+    assert declared == PHONE_ICON_IDS
     # Aucune URL de contenu écrite en dur : seule contentId() en forme une, depuis RobloxAssetId.
     assert not re.search(r"rbxassetid://\d|roblox\.com/asset", source)
     assert source.count("rbxassetid://") == 1

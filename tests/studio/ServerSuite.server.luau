@@ -41,6 +41,16 @@ if
     or sessionName == "comete_perf"
     or sessionName == "comete2"
     or sessionName == "comete_avatar"
+    or sessionName == "ui_design"
+    or sessionName == "ui_phone"
+    or sessionName == "ui_garage"
+    or sessionName == "ui_panels"
+    or sessionName == "ui_garage3d"
+    or sessionName == "ui_garage2"
+    or sessionName == "ui_panels2"
+    or sessionName == "ui_hud"
+    or sessionName == "ui_resolutions"
+    or sessionName == "ui_navigation"
 then
     return
 end

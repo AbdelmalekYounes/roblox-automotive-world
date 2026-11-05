@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>body{margin:0;overflow:hidden;background:#08090A;font-family:'Titillium Web',sans-serif;color:#ECEAE6}a{color:#A3A29C;text-decoration:none}a:hover{color:#E8A33D}*{box-sizing:border-box}</style>
+</helmet>
+<div style="width:100vw;height:100vh;overflow:hidden;background:#08090A;position:relative">
+<div style="position:absolute;left:{{ stageLeft }};top:{{ stageTop }};width:{{ LW }}px;height:{{ LH }}px;transform:scale({{ stageScale }});transform-origin:0 0;overflow:hidden;background:repeating-linear-gradient(135deg,#17191C 0 14px,#141618 14px 28px)">
+
+  <div style="position:absolute;left:24px;top:20px;width:{{ rulesW }}px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span style="font-family:'Roboto Mono';font-size:11px;color:#8E8C86;letter-spacing:.08em">{{ L.world }}</span><span style="font-family:'Roboto Mono';font-size:11px;color:{{ C.muted }}">{{ res }}</span></div>
+    <div style="padding:12px 14px;background:#121416F2;border:1px solid {{ C.line }};border-radius:6px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span style="font-size:16px;font-weight:700">{{ stateLabel }}</span><span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:{{ C.muted }}">{{ L.rules }}</span></div>
+      <sc-for list="{{ rules }}" as="ru" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;padding:3px 0;border-top:1px solid #1F2226">
+          <span>{{ ru.k }}</span>
+          <span style="display:flex;gap:6px;align-items:center;white-space:nowrap"><span style="font-weight:600;color:{{ ru.color }}">{{ ru.v }}</span><span style="font-size:9px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:2px;border:1px solid {{ ru.srcBorder }};color:{{ ru.srcColor }}">{{ ru.src }}</span></span>
+        </div>
+      </sc-for>
+      <div style="font-size:11px;color:#8E8C86;text-wrap:pretty">{{ L.rulesNote }}</div>
+    </div>
+  </div>
+
+  <sc-if value="{{ racing }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:50%;top:20px;transform:translateX(-50%);display:flex;gap:2px">
+      <sc-for list="{{ raceCells }}" as="rc" hint-placeholder-count="3">
+        <div style="padding:8px 18px;background:#121416;border-top:3px solid {{ rc.bar }};display:flex;flex-direction:column;align-items:center;min-width:110px"><div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:{{ C.muted }}">{{ rc.k }}</div><div style="font-family:'Roboto Mono';font-size:28px;font-weight:700;font-style:italic">{{ rc.v }}</div></div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ inVehicle }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:24px;bottom:24px;display:flex;gap:16px;align-items:flex-end">
+      <div style="width:{{ mmSize }}px;height:{{ mmSize }}px;border-radius:50%;background:#0F1214;border:2px solid #2A4A50;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,#14191B 0 2px,transparent 2px 44px),repeating-linear-gradient(0deg,#14191B 0 2px,transparent 2px 44px)"></div>
+        <sc-if value="{{ hasRoute }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:47%;top:18%;width:6%;height:50%;background:#5CC8D6;border-radius:6px;opacity:.85"></div><div style="position:absolute;left:47%;top:18%;width:32%;height:6%;background:#5CC8D6;border-radius:6px;opacity:.85"></div></sc-if>
+        <div style="position:absolute;left:50%;top:64%;width:0;height:0;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid #E8A33D"></div>
+        <div style="position:absolute;left:0;right:0;bottom:10px;text-align:center;font-family:'Roboto Mono';font-size:10px;color:#9FDCE4">{{ L.minimap }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;background:#121416E6;border:1px solid {{ C.line }};border-radius:6px">
+        <sc-if value="{{ hasRoute }}" hint-placeholder-val="{{ true }}"><div style="font-size:14px;font-weight:600;color:#9FDCE4">{{ L.nextTurn }}</div></sc-if>
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Roboto Mono';font-size:64px;font-weight:700;line-height:1">{{ speed }}</span><span style="font-size:14px;color:{{ C.muted }}">km/h</span><span style="font-family:'Roboto Mono';font-size:28px;font-weight:700;color:#E8A33D;margin-left:12px">{{ gear }}</span></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:50%;bottom:28px;transform:translateX(-50%);max-width:560px;padding:12px 16px;background:#121416F7;border:1px solid {{ C.line }};border-left:3px solid #E8A33D;border-radius:4px;display:flex;flex-direction:column;gap:2px">
+      <span style="font-family:'Roboto Mono';font-size:10px;letter-spacing:.08em;color:#F4BE6A">{{ L.simTag }}</span><span style="font-size:14px;text-wrap:pretty">{{ toast }}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;right:{{ phoneM }}px;bottom:{{ phoneM }}px;width:{{ PW }}px;height:{{ PH }}px;border-radius:34px;background:#050607;padding:10px;box-shadow:0 20px 60px #000A;transition:{{ trans }}">
+      <div style="width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0E0F11;display:flex;flex-direction:column;position:relative">
+        <div style="flex:none;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:'Roboto Mono';font-size:12px;color:{{ C.muted }}"><span>{{ clock }}</span><span style="width:70px;height:18px;border-radius:9px;background:#050607"></span><span>5G</span></div>
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px 10px;border-bottom:1px solid {{ C.line }}">
+          <sc-if value="{{ showBack }}" hint-placeholder-val="{{ false }}"><button onClick="{{ back }}" title="Backspace / B" style="width:44px;height:44px;flex:none;border-radius:4px;background:#1E2125;border:1px solid {{ C.line }};cursor:pointer;display:flex;align-items:center;justify-content:center"><span style="display:block;width:10px;height:10px;border-left:2px solid #ECEAE6;border-bottom:2px solid #ECEAE6;transform:translateX(2px) rotate(45deg)"></span></button></sc-if>
+          <div style="flex:1;min-width:0;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px">{{ header }}</div>
+          <sc-if value="{{ quick }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:3px;background:#2A2416;color:#F4BE6A;white-space:nowrap">{{ L.quickTag }}</span></sc-if>
+          <button onClick="{{ closePhone }}" title="T" style="width:44px;height:44px;flex:none;border-radius:4px;background:transparent;border:1px solid {{ C.line }};cursor:pointer;position:relative"><span style="position:absolute;left:21px;top:13px;width:2px;height:18px;background:#ECEAE6;transform:rotate(45deg)"></span><span style="position:absolute;left:21px;top:13px;width:2px;height:18px;background:#ECEAE6;transform:rotate(-45deg)"></span></button>
+        </div>
+
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;overflow:auto;scrollbar-width:none;padding:14px 12px">
+            <sc-if value="{{ unread }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#F4BE6A;margin:0 4px 10px">{{ unreadLabel }}</div></sc-if>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+              <sc-for list="{{ apps }}" as="a" hint-placeholder-count="12">
+                <button onClick="{{ a.go }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 2px;background:transparent;border:none;border-radius:8px;cursor:pointer;color:#ECEAE6;outline:{{ a.focus }};outline-offset:0">
+                  <div style="width:56px;height:56px;border-radius:14px;background:#1A1D21;border:1px solid {{ C.line }};display:flex;align-items:center;justify-content:center;position:relative;color:{{ a.color }}">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ a.d }}"></path></svg>
+                    <sc-if value="{{ a.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;border-radius:9px;background:#E8A33D;color:#15120B;font:700 11px 'Roboto Mono';display:flex;align-items:center;justify-content:center;padding:0 4px">{{ a.badge }}</span></sc-if>
+                  </div>
+                  <div style="font-size:12px;text-align:center;line-height:1.15;text-wrap:balance">{{ a.label }}</div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;overflow:auto;scrollbar-width:none;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column">
+                <sc-if value="{{ r.h }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:{{ C.muted }};padding-top:6px">{{ r.text }}</div></sc-if>
+                <sc-if value="{{ r.line }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px;text-wrap:pretty;line-height:1.35">{{ r.text }}</div></sc-if>
+                <sc-if value="{{ r.card }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px;background:#16181B;border:1px solid {{ C.line }};border-left:3px solid {{ r.accent }};border-radius:4px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ r.text }}</span><span style="font-size:12px;color:{{ C.muted }};text-wrap:pretty">{{ r.sub }}</span></div></sc-if>
+                <sc-if value="{{ r.btn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ r.go }}" disabled="{{ r.disabled }}" style="min-height:44px;padding:8px 12px;text-align:left;border-radius:4px;font:600 14px 'Titillium Web';cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};border:1px solid {{ r.border }};opacity:{{ r.op }};display:flex;justify-content:space-between;gap:8px;align-items:center"><span style="text-wrap:pretty">{{ r.text }}</span><span style="display:flex;gap:6px;align-items:center;flex:none"><sc-if value="{{ r.ns }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border:1px solid #4A4F57;border-radius:2px;color:#A3A29C">{{ L.ns }}</span></sc-if><span style="font-family:'Roboto Mono';font-size:12px;color:{{ r.valColor }};white-space:nowrap">{{ r.val }}</span></span></button></sc-if>
+                <sc-if value="{{ r.link }}" hint-placeholder-val="{{ false }}"><a href="{{ r.href }}" style="min-height:44px;padding:8px 12px;border-radius:4px;font:700 14px 'Titillium Web';background:#E8A33D;color:#15120B;display:flex;justify-content:space-between;align-items:center"><span>{{ r.text }}</span><span style="font-family:'Roboto Mono';font-size:12px">{{ r.val }}</span></a></sc-if>
+                <sc-if value="{{ r.note }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:#8E8C86;text-wrap:pretty;padding:2px 0">{{ r.text }}</div></sc-if>
+                <sc-if value="{{ r.warn }}" hint-placeholder-val="{{ false }}"><div style="padding:8px 10px;border:1px solid #6B5A2E;background:#1E1A10;border-radius:4px;font-size:13px;color:#F1E3C4;text-wrap:pretty">{{ r.text }}</div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ confirm }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;background:#000000B3;display:flex;align-items:flex-end;padding:12px">
+            <div style="width:100%;padding:16px;background:#16181B;border:1px solid {{ C.line }};border-radius:10px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:17px;font-weight:700">{{ confirmTitle }}</div>
+              <div style="font-size:13px;color:{{ C.muted }};text-wrap:pretty">{{ L.guard }}</div>
+              <div style="display:flex;gap:8px">
+                <button onClick="{{ cancelConfirm }}" style="flex:1;height:44px;border-radius:4px;background:transparent;border:1px solid {{ C.line }};color:#ECEAE6;font:600 14px 'Titillium Web';cursor:pointer">{{ L.cancel }}</button>
+                <button onClick="{{ doConfirm }}" disabled="{{ guardLocked }}" style="flex:1;height:44px;border-radius:4px;background:#E8A33D;border:none;color:#15120B;font:700 14px 'Titillium Web';cursor:pointer;opacity:{{ guardOp }}">{{ L.confirm }}</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ closed }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ openPhone }}" style="position:absolute;right:32px;bottom:32px;height:48px;padding:0 18px;border-radius:24px;background:#121416;border:1px solid {{ C.line }};color:#ECEAE6;font:600 15px 'Titillium Web';cursor:pointer;display:flex;gap:10px;align-items:center"><span style="font-family:'Roboto Mono';font-size:11px;padding:2px 6px;border:1px solid {{ C.line }};border-radius:3px">{{ phoneKey }}</span>{{ L.openPhone }}</button>
+  </sc-if>
+
+  <div style="position:absolute;right:24px;top:20px;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+    <div style="display:flex;gap:14px;font-size:12px;white-space:nowrap;padding:6px 10px;background:#121416E6;border:1px solid {{ C.line }};border-radius:4px"><a href="Directions artistiques.dc.html">Directions</a><a href="Design System.dc.html">Design System</a><span style="color:#E8A33D">Smartphone</span><a href="Garage.dc.html">Garage</a></div>
+    <div style="display:flex;gap:12px;font-size:12px;color:{{ C.muted }}">
+      <sc-for list="{{ hints }}" as="h" hint-placeholder-count="4"><div style="display:flex;gap:6px;align-items:center;white-space:nowrap"><span style="font-family:'Roboto Mono';font-size:11px;padding:2px 6px;border:1px solid {{ C.line }};border-radius:3px;color:#ECEAE6;background:#121416">{{ h.k }}</span><span>{{ h.l }}</span></div></sc-for>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;playerState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;À pied&quot;,&quot;Conducteur à l'arrêt&quot;,&quot;Conducteur en mouvement&quot;,&quot;Passager à l'arrêt&quot;,&quot;Passager en mouvement&quot;,&quot;En course&quot;],&quot;default&quot;:&quot;Conducteur à l'arrêt&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;État du jeu&quot;},&quot;dataState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal&quot;,&quot;Vide&quot;,&quot;Erreur serveur&quot;],&quot;default&quot;:&quot;Normal&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;État du jeu&quot;},&quot;enlarged&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;État du jeu&quot;},&quot;resolution&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1920 × 1080&quot;,&quot;2560 × 1440&quot;,&quot;1366 × 768&quot;,&quot;1280 × 720&quot;],&quot;default&quot;:&quot;1920 × 1080&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;FR&quot;,&quot;EN&quot;],&quot;default&quot;:&quot;FR&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;inputDevice&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Clavier / souris&quot;,&quot;Manette&quot;],&quot;default&quot;:&quot;Clavier / souris&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;highContrast&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;reduceMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ergonomie&quot;}}">
+const ICON={
+ Map:'M3 6.5L9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20',
+ Vehicles:'M2.5 15.5v-2.8c0-.5.3-.9.7-1.1l2.3-.9 2.2-3.3c.3-.5.8-.7 1.3-.7h5.6c.5 0 .9.2 1.2.5l2.7 3.3 2.4.6c.6.2 1.1.7 1.1 1.4v3 M5.5 11h13 M10 7v4 M5 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M15 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M9 16h6',
+ Properties:'M3 11l9-7 9 7v9H3z M7 20v-6.5h10V20 M7 16.2h10',
+ Missions:'M7 4.5h10c.6 0 1 .4 1 1V20c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V5.5c0-.6.4-1 1-1z M9.5 3h5v3h-5z M9 13.5l2 2 4-4',
+ Races:'M5 21V3.5 M5 4h13l-2.5 4.5L18 13H5 M9.5 4v9 M14 4v9 M5 8.5h11.5',
+ Market:'M4 8.5h15 M15.5 5l3.5 3.5-3.5 3.5 M20 15.5H5 M8.5 12L5 15.5 8.5 19',
+ Social:'M6 8a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M3 20c0-3.4 2.6-6 6-6s6 2.6 6 6 M14.7 8.5a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0 M16.5 13.6c2.6.2 4.5 2.4 4.5 5',
+ Radio:'M5 9h14c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2z M6 9l11-5 M13 15a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M6.5 13h4 M6.5 16h4 M6.5 19h4',
+ Photo:'M5 7.5h2.5L9 5h6l1.5 2.5H19c1.1 0 2 .9 2 2V18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9.5c0-1.1.9-2 2-2z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0',
+ Guide:'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M9.5 12a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M3.2 11l6.4 .6 M20.8 11l-6.4 .6 M12 14.5V21',
+ Settings:'M4 7h3 M11 7h9 M4 12h9 M17 12h3 M4 17h2 M10 17h10 M7 7a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M13 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M6 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+ Notifications:'M6 16.5V11a6 6 0 0 1 12 0v5.5l2 2H4z M10 20.5a2 2 0 0 0 4 0'};
+const APPS=Object.keys(ICON);
+const NAMES={fr:{Map:'Carte',Vehicles:'Véhicules',Properties:'Propriétés',Missions:'Missions',Races:'Courses',Market:'Marché',Social:'Social',Radio:'Radio',Photo:'Photo',Guide:'Guide',Settings:'Paramètres',Notifications:'Notifications'},
+ en:{Map:'Map',Vehicles:'Vehicles',Properties:'Properties',Missions:'Missions',Races:'Races',Market:'Market',Social:'Social',Radio:'Radio',Photo:'Photo',Guide:'Guide',Settings:'Settings',Notifications:'Notifications'}};
+const STATES=['À pied','Conducteur à l\'arrêt','Conducteur en mouvement','Passager à l\'arrêt','Passager en mouvement','En course'];
+const STEN={'À pied':'On foot','Conducteur à l\'arrêt':'Driver, stopped','Conducteur en mouvement':'Driver, moving','Passager à l\'arrêt':'Passenger, stopped','Passager en mouvement':'Passenger, moving','En course':'In a race'};
+const LBL={fr:{world:'VUE DU JEU · DÉCOR PROVISOIRE',rules:'RÈGLES D\'INTERFACE',rulesNote:'CODE = lu dans InputMap, PhoneController ou PhotoRules (lot 0.8). SUPPOSÉ = UIManager et DrivingGate non fournis : règle la plus restrictive retenue, à confirmer.',
+  minimap:'MINI-CARTE · 5 Hz',nextTurn:'Dans 300 m, à droite',quickTag:'MODE RAPIDE',openPhone:'Téléphone',simTag:'SIMULATION LOCALE · AUCUNE REQUÊTE ENVOYÉE',ns:'NON SIMULÉ',
+  guard:'Confirmation protégée : seule une pression commencée 0,25 s après l\'affichage, et 0,4 s après un changement de périphérique, est acceptée.',cancel:'Annuler',confirm:'Confirmer',home:'Accueil',unread:n=>n+' notification(s) non lue(s)',phone:'Téléphone'},
+ en:{world:'GAME VIEW · PLACEHOLDER SCENERY',rules:'INTERFACE RULES',rulesNote:'CODE = read in InputMap, PhoneController or PhotoRules (lot 0.8). ASSUMED = UIManager and DrivingGate not provided: most restrictive rule kept, to be confirmed.',
+  minimap:'MINIMAP · 5 Hz',nextTurn:'In 300 m, turn right',quickTag:'QUICK MODE',openPhone:'Phone',simTag:'LOCAL SIMULATION · NO REQUEST SENT',ns:'NOT SIMULATED',
+  guard:'Protected confirmation: only a press that began 0.25 s after this prompt appeared, and 0.4 s after any device change, is accepted.',cancel:'Cancel',confirm:'Confirm',home:'Home',unread:n=>n+' unread notification(s)',phone:'Phone'}};
+
+class Component extends DCLogic {
+  state={open:true,app:'Home',confirm:null,guardT:0,radioMuted:false,radioVol:70,hud:'Standard',sharing:false,settingsPage:'Interface',toast:null,route:true,poi:null,read:false,guideStep:null,
+    langO:null,textScale:100,hcO:null,rmO:null,minimap:true,mmZoom:2,gfx:'Medium',notif:'Deferred',vol:{Engine:80,Environment:80,Interface:80,Effects:80,Radio:70,Voice:80},
+    vw:window.innerWidth,vh:window.innerHeight,t:new Date()};
+  componentDidMount(){
+    this.onR=()=>this.setState({vw:window.innerWidth,vh:window.innerHeight});window.addEventListener('resize',this.onR);
+    this.iv=setInterval(()=>this.setState({t:new Date()}),15000);
+    this.onK=e=>{if(e.target.tagName==='INPUT')return;if(e.key==='t'||e.key==='T')this.setState(s=>({open:!s.open,confirm:null}));if(e.key==='Backspace'){e.preventDefault();this.back();}};
+    window.addEventListener('keydown',this.onK);
+  }
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);window.removeEventListener('keydown',this.onK);clearInterval(this.iv);clearTimeout(this.gt);clearTimeout(this.tt);}
+  back(){this.setState(s=>s.confirm?{confirm:null}:s.guideStep!==null?{guideStep:null}:s.poi?{poi:null}:{app:'Home'});}
+  ask(title,done){this.setState({confirm:title,guardT:1});this.onDone=done;clearTimeout(this.gt);this.gt=setTimeout(()=>this.setState({guardT:0}),250);}
+  sim(t){this.setState({toast:t});clearTimeout(this.tt);this.tt=setTimeout(()=>this.setState({toast:null}),4000);}
+
+  content(app,ps,en,data){
+    const c=(f,e)=>en?e:f,H=t=>({h:true,text:t}),Li=t=>({line:true,text:t}),N=t=>({note:true,text:t}),W=t=>({warn:true,text:t});
+    const Cd=(t,sub,acc)=>({card:true,text:t,sub,accent:acc||'#33363C'});
+    const B=(t,go,o={})=>({btn:true,text:t,go:(o.disabled||!go)?()=>{}:go,disabled:!!o.disabled||!go,ns:!go&&!o.disabled,val:o.val||'',valColor:o.vc||'#A3A29C',bg:o.primary?'#E8A33D':'#1E2125',fg:o.primary?'#15120B':'#ECEAE6',border:o.primary?'#E8A33D':'#33363C',op:(o.disabled)?0.45:(!go?0.7:1)});
+    const s=this.state,stopped=ps==='À pied'||ps.endsWith('à l\'arrêt'),racing=ps==='En course',driver=ps.startsWith('Conducteur')||racing,inCar=ps!=='À pied';
+    const empty=data==='Vide',err=data==='Erreur serveur',simS=t=>()=>this.sim(t);
+    if(err&&!['Settings','Guide','Notifications','Radio','Photo'].includes(app))return [W(c('Service injoignable : informations non à jour. Aucune action n\'est envoyée.','Service unreachable: information is out of date. No action is sent.')),B(c('Réessayer','Retry'),simS(c('Nouvelle tentative de lecture (simulée).','Retrying read (simulated).')))];
+    switch(app){
+    case 'Map':{
+      if(s.poi){const list={garages:['Garage public · Port','Garage public · Métropole'],dealers:['Concession Métropole','Concession Banlieues'],races:['Sprint du port','Circuit d\'essai 2']}[s.poi];
+        return [H(c('Points d\'intérêt','Points of interest')),...list.map(x=>B(x,()=>{this.setState({route:true,poi:null});this.sim(c('Itinéraire tracé vers ','Route set to ')+x+c(' (local).',' (local).'));},{val:c('Guider','Guide')})),N(c('Liste d\'exemple ; dans le jeu : registres de points d\'intérêt.','Sample list; in-game: point-of-interest registries.'))];}
+      return [H(c('Itinéraire','Route')),s.route&&!empty?Cd(c('Concession Métropole','Metropolis dealership'),c('3,2 km · 6 min · profil routes','3.2 km · 6 min · road profile'),'#5CC8D6'):Li(c('Aucune destination.','No destination.')),
+        B(c('Effacer l\'itinéraire','Clear route'),s.route?()=>{this.setState({route:false});this.sim(c('Itinéraire effacé (local).','Route cleared (local).'));}:null,{disabled:!s.route,val:'X'}),
+        B(c('Ouvrir la carte complète','Open the full map'),null,{val:'M'}),
+        H(c('Points d\'intérêt','Points of interest')),B(c('Garages publics','Public garages'),()=>this.setState({poi:'garages'}),{val:'›'}),B(c('Concessions','Dealerships'),()=>this.setState({poi:'dealers'}),{val:'›'}),B(c('Départs de course','Race starts'),()=>this.setState({poi:'races'}),{val:'›'})];}
+    case 'Vehicles':return empty?[Li(c('Aucun véhicule dans votre collection.','No vehicles in your collection.')),N(c('Le parcours d\'arrivée propose un véhicule de départ (liste officielle encore vide).','The arrival flow offers a starter vehicle (official list still empty).'))]:
+      [H(c('Collection · échantillon de 5 / 18','Collection · sample of 5 / 18')),Cd('Aster',c('Compacte · rangé · incessible','Compact · stored · non-transferable'),'#E8A33D'),Cd('Rafale',c('Sportive compacte · exposé','Hot hatch · on display')),Cd('Atlas',c('Pick-up · sorti · réservé','Pickup · taken out · reserved')),
+       stopped?{link:true,text:c('Ouvrir le garage (maquette)','Open the garage (mock-up)'),href:'Garage.dc.html',val:'P'}:B(c('Ouvrir le garage','Open the garage'),null,{disabled:true,val:'P'}),
+       N(stopped?c('À la manette, le garage s\'ouvre uniquement d\'ici.','On a gamepad, the garage only opens from here.'):c('Le garage s\'ouvre à l\'arrêt ou à pied.','The garage opens when stopped or on foot.'))];
+    case 'Properties':return [H(c('Mes propriétés','My properties')),Cd(c('Propriété gratuite','Free property'),c('Attribuée une fois · 5 propriétés au plus','Granted once · up to 5 properties'),'#E8A33D'),
+       B(c('Inviter : visite','Invite: visit'),stopped?()=>this.ask(c('Inviter Joueur_Lina à visiter ?','Invite Joueur_Lina to visit?'),c('Invitation de visite préparée.','Visit invitation prepared.')):null,{disabled:!stopped}),
+       B(c('Inviter : droit de conduire','Invite: permission to drive'),stopped?()=>this.ask(c('Accorder à Joueur_Marc le droit de conduire Rafale ?','Grant Joueur_Marc permission to drive Rafale?'),c('Droit de conduire préparé.','Permission to drive prepared.')):null,{disabled:!stopped}),
+       N(c('Offres, capacités et modules : PropertyCatalog (non fourni).','Offers, capacities and modules: PropertyCatalog (not provided).'))];
+    case 'Missions':return empty?[Li(c('Aucune mission disponible ici.','No mission available here.'))]:
+      [H(c('Mission en cours','Active mission')),Cd(c('Livraison · Banlieues','Delivery · Suburbs'),c('Étape 2 / 3 · rémunération fixée par le serveur','Step 2 / 3 · pay set by the server'),'#5CC8D6'),
+       B(c('Guider vers l\'étape','Guide to step'),()=>{this.setState({route:true});this.sim(c('Itinéraire vers l\'étape tracé (local).','Route to step set (local).'));},{val:'GPS'}),
+       B(c('Abandonner la mission','Abandon mission'),stopped?()=>this.ask(c('Abandonner la mission ?','Abandon the mission?'),c('Abandon préparé.','Abandon prepared.')):null,{disabled:!stopped}),N(c('Les essais du parcours d\'arrivée ne font pas progresser les missions.','Arrival test drives do not advance missions.'))];
+    case 'Races':return [H(c('Épreuves','Events')),Cd(c('Sprint du port','Harbour sprint'),c('Monde ouvert · salon ouvert · mode protégé','Open world · lobby open · protected mode')),Cd(c('Circuit d\'essai 2','Test circuit 2'),c('Zone d\'essai · réservation exclusive du véhicule','Test zone · exclusive vehicle reservation')),
+       B(c('S\'inscrire au sprint','Register for the sprint'),racing?null:simS(c('Inscription préparée. Dans le jeu : en attente du serveur.','Registration prepared. In-game: waiting for the server.')),{primary:!racing,disabled:racing}),
+       racing?W(c('En course : inscription indisponible.','In a race: registration unavailable.')):N(c('Un véhicule d\'essai est refusé (TestDriveNoRewards). Raccourci : K.','A test-drive vehicle is refused (TestDriveNoRewards). Shortcut: K.'))];
+    case 'Market':return [H(c('Marché','Market')),Li(c('Aucune opération payante n\'est disponible dans cette version.','No paid operation is available in this version.')),Cd(c('Transfert vers un autre profil','Transfer to another profile'),c('Véhicules cessibles uniquement','Transferable vehicles only')),
+       B(c('Préparer un transfert…','Prepare a transfer…'),stopped?()=>this.ask(c('Transférer Rafale à Joueur_Lina ?','Transfer Rafale to Joueur_Lina?'),c('Transfert préparé.','Transfer prepared.')):null,{disabled:!stopped}),
+       N(c('Toute opération sensible passe par une confirmation protégée, puis par la validation du serveur.','Every sensitive operation uses a protected confirmation, then server validation.'))];
+    case 'Social':return [H(c('Groupe · 3 / 8','Group · 3 / 8')),Cd('Joueur_Lina',c('Partage sa position','Sharing position'),'#5CC8D6'),Cd('Joueur_Marc',c('Ne partage pas sa position','Not sharing position')),
+       B(c('Partager ma position','Share my position'),()=>this.setState(x=>({sharing:!x.sharing})),{val:s.sharing?c('Activé','On'):c('Désactivé','Off'),vc:s.sharing?'#7FCF9C':'#A3A29C'}),
+       N(c('Désactivé par défaut, révocable, visible des seuls membres du groupe.','Off by default, revocable, visible to group members only.')),B(c('Inviter un joueur','Invite a player'),null),
+       B(c('Quitter le groupe','Leave group'),()=>this.ask(c('Quitter le groupe ?','Leave the group?'),c('Départ du groupe préparé.','Leaving the group prepared.')))];
+    case 'Radio':{if(!inCar)return [Li(c('Montez dans un véhicule pour écouter la radio.','Get into a vehicle to listen to the radio.')),N(c('Rien n\'est diffusé à l\'extérieur du véhicule.','Nothing is heard outside the vehicle.'))];
+      return [H(driver?c('Conducteur · vous choisissez la station','Driver · you choose the station'):c('Passager · le conducteur choisit','Passenger · the driver chooses')),Li(c('Station : arrêt','Station: off')),
+       W(c('Stations indisponibles : aucune piste téléversée.','Stations unavailable: no tracks uploaded.')),B(c('Choisir une station','Choose a station'),null,{disabled:true}),
+       B(c('Couper mon écoute','Mute my listening'),()=>this.setState(x=>({radioMuted:!x.radioMuted})),{val:s.radioMuted?c('Coupée','Muted'):c('Active','On')}),
+       B(c('Volume radio','Radio volume'),()=>this.setState(x=>({radioVol:x.radioVol>=100?0:x.radioVol+10})),{val:s.radioVol+' %'}),N(c('Volume et coupure propres à chaque occupant.','Volume and mute are per occupant.'))];}
+    case 'Photo':{const ok=stopped&&!racing;return [ok?Li(c('Disponible : à pied ou véhicule arrêté.','Available: on foot or vehicle stopped.')):W(racing?c('Mode photo refusé en course.','Photo mode refused during a race.'):c('Mode photo disponible à l\'arrêt ou à pied.','Photo mode available when stopped or on foot.')),
+       B(c('Entrer en mode photo','Enter photo mode'),ok?simS(c('Le mode photo s\'ouvrirait (O) : écran non maquetté.','Photo mode would open (O): screen not mocked up.')):null,{primary:ok,disabled:!ok,val:'O'}),
+       N(c('Caméra bornée, effets locaux, capture par Roblox. Galerie propre au jeu non implémentée.','Bounded camera, local effects, Roblox capture. In-game gallery not implemented.'))];}
+    case 'Guide':{const steps=[['Bienvenue','Welcome'],['Le monde','The world'],['Commandes','Controls'],['Le téléphone','The phone']];
+      if(s.guideStep!==null)return [H(c(...steps[s.guideStep])),Li(c('Texte de l\'introduction : clés onb.title / onb.body de Texts08 (non fournies).','Introduction text: Texts08 onb.title / onb.body keys (not provided).')),B(c('Étape suivante','Next step'),s.guideStep<3?()=>this.setState(x=>({guideStep:x.guideStep+1})):null,{disabled:s.guideStep>=3,val:`${s.guideStep+1} / 4`})];
+      return [H(c('Introduction','Introduction')),...steps.map((st,i)=>B(c(...st),()=>this.setState({guideStep:i}),{val:'›'})),H(c('Exercices · 3 / 8','Exercises · 3 / 8')),Cd(c('Stationnement','Parking'),c('Réussite détectée · aucun crédit','Success detected · no credits'),'#7FCF9C'),Cd(c('Passage des rapports','Gear shifting'),c('À faire','To do')),
+        B(c('Commencer l\'exercice','Start exercise'),stopped?simS(c('L\'exercice démarrerait : écran non maquetté.','The exercise would start: screen not mocked up.')):null,{disabled:!stopped})];}
+    case 'Settings':{const pages=['Interface','Controls','Accessibility','Notifications','Audio','Graphics'],pn=en?pages:['Interface','Commandes','Accessibilité','Notifications','Audio','Graphismes'];
+      const nav=pages.map((pg,i)=>B(pn[i],()=>this.setState({settingsPage:pg}),{val:s.settingsPage===pg?'●':'›',vc:'#E8A33D'}));
+      const cyc=(list,v)=>list[(list.indexOf(v)+1)%list.length];const pg=s.settingsPage;let body=[];
+      const hc=s.hcO??!!this.props.highContrast,rm=s.rmO??!!this.props.reduceMotion;
+      if(pg==='Interface')body=[B(c('Langue','Language'),()=>this.setState({langO:en?'FR':'EN'}),{val:en?'English':'Français'}),B(c('Niveau du HUD','HUD level'),()=>this.setState(x=>({hud:cyc(['Minimal','Standard','Full'],x.hud)})),{val:s.hud+' · H'}),
+        B(c('Mini-carte','Minimap'),()=>this.setState(x=>({minimap:!x.minimap})),{val:s.minimap?c('Affichée','Shown'):c('Masquée','Hidden')}),B(c('Zoom de la mini-carte','Minimap zoom'),()=>this.setState(x=>({mmZoom:x.mmZoom>=4?1:x.mmZoom+1})),{val:s.mmZoom+' (1–4)'})];
+      if(pg==='Controls')body=[...[['Téléphone','Phone','T'],['Carte','Map','M'],['Garage','Garage','P'],['Économie','Economy','J'],['Courses','Races','K'],['Niveau du HUD','HUD level','H'],['Mode photo','Photo mode','O']].map(([f,e,k2])=>B(c(f,e),null,{val:k2})),
+        N(c('Réaffectation non simulée. Touches de conduite, E, Échap, Tab, Entrée, Retour arrière et / réservées ; doublon refusé.','Rebinding not simulated. Driving keys, E, Esc, Tab, Enter, Backspace and / are reserved; duplicates refused.'))];
+      if(pg==='Accessibility')body=[B(c('Taille du texte','Text size'),()=>this.setState(x=>({textScale:x.textScale>=150?80:x.textScale+10})),{val:s.textScale+' % (80–150)'}),B(c('Contraste renforcé','High contrast'),()=>this.setState({hcO:!hc}),{val:hc?c('Activé','On'):c('Désactivé','Off')}),B(c('Réduire les animations','Reduce motion'),()=>this.setState({rmO:!rm}),{val:rm?c('Activé','On'):c('Désactivé','Off')}),N(c('Taille du texte : effet non simulé dans la maquette.','Text size: effect not simulated in the mock-up.'))];
+      if(pg==='Notifications')body=[B(c('Pendant la conduite','While driving'),()=>this.setState(x=>({notif:x.notif==='Deferred'?'Critical':'Deferred'})),{val:s.notif==='Deferred'?c('Différées','Deferred'):c('Critiques seulement','Critical only')})];
+      if(pg==='Audio')body=[['Engine','Moteur'],['Environment','Environnement'],['Interface','Interface'],['Effects','Effets'],['Radio','Radio'],['Voice','Voix']].map(([id,f])=>B(c(f,id),()=>this.setState(x=>({vol:{...x.vol,[id]:x.vol[id]>=100?0:x.vol[id]+10}})),{val:s.vol[id]+' %'}));
+      if(pg==='Graphics')body=[B(c('Qualité graphique','Graphics quality'),()=>this.setState(x=>({gfx:cyc(['Low','Medium','High'],x.gfx)})),{val:{Low:c('Basse','Low'),Medium:c('Moyenne','Medium'),High:c('Haute','High')}[s.gfx]}),N(c('Détails masqués au-delà de 120 m (moyenne) ou 250 m (haute).','Details hidden beyond 120 m (medium) or 250 m (high).'))];
+      return [...nav,H(pn[pages.indexOf(pg)]),...body,N(c('Réglages appliqués localement à la maquette ; dans le jeu : SettingsController puis sauvegarde des préférences.','Settings applied locally to the mock-up; in-game: SettingsController then preference save.'))];}
+    case 'Notifications':return (empty||s.read)?[Li(c('Aucune notification non lue.','No unread notifications.'))]:[Cd(c('Sauvegarde en attente','Save pending'),c('Préparation Rafale · non confirmée','Rafale tuning · not confirmed'),'#E8A33D'),Cd(c('Joueur_Lina partage sa position','Joueur_Lina is sharing her position'),c('Social · il y a 4 min','Social · 4 min ago'),'#5CC8D6'),Cd(c('Course : salon ouvert','Race: lobby open'),c('Sprint du port','Harbour sprint')),
+       B(c('Tout marquer comme lu','Mark all as read'),()=>this.setState({read:true})),N(c('Priorités : critique, importante, information. En conduite : différées.','Priorities: critical, important, info. While driving: deferred.'))];
+    }
+    return [];
+  }
+
+  renderVals(){
+    const p=this.props,s=this.state,lang=s.langO||p.lang||'FR',en=lang==='EN',L=LBL[en?'en':'fr'],c=(f,e)=>en?e:f;
+    const hc=s.hcO??!!p.highContrast,rm=s.rmO??!!p.reduceMotion,C={line:hc?'#6B6F77':'#33363C',muted:hc?'#D9D7D2':'#A3A29C'};
+    const res=p.resolution||'1920 × 1080',compact=res.startsWith('1366')||res.startsWith('1280');
+    const [LW,LH]=res.startsWith('1366')?[1366,768]:res.startsWith('1280')?[1280,720]:[1920,1080];
+    const k=Math.min(s.vw/LW,s.vh/LH);
+    const ps=STATES.includes(p.playerState)?p.playerState:'Conducteur à l\'arrêt';
+    const moving=ps.endsWith('en mouvement'),racing=ps==='En course',quick=moving||racing,passenger=ps.startsWith('Passager'),stopped=!moving&&!racing,inCar=ps!=='À pied';
+    const pad=p.inputDevice==='Manette',data=p.dataState||'Normal';
+    const enlarged=!!p.enlarged&&!quick;
+    const PW=compact?(enlarged?380:330):(enlarged?460:380),PH=compact?(enlarged?660:600):(enlarged?940:780);
+    let rows=[],header='';
+    if(quick){header=L.phone;
+      rows=[{h:true,text:c('Mode rapide','Quick mode')},s.route?{card:true,text:c('Concession Métropole','Metropolis dealership'),sub:c('Reste 3,2 km · 6 min','3.2 km · 6 min left'),accent:'#5CC8D6'}:{line:true,text:c('Aucune destination.','No destination.')},
+        {note:true,text:c('Sauvegarde en attente · Rafale','Save pending · Rafale')},{note:true,text:c('Joueur_Lina partage sa position','Joueur_Lina is sharing her position')},
+        {warn:true,text:c('Écran complet à l\'arrêt. Aucune saisie, aucune transaction, aucune sélection manette en roulant.','Full screen when stopped. No typing, no transactions, no gamepad selection while moving.')}];}
+    else if(s.app!=='Home'){header=NAMES[en?'en':'fr'][s.app];rows=this.content(s.app,ps,en,data);}
+    else header=L.home;
+    rows=rows.map(r=>({h:false,line:false,card:false,btn:false,link:false,note:false,warn:false,ns:false,sub:'',accent:'#33363C',val:'',valColor:'#A3A29C',op:1,disabled:false,go:()=>{},href:'#',bg:'#1E2125',fg:'#ECEAE6',border:C.line,...r}));
+    const apps=APPS.map((a,i)=>({label:NAMES[en?'en':'fr'][a],d:ICON[a],color:a==='Map'?'#5CC8D6':'#E8A33D',badge:a==='Notifications'&&data!=='Vide'&&!s.read?3:0,focus:pad&&i===0?'2px solid #E8A33D':'none',go:()=>this.setState({app:a,poi:null,guideStep:null})}));
+    const Y=c('Oui','Yes'),Nn=c('Non','No'),R=c('Rapide','Quick');
+    const rule=(kk,v,ok,src)=>({k:kk,v,color:ok===true?'#7FCF9C':ok===false?'#F09A92':'#F4BE6A',src:src==='code'?'CODE':c('SUPPOSÉ','ASSUMED'),srcColor:src==='code'?'#9FDCE4':'#F4BE6A',srcBorder:src==='code'?'#2A4A50':'#6B5A2E'});
+    const srcMove=passenger||racing?'sup':'code';
+    const rules=[rule(c('Téléphone','Phone'),quick?R:c('Complet','Full'),quick?null:true,quick?srcMove:'code'),
+      rule(c('Garage, économie (P, J)','Garage, economy (P, J)'),stopped?Y:Nn,stopped,stopped||!passenger&&!racing?'code':'sup'),
+      rule(c('Mode photo (O)','Photo mode (O)'),stopped?Y:Nn,stopped,'code'),
+      rule(c('Carte, courses, HUD (M, K, H)','Map, races, HUD (M, K, H)'),Y,true,'code'),
+      rule(c('Station de radio','Radio station'),inCar?(passenger?c('Conducteur seul','Driver only'):Y):'—',inCar&&!passenger?true:null,'code'),
+      rule(c('Transactions, confirmations','Transactions, confirmations'),stopped?c('Protégées','Protected'):Nn,stopped?true:false,quick?srcMove:'code')];
+    const kb=[['T',c('Téléphone','Phone')],['Backspace',c('Retour','Back')],['M',c('Carte','Map')],['H','HUD']],gp=[['Select',c('Téléphone','Phone')],['B',c('Retour','Back')],['A',c('Valider','Confirm')],['X',c('Monter','Enter')]];
+    const hh=s.t.getHours(),mm=String(s.t.getMinutes()).padStart(2,'0');
+    return {
+      C,L,LW,LH,stageScale:k,stageLeft:((s.vw-LW*k)/2)+'px',stageTop:((s.vh-LH*k)/2)+'px',res,rulesW:compact?360:420,
+      stateLabel:en?STEN[ps]:ps,rules,racing,inVehicle:inCar,mmSize:compact?170:220,hasRoute:s.route,
+      raceCells:[{k:'POS',v:'3/8',bar:'#E8A33D'},{k:c('TOUR','LAP'),v:'2/3',bar:'#ECEAE6'},{k:c('TEMPS','TIME'),v:'1:42.6',bar:'#E5534B'}],
+      speed:quick?'84':'0',gear:quick?'4':'N',toast:s.toast,
+      open:s.open,closed:!s.open,openPhone:()=>this.setState({open:true}),closePhone:()=>this.setState({open:false,confirm:null}),phoneKey:pad?'Select':'T',
+      PW,PH,phoneM:compact?20:40,trans:rm?'none':'width .2s, height .2s',clock:hh+':'+mm,header,quick,
+      showBack:!quick&&s.app!=='Home',back:()=>this.back(),isHome:!quick&&s.app==='Home',isApp:quick||s.app!=='Home',apps,rows,
+      unread:data!=='Vide'&&!s.read,unreadLabel:L.unread(3),
+      confirm:!!s.confirm&&!quick,confirmTitle:s.confirm,guardLocked:s.guardT===1,guardOp:s.guardT===1?0.45:1,
+      cancelConfirm:()=>this.setState({confirm:null}),doConfirm:()=>{const d=this.onDone;this.setState({confirm:null});this.sim((d||'')+c(' Dans le jeu : envoi au serveur, puis attente de sa réponse.',' In-game: sent to the server, then waiting for its response.'));},
+      hints:(pad?gp:kb).map(([k2,l])=>({k:k2,l})),
+    };
+  }
+}
+</script>
+</body>
+</html>

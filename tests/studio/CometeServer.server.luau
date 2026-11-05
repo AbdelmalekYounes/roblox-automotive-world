@@ -372,7 +372,7 @@ if session == "comete_perf" then
             )
         end
     end
-    -- Budget de triangles par véhicule (hypothèse LOD0 de 25 000, ASTER_02_HAUTE_FIDELITE.md) : mesuré à 24.
+    -- Budget de triangles par véhicule (hypothèse LOD0 de 25 000, ASTER_02_HAUTE_FIDELITE.md, PR #15) : mesuré à 24.
     local tris24 = v("comete_24_jour", "Tris")
     local trisRef = v("p01_24_jour", "Tris")
     record(

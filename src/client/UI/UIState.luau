@@ -8,10 +8,13 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Preferences = require(Shared:WaitForChild("UI"):WaitForChild("Preferences"))
 local DrivingGate = require(Shared.UI.DrivingGate)
+local DesignTokens = require(Shared.UI:WaitForChild("DesignTokens"))
 
 local UIState = {}
 
@@ -51,6 +54,41 @@ end
 
 function UIState.onMode(listener: (DrivingGate.Mode) -> ())
     table.insert(modeListeners, listener)
+end
+
+-- Taille de la vue utilisée par les mises en page (px). Studio SEULEMENT : surcharge d'essai par l'attribut
+-- `AWTestViewport` (Vector2) de ReplicatedStorage, pour vérifier les résolutions de référence (1280 × 720 à
+-- 3440 × 1440) dans la fenêtre fixe de la VM ; ignorée hors Studio.
+function UIState.viewport(): Vector2
+    if RunService:IsStudio() then
+        local override = ReplicatedStorage:GetAttribute("AWTestViewport")
+        if typeof(override) == "Vector2" then
+            return override
+        end
+    end
+    local camera = Workspace.CurrentCamera
+    return if camera then camera.ViewportSize else Vector2.new(1920, 1080)
+end
+
+-- Disposition de la maquette (§3) pour la vue courante : échelle (1440 p = 1,333), disposition compacte.
+function UIState.layout(): DesignTokens.Layout
+    local size = UIState.viewport()
+    return DesignTokens.layout(size.X, size.Y)
+end
+
+-- Appelé quand la taille de la vue change (fenêtre redimensionnée, surcharge d'essai).
+function UIState.onViewport(listener: () -> ())
+    local function bind(camera: Camera?)
+        if camera then
+            camera:GetPropertyChangedSignal("ViewportSize"):Connect(listener)
+        end
+    end
+    bind(Workspace.CurrentCamera)
+    Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+        bind(Workspace.CurrentCamera)
+        listener()
+    end)
+    ReplicatedStorage:GetAttributeChangedSignal("AWTestViewport"):Connect(listener)
 end
 
 -- Vrai tant qu'une interface modale complète est ouverte (lu par DriverInput).

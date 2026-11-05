@@ -85,6 +85,16 @@ if
     or currentSession == "comete_perf"
     or currentSession == "comete2"
     or currentSession == "comete_avatar"
+    or currentSession == "ui_design"
+    or currentSession == "ui_phone"
+    or currentSession == "ui_garage"
+    or currentSession == "ui_panels"
+    or currentSession == "ui_garage3d"
+    or currentSession == "ui_garage2"
+    or currentSession == "ui_panels2"
+    or currentSession == "ui_hud"
+    or currentSession == "ui_resolutions"
+    or currentSession == "ui_navigation"
 then
     return
 end

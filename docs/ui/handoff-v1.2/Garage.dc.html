@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>body{margin:0;overflow:hidden;background:#08090A;font-family:'Titillium Web',sans-serif;color:#ECEAE6}a{color:#A3A29C;text-decoration:none}a:hover{color:#E8A33D}input[type=range]{accent-color:#E8A33D}*{box-sizing:border-box}</style>
+</helmet>
+<div style="width:100vw;height:100vh;overflow:hidden;background:#08090A;position:relative">
+<div style="position:absolute;left:{{ stageLeft }};top:{{ stageTop }};width:{{ LW }}px;height:{{ LH }}px;transform:scale({{ stageScale }});transform-origin:0 0;display:grid;grid-template-rows:56px 48px minmax(0,1fr) 40px;background:#0E0F11;overflow:hidden">
+
+<div style="display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid {{ C.line }};background:#121416">
+  <div style="font-size:22px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex:none">{{ L.title }}</div>
+  <div style="font-size:13px;color:{{ C.muted }};white-space:nowrap;flex:none">{{ ctxLabel }}</div>
+  <div style="flex:1"></div>
+  <sc-if value="{{ hasDraft }}" hint-placeholder-val="{{ false }}"><div style="flex:none;white-space:nowrap;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border:1px solid #E8A33D;color:#E8A33D;border-radius:3px">{{ L.draft }}</div></sc-if>
+  <div style="flex:none;white-space:nowrap;font-size:12px;color:{{ C.muted }};padding:4px 10px;border:1px dashed {{ C.line }};border-radius:3px">{{ L.sample }}</div>
+  <div style="flex:none;font-family:'Roboto Mono';font-size:12px;color:{{ C.muted }}">{{ resLabel }}</div>
+  <button onClick="{{ close }}" style="flex:none;height:36px;padding:0 14px;background:#1E2125;border:1px solid {{ C.line }};color:#ECEAE6;font:600 14px 'Titillium Web';border-radius:4px;cursor:pointer;white-space:nowrap;display:flex;gap:8px;align-items:center"><span style="font-family:'Roboto Mono';font-size:11px;padding:1px 5px;border:1px solid {{ C.line }};border-radius:3px">P</span>{{ L.close }}</button>
+</div>
+
+<div style="display:flex;gap:2px;padding:0 16px;border-bottom:1px solid {{ C.line }};overflow-x:auto;scrollbar-width:none;background:#0E0F11">
+  <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="6">
+    <button onClick="{{ tb.go }}" style="flex:none;white-space:nowrap;height:48px;padding:0 16px;background:transparent;border:none;border-bottom:3px solid {{ tb.bar }};color:{{ tb.color }};font:600 15px 'Titillium Web';letter-spacing:.04em;cursor:pointer;outline:{{ tb.focus }};outline-offset:-5px">{{ tb.label }}</button>
+  </sc-for>
+</div>
+
+<div style="position:relative;min-height:0;display:grid;grid-template-columns:{{ cols }}">
+
+  <sc-if value="{{ isCollection }}" hint-placeholder-val="{{ true }}">
+    <div style="overflow:auto;scrollbar-width:thin;padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><div style="font-size:28px;font-weight:700">{{ L.collection }}</div><div style="font-size:14px;color:{{ C.muted }}">{{ L.sampleLong }}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax({{ cardMin }}px,1fr));gap:16px">
+        <sc-for list="{{ vehicles }}" as="v" hint-placeholder-count="5">
+          <button onClick="{{ v.open }}" style="text-align:left;display:flex;flex-direction:column;gap:0;padding:0;background:#16181B;border:1px solid {{ v.border }};border-radius:6px;color:#ECEAE6;cursor:pointer;font-family:'Titillium Web';overflow:hidden;outline:{{ v.focus }};outline-offset:2px">
+            <div style="aspect-ratio:16 / 9;width:100%;background:radial-gradient(ellipse at 50% 75%,#262A30 0%,#15171A 70%);position:relative;display:flex;align-items:center;justify-content:center">
+              <div style="width:62%;height:16%;border:1px solid #3A3E45;border-radius:50%;position:absolute;bottom:14%"></div>
+              <div style="font-family:'Roboto Mono';font-size:10px;color:#7E7C77;letter-spacing:.06em">{{ v.thumb }}</div>
+              <div style="position:absolute;left:10px;top:10px;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:2px;background:#0E0F11CC;color:{{ v.stColor }}">{{ v.storage }}</div>
+            </div>
+            <div style="padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-size:22px;font-weight:700">{{ v.name }}</span><span style="font-size:12px;color:{{ C.muted }}">{{ v.cat }}</span></div>
+              <div style="font-size:13px;color:#C9C6BF">{{ v.drive }}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"><sc-for list="{{ v.tags }}" as="t" hint-placeholder-count="1"><span style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:1px 6px;border-radius:2px;background:#22252A;color:#C9C6BF">{{ t }}</span></sc-for></div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;color:#8E8C86">{{ L.thumbNote }}</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showStage }}" hint-placeholder-val="{{ false }}">
+    <div onMouseDown="{{ dragStart }}" onMouseMove="{{ dragMove }}" onMouseUp="{{ dragEnd }}" onMouseLeave="{{ dragEnd }}" style="position:relative;min-width:0;overflow:hidden;cursor:{{ cursor }};user-select:none;background:radial-gradient(ellipse at 50% 70%,#2A2E34 0%,#17191C 55%,#0E0F11 100%)">
+      <div style="position:absolute;inset:0;opacity:{{ enterOp }};transform:scale({{ enterScale }});transition:{{ enterTrans }};display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;left:50%;top:66%;width:56%;aspect-ratio:4 / 1;transform:translate(-50%,-50%);border:1px solid #444951;border-radius:50%"></div>
+        <div style="position:absolute;left:{{ dotX }};top:{{ dotY }};width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#E8A33D;box-shadow:0 0 0 4px #E8A33D33"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 18px;border:1px dashed #4A4F57;border-radius:6px;background:#0E0F11B3;margin-top:-6%">
+          <div style="font-family:'Roboto Mono';font-size:12px;font-weight:700;letter-spacing:.1em;color:#C9C6BF">{{ L.vpTitle }}</div>
+          <div style="font-family:'Roboto Mono';font-size:11px;color:#8E8C86">{{ vpDims }}</div>
+          <div style="font-size:12px;color:#A3A29C;text-align:center;max-width:360px">{{ vpView }}</div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:28px;top:20px;display:flex;flex-direction:column;gap:6px;max-width:55%;pointer-events:none">
+        <button onClick="{{ backToCollection }}" style="pointer-events:auto;align-self:flex-start;height:32px;padding:0 10px;background:#0E0F11CC;border:1px solid {{ C.line }};border-radius:4px;color:#ECEAE6;font:600 13px 'Titillium Web';cursor:pointer;display:flex;gap:6px;align-items:center"><span style="display:inline-block;width:7px;height:7px;border-left:2px solid #ECEAE6;border-bottom:2px solid #ECEAE6;transform:rotate(45deg)"></span>{{ L.collection }}</button>
+        <div style="font-size:{{ nameSize }}px;font-weight:700;line-height:1;letter-spacing:.01em">{{ cur.name }}</div>
+        <div style="font-size:16px;color:#C9C6BF">{{ cur.cat }}</div>
+        <div style="align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:3px;background:#2A2416;color:#F4BE6A">{{ L.pending }}</div>
+      </div>
+
+      <div style="position:absolute;right:20px;top:20px;display:flex;gap:2px;padding:3px;background:#0E0F11CC;border:1px solid {{ C.line }};border-radius:5px">
+        <sc-for list="{{ views }}" as="vw" hint-placeholder-count="5">
+          <button onClick="{{ vw.go }}" style="height:34px;padding:0 12px;border:none;border-radius:3px;background:{{ vw.bg }};color:{{ vw.fg }};font:600 13px 'Titillium Web';cursor:pointer;white-space:nowrap">{{ vw.label }}</button>
+        </sc-for>
+      </div>
+
+      <button onClick="{{ rotL }}" style="position:absolute;left:20px;top:50%;width:48px;height:48px;margin-top:-24px;border-radius:50%;background:#0E0F11CC;border:1px solid {{ C.line }};cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:{{ rotOp }}"><span style="display:block;width:12px;height:12px;border-left:2px solid #ECEAE6;border-bottom:2px solid #ECEAE6;transform:translateX(3px) rotate(45deg)"></span></button>
+      <button onClick="{{ rotR }}" style="position:absolute;right:20px;top:50%;width:48px;height:48px;margin-top:-24px;border-radius:50%;background:#0E0F11CC;border:1px solid {{ C.line }};cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:{{ rotOp }}"><span style="display:block;width:12px;height:12px;border-right:2px solid #ECEAE6;border-top:2px solid #ECEAE6;transform:translateX(-3px) rotate(45deg)"></span></button>
+
+      <div style="position:absolute;left:28px;bottom:20px;display:flex;gap:10px;align-items:center;font-family:'Roboto Mono';font-size:12px;color:#A3A29C">
+        <span>{{ camLabel }}</span>
+        <button onClick="{{ resetCam }}" style="height:28px;padding:0 10px;background:#0E0F11CC;border:1px solid {{ C.line }};border-radius:3px;color:#ECEAE6;font:600 12px 'Titillium Web';cursor:pointer">{{ L.reset }}</button>
+      </div>
+
+      <sc-if value="{{ isVehicle }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:6px;padding:6px;background:#0E0F11E6;border:1px solid {{ C.line }};border-radius:6px">
+          <sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+            <button onClick="{{ a.go }}" disabled="{{ a.disabled }}" title="{{ a.why }}" style="height:44px;padding:0 18px;border-radius:4px;font:600 15px 'Titillium Web';cursor:pointer;white-space:nowrap;background:{{ a.bg }};color:{{ a.fg }};border:1px solid {{ a.border }};opacity:{{ a.op }}">{{ a.label }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showStage }}" hint-placeholder-val="{{ false }}">
+    <div style="border-left:1px solid {{ C.line }};background:#111315;display:flex;flex-direction:column;min-height:0;min-width:0">
+      <sc-if value="{{ blocked }}" hint-placeholder-val="{{ false }}"><div style="margin:14px 16px 0;padding:10px 12px;border:1px solid #6B5A2E;background:#1E1A10;border-radius:4px;font-size:13px;color:#F1E3C4;text-wrap:pretty">{{ L.outside }}</div></sc-if>
+
+      <sc-if value="{{ isVehicle }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;scrollbar-width:thin;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <sc-for list="{{ stateCells }}" as="s" hint-placeholder-count="4">
+              <div style="padding:10px 12px;background:#16181B;border:1px solid {{ C.line }};border-radius:4px;display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:{{ C.muted }}">{{ s.k }}</div><div style="font-family:'Roboto Mono';font-size:18px">{{ s.v }}</div></div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:#8E8C86">{{ L.demoValues }}</div>
+          <div style="font-size:14px;color:#C9C6BF;text-wrap:pretty">{{ cur.desc }}</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ specRows }}" as="sr" hint-placeholder-count="10">
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #1F2226;font-size:13px"><span style="color:{{ C.muted }}">{{ sr.k }}</span><span style="font-family:'Roboto Mono';text-align:right">{{ sr.v }}</span></div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:#8E8C86;text-wrap:pretty">{{ L.bench }}</div>
+          <div style="font-size:13px;color:#C9C6BF">{{ partsLine }}</div>
+          <div style="padding:8px 10px;border:1px solid #6B5A2E;background:#1E1A10;border-radius:4px;font-size:12px;color:#F1E3C4;text-wrap:pretty">{{ L.approval }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPrep }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;display:flex;gap:2px;padding:12px 16px 0">
+          <sc-for list="{{ prepTabs }}" as="pt" hint-placeholder-count="3"><button onClick="{{ pt.go }}" style="flex:1;height:40px;border-radius:4px 4px 0 0;border:1px solid {{ C.line }};border-bottom:none;background:{{ pt.bg }};color:{{ pt.fg }};font:600 14px 'Titillium Web';cursor:pointer;white-space:nowrap">{{ pt.label }}</button></sc-for>
+        </div>
+        <div style="flex:1;overflow:auto;scrollbar-width:thin;padding:14px 20px;display:flex;flex-direction:column;gap:6px;border-top:1px solid {{ C.line }}">
+          <sc-if value="{{ subSettings }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed {{ C.line }};border-radius:4px;margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">{{ L.perf }}</span><span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#E8A33D">{{ L.illus }}</span></div>
+              <sc-for list="{{ perf }}" as="p" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:100px minmax(0,1fr) 40px;gap:8px;align-items:center;font-size:12px"><span style="color:{{ C.muted }}">{{ p.k }}</span><div style="height:6px;background:#22252A;border-radius:3px;position:relative;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ p.base }};background:#5A5D63"></div><div style="position:absolute;left:0;top:0;bottom:0;width:{{ p.now }};background:#E8A33D;opacity:.85;transition:{{ trans }}"></div></div><span style="font-family:'Roboto Mono';text-align:right;color:{{ p.dColor }}">{{ p.d }}</span></div>
+              </sc-for>
+              <div style="font-size:11px;color:#8E8C86">{{ L.illusNote }}</div>
+            </div>
+            <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px;padding:9px 0;border-bottom:1px solid #1F2226">
+                <div style="font-size:15px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span>{{ r.label }}</span><span style="font-size:11px;color:#C9A25A">{{ r.flag }}</span></div>
+                <div style="font-family:'Roboto Mono';font-size:15px;text-align:right;color:{{ r.vColor }}">{{ r.val }}</div>
+                <input type="range" min="{{ r.min }}" max="{{ r.max }}" step="{{ r.step }}" value="{{ r.value }}" onChange="{{ r.set }}" disabled="{{ readOnly }}" style="grid-column:1 / span 2;width:100%;height:24px">
+                <div style="grid-column:1 / span 2;display:flex;justify-content:space-between;font-family:'Roboto Mono';font-size:11px;color:#8E8C86"><span>{{ r.minL }}</span><span>{{ r.defL }}</span><span>{{ r.maxL }}</span></div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ comboWarn }}" hint-placeholder-val="{{ false }}"><div style="margin-top:8px;padding:10px 12px;border:1px solid #7A3B37;background:#1F1413;border-radius:4px;font-size:13px;color:#F2C9C5">{{ L.combo }}</div></sc-if>
+          </sc-if>
+          <sc-if value="{{ subParts }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid #1F2226">
+                <div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:{{ C.muted }}">{{ sl.label }}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ sl.opts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.go }}" disabled="{{ o.disabled }}" title="{{ o.why }}" style="min-height:36px;padding:4px 12px;border-radius:3px;font:600 13px 'Titillium Web';cursor:pointer;white-space:nowrap;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.border }};opacity:{{ o.op }}">{{ o.label }}</button></sc-for></div>
+                <div style="font-size:12px;color:#8E8C86">{{ sl.note }}</div>
+              </div>
+            </sc-for>
+            <div style="font-size:12px;color:{{ C.muted }};text-wrap:pretty;padding-top:6px">{{ L.partsNote }}</div>
+          </sc-if>
+          <sc-if value="{{ subLook }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px;color:{{ C.muted }}">{{ L.body }} · {{ bodyName }}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ colors }}" as="c" hint-placeholder-count="10"><button onClick="{{ c.go }}" title="{{ c.label }}" disabled="{{ readOnly }}" style="width:36px;height:36px;border-radius:3px;cursor:pointer;background:{{ c.rgb }};border:2px solid {{ c.ring }}"></button></sc-for></div>
+            <div style="font-size:12px;color:{{ C.muted }};margin-top:6px">{{ L.accent }} · {{ accentName }}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ accents }}" as="c" hint-placeholder-count="10"><button onClick="{{ c.go }}" title="{{ c.label }}" disabled="{{ readOnly }}" style="width:28px;height:28px;border-radius:3px;cursor:pointer;background:{{ c.rgb }};border:2px solid {{ c.ring }}"></button></sc-for></div>
+            <sc-for list="{{ lookRows }}" as="lr" hint-placeholder-count="5">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 0"><span style="font-size:12px;color:{{ C.muted }};width:110px;flex:none">{{ lr.label }}</span><sc-for list="{{ lr.opts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.go }}" disabled="{{ readOnly }}" style="min-height:32px;padding:2px 10px;border-radius:3px;font:600 12px 'Titillium Web';cursor:pointer;white-space:nowrap;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.border }}">{{ o.label }}</button></sc-for></div>
+            </sc-for>
+            <div style="font-size:12px;color:{{ C.muted }}">{{ L.lookNote }}</div>
+          </sc-if>
+        </div>
+        <div style="flex:none;display:flex;gap:8px;padding:12px 16px;border-top:1px solid {{ C.line }};background:#121416">
+          <button onClick="{{ discard }}" disabled="{{ noDraft }}" style="flex:1;height:44px;background:transparent;border:1px solid {{ C.line }};color:#ECEAE6;font:600 15px 'Titillium Web';border-radius:4px;cursor:pointer;white-space:nowrap;opacity:{{ discardOp }}">{{ L.discard }}</button>
+          <button onClick="{{ sendTuning }}" disabled="{{ sendDisabled }}" style="flex:1.4;height:44px;background:#E8A33D;border:none;color:#15120B;font:700 15px 'Titillium Web';border-radius:4px;cursor:pointer;white-space:nowrap;opacity:{{ sendOp }}">{{ L.apply }}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isConfigs }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;scrollbar-width:thin;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:14px;color:#C9C6BF;text-wrap:pretty">{{ L.cfgNote }}</div>
+          <input value="{{ cfgName }}" onChange="{{ setCfgName }}" maxlength="24" placeholder="{{ L.cfgPh }}" style="height:44px;padding:0 12px;background:#1E2125;border:1px solid {{ C.line }};border-radius:4px;color:#ECEAE6;font:400 15px 'Titillium Web'">
+          <sc-for list="{{ configs }}" as="cf" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;background:#16181B;border:1px solid {{ C.line }};border-radius:4px">
+              <div style="font-size:15px;color:{{ cf.color }}">{{ cf.text }}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ cf.actions }}" as="a" hint-placeholder-count="3"><button onClick="{{ a.go }}" disabled="{{ a.disabled }}" style="height:36px;padding:0 12px;border-radius:3px;font:600 13px 'Titillium Web';cursor:pointer;white-space:nowrap;background:#1E2125;color:#ECEAE6;border:1px solid {{ C.line }};opacity:{{ a.op }}">{{ a.label }}</button></sc-for></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isProps }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+          <div style="padding:16px;background:#16181B;border:1px solid {{ C.line }};border-radius:6px;display:flex;flex-direction:column;gap:6px"><div style="font-size:18px;font-weight:700">{{ L.freeProp }}</div><div style="font-size:13px;color:{{ C.muted }};text-wrap:pretty">{{ L.freePropNote }}</div></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button disabled="{{ true }}" style="height:40px;padding:0 14px;border-radius:4px;background:#1E2125;border:1px solid {{ C.line }};color:#ECEAE6;font:600 14px 'Titillium Web';opacity:.45">{{ L.displaySlot }}</button><span style="font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border:1px solid {{ C.line }};border-radius:2px;color:{{ C.muted }}">{{ L.ns }}</span></div>
+          <div style="padding:12px 14px;border:1px dashed {{ C.line }};border-radius:6px;font-size:13px;color:{{ C.muted }};text-wrap:pretty">{{ L.propGap }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isInv }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:14px;color:#C9C6BF;text-wrap:pretty">{{ L.invNote }}</div>
+          <sc-for list="{{ invites }}" as="iv" hint-placeholder-count="2">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;background:#16181B;border:1px solid {{ C.line }};border-radius:4px">
+              <div style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ iv.who }}</span><span style="font-size:12px;color:{{ C.muted }}">{{ iv.kind }}</span></div>
+              <button onClick="{{ iv.revoke }}" style="height:36px;padding:0 12px;border-radius:3px;font:600 13px 'Titillium Web';cursor:pointer;background:transparent;color:#F2C9C5;border:1px solid #7A3B37;white-space:nowrap">{{ L.revoke }}</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noInvites }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px;color:{{ C.muted }}">{{ L.noInv }}</div></sc-if>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button disabled="{{ true }}" style="height:40px;padding:0 14px;border-radius:4px;background:#1E2125;border:1px solid {{ C.line }};color:#ECEAE6;font:600 14px 'Titillium Web';opacity:.45">{{ L.newInv }}</button><span style="font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border:1px solid {{ C.line }};border-radius:2px;color:{{ C.muted }}">{{ L.ns }}</span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ footer }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;padding:10px 16px;border-top:1px solid {{ C.line }};background:{{ footerBg }};font-size:13px;color:{{ footerFg }};display:flex;flex-direction:column;gap:2px"><span style="font-family:'Roboto Mono';font-size:11px;letter-spacing:.06em">{{ footerCode }}</span><span style="text-wrap:pretty">{{ footer }}</span></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ closed }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#0E0F11F2;display:flex;align-items:center;justify-content:center;z-index:5">
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center;max-width:520px;text-align:center;padding:24px">
+        <div style="font-size:24px;font-weight:700">{{ closedTitle }}</div>
+        <div style="font-size:14px;color:{{ C.muted }};text-wrap:pretty">{{ closedMsg }}</div>
+        <button onClick="{{ reopen }}" disabled="{{ moving }}" style="height:44px;padding:0 18px;border-radius:4px;background:#E8A33D;border:none;color:#15120B;font:700 15px 'Titillium Web';cursor:pointer;opacity:{{ reopenOp }}">{{ L.reopen }}</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+<div style="display:flex;align-items:center;gap:18px;padding:0 20px;border-top:1px solid {{ C.line }};background:#121416;font-size:13px;color:{{ C.muted }};overflow:hidden">
+  <sc-for list="{{ hints }}" as="h" hint-placeholder-count="5"><div style="display:flex;gap:6px;align-items:center;flex:none;white-space:nowrap"><span style="font-family:'Roboto Mono';font-size:11px;padding:2px 6px;border:1px solid {{ C.line }};border-radius:3px;color:#ECEAE6">{{ h.k }}</span><span>{{ h.l }}</span></div></sc-for>
+  <div style="flex:1"></div>
+  <div style="display:flex;gap:14px;flex:none;font-size:12px;white-space:nowrap"><a href="Directions artistiques.dc.html">Directions</a><a href="Design System.dc.html">Design System</a><a href="Smartphone.dc.html">Smartphone</a><span style="color:#E8A33D">Garage</span></div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;context&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Property&quot;,&quot;PublicGarage&quot;,&quot;Outside&quot;,&quot;Moving&quot;],&quot;default&quot;:&quot;Property&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;État du jeu&quot;},&quot;serverOutcome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pending&quot;,&quot;rejected&quot;,&quot;unreachable&quot;,&quot;confirmedPreview&quot;],&quot;default&quot;:&quot;pending&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;État du jeu&quot;},&quot;resolution&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1920 × 1080&quot;,&quot;2560 × 1440&quot;,&quot;1366 × 768&quot;,&quot;1280 × 720&quot;],&quot;default&quot;:&quot;1920 × 1080&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;FR&quot;,&quot;EN&quot;],&quot;default&quot;:&quot;FR&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;inputDevice&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Clavier / souris&quot;,&quot;Manette&quot;],&quot;default&quot;:&quot;Clavier / souris&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;highContrast&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ergonomie&quot;},&quot;reduceMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ergonomie&quot;}}">
+const MODELS = {
+  wk_aster:{name:'Aster',cat:['Compacte','Compact'],energy:'Petrol',gear:'Automatic',layout:'FWD',kw:95,kg:1280,dims:'4.25 × 1.78 × 1.47 (2.62)',res:'48 L',vmax:195,z100:10.9,v60:195,price:19000,red:7000,sil:'Hatch',lsd:false,aids:'ABS, TCS, ESP',desc:['Polyvalente, boîte automatique : confortable au quotidien comme sur route.','Versatile, automatic gearbox: comfortable every day and on the road.']},
+  wk_rafale:{name:'Rafale',cat:['Sportive compacte','Hot hatch'],energy:'Petrol',gear:'DualClutch',layout:'FWD',kw:200,kg:1420,dims:'4.3 × 1.8 × 1.43 (2.65)',res:'50 L',vmax:250,z100:6.6,v60:260,price:42000,red:7000,sil:'Hatch',lsd:true,aids:'ABS, TCS, ESP',desc:['Traction vive à double embrayage et différentiel autobloquant.','Lively front-driver with a dual-clutch gearbox and limited-slip differential.']},
+  wk_brise:{name:'Brise',cat:['Roadster','Roadster'],energy:'Petrol',gear:'Manual',layout:'RWD',kw:110,kg:1060,dims:'3.95 × 1.73 × 1.24 (2.35)',res:'40 L',vmax:210,z100:10.9,v60:182,price:33000,red:7000,sil:'Roadster',lsd:false,aids:'ABS, TCS',desc:['Découvrable, légère et propulsion : le plaisir de conduire avant la puissance.','Open-top, light and rear-driven: driving fun before power.']},
+  wk_atlas:{name:'Atlas',cat:['Pick-up tout-terrain','Off-road pickup'],energy:'Diesel',gear:'Automatic',layout:'AWD',kw:150,kg:2250,dims:'5.3 × 1.95 × 1.82 (3.2)',res:'80 L',vmax:185,z100:9.8,v60:195,price:52000,red:4500,sil:'Pickup',lsd:false,aids:'ABS, TCS',desc:['Diesel robuste à benne, intégral : le compagnon des chantiers et du port.','Rugged diesel pickup with a bed, all-wheel drive: the companion of building sites and the harbour.']},
+  wk_zenith:{name:'Zénith',cat:['Supercar électrique','Electric supercar'],energy:'Electric',gear:'SingleSpeed',layout:'AWD',kw:600,kg:1900,dims:'4.7 × 2.02 × 1.2 (2.8)',res:'100 kWh',vmax:300,z100:3.2,v60:297,price:210000,red:null,sil:'Supercar',lsd:false,aids:'ABS, TCS, ESP',desc:['Accélération foudroyante, intégrale, aides électroniques complètes.','Blistering acceleration, all-wheel drive, full electronic aids.']},
+};
+const COLORS=[['Graphite','Graphite',74,80,89],['Blanc','Blanc nacré',236,236,232],['Noir','Noir profond',22,23,26],['Rouge','Rouge vif',176,28,34],['Bleu','Bleu nuit',28,58,120],['Vert','Vert anglais',26,82,56],['Orange','Orange signal',255,122,26],['Jaune','Jaune soleil',240,196,32],['Argent','Argent',170,174,180],['Sable','Sable',196,176,140]];
+const PARTS=[
+  {id:'TIRE-SPORT',slot:'Tires',fr:'Pneus sport',en:'Sport tyres',fx:'adhérence ×1.06 · pluie ×0.96'},
+  {id:'TIRE-RAIN',slot:'Tires',fr:'Pneus pluie',en:'Rain tyres',fx:'adhérence ×0.97 · pluie ×1.12'},
+  {id:'BRAKE-SPORT',slot:'Brakes',fr:'Freins sport',en:'Sport brakes',fx:'couple de freinage ×1.15'},
+  {id:'SUSP-COILOVER',slot:'Suspension',fr:'Combinés filetés',en:'Coilovers',fx:'élargit ressorts et hauteur de caisse'},
+  {id:'DIFF-LSD-REAR',slot:'RearDifferential',fr:'Autobloquant arrière',en:'Rear limited-slip diff',layouts:['RWD','AWD'],fx:'précharge 50 N·m'},
+  {id:'DIFF-LSD-FRONT',slot:'FrontDifferential',fr:'Autobloquant avant',en:'Front limited-slip diff',layouts:['FWD','AWD'],fx:'précharge 40 N·m'},
+  {id:'ECU-SPORT',slot:'EngineMap',fr:'Cartographie moteur sport',en:'Sport engine map',energies:['Petrol','Diesel'],fx:'couple ×1.04'},
+];
+const SLOTS=[['Tires','Pneus','Tyres'],['Brakes','Freins','Brakes'],['Suspension','Suspension','Suspension'],['RearDifferential','Différentiel arrière','Rear differential'],['FrontDifferential','Différentiel avant','Front differential'],['EngineMap','Cartographie moteur','Engine map']];
+const VIEWS=[['ThreeQuarter',35,'3/4','3/4'],['Front',0,'Avant','Front'],['Rear',180,'Arrière','Rear'],['Side',90,'Profil','Side'],['Interior',null,'Intérieur','Interior']];
+const T={
+ fr:{title:'Garage',close:'Fermer',collection:'Collection',draft:'Brouillon non envoyé',sample:'Échantillon : 5 des 18 modèles proposés',
+  sampleLong:'Échantillon de démonstration : 5 des 18 modèles proposés. Gamme non approuvée.',pending:'Proposé · en attente d\'approbation',
+  tabs:['Collection','Véhicule','Propriétés','Préparation','Configurations','Invitations'],
+  ctx:{Property:'Propriété · garage privé',PublicGarage:'Garage public',Outside:'Hors garage · consultation',Moving:'En roulant'},
+  thumbNote:'Vignettes : ViewportFrame 16:9 (aperçu fixe 3/4) ou image pré-rendue. Les silhouettes sont construites par code (BodyKits), rendu non validé.',
+  vpTitle:'VIEWPORTFRAME · VÉHICULE 3D',reset:'Réinitialiser',
+  vpIn:'Caméra intérieure : point de vue du siège conducteur, rotation limitée à ±60°.',vpOrbit:'Caméra orbitale autour du modèle. Glisser pour tourner, molette pour zoomer (0,8–1,4).',
+  takeOut:'Sortir',display:'Exposer',store:'Ranger',prepare:'Préparer',
+  demoValues:'État, kilométrage, dégâts, réserve : valeurs de démonstration (DurableState dans le jeu).',
+  bench:'0–100 et v60 : banc planaire hors Studio (2026-11-03), route sèche plane. Non mesuré en jeu.',
+  approval:'Modèle fictif proposé (PendingApproval), achetable en développement seulement. Carrosserie provisoire construite par code.',
+  partsInst:'Pièces installées : ',series:'Série',
+  prepTabs:['Réglages','Pièces','Esthétique'],
+  perf:'Effet estimé',illus:'ILLUSTRATIF',illusNote:'Non relié à VehicleSimulator. Gris = origine, ambre = brouillon.',
+  combo:'Combinaison possiblement irréalisable (ressorts souples et caisse basse : talonnage). Le serveur revalide la définition et peut refuser : TuningUnrealizable.',
+  partsNote:'Pièce d\'origine = emplacement vide. Aucun prix ; pièces non obtenables en jeu pour l\'instant (sauf données synthétiques en développement).',
+  lookNote:'Aucune incidence physique. Accessoires : 2 au plus.',body:'Caisse',accent:'Accent',
+  discard:'Annuler le brouillon',apply:'Appliquer les réglages',
+  cfgNote:'Une configuration est un jeu de réglages : elle ne crée aucune pièce. 5 au plus par exemplaire.',cfgPh:'Nom de la configuration (24 caractères)',cfgEmpty:'(vide)',cfgSwap:' (pièces à échanger)',saveHere:'Enregistrer ici',applyCfg:'Appliquer',del:'Supprimer',
+  invNote:'Invitations séparées : visite de la propriété ou droit de conduire un exemplaire. Révocables à tout moment.',revoke:'Révoquer',noInv:'Aucune invitation active.',newInv:'Nouvelle invitation',ns:'NON SIMULÉ',
+  freeProp:'Propriété gratuite',freePropNote:'Attribuée une seule fois par compte. Capacité, intérieur et modules : PropertyCatalog et GarageModules.',displaySlot:'Exposer à une place',
+  propGap:'PropertyCatalog et GarageModules n\'ont pas été fournis : aucune offre, capacité ni prix n\'est affiché.',
+  outside:'Consultation seule : préparation, enregistrement et sortie exigent d\'être dans une propriété ou un garage public.',
+  closedTitle:'Garage fermé',closedMsg:'Maquette : la fenêtre est fermée. Dans le jeu, P la rouvre (manette : téléphone → Véhicules).',reopen:'Rouvrir (P)',
+  movingTitle:'Ouverture refusée en roulant',movingMsg:'Le garage s\'ouvre à l\'arrêt ou à pied (UIManager). Le brouillon est conservé ; le véhicule n\'est jamais freiné.',
+  sim:'SIMULATION LOCALE',simSend:'Aucune requête envoyée au serveur. Dans le jeu : réponse « Pending » jusqu\'à l\'écriture durable.',
+  simRejected:'Aperçu d\'un refus serveur : TuningUnrealizable.',simOffline:'Aperçu : serveur injoignable, rien n\'est confirmé.',simConfirmed:'Aperçu visuel de l\'état Confirmed. Aucune confirmation n\'est simulée.',
+  simRevoke:'Révocation retirée de la liste localement. Aucune requête envoyée.',
+  st:{Stored:'Rangé',Displayed:'Exposé',Out:'Sorti'},tags:{untrans:'incessible',synth:'essai synthétique',reserved:'réservé'},
+  state:'État',odometer:'Kilométrage',damage:'Dégâts',energy:'Réserve',
+  spec:{energy:'Énergie',gear:'Boîte',layout:'Transmission',kw:'Puissance',kg:'Masse',dims:'L × l × h (emp.) m',res:'Réservoir / batterie',vmax:'V. annoncée',z100:'0–100 (banc)',v60:'v60 (banc)',aids:'Aides',price:'Valeur catalogue'},
+  en:{Petrol:'essence',Diesel:'diesel',Electric:'électrique'},gr:{Manual:'manuelle',Automatic:'automatique',DualClutch:'double embrayage',SingleSpeed:'rapport unique'},ly:{FWD:'traction',RWD:'propulsion',AWD:'intégrale'},
+  perfK:['Accélération','Freinage','Adhérence','Stabilité'],
+  rl:{SpringFront:'Ressorts avant',SpringRear:'Ressorts arrière',DampingFront:'Amortissement avant',DampingRear:'Amortissement arrière',AntiRollFront:'Antiroulis avant',AntiRollRear:'Antiroulis arrière',RideHeight:'Hauteur de caisse',BrakeBias:'Répartition de freinage (avant)',SteeringLock:'Angle de braquage',FinalDrive:'Rapport de pont',DiffPowerLock:'Blocage en charge',DiffCoastLock:'Blocage au lever',ShiftUpRpm:'Loi de passage (montée)'},
+  flagUnread:'origine non lue',flagProv:'max provisoire',
+  finishes:{Gloss:'Brillant',Metallic:'Métallisé',Matte:'Mat',Pearl:'Nacré'},wheels:{Stock:'Origine',Sport:'Sport',Classic:'Classiques',Aero:'Aérodynamiques'},
+  lookL:['Finition','Jantes','Avant','Arrière','Côtés','Accessoires','Inscription'],kit:{Stock:'Origine',Lip:'Lame',Spoiler:'Becquet',Wing:'Aileron',Skirts:'Bas de caisse'},acc:{RoofRack:'Barres de toit',LightBar:'Rampe lumineuse',Stripes:'Bandes'},on:'Affichée',off:'Masquée',wrongCompat:'Incompatible avec ce modèle',
+  needGarage:'Exige une propriété ou un garage public',
+  hintsKb:[['Glisser','Tourner'],['[ ]','Onglets'],['Backspace','Retour'],['P','Fermer']],hintsPad:[['Stick droit','Tourner'],['LB / RB','Onglets'],['A','Valider'],['B','Retour']],
+  cam:(a,z)=>`Caméra orbitale · ${a}° · zoom ${z}`,camIn:'Caméra intérieure'},
+ en:{title:'Garage',close:'Close',collection:'Collection',draft:'Unsent draft',sample:'Sample: 5 of the 18 proposed models',
+  sampleLong:'Demonstration sample: 5 of the 18 proposed models. Line-up not approved.',pending:'Proposed · awaiting approval',
+  tabs:['Collection','Vehicle','Properties','Mechanical tuning','Saved configurations','Invitations'],
+  ctx:{Property:'Property · private garage',PublicGarage:'Public garage',Outside:'Outside a garage · read-only',Moving:'While driving'},
+  thumbNote:'Thumbnails: 16:9 ViewportFrame (fixed 3/4 view) or pre-rendered image. Bodies are built from code (BodyKits); rendering not validated.',
+  vpTitle:'VIEWPORTFRAME · 3D VEHICLE',reset:'Reset',
+  vpIn:'Interior camera: driver-seat viewpoint, rotation limited to ±60°.',vpOrbit:'Orbit camera around the model. Drag to rotate, wheel to zoom (0.8–1.4).',
+  takeOut:'Take out',display:'Put on display',store:'Store',prepare:'Tune',
+  demoValues:'Status, odometer, damage, reserve: demonstration values (DurableState in-game).',
+  bench:'0–100 and v60: planar bench outside Studio (2026-11-03), flat dry road. Not measured in-game.',
+  approval:'Proposed fictional model (PendingApproval), purchasable in development only. Provisional body built from code.',
+  partsInst:'Installed parts: ',series:'Stock',
+  prepTabs:['Settings','Parts','Appearance'],
+  perf:'Estimated effect',illus:'ILLUSTRATIVE',illusNote:'Not linked to VehicleSimulator. Grey = stock, amber = draft.',
+  combo:'This combination may be unrealizable (soft springs with lowered ride height: bottoming out). The server revalidates the definition and may refuse it: TuningUnrealizable.',
+  partsNote:'Stock part = empty slot. No prices; parts cannot be obtained in-game yet (except synthetic development data).',
+  lookNote:'No effect on physics. Accessories: 2 at most.',body:'Body',accent:'Accent',
+  discard:'Discard draft',apply:'Apply settings',
+  cfgNote:'A configuration is a set of settings: it never creates parts. Up to 5 per vehicle.',cfgPh:'Configuration name (24 characters)',cfgEmpty:'(empty)',cfgSwap:' (parts need swapping)',saveHere:'Save here',applyCfg:'Apply',del:'Delete',
+  invNote:'Separate invitations: visit the property, or permission to drive one vehicle. Revocable at any time.',revoke:'Revoke',noInv:'No active invitations.',newInv:'New invitation',ns:'NOT SIMULATED',
+  freeProp:'Free property',freePropNote:'Granted once per account. Capacity, interior and modules: PropertyCatalog and GarageModules.',displaySlot:'Display in a bay',
+  propGap:'PropertyCatalog and GarageModules were not provided: no offers, capacities or prices are shown.',
+  outside:'Read-only: tuning, saving and taking out require being inside a property or a public garage.',
+  closedTitle:'Garage closed',closedMsg:'Mock-up: the window is closed. In-game, P reopens it (gamepad: phone → Vehicles).',reopen:'Reopen (P)',
+  movingTitle:'Cannot open while driving',movingMsg:'The garage opens when stopped or on foot (UIManager). Your draft is kept; the vehicle is never braked.',
+  sim:'LOCAL SIMULATION',simSend:'No request was sent to the server. In-game: "Pending" until the durable write.',
+  simRejected:'Preview of a server refusal: TuningUnrealizable.',simOffline:'Preview: server unreachable, nothing is confirmed.',simConfirmed:'Visual preview of the Confirmed state. No confirmation is simulated.',
+  simRevoke:'Revocation removed from the list locally. No request sent.',
+  st:{Stored:'Stored',Displayed:'On display',Out:'Taken out'},tags:{untrans:'non-transferable',synth:'synthetic test',reserved:'reserved'},
+  state:'Status',odometer:'Odometer',damage:'Damage',energy:'Reserve',
+  spec:{energy:'Energy',gear:'Gearbox',layout:'Drivetrain',kw:'Power',kg:'Mass',dims:'L × W × H (wb) m',res:'Tank / battery',vmax:'Stated top speed',z100:'0–100 (bench)',v60:'v60 (bench)',aids:'Aids',price:'Catalogue value'},
+  en:{Petrol:'petrol',Diesel:'diesel',Electric:'electric'},gr:{Manual:'manual',Automatic:'automatic',DualClutch:'dual-clutch',SingleSpeed:'single speed'},ly:{FWD:'front-wheel drive',RWD:'rear-wheel drive',AWD:'all-wheel drive'},
+  perfK:['Acceleration','Braking','Grip','Stability'],
+  rl:{SpringFront:'Front springs',SpringRear:'Rear springs',DampingFront:'Front damping',DampingRear:'Rear damping',AntiRollFront:'Front anti-roll',AntiRollRear:'Rear anti-roll',RideHeight:'Ride height',BrakeBias:'Brake bias (front)',SteeringLock:'Steering lock',FinalDrive:'Final drive',DiffPowerLock:'Lock under power',DiffCoastLock:'Lock off throttle',ShiftUpRpm:'Upshift point'},
+  flagUnread:'stock value not read',flagProv:'provisional max',
+  finishes:{Gloss:'Gloss',Metallic:'Metallic',Matte:'Matte',Pearl:'Pearl'},wheels:{Stock:'Stock',Sport:'Sport',Classic:'Classic',Aero:'Aero'},
+  lookL:['Finish','Wheels','Front','Rear','Sides','Accessories','Side lettering'],kit:{Stock:'Stock',Lip:'Lip',Spoiler:'Spoiler',Wing:'Wing',Skirts:'Side skirts'},acc:{RoofRack:'Roof bars',LightBar:'Light bar',Stripes:'Stripes'},on:'Shown',off:'Hidden',wrongCompat:'Not compatible with this model',
+  needGarage:'Requires a property or public garage',
+  hintsKb:[['Drag','Rotate'],['[ ]','Tabs'],['Backspace','Back'],['P','Close']],hintsPad:[['Right stick','Rotate'],['LB / RB','Tabs'],['A','Confirm'],['B','Back']],
+  cam:(a,z)=>`Orbit camera · ${a}° · zoom ${z}`,camIn:'Interior camera'}
+};
+const DEFC=()=>({BodyColor:'Graphite',AccentColor:'Orange',Finish:'Gloss',Wheels:'Stock',BodyKit:{Front:'Stock',Rear:'Stock',Sides:'Stock'},Accessories:[],ShowLabel:true});
+const fmt=n=>n.toLocaleString('fr-FR').replace(/\u202f/g,' ');
+
+class Component extends DCLogic {
+  state={sel:'v1',tab:0,sub:0,closed:false,cfgName:'',footer:null,view:'ThreeQuarter',angle:35,zoom:1,drag:null,entered:true,
+    invites:[{id:1,who:'Joueur_Lina',kind:'visit'},{id:2,who:'Joueur_Marc',kind:'drive'}],
+    inst:{
+      v1:{model:'wk_aster',storage:'Stored',odo:'1 204 km',dmg:'4 %',nrg:'61 %',tags:['untrans','synth'],parts:{},tuning:{},cos:DEFC(),configs:[{name:'Quotidien',ok:true}]},
+      v2:{model:'wk_rafale',storage:'Displayed',odo:'382 km',dmg:'0 %',nrg:'88 %',tags:['synth'],parts:{Tires:'TIRE-SPORT'},tuning:{},cos:{...DEFC(),BodyColor:'Rouge',AccentColor:'Noir'},configs:[{name:'Piste sèche',ok:true},{name:'Pluie',ok:false}]},
+      v3:{model:'wk_brise',storage:'Stored',odo:'95 km',dmg:'0 %',nrg:'40 %',tags:['synth'],parts:{},tuning:{},cos:{...DEFC(),BodyColor:'Vert',AccentColor:'Sable'},configs:[]},
+      v4:{model:'wk_atlas',storage:'Out',odo:'2 870 km',dmg:'18 %',nrg:'33 %',tags:['synth','reserved'],parts:{},tuning:{},cos:{...DEFC(),BodyColor:'Sable'},configs:[]},
+      v5:{model:'wk_zenith',storage:'Stored',odo:'12 km',dmg:'0 %',nrg:'97 %',tags:['synth'],parts:{},tuning:{},cos:{...DEFC(),BodyColor:'Blanc',AccentColor:'Bleu'},configs:[]},
+    },drafts:{},vw:window.innerWidth,vh:window.innerHeight};
+  componentDidMount(){
+    this.onR=()=>this.setState({vw:window.innerWidth,vh:window.innerHeight}); window.addEventListener('resize',this.onR);
+    this.onK=e=>{ if(e.target.tagName==='INPUT'&&e.target.type!=='range')return;
+      if(e.key===']'||e.key==='PageDown')this.goTab((this.state.tab+1)%6);
+      if(e.key==='['||e.key==='PageUp')this.goTab((this.state.tab+5)%6);
+      if(e.key==='p'||e.key==='P')this.setState(s=>({closed:!s.closed}));
+      if(e.key==='Backspace'){e.preventDefault();this.back();}
+      if(e.key==='ArrowLeft'&&this.state.tab!==0)this.rot(-15); if(e.key==='ArrowRight'&&this.state.tab!==0)this.rot(15); };
+    window.addEventListener('keydown',this.onK);
+  }
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);window.removeEventListener('keydown',this.onK);clearTimeout(this.tm);clearTimeout(this.et);}
+  goTab(i){ const fromCol=this.state.tab===0&&i!==0; this.setState({tab:i,footer:null,entered:!fromCol}); if(fromCol){clearTimeout(this.et);this.et=setTimeout(()=>this.setState({entered:true}),30);} }
+  back(){ const t=this.state.tab; if(this.state.closed)return; this.goTab(t===3||t===4?1:0); }
+  rot(d){ if(this.state.view==='Interior'){this.setState(s=>({angle:Math.max(-60,Math.min(60,s.angle+d))}));return;} this.setState(s=>({angle:((s.angle+d)%360+360)%360,view:'Free'})); }
+  ranges(m,parts){
+    const wide=parts.Suspension==='SUSP-COILOVER',sp=wide?[0.7,1.4]:[0.85,1.2];
+    const r={SpringFront:[sp[0],sp[1],1,'×'],SpringRear:[sp[0],sp[1],1,'×'],DampingFront:[0.85,1.2,1,'×'],DampingRear:[0.85,1.2,1,'×'],AntiRollFront:[0.7,1.3,1,'×'],AntiRollRear:[0.7,1.3,1,'×'],RideHeight:[wide?-0.05:-0.02,wide?0.03:0.02,0,'m'],BrakeBias:[0.55,0.75,0.62,'',1],SteeringLock:[0.9,1.1,1,'×'],FinalDrive:[0.92,1.08,1,'×']};
+    const front=m.layout==='FWD',rearL=parts.RearDifferential,frontL=parts.FrontDifferential||(m.lsd&&front);
+    const lsd=m.layout==='RWD'?rearL:m.layout==='FWD'?frontL:(rearL||frontL);
+    if(lsd){const p=PARTS.find(x=>x.id===(front?parts.FrontDifferential:parts.RearDifferential));const fr=p?p.slot==='FrontDifferential':true;r.DiffPowerLock=[0,0.6,fr?0.25:0.35,'',p?0:1];r.DiffCoastLock=[0,0.5,fr?0.1:0.2,'',p?0:1];}
+    if(m.energy!=='Electric'&&(m.gear==='Automatic'||m.gear==='DualClutch'))r.ShiftUpRpm=[m.red-1200,m.red-100,m.red-500,'tr/min',2];
+    return r;
+  }
+  cur(){const s=this.state,b=s.inst[s.sel],d=s.drafts[s.sel]||{};return {b,d,tuning:{...b.tuning,...(d.tuning||{})},parts:{...b.parts,...(d.parts||{})},cos:d.cos||b.cos};}
+  draft(fn){this.setState(s=>({drafts:{...s.drafts,[s.sel]:fn({tuning:{},...(s.drafts[s.sel]||{})})}}));}
+  send(){ const out=this.props.serverOutcome??'pending'; this.setState({footer:'simSend'}); clearTimeout(this.tm);
+    if(out!=='pending') this.tm=setTimeout(()=>this.setState({footer:out==='rejected'?'simRejected':out==='unreachable'?'simOffline':'simConfirmed'}),this.props.reduceMotion?0:900); }
+
+  renderVals(){
+    const p=this.props,s=this.state,lang=p.lang==='EN'?'en':'fr',L=T[lang],li=lang==='en'?1:0;
+    const hc=!!p.highContrast,C={line:hc?'#6B6F77':'#33363C',muted:hc?'#D9D7D2':'#A3A29C'};
+    const res=p.resolution||'1920 × 1080',compact=res.startsWith('1366')||res.startsWith('1280');
+    const [LW,LH]=res.startsWith('1366')?[1366,768]:res.startsWith('1280')?[1280,720]:[1920,1080];
+    const k=Math.min(s.vw/LW,s.vh/LH);
+    const ctx=p.context||'Property',inGarage=ctx==='Property'||ctx==='PublicGarage',moving=ctx==='Moving';
+    const pad=p.inputDevice==='Manette',rm=!!p.reduceMotion;
+    const {b,d,tuning,parts,cos}=this.cur(),m=MODELS[b.model];
+    const readOnly=!inGarage;
+    const hasDraft=Object.keys(d.tuning||{}).length>0||Object.values(d.parts||{}).some(x=>x!==undefined)||!!d.cos;
+    const panelW=s.tab===1?(compact?340:420):s.tab===3?(compact?540:680):(compact?460:560);
+    const stageW=LW-panelW, stageH=LH-56-48-40;
+    const R=this.ranges(m,parts);
+    const dec=(u,v)=>u==='tr/min'?Math.round(v)+' tr/min':u==='m'?(v>=0?'+':'')+v.toFixed(3)+' m':u==='×'?v.toFixed(2)+'×':(v*100).toFixed(0)+' %';
+    const ranges=Object.keys(R).sort().map(key=>{const [mn,mx,df,u,fl]=R[key];const v=tuning[key]??df,ch=Math.abs(v-df)>1e-9;
+      return {label:L.rl[key],min:mn,max:mx,step:u==='tr/min'?50:u==='m'?0.005:0.01,value:v,val:dec(u,v),vColor:ch?'#E8A33D':'#ECEAE6',minL:dec(u,mn),maxL:dec(u,mx),defL:(lang==='en'?'stock ':'origine ')+dec(u,df),flag:fl===1?L.flagUnread:fl===2?L.flagProv:'',
+        set:e=>{const nv=parseFloat(e.target.value);this.draft(c=>({...c,tuning:{...c.tuning,[key]:nv}}));}};});
+    const compat=pt=>(!pt.layouts||pt.layouts.includes(m.layout))&&(!pt.energies||pt.energies.includes(m.energy));
+    const slots=SLOTS.map(([id,fr,en])=>{const list=PARTS.filter(x=>x.slot===id),cur=parts[id];
+      const mk=(pid,label,ok)=>{const on=(cur||null)===pid;return {label,disabled:readOnly||!ok,why:!ok?L.wrongCompat:readOnly?L.needGarage:'',op:ok?(readOnly?0.6:1):0.4,bg:on?'#2A2416':'#1E2125',fg:on?'#F4BE6A':'#ECEAE6',border:on?'#E8A33D':C.line,go:()=>this.draft(c=>({...c,parts:{...(c.parts||{}),[id]:pid||undefined}}))};};
+      const sel=list.find(x=>x.id===cur),bad=list.every(x=>!compat(x));
+      return {label:lang==='en'?en:fr,opts:[mk(null,L.series,true),...list.map(pt=>mk(pt.id,lang==='en'?pt.en:pt.fr,compat(pt)))],note:sel?sel.fx:(bad?L.wrongCompat:'')};});
+    const ring=(a,c2)=>a===c2?'#E8A33D':'transparent';
+    const sw=key=>COLORS.map(([id,lab,r,g,bb])=>({label:lab,rgb:`rgb(${r},${g},${bb})`,ring:ring(id,cos[key]),go:()=>this.draft(c=>({...c,cos:{...(c.cos||b.cos),[key]:id}}))}));
+    const opt=(on,label,go)=>({label,go,bg:on?'#2A2416':'#1E2125',fg:on?'#F4BE6A':'#ECEAE6',border:on?'#E8A33D':C.line});
+    const setC=fn=>()=>this.draft(c=>({...c,cos:fn({...(c.cos||b.cos)})}));
+    const kitRow=(slot,list,lab)=>({label:lab,opts:list.map(x=>opt(cos.BodyKit[slot]===x,L.kit[x],setC(o=>({...o,BodyKit:{...o.BodyKit,[slot]:x}}))))});
+    const lookRows=[{label:L.lookL[0],opts:Object.keys(L.finishes).map(x=>opt(cos.Finish===x,L.finishes[x],setC(o=>({...o,Finish:x}))))},{label:L.lookL[1],opts:Object.keys(L.wheels).map(x=>opt(cos.Wheels===x,L.wheels[x],setC(o=>({...o,Wheels:x}))))},
+      kitRow('Front',['Stock','Lip'],L.lookL[2]),kitRow('Rear',['Stock','Spoiler','Wing'],L.lookL[3]),kitRow('Sides',['Stock','Skirts'],L.lookL[4]),
+      {label:L.lookL[5],opts:Object.keys(L.acc).map(x=>opt(cos.Accessories.includes(x),L.acc[x],setC(o=>({...o,Accessories:o.Accessories.includes(x)?o.Accessories.filter(y=>y!==x):(o.Accessories.length<2?[...o.Accessories,x]:o.Accessories)}))))},
+      {label:L.lookL[6],opts:[opt(cos.ShowLabel,L.on,setC(o=>({...o,ShowLabel:true}))),opt(!cos.ShowLabel,L.off,setC(o=>({...o,ShowLabel:false})))]}];
+    const colName=id=>(COLORS.find(c=>c[0]===id)||[])[1];
+    const f=key=>tuning[key]??(R[key]?R[key][2]:1);
+    const base=[Math.min(1,m.kw/(m.kg/1000)/320),0.55,0.55,0.6],tg=parts.Tires==='TIRE-SPORT'?0.05:parts.Tires==='TIRE-RAIN'?-0.02:0;
+    const now=[base[0]*(1+(parts.EngineMap?0.03:0)+(f('FinalDrive')-1)*0.6),base[1]*(1+(parts.Brakes?0.12:0)+tg*0.5),base[2]*(1+tg-(f('AntiRollFront')-1)*0.05),base[3]*(1+(f('DampingFront')+f('DampingRear')-2)*0.15-f('RideHeight')*1.5)];
+    const perf=L.perfK.map((kk,i)=>{const dv=Math.round((now[i]-base[i])*100);return {k:kk,base:Math.round(Math.min(1,base[i])*100)+'%',now:Math.round(Math.max(0,Math.min(1,now[i]))*100)+'%',d:dv===0?'—':(dv>0?'+':'')+dv,dColor:dv>0?'#7FCF9C':dv<0?'#F09A92':'#8E8C86'};});
+    const sp=L.spec,specRows=[[sp.energy,L.en[m.energy]],[sp.gear,L.gr[m.gear]],[sp.layout,L.ly[m.layout]],[sp.kw,m.kw+' kW'],[sp.kg,fmt(m.kg)+' kg'],[sp.dims,m.dims],[sp.res,m.res],[sp.vmax,m.vmax+' km/h'],[sp.z100,String(m.z100).replace('.',lang==='fr'?',':'.')+' s'],[sp.v60,m.v60+' km/h'],[sp.aids,m.aids],[sp.price,fmt(m.price)+' cr']].map(([k2,v])=>({k:k2,v}));
+    const stCol={Stored:'#C9C6BF',Displayed:'#F4BE6A',Out:'#9FDCE4'};
+    const vehicles=Object.entries(s.inst).map(([id,v],i)=>{const mm=MODELS[v.model],on=id===s.sel;
+      return {name:mm.name,cat:mm.cat[li],storage:L.st[v.storage].toUpperCase(),stColor:stCol[v.storage],thumb:'VIEWPORTFRAME 16:9 · '+mm.sil.toUpperCase(),drive:`${L.en[mm.energy]} · ${L.gr[mm.gear]} · ${L.ly[mm.layout]}`,
+        tags:v.tags.map(t=>L.tags[t]),border:on?'#E8A33D':C.line,focus:pad&&on?'2px solid #E8A33D':'none',open:()=>{this.setState({sel:id,view:'ThreeQuarter',angle:35,zoom:1});this.goTab(1);}};});
+    const ga=(label,on,go,primary,why)=>({label,go,disabled:!on,why:on?'':why||L.needGarage,op:on?1:0.45,bg:primary?'#E8A33D':'#1E2125',fg:primary?'#15120B':'#ECEAE6',border:primary?'#E8A33D':C.line});
+    const actions=[ga(L.takeOut,inGarage&&b.storage!=='Out',()=>this.send()),ga(L.display,inGarage&&b.storage==='Stored',()=>this.send()),ga(L.store,inGarage&&b.storage!=='Stored',()=>this.send()),ga(L.prepare+' ›',true,()=>this.goTab(3),true)];
+    const partsList=Object.entries(b.parts).map(([sl,pid])=>{const pt=PARTS.find(x=>x.id===pid);return (SLOTS.find(x=>x[0]===sl)||[])[li+1]+' : '+(lang==='en'?pt.en:pt.fr);});
+    const configs=[0,1,2,3,4].map(i=>{const cf=b.configs[i];return {text:cf?`${i+1}. ${cf.name}${cf.ok?'':L.cfgSwap}`:`${i+1}. ${L.cfgEmpty}`,color:cf?'#ECEAE6':'#8E8C86',
+      actions:[ga(L.saveHere,inGarage&&i<=b.configs.length,()=>this.send()),ga(L.applyCfg,!!cf&&inGarage,()=>this.send()),ga(L.del,!!cf&&inGarage,()=>this.send())]};});
+    const fmap={simSend:['#2A2416','#F4BE6A'],simRejected:['#2A1715','#F2C9C5'],simOffline:['#2A1715','#F2C9C5'],simConfirmed:['#132219','#BFE6CC'],simRevoke:['#16181B','#C9C6BF']}[s.footer]||['#16181B','#C9C6BF'];
+    const interior=s.view==='Interior';
+    const rad=(s.angle-90)*Math.PI/180;
+    const views=VIEWS.map(([id,ang,fr,en])=>{const on=s.view===id;return {label:lang==='en'?en:fr,bg:on?'#E8A33D':'transparent',fg:on?'#15120B':'#ECEAE6',go:()=>this.setState({view:id,angle:ang===null?0:ang})};});
+    const closed=s.closed||moving;
+    return {
+      C,L,LW,LH,stageScale:k,stageLeft:((s.vw-LW*k)/2)+'px',stageTop:((s.vh-LH*k)/2)+'px',resLabel:res+(res.startsWith('2560')?' · UIScale 1.33':''),
+      ctxLabel:L.ctx[ctx],hasDraft,close:()=>this.setState({closed:true}),
+      tabs:L.tabs.map((t,i)=>({label:t,go:()=>this.goTab(i),bar:i===s.tab?'#E8A33D':'transparent',color:i===s.tab?'#ECEAE6':C.muted,focus:pad&&i===s.tab?'2px solid #E8A33D':'none'})),
+      cols:s.tab===0?'minmax(0,1fr)':`minmax(0,1fr) ${panelW}px`,cardMin:compact?240:300,
+      isCollection:s.tab===0,showStage:s.tab!==0,isVehicle:s.tab===1,isProps:s.tab===2,isPrep:s.tab===3,isConfigs:s.tab===4,isInv:s.tab===5,
+      vehicles,cur:{name:m.name,cat:m.cat[li],desc:m.desc[li]},nameSize:compact?40:56,
+      enterOp:s.entered?1:0,enterScale:s.entered?1:0.96,enterTrans:rm?'none':'opacity .22s ease-out, transform .22s ease-out',
+      vpDims:`${stageW} × ${stageH} px · ${lang==='en'?'reference':'référence'} ${LW}×${LH}`,vpView:interior?L.vpIn:L.vpOrbit,
+      dotX:interior?'50%':(50+28*Math.cos(rad))+'%',dotY:interior?'40%':(66+7*Math.sin(rad))+'%',
+      camLabel:interior?`${L.camIn} · ${s.angle}°`:L.cam(s.angle,s.zoom.toFixed(1)),views,
+      rotL:()=>this.rot(-15),rotR:()=>this.rot(15),rotOp:1,resetCam:()=>this.setState({view:'ThreeQuarter',angle:35,zoom:1}),
+      cursor:s.drag!==null?'grabbing':'grab',
+      dragStart:e=>{if(e.target.tagName==='BUTTON')return;this.setState({drag:e.clientX});},
+      dragMove:e=>{if(this.state.drag===null)return;const dx=(e.clientX-this.state.drag)/k;if(Math.abs(dx)>=4){this.rot(Math.round(dx/4));this.setState({drag:e.clientX});}},
+      dragEnd:()=>{if(this.state.drag!==null)this.setState({drag:null});},
+      backToCollection:()=>this.goTab(0),actions,
+      blocked:!inGarage&&!moving&&[1,3,4].includes(s.tab),
+      stateCells:[{k:L.state,v:L.st[b.storage]},{k:L.odometer,v:b.odo},{k:L.damage,v:b.dmg},{k:L.energy,v:b.nrg}],specRows,
+      partsLine:L.partsInst+(partsList.length?partsList.join(', '):L.series.toLowerCase()),
+      prepTabs:L.prepTabs.map((t,i)=>({label:t,go:()=>this.setState({sub:i}),bg:i===s.sub?'#16181B':'#0E0F11',fg:i===s.sub?'#ECEAE6':C.muted})),
+      subSettings:s.sub===0,subParts:s.sub===1,subLook:s.sub===2,perf,trans:rm?'none':'width .25s ease-out',ranges,readOnly,
+      comboWarn:(tuning.SpringFront??1)<0.8&&(tuning.RideHeight??0)<-0.03,slots,colors:sw('BodyColor'),accents:sw('AccentColor'),lookRows,bodyName:colName(cos.BodyColor),accentName:colName(cos.AccentColor),
+      discard:()=>this.setState(x=>{const dr={...x.drafts};delete dr[x.sel];return {drafts:dr,footer:null};}),noDraft:!hasDraft,discardOp:hasDraft?1:0.45,
+      sendTuning:()=>this.send(),sendDisabled:readOnly||!hasDraft,sendOp:(readOnly||!hasDraft)?0.45:1,
+      cfgName:s.cfgName,setCfgName:e=>this.setState({cfgName:e.target.value.slice(0,24)}),configs,
+      invites:s.invites.map(iv=>({who:iv.who,kind:iv.kind==='visit'?(lang==='en'?'Property visit':'Visite de la propriété'):(lang==='en'?'Permission to drive · ':'Droit de conduire · ')+m.name,revoke:()=>this.setState(x=>({invites:x.invites.filter(y=>y.id!==iv.id),footer:'simRevoke'}))})),
+      noInvites:s.invites.length===0,
+      footer:s.footer?L[s.footer]:null,footerCode:L.sim,footerBg:fmap[0],footerFg:fmap[1],
+      closed,moving,closedTitle:moving?L.movingTitle:L.closedTitle,closedMsg:moving?L.movingMsg:L.closedMsg,reopen:()=>this.setState({closed:false}),reopenOp:moving?0.45:1,
+      hints:(pad?L.hintsPad:L.hintsKb).map(([k2,l])=>({k:k2,l})),
+    };
+  }
+}
+</script>
+</body>
+</html>

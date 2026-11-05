@@ -1,5 +1,7 @@
 # ASTER-02 — dossier de lancement de la modélisation de l'Aster
 
+> **ASTER-02 SUSPENDU par le propriétaire le 2026-11-04** (« aster on abandonne pour l'instant ») — travail conservé sur la PR #15 (`feat/aster-02-blockout`), **aucune étape active**, ne pas réactiver sans décision du propriétaire. Ce document reste comme historique.
+
 Statut : **proposition, non lancée.** Aucune modélisation définitive, aucun import, aucune publication tant que le
 propriétaire n'a pas validé ce dossier et levé les prérequis du §8. Rédigé à la clôture de la phase 1 (2026-11-04,
 branche `feat/aster-phase1`). Références : `SPECIFICATION_MODELES_3D.md` (contrat général), `PIPELINE_BLENDER_ROBLOX.md`

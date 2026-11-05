@@ -24,6 +24,7 @@ local Localization = require(Shared.UI.Localization)
 
 local UIState = require(script.Parent.UIState)
 local UITheme = require(script.Parent.UITheme)
+local Tokens = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
 
 local NotificationService = {}
 
@@ -34,7 +35,9 @@ local banner: Frame
 local bannerText: TextLabel
 local listeners: { () -> () } = {}
 
-local ICONS = { Info = "ⓘ", Warning = "⚠", Critical = "⛔" }
+-- Lot UI-04 : plus de pictogrammes Unicode ; le niveau se lit au filet gauche de la carte (cyan information,
+-- ambre avertissement, rouge critique) et à son libellé en capitales.
+local LEVEL_TOKEN = { Info = "GpsCyan", Warning = "Amber", Critical = "RaceRed" }
 
 -- Niveau des notices du véhicule (clés serveur ou client des lots 0.1–0.2).
 local VEHICLE_LEVELS: { [string]: NotificationQueue.Level } = {
@@ -70,23 +73,41 @@ local function textOf(item: NotificationQueue.Item): string
 end
 
 local function colorOf(level: NotificationQueue.Level): Color3
-    return if level == "Critical"
-        then UITheme.color("Danger")
-        elseif level == "Warning" then UITheme.color("Warn")
-        else UITheme.color("Accent")
+    return Tokens.color(LEVEL_TOKEN[level] or "GpsCyan")
 end
 
 local function showToast(item: NotificationQueue.Item, compact: boolean)
+    -- Carte V1.2 : fond sombre, filet gauche de 3 px à la couleur du niveau, libellé du niveau puis message.
     local frame = UITheme.panel({
-        Size = UDim2.new(1, 0, 0, if compact then 30 else 42),
+        Name = "Notification",
+        Size = UDim2.new(1, 0, 0, if compact then 34 else 50),
         LayoutOrder = -item.Id,
     }, list)
-    UITheme.make("UIStroke", { Color = colorOf(item.Level), Thickness = 2 }, frame)
-    UITheme.label(ICONS[item.Level] .. "  " .. textOf(item), if compact then 14 else 16, {
-        Size = UDim2.new(1, -16, 1, 0),
-        Position = UDim2.fromOffset(8, 0),
+    frame.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, frame)
+    UITheme.make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = colorOf(item.Level),
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, Tokens.StatusRail, 1, 0),
+    }, frame)
+    if not compact then
+        local level = UITheme.label(Tokens.upper(Localization.t("notif.level." .. item.Level)), 11, {
+            Name = "Niveau",
+            Position = UDim2.fromOffset(14, 5),
+            Size = UDim2.new(1, -24, 0, 14),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextColor3 = colorOf(item.Level),
+        }, frame)
+        level.FontFace = UITheme.face("Label")
+    end
+    UITheme.label(textOf(item), if compact then 14 else 15, {
+        Name = "Message",
+        Size = UDim2.new(1, -24, 0, if compact then 34 else 28),
+        Position = UDim2.fromOffset(14, if compact then 0 else 19),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextWrapped = true,
+        TextTruncate = Enum.TextTruncate.AtEnd,
     }, frame)
     task.delay(if item.Level == "Critical" then 8 elseif compact then 3 else 5, function()
         frame:Destroy()
@@ -95,15 +116,15 @@ end
 
 -- Alerte critique : bandeau et cadre clignotant (aide visuelle renforcée).
 local function showCritical(item: NotificationQueue.Item)
-    bannerText.Text = ICONS.Critical .. "  " .. textOf(item)
+    bannerText.Text = Tokens.upper(Localization.t("notif.level.Critical")) .. " · " .. textOf(item)
     banner.Visible = true
     local flashes = if UIState.prefs().Access.VisualAlerts then 6 else 1
     task.spawn(function()
         for i = 1, flashes do
-            banner.BackgroundColor3 = if i % 2 == 1 then UITheme.color("Danger") else UITheme.color("Panel")
+            banner.BackgroundColor3 = if i % 2 == 1 then Tokens.color("DangerBg") else Tokens.color("BgBase")
             task.wait(if UIState.prefs().Access.ReduceMotion then 0.6 else 0.3)
         end
-        banner.BackgroundColor3 = UITheme.color("Danger")
+        banner.BackgroundColor3 = Tokens.color("DangerBg")
         task.wait(6)
         banner.Visible = false
     end)
@@ -194,15 +215,18 @@ function NotificationService.start()
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 270),
         Size = UDim2.fromOffset(560, 48),
-        BackgroundColor3 = Color3.fromRGB(200, 40, 40),
+        BackgroundColor3 = Tokens.color("DangerBg"),
         Visible = false,
     }, gui)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 8) }, banner)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Card) }, banner)
+    -- Alerte critique : bandeau rouge sombre, liseré rouge (couleur réservée aux refus et à la course).
+    UITheme.make("UIStroke", { Color = Tokens.color("RaceRed"), Thickness = 2 }, banner)
     bannerText = UITheme.label("", 18, {
         Size = UDim2.new(1, -20, 1, 0),
         Position = UDim2.fromOffset(10, 0),
         Font = UITheme.FontBold,
         TextWrapped = true,
+        TextColor3 = Tokens.color("DangerText"),
     }, banner)
     -- À l'arrêt : résumé des informations différées pendant la conduite.
     UIState.onMode(function(mode)

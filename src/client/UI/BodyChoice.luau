@@ -21,6 +21,8 @@ local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localizatio
 local AvatarPolicy = require(Shared:WaitForChild("Avatar"):WaitForChild("AvatarPolicy"))
 
 local UITheme = require(script.Parent.UITheme)
+local UIState = require(script.Parent.UIState)
+local Tokens = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
 local NotificationService = require(script.Parent.NotificationService)
 
 local BodyChoice = {}
@@ -92,11 +94,16 @@ local function open()
     )
     gui = screen
     -- En haut, sous le bandeau d'information : ne masque ni le centre de l'écran ni le HUD.
+    -- Fenêtre V1.2 : fond de base, filet, titre demi-gras, boutons de 44 px (échelle 1440 p appliquée).
     local panel = UITheme.panel({
+        Name = "Fenetre",
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 96),
-        Size = UDim2.fromOffset(380, 150),
+        Size = UDim2.fromOffset(380, 160),
     }, screen)
+    panel.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, panel)
+    UITheme.make("UIScale", { Scale = UIState.layout().Scale }, panel)
     UITheme.label(Localization.t("avatar.body.title"), 17, {
         Position = UDim2.fromOffset(14, 10),
         Size = UDim2.new(1, -28, 0, 24),
@@ -113,8 +120,8 @@ local function open()
             Localization.t("avatar.body." .. id),
             {
                 Name = "Body" .. id,
-                Position = UDim2.new((index - 1) * 0.5, 14 - (index - 1) * 7, 1, -52),
-                Size = UDim2.new(0.5, -21, 0, 38),
+                Position = UDim2.new((index - 1) * 0.5, 14 - (index - 1) * 7, 1, -58),
+                Size = UDim2.new(0.5, -21, 0, Tokens.PrimaryButtonHeight),
             },
             panel,
             function()

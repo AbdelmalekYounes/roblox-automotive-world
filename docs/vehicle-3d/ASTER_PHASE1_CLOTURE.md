@@ -1,5 +1,7 @@
 # Aster phase 1 — rapport de clôture (avatars humains, préparation d'ASTER-02)
 
+> **ASTER-02 SUSPENDU par le propriétaire le 2026-11-04** (« aster on abandonne pour l'instant ») — travail conservé sur la PR #15 (`feat/aster-02-blockout`), **aucune étape active**, ne pas réactiver sans décision du propriétaire. Ce document reste comme historique.
+
 Branche `feat/aster-phase1`, PR #14 (brouillon), commits `09b3efb` → `6627a1f` (code) et suivant (documents), 2026-11-04.
 Dépôt d'art : `edb57fc`, `254c94f`. Rien n'est fusionné ; aucun actif n'est publié ; aucun DataStore n'est utilisé.
 
