@@ -301,4 +301,4 @@ Décisions du propriétaire du 2026-11-05 ([rapport](vehicle-3d/VEH3D_02_BRIO.md
 nommé Brio ; essence, automatique, traction ; véhicule de service des métiers et achetable en concession, pas véhicule de
 départ ; optiques et peinture unies, intérieur gardé. État du 2026-11-05 : préparation, finition et export faits (dépôt
 d'art), définition, kit mesuré, catalogue, métiers, crédits et tests intégrés ; gabarit importé par le
-propriétaire et intégré le même jour ; **vérification en jeu par le propriétaire** à faire.
+propriétaire et intégré le même jour ; **validé en jeu par le propriétaire le 2026-11-05**.

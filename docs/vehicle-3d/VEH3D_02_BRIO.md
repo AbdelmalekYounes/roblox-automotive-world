@@ -145,11 +145,9 @@ Avant l'import, les points 5, 9 et 10 sont déjà vérifiables sur la carrosseri
 
 ## 5. Non fait, non vérifié
 
-- Tout le comportement en jeu (§4) : **NON TESTÉ**.
 - Statut commercial : `PendingApproval`, donc achetable en Dev seulement. Pour la rendre achetable dans l'expérience de
   test, il faut passer à `Official` : décision du propriétaire.
 - Prix de 12 000 : hypothèse de travail.
-- Gabarit contrôlé hors Studio seulement (§6) : rendu des couleurs reposées et du vitrage non vu en jeu.
 - LOD1 et LOD2 non exportés : RenderFidelity automatique, comme la Comète.
 - Silhouette proche d'un modèle réel (Fiat Punto mk1), sans aucun logo ni nom de marque : accepté au choix du modèle.
 
@@ -172,3 +170,13 @@ matériaux Blender) et la fabrique les repose.
 Tests : `lune run tests/lune/run.luau build/AutomotiveWorld.rbxlx`, puis `scriptserify.ps1 -DownloadRobloxTypes`
 (2026-11-05) : 403 réussis sur 403, toutes les étapes OK. Nouveaux tests 4 et 5 de `Veh3d02Brio` : gabarit, identifiants
 = manifeste, positions, couleurs reposées.
+
+## 7. Validation du propriétaire (2026-11-05)
+
+Le propriétaire a parcouru la liste du §4 dans Studio, sur la place `build/AW-Brio.rbxlx` (branche à 7c05456), et a
+répondu « Tout est bon » : les 11 points sont validés, dont l'absence de logo dans le motif de l'intérieur. Essai humain
+du propriétaire ; l'assistant n'a exécuté aucun essai Studio.
+
+Reste ouvert (décision du propriétaire, hors validation) :
+- statut commercial `PendingApproval` (achetable en Dev seulement ; `Official` pour l'expérience de test) ;
+- prix de 12 000 (hypothèse de travail).
