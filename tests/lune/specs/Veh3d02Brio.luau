@@ -84,10 +84,13 @@ return function(T: any, H: any)
         local kit = Data.Kits.wk_brio
         T.truthy(kit ~= nil, "kit de la Brio")
         T.equal(kit.Template, "Brio")
-        T.truthy(
-            inside(kit.SeatDriver, kit.Collisions.Habitacle) or kit.SeatDriver.Y > kit.Collisions.Coque.Center.Y,
-            "assise au-dessus de la coque"
-        )
+        -- Lot BRIO-02 : places descendues sur le vrai coussin (dans la boîte de la coque, sous la ceinture de caisse).
+        for _, seat in { kit.SeatDriver, kit.SeatPassenger } do
+            T.truthy(
+                inside(seat, kit.Collisions.Coque) or inside(seat, kit.Collisions.Habitacle),
+                "place dans la caisse"
+            )
+        end
         T.truthy(kit.RoofUnderside > kit.SeatDriver.Y + 2, "hauteur sous pavillon")
         T.truthy(kit.CameraCockpit.Y < kit.RoofUnderside, "yeux sous le pavillon")
         T.truthy(kit.CameraBumper.Z < kit.DamageMarks.Front[2], "caméra bouclier devant le nez")
