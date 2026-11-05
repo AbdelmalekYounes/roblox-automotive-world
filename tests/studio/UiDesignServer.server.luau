@@ -18,6 +18,7 @@ if
     and session ~= "ui_garage"
     and session ~= "ui_panels"
     and session ~= "ui_garage3d"
+    and session ~= "ui_garage2"
 then
     return
 end
@@ -71,6 +72,19 @@ record(
     end, 60)
 )
 task.wait(3)
+-- « ui_garage2 » (UI-03) : joueur placé dans le garage public d'essai (préparation et configurations permises).
+if session == "ui_garage2" then
+    local player = Players:GetPlayers()[1]
+    local character = player and (player.Character or player.CharacterAdded:Wait())
+    local garage = workspace:FindFirstChild("GaragePublicEssai", true)
+    local root = character and character:WaitForChild("HumanoidRootPart", 10) :: BasePart?
+    if root and garage and garage:IsA("BasePart") then
+        task.wait(4) -- après l'arrivée du profil et l'apparition (comportement du jeu)
+        character:PivotTo(CFrame.new(garage.Position + Vector3.new(6, garage.Size.Y / 2 + 4, 0)))
+        ReplicatedStorage:SetAttribute("AWTestAtGarage", true)
+    end
+    record(session .. ".serveur.joueur_au_garage_public", ReplicatedStorage:GetAttribute("AWTestAtGarage") == true)
+end
 if session == "ui_design" then
     ReplicatedStorage:SetAttribute("AWDesignDemo", true)
 end

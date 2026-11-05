@@ -79,7 +79,7 @@ local function fontAudit(root: Instance): (boolean, string)
             if not string.find(family, "TitilliumWeb", 1, true) and not string.find(family, "RobotoMono", 1, true) then
                 gotham += 1
                 if #examples < 3 then
-                    table.insert(examples, item.Name .. " " .. family)
+                    table.insert(examples, item:GetFullName() .. " « " .. string.sub(item.Text, 1, 30) .. " »")
                 end
             end
         end
