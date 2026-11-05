@@ -273,3 +273,13 @@ concession, puis monter à bord.
     - elle reste **muette** (aucun son enregistré pour elle, décision « la Brio d'abord ») ;
     - compte-tours jusqu'à 8 300 tr/min (zone rouge), rupteur à 8 500 ;
     - conduite à revérifier (décision D3).
+
+### Validation en jeu (2026-11-06)
+
+Le propriétaire a parcouru la liste ci-dessus dans Studio, sur `build/AW-Audio-Brio.rbxlx` (branche à 773edf2), et a
+répondu « c'est tout à fait bon ». Les 10 points sont validés (QA-S01 à QA-S03). Il s'agit d'un essai humain du
+propriétaire : l'assistant n'a exécuté aucun essai Studio.
+
+Restent ouverts :
+- les sons de la Comète (« la Brio d'abord ») ;
+- le rupteur en 1ʳᵉ et en 2ᵉ de la Brio (QA-S04, réglage de boîte à arbitrer).
