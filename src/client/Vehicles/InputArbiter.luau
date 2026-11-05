@@ -18,6 +18,9 @@
 --    (pas de reprise automatique par un autre périphérique).
 -- Les rampes du clavier (arbitrage A2) sont conservées ; les commandes
 -- analogiques de la manette restent proportionnelles.
+-- Lot 0.2 : pédale d'embrayage (touche ou bouton, donc numérique sur les deux
+-- périphériques) avec une rampe dans l'esprit d'A2 : enfoncée en 0,1 s,
+-- relâchée en 0,6 s pour permettre un démarrage progressif.
 
 local InputArbiter = {}
 
@@ -27,6 +30,8 @@ local PEDAL_RISE_PER_S = 5 -- 0 → 1 en 0,2 s
 local PEDAL_FALL_PER_S = 8
 local STEER_RATE_PER_S = 3.2
 local STEER_RETURN_PER_S = 5
+local CLUTCH_PRESS_PER_S = 10
+local CLUTCH_RELEASE_PER_S = 1 / 0.6
 
 export type Device = "Keyboard" | "Gamepad"
 
@@ -36,6 +41,7 @@ export type KeyboardSample = {
     Left: boolean,
     Right: boolean,
     Handbrake: boolean,
+    Clutch: boolean?,
 }
 
 export type GamepadSample = {
@@ -44,6 +50,7 @@ export type GamepadSample = {
     Brake: number,
     Steer: number, -- stick brut [-1 ; 1]
     Handbrake: boolean,
+    Clutch: boolean?,
 }
 
 export type Context = {
@@ -56,6 +63,7 @@ export type Command = {
     Brake: number,
     Steer: number,
     Handbrake: boolean,
+    Clutch: number,
 }
 
 export type State = {
@@ -63,6 +71,8 @@ export type State = {
     Throttle: number,
     Brake: number,
     Steer: number,
+    -- Rampe de la pédale d'embrayage (les deux périphériques).
+    Clutch: number,
     Active: Device?,
     -- Vrai si le périphérique a été vu au repos depuis sa dernière sollicitation.
     KeyboardRested: boolean,
@@ -95,6 +105,7 @@ function InputArbiter.newState(): State
         Throttle = 0,
         Brake = 0,
         Steer = 0,
+        Clutch = 0,
         Active = nil,
         KeyboardRested = false,
         GamepadRested = false,
@@ -112,7 +123,7 @@ end
 -- Zones mortes appliquées, stick remis à l'échelle sur [0 ; 1].
 function InputArbiter.shapeGamepad(sample: GamepadSample): Command
     if not sample.Connected then
-        return { Throttle = 0, Brake = 0, Steer = 0, Handbrake = false }
+        return { Throttle = 0, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
     end
     local throttle = if sample.Throttle > TRIGGER_DEADZONE then sample.Throttle else 0
     local brake = if sample.Brake > TRIGGER_DEADZONE then sample.Brake else 0
@@ -125,15 +136,16 @@ function InputArbiter.shapeGamepad(sample: GamepadSample): Command
         Brake = math.clamp(brake, 0, 1),
         Steer = math.clamp(steer, -1, 1),
         Handbrake = sample.Handbrake,
+        Clutch = if sample.Clutch then 1 else 0,
     }
 end
 
 local function keyboardEngaged(keys: KeyboardSample): boolean
-    return keys.Throttle or keys.Brake or keys.Left or keys.Right or keys.Handbrake
+    return keys.Throttle or keys.Brake or keys.Left or keys.Right or keys.Handbrake or keys.Clutch == true
 end
 
 local function gamepadEngaged(pad: Command): boolean
-    return pad.Throttle > 0 or pad.Brake > 0 or pad.Steer ~= 0 or pad.Handbrake
+    return pad.Throttle > 0 or pad.Brake > 0 or pad.Steer ~= 0 or pad.Handbrake or pad.Clutch > 0
 end
 
 -- Un pas d'arbitrage. Renvoie la commande et un éventuel événement à signaler.
@@ -200,9 +212,18 @@ function InputArbiter.step(
     local returning = steerTarget == 0 or math.sign(steerTarget) ~= math.sign(state.Steer)
     local rate = if returning then STEER_RETURN_PER_S else STEER_RATE_PER_S
     state.Steer = approach(state.Steer, steerTarget, rate, rate, dt)
+    local clutchHeld = (useKeys and keys.Clutch == true) or (state.Active == "Gamepad" and pad.Clutch > 0)
+    state.Clutch = approach(state.Clutch, if clutchHeld then 1 else 0, CLUTCH_PRESS_PER_S, CLUTCH_RELEASE_PER_S, dt)
 
     if state.Active == "Gamepad" then
-        return pad, event
+        return {
+            Throttle = pad.Throttle,
+            Brake = pad.Brake,
+            Steer = pad.Steer,
+            Handbrake = pad.Handbrake,
+            Clutch = state.Clutch,
+        },
+            event
     end
     -- Clavier actif, ou aucun périphérique : rampes clavier (qui retombent à 0).
     return {
@@ -210,6 +231,7 @@ function InputArbiter.step(
         Brake = state.Brake,
         Steer = state.Steer,
         Handbrake = useKeys and keys.Handbrake,
+        Clutch = state.Clutch,
     },
         event
 end

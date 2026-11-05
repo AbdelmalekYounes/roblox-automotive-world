@@ -26,6 +26,9 @@ for _, spec in
         require("./specs/CollisionExchangeSpec"),
         require("./specs/TelemetrySpec"),
         require("./specs/DrivingScenarios"),
+        require("./specs/Lot02Powertrain"),
+        require("./specs/Lot02Chassis"),
+        require("./specs/Lot02Systems"),
     }
 do
     spec(TestKit, Harness)

@@ -2,7 +2,7 @@
 -- Textes affichés au joueur, indexés par clé.
 -- Le serveur n'envoie que des clés (jamais de texte libre) afin de préparer
 -- la localisation FR/EN exigée (AUD-L10N-01). Seul le français est rédigé
--- dans le lot 0.1 ; l'anglais reste à produire et à relire.
+-- (lots 0.1 et 0.2) ; l'anglais reste à produire et à relire.
 
 local Messages = {}
 
@@ -17,6 +17,19 @@ local FRENCH: { [string]: string } = {
     CameraPreset = "Caméra : %s",
     VehicleUnavailable = "Véhicule momentanément indisponible (prise en main refusée par le moteur). Réessayez.",
     GamepadDisconnected = "Manette déconnectée : commandes manette relâchées.",
+    -- Lot 0.2
+    ShiftClutchRequired = "Enfoncez l'embrayage pour changer de rapport.",
+    ShiftStopRequired = "Arrêtez le véhicule pour engager ce rapport.",
+    ShiftOverRev = "Rétrogradation refusée : régime trop élevé.",
+    ShiftLimit = "Pas de rapport au-delà.",
+    ShiftNotAvailable = "Cette boîte change de rapport seule.",
+    AidAbsent = "Ce modèle n'est pas équipé de cette aide.",
+    AidChanged = "%s",
+    RegenAbsent = "Ce modèle n'a pas de récupération d'énergie.",
+    RegenChanged = "Récupération au lâcher : %s",
+    EngineStalled = "Moteur calé : enfoncez l'embrayage (ou neutre) pour redémarrer.",
+    EnergyEmpty = "Réserve vide : plus de propulsion. Aucune recharge n'est disponible dans cette zone d'essai.",
+    DamageMechanical = "Dégâts mécaniques : le comportement du véhicule est affecté.",
 }
 
 function Messages.format(key: string, value: any): string

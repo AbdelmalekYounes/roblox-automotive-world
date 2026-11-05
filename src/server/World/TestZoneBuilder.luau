@@ -146,9 +146,10 @@ function TestZoneBuilder.build(): TestZone
     spawn.Material = Enum.Material.SmoothPlastic
     spawn.Parent = folder
 
-    -- Plots de stationnement des véhicules d'essai (face au nord, -Z).
+    -- Plots de stationnement des véhicules d'essai (face au nord, -Z) : les
+    -- quatre du lot 0.1, puis cinq pour les prototypes et configurations du lot 0.2.
     local pads: { BasePart } = {}
-    for index, x in { -36, -12, 12, 36 } do
+    for index, x in { -36, -12, 12, 36, 60, 84, 108, 132, 156 } do
         local pad = makePart(folder, {
             Name = "Plot" .. index,
             Size = Vector3.new(10, 0.05, 20),
@@ -251,6 +252,62 @@ function TestZoneBuilder.build(): TestZone
             Material = Enum.Material.Concrete,
         })
     end
+
+    -- Lot 0.2 — zone mouillée : revêtement d'asphalte marqué « mouillé »
+    -- (attribut lu par la simulation ; adhérence selon chaque pneu).
+    local wet = makePart(folder, {
+        Name = "ZoneMouillee",
+        Size = Vector3.new(160, 0.1, 400),
+        CFrame = CFrame.new(-470, 0.05, -100),
+        Color = Color3.fromRGB(38, 52, 70),
+        Material = Enum.Material.Asphalt,
+    })
+    wet:SetAttribute("AWWet", true)
+    addSign(folder, "Zone mouillée", Vector3.new(-470, 0, 105))
+
+    -- Lot 0.2 — bordures et irrégularités : couloir nord-sud en x = 480 avec des
+    -- bordures transversales de 12 cm, une bordure latérale de 15 cm et de petites
+    -- bosses de 5 à 8 cm (comparaison des sondes rayon / sphère).
+    local curbs = Instance.new("Folder")
+    curbs.Name = "Bordures"
+    curbs.Parent = folder
+    local curbColor = Color3.fromRGB(225, 225, 225)
+    for i = 0, 5 do
+        makePart(curbs, {
+            Name = "BordureTransversale" .. (i + 1),
+            Size = Vector3.new(24, 0.12 / 0.28, 1.2),
+            CFrame = CFrame.new(480, 0.06 / 0.28, -60 - i * 40),
+            Color = if i % 2 == 0 then curbColor else Color3.fromRGB(200, 40, 40),
+            Material = Enum.Material.Concrete,
+        })
+    end
+    makePart(curbs, {
+        Name = "BordureLaterale",
+        Size = Vector3.new(1.4, 0.15 / 0.28, 260),
+        CFrame = CFrame.new(472, 0.075 / 0.28, -180),
+        Color = curbColor,
+        Material = Enum.Material.Concrete,
+    })
+    for i = 0, 7 do
+        local height = (5 + (i % 4)) / 100 / 0.28
+        makePart(curbs, {
+            Name = "Bosse" .. (i + 1),
+            Size = Vector3.new(6, height, 3),
+            CFrame = CFrame.new(480 + (if i % 2 == 0 then -3 else 3), height / 2, -340 - i * 18),
+            Color = Color3.fromRGB(90, 90, 95),
+            Material = Enum.Material.Asphalt,
+        })
+    end
+    addSign(curbs, "Bordures", Vector3.new(496, 0, -40))
+
+    -- Lot 0.2 — mur de choc (essais de dégâts) : approche vers le sud (+Z).
+    makePart(folder, {
+        Name = "MurDeChoc",
+        Size = Vector3.new(60, 6, 4),
+        CFrame = CFrame.new(-250, 3, 200),
+        Color = Color3.fromRGB(240, 200, 40),
+        Material = Enum.Material.Concrete,
+    })
 
     folder.Parent = Workspace
     return { Folder = folder, Pads = pads }

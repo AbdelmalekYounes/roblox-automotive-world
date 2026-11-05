@@ -4,8 +4,10 @@
 -- Véhicule 100 % fictif, créé pour le lot 0.1. Ce n'est NI un modèle du
 -- catalogue de lancement (18 modèles), NI une option de départ gratuite.
 -- Toutes les valeurs ci-dessous sont des hypothèses de conception choisies
--- pour obtenir une berlinette propulsion plausible ; aucune n'est une mesure.
--- Elles sont regroupées ici pour être modifiées sans toucher au code.
+-- pour obtenir une berlinette propulsion essence plausible ; aucune n'est une
+-- mesure. Elles sont regroupées ici pour être modifiées sans toucher au code.
+-- Lot 0.2 : boîte automatique à convertisseur (au lieu de l'embrayage simplifié
+-- du lot 0.1), consommation, adhérence mouillée, réserve d'essence.
 
 local Types = require(script.Parent.Parent.VehicleTypes)
 
@@ -31,6 +33,9 @@ local definition: Types.VehicleDefinition = {
 
     -- Fréquences propres visées ≈ 1,6 Hz (avant) et 1,7 Hz (arrière).
     Suspension = {
+        -- Sonde de contact : balayage de sphère, retenu d'après les mesures en Studio
+        -- (bordures de 12 cm : pic vertical −37 à −41 %, ≈ +7 µs par pas ; RAPPORT_LOT_0.2).
+        ContactProbe = "Sphere",
         Front = {
             RestLengthM = 0.2,
             TravelM = 0.2,
@@ -62,6 +67,9 @@ local definition: Types.VehicleDefinition = {
         PeakSlipAngleDeg = 7,
         LoadSensitivity = 0.1,
         RollingResistance = 0.013,
+        WetGripRatio = 0.72,
+        WetSlidingFrictionRatio = 0.7,
+        RelaxationLengthM = 0.35,
     },
 
     Brakes = {
@@ -78,14 +86,19 @@ local definition: Types.VehicleDefinition = {
     },
 
     Powertrain = {
-        Kind = "Combustion",
+        Energy = {
+            Kind = "Petrol",
+            Capacity = 50, -- litres
+            InitialFraction = 0.6,
+        },
         Engine = {
             IdleRpm = 850,
             RedlineRpm = 7000,
             LimiterRpm = 7200,
-            ClutchLaunchRpm = 2600,
+            StallRpm = 450,
             InertiaKgM2 = 0.15,
             EngineBrakeTorqueNm = 45,
+            IdleControlTorqueNm = 25,
             TorqueCurve = {
                 { Rpm = 1000, TorqueNm = 120 },
                 { Rpm = 2000, TorqueNm = 165 },
@@ -96,6 +109,9 @@ local definition: Types.VehicleDefinition = {
                 { Rpm = 6800, TorqueNm = 175 },
                 { Rpm = 7200, TorqueNm = 160 },
             },
+            BsfcGPerKWh = 250,
+            PartLoadPenalty = 1.2,
+            IdleFuelLph = 0.8,
         },
         Transmission = {
             Kind = "Automatic",
@@ -106,10 +122,18 @@ local definition: Types.VehicleDefinition = {
             ShiftUpRpm = 6800,
             ShiftDownRpm = 3000,
             ShiftDurationS = 0.25,
+            LaunchRpm = 2600,
+            Converter = {
+                StallRpm = 2400,
+                StallTorqueRatio = 2.0,
+                LockupGear = 3,
+            },
         },
         Drivetrain = {
             Layout = "RWD",
             FrontTorqueShare = 0,
+            FrontDifferential = { Kind = "Open", PreloadNm = 0, PowerLockRatio = 0, CoastLockRatio = 0 },
+            RearDifferential = { Kind = "Open", PreloadNm = 0, PowerLockRatio = 0, CoastLockRatio = 0 },
         },
     },
 

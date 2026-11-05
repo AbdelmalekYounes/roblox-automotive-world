@@ -125,13 +125,29 @@ local vehiclesFolder = Workspace:WaitForChild("VehiculesEssai", 10)
 local remotes = ReplicatedStorage:WaitForChild("AutomotiveWorldRemotes", 10)
 local vehicles = if vehiclesFolder then vehiclesFolder:GetChildren() else {}
 record("serveur.zone_creee", zone ~= nil, zone and #zone:GetDescendants() .. " instances")
-record("serveur.quatre_vehicules", #vehicles == 4, #vehicles .. " véhicules")
+-- Lot 0.2 : 9 véhicules (plots 1 à 4 : P-01 du lot 0.1, puis P-02, P-03, DCT, SEQ, CVT).
+record("serveur.parc_neuf_vehicules", #vehicles == 9, #vehicles .. " véhicules")
 record("serveur.canaux_reseau", remotes ~= nil and #remotes:GetChildren() == 4, remotes and #remotes:GetChildren())
 
 -- S2 : véhicules stationnés posés, immobiles et droits (suspension réelle).
+-- Lot 0.2 : mesuré dans deux sessions, les 9 véhicules oscillaient encore
+-- ensemble à 4 s (rebond d'apparition). On attend l'immobilité jusqu'à 12 s et
+-- l'on consigne le temps réellement mesuré.
+local settleStart = os.clock()
 task.wait(4)
+local function allSettled(): boolean
+    for _, model in vehicles do
+        local root = model.PrimaryPart
+        if root == nil or root.AssemblyLinearVelocity.Magnitude >= 0.5 then
+            return false
+        end
+    end
+    return true
+end
+local settledInTime = waitFor(allSettled, 8)
+local settleSeconds = os.clock() - settleStart
 local startPositions = {}
-local details, settledOk = {}, true
+local details, settledOk = { string.format("immobiles après %.1f s", settleSeconds) }, settledInTime
 for _, model in vehicles do
     local root = model.PrimaryPart
     if root then
@@ -204,14 +220,15 @@ task.spawn(function()
     end
 end)
 
--- Attente des rapports clients.
+-- Attente des rapports clients (délai allongé par les sessions longues, ex. lot02).
+local clientTimeout = ReplicatedStorage:GetAttribute("AWTestClientTimeout")
 local gotAll = waitFor(function()
     local count = 0
     for _ in clientReports do
         count += 1
     end
     return count >= expectedPlayers
-end, CLIENT_TIMEOUT_S)
+end, if type(clientTimeout) == "number" then clientTimeout else CLIENT_TIMEOUT_S)
 monitoring = false
 record("serveur.rapports_clients_recus", gotAll, string.format("%d attendu(s)", expectedPlayers))
 

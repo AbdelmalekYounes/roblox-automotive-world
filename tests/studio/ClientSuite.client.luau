@@ -56,7 +56,12 @@ while ReplicatedStorage:GetAttribute("AWTestSession") == nil and os.clock() - se
     task.wait()
 end
 local currentSession = ReplicatedStorage:GetAttribute("AWTestSession")
-if currentSession == "scenarios" or currentSession == "collision" or currentSession == "collision_latence" then
+if
+    currentSession == "scenarios"
+    or currentSession == "collision"
+    or currentSession == "collision_latence"
+    or currentSession == "lot02"
+then
     return
 end
 
@@ -443,7 +448,12 @@ local nearDistance = cameraDistance()
 local presetName = VehicleController.toggleCameraForTest()
 task.wait(1.5)
 local farDistance = cameraDistance()
-VehicleController.toggleCameraForTest()
+-- Lot 0.2 : cinq vues ; on revient à la vue proche en parcourant le cycle.
+for _ = 1, 8 do
+    if VehicleController.toggleCameraForTest() == "Proche" then
+        break
+    end
+end
 record(
     "client.camera_proche_lointaine",
     nearDistance > 6 and nearDistance < 25 and farDistance > nearDistance + 3 and presetName == "Lointaine",

@@ -9,6 +9,7 @@
 --   │   ├─ Suspension<FL..RR> / Contact<FL..RR> : attachements des rayons et forces
 --   │   ├─ TireForce<FL..RR> : VectorForce (repère monde) par roue
 --   │   ├─ CenterOfMass + BodyForce : traînée et compensation de gravité
+--   │   ├─ CameraCockpit / CameraHood / CameraBumper : vues embarquées (lot 0.2)
 --   │   └─ DriverDoor (ProximityPrompt « Conduire »)
 --   ├─ Carrosserie    : pièces visuelles sans masse (soudées)
 --   ├─ DriverSeat     : siège conducteur (Seat)
@@ -277,6 +278,30 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
     seatWeld.Part1 = seat
     seatWeld.Parent = seat
     seat.Parent = model
+
+    -- Poste de conduite simplifié (vue cockpit) : planche de bord et volant,
+    -- sans masse ni collision.
+    local seatOffset = CFrame.new(-tubWidth / 4, tubBottom + 0.15, cabinZ + 0.6)
+    local dashZ = cabinZ - cabinLength / 2 + 0.35
+    addVisual(root, body, {
+        Name = "PlancheDeBord",
+        Size = Vector3.new(tubWidth - 0.8, 0.5, 0.7),
+        Offset = CFrame.new(0, tubTop + 0.2, dashZ),
+        Color = trim,
+    })
+    local wheelRing = addVisual(root, body, {
+        Name = "Volant",
+        Size = Vector3.new(0.15, 1.1, 1.1),
+        Offset = CFrame.new(seatOffset.X, tubTop + 0.45, dashZ + 0.75) * CFrame.Angles(math.rad(-25), math.pi / 2, 0),
+        Color = trim,
+    })
+    wheelRing.Shape = Enum.PartType.Cylinder
+
+    -- Points de vue embarqués (orientés vers l'avant, -Z) : yeux du conducteur
+    -- assis, avant du capot, bouclier avant. Dérivés de la géométrie du modèle.
+    addAttachment(root, "CameraCockpit", Vector3.new(seatOffset.X, seatOffset.Y + 2.45, seatOffset.Z - 0.35))
+    addAttachment(root, "CameraHood", Vector3.new(0, tubTop + 0.8, frontZ + studs(0.45)))
+    addAttachment(root, "CameraBumper", Vector3.new(0, tubBottom + 0.35, frontEnd - 0.65))
 
     -- Roues : purement visuelles (sans masse, sans collision, ignorées des rayons).
     for index, name in Constants.WheelNames do

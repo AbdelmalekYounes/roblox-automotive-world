@@ -28,7 +28,15 @@ local VehicleConstants = {
     Actions = table.freeze({
         Exit = "Exit",
         Unflip = "Unflip",
+        -- Argument : nom de l'aide ("Abs", "TractionControl", "StabilityControl").
+        -- Refusé si le modèle n'en est pas équipé.
+        ToggleAid = "ToggleAid",
+        -- Niveau suivant de récupération au lâcher (véhicules électriques).
+        CycleRegen = "CycleRegen",
     }),
+
+    -- Aides connues (liste fermée, validée par le serveur).
+    AidNames = table.freeze({ "Abs", "TractionControl", "StabilityControl" }),
 
     Attributes = table.freeze({
         VehicleId = "VehicleId",
@@ -43,7 +51,19 @@ local VehicleConstants = {
         VisualSteer = "VisualSteer",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",
+        -- Énergie (écrite par le serveur seul) : niveau en L ou kWh, réserve vide.
+        EnergyLevel = "EnergyLevel",
+        EnergyEmpty = "EnergyEmpty",
+        -- État des aides et de la récupération (écrits par le serveur seul, après validation).
+        AidAbs = "AidAbs",
+        AidTractionControl = "AidTractionControl",
+        AidStabilityControl = "AidStabilityControl",
+        RegenLevel = "RegenLevel",
+        -- Les dégâts sont publiés en attributs « Dmg… » (voir Physics/DamageModel).
     }),
+
+    -- Attribut d'une pièce de décor : revêtement mouillé (zone d'essai).
+    WetSurfaceAttribute = "AWWet",
 
     -- Ordre canonique des roues : avant gauche, avant droite, arrière gauche, arrière droite.
     WheelNames = table.freeze({ "FL", "FR", "RL", "RR" }),

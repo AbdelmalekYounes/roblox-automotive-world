@@ -16,18 +16,21 @@ local KNOWN_SESSIONS = {
     scenarios = { Name = "scenarios", Players = 1 },
     collision = { Name = "collision", Players = 2 },
     collision_latence = { Name = "collision_latence", Players = 2, DelayMs = 100 },
+    lot02 = { Name = "lot02", Players = 1 },
 }
 
 local output = process.args[1]
 if output == nil then
     print(
-        "Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence,scenarios,collision,collision_latence]"
+        "Usage : lune run tests/studio/build-driver.luau <sortie.luau> [solo,multijoueur,latence,scenarios,collision,collision_latence,lot02]"
     )
     process.exit(2)
 end
 
 local sessions = {}
-for name in string.gmatch(process.args[2] or "solo,multijoueur,latence,scenarios,collision,collision_latence", "[^,]+") do
+for name in
+    string.gmatch(process.args[2] or "solo,multijoueur,latence,scenarios,collision,collision_latence,lot02", "[^,]+")
+do
     local session = KNOWN_SESSIONS[name]
     if session == nil then
         print("Session inconnue : " .. name)
@@ -42,9 +45,18 @@ local server = fs.readFile(base .. "ServerSuite.server.luau")
 local client = fs.readFile(base .. "ClientSuite.client.luau")
 local scenarioServer = fs.readFile(base .. "ScenarioServer.server.luau")
 local scenarioClient = fs.readFile(base .. "ScenarioClient.client.luau")
+local lot02Server = fs.readFile(base .. "Lot02Server.server.luau")
+local lot02Client = fs.readFile(base .. "Lot02Client.client.luau")
 
 for label, source in
-    { serveur = server, client = client, scenarioServeur = scenarioServer, scenarioClient = scenarioClient }
+    {
+        serveur = server,
+        client = client,
+        scenarioServeur = scenarioServer,
+        scenarioClient = scenarioClient,
+        lot02Serveur = lot02Server,
+        lot02Client = lot02Client,
+    }
 do
     assert(not string.find(source, "]==]", 1, true), "La suite " .. label .. " ne doit pas contenir « ]==] »")
     -- Chaque suite doit compiler séparément.
@@ -63,6 +75,8 @@ driver = replace(driver, "@@SERVER_SUITE@@", server)
 driver = replace(driver, "@@CLIENT_SUITE@@", client)
 driver = replace(driver, "@@SCENARIO_SERVER@@", scenarioServer)
 driver = replace(driver, "@@SCENARIO_CLIENT@@", scenarioClient)
+driver = replace(driver, "@@LOT02_SERVER@@", lot02Server)
+driver = replace(driver, "@@LOT02_CLIENT@@", lot02Client)
 driver = replace(driver, "@@SESSIONS@@", serde.encode("json", sessions))
 luau.compile(driver)
 

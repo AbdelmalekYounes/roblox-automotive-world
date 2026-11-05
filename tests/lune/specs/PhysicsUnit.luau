@@ -1,10 +1,14 @@
 --!strict
 -- Tests unitaires des briques physiques pures (pneu, suspension, groupe motopropulseur).
+-- Les tests propres au lot 0.2 (moteurs, boîtes, différentiels, aides, énergie,
+-- dégâts) sont dans Lot02Powertrain, Lot02Chassis et Lot02Systems.
 
 return function(T: any, H: any)
     local TireModel = H.require("ReplicatedStorage.Shared.Vehicles.Physics.TireModel")
     local Suspension = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Suspension")
-    local Powertrain = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Powertrain")
+    local Engine = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Engine")
+    local Transmission = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Transmission")
+    local Driveline = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Driveline")
     local SurfaceFriction = H.require("ReplicatedStorage.Shared.Vehicles.Physics.SurfaceFriction")
     local P01 = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions").get("proto_p01")
 
@@ -127,54 +131,46 @@ return function(T: any, H: any)
 
     T.test("interpolation de la courbe de couple bornée", function()
         local curve = P01.Powertrain.Engine.TorqueCurve
-        T.near(Powertrain.sampleTorque(curve, 500), 120, 1e-9)
-        T.near(Powertrain.sampleTorque(curve, 1500), 142.5, 1e-9)
-        T.near(Powertrain.sampleTorque(curve, 9000), 160, 1e-9)
+        T.near(Engine.sampleTorque(curve, 500), 120, 1e-9)
+        T.near(Engine.sampleTorque(curve, 1500), 142.5, 1e-9)
+        T.near(Engine.sampleTorque(curve, 9000), 160, 1e-9)
     end)
 
     T.test("rapports signés et neutre", function()
         local transmission = P01.Powertrain.Transmission
-        T.equal(Powertrain.gearRatio(transmission, 0), 0)
-        T.equal(Powertrain.gearRatio(transmission, 1), 3.4)
-        T.equal(Powertrain.gearRatio(transmission, -1), -3.3)
+        T.equal(Transmission.fixedOverallRatio(transmission, 0), 0)
+        T.near(Transmission.fixedOverallRatio(transmission, 1), 3.4 * 3.9, 1e-9)
+        T.near(Transmission.fixedOverallRatio(transmission, -1), -3.3 * 3.9, 1e-9)
     end)
 
     T.test("propulsion : seules les roues arrière reçoivent du couple", function()
-        local shares = Powertrain.wheelDriveShares(P01.Powertrain.Drivetrain)
+        local shares = Driveline.wheelDriveShares(P01.Powertrain.Drivetrain)
         T.equal(shares[1], 0)
         T.equal(shares[2], 0)
         T.equal(shares[3], 0.5)
         T.equal(shares[4], 0.5)
     end)
 
-    T.test("répartitions traction et intégrale calculées (non exercées en jeu)", function()
-        local fwd = Powertrain.wheelDriveShares({ Layout = "FWD", FrontTorqueShare = 1 })
-        T.equal(fwd[1] + fwd[2], 1)
-        local awd = Powertrain.wheelDriveShares({ Layout = "AWD", FrontTorqueShare = 0.4 })
-        T.near(awd[1] + awd[2], 0.4, 1e-12)
-        T.near(awd[3] + awd[4], 0.6, 1e-12)
-    end)
-
-    T.test("marche arrière uniquement après maintien de « freiner » à l'arrêt", function()
+    T.test("marche arrière uniquement après maintien de « freiner » à l'arrêt (A3, automatique)", function()
         local Dynamics = H.require("ReplicatedStorage.Shared.Vehicles.Physics.VehicleDynamics")
         local state = Dynamics.createState(P01)
         state.Gear = 1
-        local brakeHeld = { Throttle = 0, Brake = 1, Steer = 0, Handbrake = false }
+        local brakeHeld = { Throttle = 0, Brake = 1, Steer = 0, Handbrake = false, Clutch = 0 }
         -- En mouvement : pas de marche arrière.
         for _ = 1, 60 do
-            Powertrain.updateAutomatic(state, P01.Powertrain, brakeHeld, 10, 1 / 60)
+            Transmission.update(state, P01.Powertrain, brakeHeld, 10, 0, 1 / 60)
         end
         T.equal(state.Gear, 1, "aucune marche arrière en roulant")
         -- À l'arrêt : 0,3 s de maintien.
         for _ = 1, 10 do
-            Powertrain.updateAutomatic(state, P01.Powertrain, brakeHeld, 0, 1 / 60)
+            Transmission.update(state, P01.Powertrain, brakeHeld, 0, 0, 1 / 60)
         end
         T.equal(state.Gear, 1, "pas encore")
         for _ = 1, 12 do
-            Powertrain.updateAutomatic(state, P01.Powertrain, brakeHeld, 0, 1 / 60)
+            Transmission.update(state, P01.Powertrain, brakeHeld, 0, 0, 1 / 60)
         end
         T.equal(state.Gear, -1, "marche arrière enclenchée")
-        local throttle, brake = Powertrain.updateAutomatic(state, P01.Powertrain, brakeHeld, 0, 1 / 60)
+        local throttle, brake = Transmission.update(state, P01.Powertrain, brakeHeld, 0, 0, 1 / 60)
         T.equal(throttle, 1, "en marche arrière, « freiner » accélère")
         T.equal(brake, 0)
     end)

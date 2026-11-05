@@ -11,13 +11,17 @@ local function quantize(value: number): number
     return math.round(value * 100) / 100
 end
 
--- Tableau compact { accélérateur, frein, direction, frein à main (0/1) }.
-function InputCodec.encode(input: Types.DriverInput): { number }
+-- Tableau compact { accélérateur, frein, direction, frein à main (0/1),
+-- cumul d'énergie consommée déclaré par le client (L ou kWh, session de conduite) }.
+-- Le cumul n'est qu'une DÉCLARATION : le serveur ne l'accepte qu'au-dessus de son
+-- propre plancher physique et à un débit plausible (EnergyModel.settle).
+function InputCodec.encode(input: Types.DriverInput, energyUsed: number?): { number }
     return {
         quantize(input.Throttle),
         quantize(input.Brake),
         quantize(input.Steer),
         if input.Handbrake then 1 else 0,
+        math.round((energyUsed or 0) * 1e5) / 1e5,
     }
 end
 
@@ -28,8 +32,9 @@ local function finiteNumber(value: any, low: number, high: number): number?
     return math.clamp(value, low, high)
 end
 
--- Retourne une commande assainie, ou nil si la charge utile est invalide.
-function InputCodec.decode(payload: any): Types.DriverInput?
+-- Retourne une commande assainie (et le cumul d'énergie déclaré, s'il est
+-- valide), ou nil si la charge utile est invalide.
+function InputCodec.decode(payload: any): (Types.DriverInput?, number?)
     if type(payload) ~= "table" then
         return nil
     end
@@ -40,12 +45,16 @@ function InputCodec.decode(payload: any): Types.DriverInput?
     if throttle == nil or brake == nil or steer == nil or handbrake == nil then
         return nil
     end
+    -- Cumul facultatif : borné, jamais négatif ; absent ou invalide → nil.
+    local energy = finiteNumber(payload[5], 0, 1e6)
     return {
         Throttle = throttle,
         Brake = brake,
         Steer = steer,
         Handbrake = handbrake >= 0.5,
-    }
+        Clutch = 0,
+    },
+        energy
 end
 
 -- Commande neutre utilisée pour un véhicule stationné (frein à main serré).
@@ -54,6 +63,7 @@ InputCodec.Parked = table.freeze({
     Brake = 0,
     Steer = 0,
     Handbrake = true,
+    Clutch = 0,
 }) :: Types.DriverInput
 
 return table.freeze(InputCodec)

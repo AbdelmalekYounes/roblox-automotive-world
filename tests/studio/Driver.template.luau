@@ -16,6 +16,8 @@ local SERVER_SOURCE = [==[@@SERVER_SUITE@@]==]
 local CLIENT_SOURCE = [==[@@CLIENT_SUITE@@]==]
 local SCENARIO_SERVER_SOURCE = [==[@@SCENARIO_SERVER@@]==]
 local SCENARIO_CLIENT_SOURCE = [==[@@SCENARIO_CLIENT@@]==]
+local LOT02_SERVER_SOURCE = [==[@@LOT02_SERVER@@]==]
+local LOT02_CLIENT_SOURCE = [==[@@LOT02_CLIENT@@]==]
 local SESSIONS = HttpService:JSONDecode([==[@@SESSIONS@@]==])
 
 local function emit(kind: string, data: any)
@@ -48,6 +50,17 @@ local scenarioClientScript = Instance.new("LocalScript")
 scenarioClientScript.Name = "AW_TestScenarioClient"
 scenarioClientScript.Source = SCENARIO_CLIENT_SOURCE
 scenarioClientScript.Parent = StarterPlayer:WaitForChild("StarterPlayerScripts")
+
+-- Essais du lot 0.2 : inactifs hors de la session « lot02 ».
+local lot02ServerScript = Instance.new("Script")
+lot02ServerScript.Name = "AW_TestLot02Server"
+lot02ServerScript.Source = LOT02_SERVER_SOURCE
+lot02ServerScript.Parent = ServerScriptService
+
+local lot02ClientScript = Instance.new("LocalScript")
+lot02ClientScript.Name = "AW_TestLot02Client"
+lot02ClientScript.Source = LOT02_CLIENT_SOURCE
+lot02ClientScript.Parent = StarterPlayer:WaitForChild("StarterPlayerScripts")
 
 -- Émulation de latence de Studio (réglages réseau) ; l'application effective
 -- aux processus clients est mesurée par la suite client (ping), pas supposée.
@@ -102,4 +115,6 @@ serverScript:Destroy()
 clientScript:Destroy()
 scenarioServerScript:Destroy()
 scenarioClientScript:Destroy()
+lot02ServerScript:Destroy()
+lot02ClientScript:Destroy()
 emit("end", {})
