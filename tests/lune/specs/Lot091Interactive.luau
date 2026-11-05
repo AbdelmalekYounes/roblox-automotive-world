@@ -276,10 +276,12 @@ return function(T: any, H: any)
         T.truthy(string.find(onboarding, 'footer.Text = ""', 1, true) ~= nil, "pied périmé effacé")
         local economy = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.EconomyPanel")
         local quoteAt = string.find(economy, "InputRouter.armConfirm()", 1, true)
+        -- Lot UI-04 : le pied de l'économie est devenu le bandeau d'état du serveur (PanelKit) ; même règle.
         T.truthy(
             quoteAt ~= nil
-                and string.find(string.sub(economy, quoteAt, quoteAt + 300), 'footer.Text = ""', 1, true) ~= nil,
-            "économie : pied effacé à la confirmation"
+                and string.find(string.sub(economy, quoteAt, quoteAt + 300), 'shell:setStatus(nil, "")', 1, true)
+                    ~= nil,
+            "économie : état périmé effacé à la confirmation"
         )
     end)
 end
