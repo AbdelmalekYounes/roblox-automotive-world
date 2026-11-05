@@ -211,3 +211,23 @@ Correction :
 le régime côté roues (`ShiftUpRpm` 6 800), alors que le glissement du convertisseur porte le moteur au rupteur avant.
 Cela s'entendra en jeu comme un moteur bloqué au rupteur. Une correction de la boîte (physique) ne relève pas de ce lot
 sans accord.
+
+## 12. Validation à l'écoute et envoi (2026-11-05)
+
+Le propriétaire a validé à l'oreille la variante **« moteur »** :
+- démos corrigées après les coupures ;
+- passages de rapport ;
+- conduite tirée de la vraie dynamique.
+
+Ses réponses successives : « c'est bon » (démos corrigées), « c'est bien » (passages, avant la demande sur les
+rétrogradages), « C'est bon » (démo de conduite). Ce sont des essais humains d'écoute sur des fichiers, pas en jeu.
+
+Sons à envoyer sur Roblox par le propriétaire : `build/audio/engines/brio/a_envoyer/`. Le dossier contient 19 fichiers
+WAV (48 kHz, mono, 3,4 Mo au total), nommés `brio_on_<tr/min>`, `brio_off_<tr/min>`, `brio_start`, `brio_stop`
+et `brio_stall`. Chaque nom correspond à la ressource `audio.engine.brio.<on|off>.<tr/min>` ou
+`audio.engine.brio.<start|stop|stall>` du manifeste.
+
+Retour attendu : un `.rbxm` des 19 objets Sound insérés depuis le gestionnaire d'actifs, déposé dans `aw-vm-exchange`.
+L'assistant y relève les identifiants avec Lune, puis les reporte au manifeste. Aucun identifiant n'est saisi à la main.
+
+Décision ouverte, hors son : moteur collé au rupteur en 1ʳᵉ et en 2ᵉ (§11).
