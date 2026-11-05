@@ -32,6 +32,8 @@ local JOINT_PARTS: { [string]: string } = {
     RightElbow = "RightLowerArm",
     LeftKnee = "LeftLowerLeg",
     RightKnee = "RightLowerLeg",
+    LeftHip = "LeftUpperLeg",
+    RightHip = "RightUpperLeg",
 }
 
 -- Motor6D ou AnimationConstraint : tous deux exposent `Transform` (typage commun minimal).

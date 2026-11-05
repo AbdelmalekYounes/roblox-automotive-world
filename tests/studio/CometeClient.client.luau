@@ -55,7 +55,6 @@ local askEvent = ReplicatedStorage:WaitForChild("AWCometeAsk", 30) :: RemoteEven
 local Gui = require(ReplicatedStorage:WaitForChild("AW_TestGui", 30)) :: any
 local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles")
 local KIT = (require(VehiclesShared:WaitForChild("MeshKitData")) :: any).Kits.wk_comete
-local Definitions = require(VehiclesShared:WaitForChild("VehicleDefinitions")) :: any
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants")) :: any
 local playerGui = player:WaitForChild("PlayerGui") :: PlayerGui
 local camera = Workspace.CurrentCamera :: Camera
@@ -75,7 +74,6 @@ local VehicleController = require(
         :WaitForChild("VehicleController")
 ) :: any
 local M = Constants.MetersPerStud
-local CG = Definitions.get("wk_comete").Chassis.CgHeightM / M -- hauteur du centre de gravité au-dessus du sol
 
 local function character(): Model
     return player.Character or player.CharacterAdded:Wait()
@@ -229,29 +227,45 @@ handlers.pose = function(id, _data)
         return if part and part:IsA("BasePart") then frame:PointToObjectSpace(part.Position) else nil
     end
     local cabin = KIT.Collisions.Habitacle
-    local hull = KIT.Collisions.Coque
     local roof = cabin.Center.Y + cabin.Size.Y / 2
     local head = me:FindFirstChild("Head") :: BasePart?
     local headTop = if head then frame:PointToObjectSpace(head.Position).Y + head.Size.Y / 2 else nil
     local handL, handR = localOf("LeftHand"), localOf("RightHand")
-    local footL, footR = localOf("LeftFoot"), localOf("RightFoot")
+    -- Pieds : dessous de la pièce (centre − demi-hauteur) comparé au plancher MESURÉ sous le pédalier.
+    local function footBottom(name: string): (number?, number?)
+        local part = me:FindFirstChild(name)
+        if part == nil or not part:IsA("BasePart") then
+            return nil, nil
+        end
+        local p = frame:PointToObjectSpace(part.Position)
+        return p.Y - part.Size.Y / 2, p.Z
+    end
+    local lY, lZ = footBottom("LeftFoot")
+    local rY, rZ = footBottom("RightFoot")
     local sideMax = math.max(math.abs(handL and handL.X or 0), math.abs(handR and handR.X or 0))
-    local feetLow = math.min(footL and footL.Y or math.huge, footR and footR.Y or math.huge)
-    local feetZ = math.min(footL and footL.Z or math.huge, footR and footR.Z or math.huge)
-    local front = hull.Center.Z - hull.Size.Z / 2
+    local feetLow = math.min(lY or math.huge, rY or math.huge)
+    local feetFront = math.min(lZ or math.huge, rZ or math.huge)
+    local feetRear = math.max(lZ or -math.huge, rZ or -math.huge)
+    local well = KIT.Footwell
     local headOk = headTop ~= nil and headTop < roof
     local handsOk = sideMax < KIT.SideHalf
-    local feetOk = feetLow > -CG and feetZ > front
+    -- Pieds POSÉS sur le plancher (ni dessous, ni en l'air à hauteur de planche de bord).
+    local feetOk = feetLow >= well.FloorY - 0.05
+        and feetLow <= well.FloorY + 0.6
+        and feetFront >= well.FrontZ - 0.3
+        and feetRear <= well.RearZ + 0.6
     local detail = string.format(
-        "haut de la tête %.2f (pavillon %.2f) ; mains |x| %.2f (flanc %.2f) ; pieds y %.2f (sol %.2f), z %.2f (avant %.2f)",
+        "haut de la tête %.2f (pavillon %.2f) ; mains |x| %.2f (flanc %.2f) ; dessous des pieds y %.2f (plancher %.2f), z %.2f à %.2f (pédalier %.2f à %.2f)",
         headTop or -99,
         roof,
         sideMax,
         KIT.SideHalf,
         feetLow,
-        -CG,
-        feetZ,
-        front
+        well.FloorY,
+        feetFront,
+        feetRear,
+        well.FrontZ,
+        well.RearZ
     )
     record("comete.k04.pose_" .. label .. "_dans_l_habitacle", headOk and handsOk and feetOk, detail)
     return { Detail = detail }
@@ -818,7 +832,8 @@ while not finished and os.clock() - sessionStart < 1500 do
 end
 
 local shots = Gui.report().shots
-if cometeSession ~= "comete_perf" then
+-- Session perf : aucune capture ; session à 2 joueurs : seul l'observateur capture.
+if cometeSession ~= "comete_perf" and (cometeSession ~= "comete2" or #shots > 0) then
     record("comete.client.captures", #shots > 0, #shots)
 end
 reportEvent:FireServer({ vehicle = "comete", steps = steps, measures = { captures = #shots } })

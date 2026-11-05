@@ -18,6 +18,9 @@ export type Kit = {
     Reference: string,
     ReferenceCenter: Vector3,
     SeatDriver: Vector3, -- CENTRE de la pièce Seat (0,4 st d'épaisseur : dessus d'assise + 0,2 au-dessus)
+    -- Pose assise du jeu (Shared.Vehicles.SeatPose) des deux places, et plancher des pieds mesuré (y, z mini, z maxi).
+    SeatPoses: { Driver: string, Passenger: string },
+    Footwell: { FloorY: number, FrontZ: number, RearZ: number },
     SeatPassenger: Vector3,
     CameraCockpit: Vector3,
     CameraHood: Vector3,
@@ -58,6 +61,9 @@ local COMETE: Kit = {
     ReferenceCenter = Vector3.new(0, 0.354, -1.214),
     SeatDriver = Vector3.new(-1.2, -0.843, -1.45),
     SeatPassenger = Vector3.new(1.2, -0.843, -1.45),
+    SeatPoses = { Driver = "Sportive", Passenger = "SportivePassager" },
+    -- Plancher sous le pédalier mesuré par rayons (Blender, 2026-11-05) : y −0,92 entre z −4,6 et −3,2.
+    Footwell = { FloorY = -0.92, FrontZ = -4.6, RearZ = -3.2 },
     CameraCockpit = Vector3.new(-1.2, 1.798, -1.8),
     CameraHood = Vector3.new(0, 2.024, -5.797),
     CameraBumper = Vector3.new(0, 0.514, -10.084),

@@ -254,6 +254,11 @@ réel, ni le ressenti, ni le comportement multijoueur.
 
 ## 3 septies. Essais reportés du lot VEH3D-01 (Comète 3D, moteur requis)
 
+**Finalisation du 2026-11-05** : état détaillé, anomalies corrigées et actions du propriétaire dans
+`docs/vehicle-3d/VEH3D_01_CLOTURE.md` (sessions `comete`, `comete_perf`, `comete_avatar`, `comete2`). Nouveaux constats :
+sorties conducteur 8 / 8 et passager 8 / 8 en échec sur la Comète (`20261105-015804`, familles QA-A15/A16/A18) ;
+D5 non mesurable dans la VM (temps de rendu à 0) ; pose de jeu « Sportive » mesurée pour l'avatar par défaut seulement.
+
 Contrôlé hors Studio (Lune, 2026-11-04) : gabarit, identifiants, données du kit, repli. Tout ce qui suit dépend du moteur.
 Identifiants QA-K (kit de maillages) : les QA-V01 à V09 sont ceux des lots 0.8 et 0.9 (§3 sexies et précédents).
 Session VM : `test-vm.cmd -Sessions comete -GuiInput` (`tests/studio/CometeServer.server.luau`, `CometeClient.client.luau`).

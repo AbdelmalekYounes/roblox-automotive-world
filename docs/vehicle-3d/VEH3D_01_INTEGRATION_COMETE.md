@@ -175,3 +175,8 @@ l'appel de test `invokeActionForTest` (même gestionnaire que la touche), parc D
 **Captures** (`report\gui\named\`, hors dépôt) : trois-quarts avant et arrière, profil, dessus, roue, conducteur par
 la vitre, trois vues de conduite, après les chocs, nuit avant et arrière, P-01. Ce sont des rendus du modèle tiers :
 elles restent hors du dépôt.
+
+## 8. Finalisation (2026-11-05)
+
+Voir `VEH3D_01_CLOTURE.md` : crédits en jeu, feux stop, dégâts sur la surface mesurée, peinture prête (carte neutre à
+envoyer), pose « Sportive », performances, avatars, 2 joueurs, actions du propriétaire et recommandation.
