@@ -10,6 +10,7 @@
 
 local Types = require(script.Parent.VehicleTypes)
 local Comete = require(script.Parent.Definitions.Comete)
+local Brio = require(script.Parent.Definitions.Brio)
 
 local VehicleDefinitions = {}
 
@@ -424,6 +425,8 @@ end
 -- (VEH3D-02). Les 17 autres modèles sont retirés ; les prototypes P-01 à P-03 et les variantes de validation ne sont
 -- plus dans le jeu : ce sont des jeux d'essai des tests (tests/lune/fixtures), jamais livrés.
 register(Comete)
+-- Lot VEH3D-02 : citadine Brio (essence, automatique, traction).
+register(Brio)
 
 -- Véhicule des bancs de mesure réservés à Studio (SpawnBench) : le seul modèle du jeu.
 VehicleDefinitions.DefaultTestVehicleId = Comete.Id

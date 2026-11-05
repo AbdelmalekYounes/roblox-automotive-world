@@ -114,7 +114,7 @@ return function(T: any, H: any)
         d.Powertrain.Drivetrain.FrontTorqueShare = 0.4
     end)
 
-    T.test("jeu : la Comète seule, valide et gelée ; jeux d'essai valides (lot BASE-01)", function()
+    T.test("jeu : la Comète et la Brio, valides et gelées ; jeux d'essai valides (lots BASE-01, VEH3D-02)", function()
         local ids = {}
         for _, definition in VehicleDefinitions.all() do
             local ok, errors = VehicleDefinitions.validate(definition)
@@ -123,7 +123,7 @@ return function(T: any, H: any)
             T.truthy(definition.IsTestPrototype == false, definition.Id .. " : modèle du jeu, pas un prototype")
             table.insert(ids, definition.Id)
         end
-        T.equal(table.concat(ids, ","), "wk_comete", "registre du jeu")
+        T.equal(table.concat(ids, ","), "wk_comete,wk_brio", "registre du jeu")
         -- Prototypes et variantes : retirés du jeu, conservés comme jeux d'essai, toujours valides.
         for _, definition in Fixtures.all() do
             local ok, errors = VehicleDefinitions.validate(definition)

@@ -244,6 +244,11 @@ local T: { [string]: { string } } = {
         "Moteur central, boîte séquentielle, appui aérodynamique : réservée aux pilotes aguerris.",
         "Mid-engine, sequential gearbox, aerodynamic downforce: for seasoned drivers.",
     },
+    ["vehicle.wk_brio.category"] = { "Citadine", "City car" },
+    ["vehicle.wk_brio.desc"] = {
+        "Petite traction essence à boîte automatique : maniable, sobre, véhicule de service des métiers.",
+        "Small front-wheel-drive petrol car with an automatic gearbox: nimble, frugal, the jobs' service car.",
+    },
 }
 
 return T

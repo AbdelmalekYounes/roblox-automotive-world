@@ -28,7 +28,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
 | 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | _Sheep19 (crédit retenu ; l'API affichait « s0h1o9b » le 2026-11-04, renommage supposé, non prouvé) | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; LOD0 exporté et **importé dans Studio par le propriétaire : géométrie conforme, vitrage opaque** (§5) ; intégré par VEH3D-01 (`VEH3D_01_CLOTURE.md`) |
-| 2026-11-05 | [Milano '95 – Low poly model](https://sketchfab.com/3d-models/milano-95-low-poly-model-122a22d210234596ad23623588d0d166) (18,1 k triangles, page relevée par l'API le 2026-11-05) | Daniel Zhabotinsky | CC BY 4.0, plus une permission sans condition de l'auteur | Citadine (VEH3D-02, véhicule de départ) | Propriétaire : choix « Milano '95 » parmi les candidats (`VEH3D_02_CANDIDATS.md`) | **À télécharger par le propriétaire** ; inspection, préparation et crédits à faire. Silhouette proche de la Fiat Punto mk1 ; insigne et plaque à retirer |
+| 2026-11-05 | [Milano '95 – Low poly model](https://sketchfab.com/3d-models/milano-95-low-poly-model-122a22d210234596ad23623588d0d166) (18,1 k triangles, page relevée par l'API le 2026-11-05) | Daniel Zhabotinsky | CC BY 4.0, plus une permission sans condition de l'auteur | Brio `wk_brio` (VEH3D-02) : véhicule de service des métiers et achetable en concession, **pas** véhicule de départ (décision du 2026-11-05) | Propriétaire : choix « Milano '95 » parmi les candidats (`VEH3D_02_CANDIDATS.md`) | Téléchargé par le propriétaire ; inspecté, préparé, finalisé et exporté le 2026-11-05 (§6). Insignes et plaques supprimés. Silhouette proche de la Fiat Punto mk1, sans aucun logo ni nom de marque |
 
 ## Modèles examinés et refusés
 
@@ -247,3 +247,29 @@ Non vérifié (état du 2026-11-04, suite dans `VEH3D_01_CLOTURE.md`) :
 - l'envoi sur Roblox des maillages (choix « Importer sur Roblox » du propriétaire) ;
 - l'éclairage des feux (`AWLight`) ;
 - la conduite, les LOD, les performances D5, les avatars à bord.
+
+## 6. Brio (`wk_brio`) : préparation, finition et export du « Milano '95 » (2026-11-05, lot VEH3D-02)
+
+Décisions du propriétaire (2026-11-05) : nom **Brio** ; essence, boîte automatique, traction ; véhicule de service des
+métiers et achetable en concession, pas véhicule de départ ; optiques en **matériaux unis** (la texture d'origine des
+optiques assemble des photos de vrais blocs optiques) ; intérieur **gardé** ; carrosserie en **peinture unie**.
+
+Chaîne (dépôt d'art, branche `veh3d-02-citadine`), Blender 4.5.9 en arrière-plan, `--factory-startup --disable-autoexec` :
+
+| Étape | Script | Résultat mesuré |
+|---|---|---|
+| Préparation | `tools/blender/milano95_prepare.py` | `Body_Badges`, `Numberplates_Front` et `Numberplates_Rear` supprimés ; 16 matériaux remplacés par des matériaux unis (`AW_Peinture`, `AW_Vitrage`, `AW_VerreOptique`, `AW_VerreFeu`, `AW_Phare`, `AW_Feu`, `AW_Clignotant`, `AW_Recul`) ; textures gardées : pneus, dessous de caisse, intérieur ; échelle uniforme 3,5668 st par unité (0,9987 de l'échelle réelle) ; roues séparées, pivot au moyeu, écart à la physique ≤ 0,052 st |
+| Finition | `tools/blender/milano95_finish.py` | 13 contrôles sur 13 ; repères, plancher, pavillon, 4 boîtes de collision (dépassement ≤ 0,25 st), feux, marques de dégâts ; LOD1 11 850 et LOD2 4 690 triangles (préparés, non exportés) |
+| Export | `tools/blender/export_roblox_glb.py` | `vehicles/wk_brio/export/wk_brio_milano95_lod0.glb` : 27 pièces, 17 865 triangles (collections EXT, INT, ROUES) ; centres attendus dans Studio dans `wk_brio_milano95_lod0.json` |
+
+Les vitrages comptent dans l'enveloppe de recherche des collisions : sans eux, les rayons sortaient par le pare-brise et
+aucune boîte « Coque » n'était acceptée. Les rayons des marques de dégâts avant et arrière étaient inversés au premier
+passage (valeurs vides) ; corrigé et relancé.
+
+Pneus : inscription « Kamastone » sur le flanc (marque fictive du modèle d'origine), conservée.
+
+Non vérifié :
+- l'import dans Studio et l'envoi des maillages sur Roblox : faits par le propriétaire le 2026-11-05 (matériaux unis
+  arrivés gris, couleurs reposées par la fabrique : `VEH3D_02_BRIO.md` §6) ;
+- l'absence de logo dans le petit motif de la texture d'intérieur (`UCB_Interiors_2`) : à confirmer par le propriétaire ;
+- tout le comportement en jeu (liste de vérification de `VEH3D_02_BRIO.md`).

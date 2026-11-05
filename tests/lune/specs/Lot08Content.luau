@@ -49,18 +49,21 @@ return function(T: any, H: any)
 
     T.suite("Lot BASE-01 — gamme réduite à la Comète (décision du propriétaire du 2026-11-05)")
 
-    T.test("1. registre : la Comète seule, sans prototype ni modèle retiré, textes FR/EN", function()
+    -- Lot VEH3D-02 : la Brio (citadine) rejoint la Comète ; l'identifiant `wk_brio` de l'ancienne gamme proposée est
+    -- repris pour la nouvelle définition (aucun profil réel ne la possédait : jamais achetable hors Dev).
+    T.test("1. registre : la Comète et la Brio, sans prototype ni modèle retiré, textes FR/EN", function()
         local ids = {}
         for _, definition in Definitions.all() do
             table.insert(ids, definition.Id)
         end
-        T.equal(#ids, 1, "un seul modèle enregistré : " .. table.concat(ids, ", "))
-        T.equal(ids[1], "wk_comete")
-        for _, retired in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "wk_brio", "wk_aster", "wk_atlas" } do
+        T.equal(table.concat(ids, ","), "wk_comete,wk_brio", "modèles enregistrés")
+        for _, retired in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "wk_aster", "wk_atlas" } do
             T.truthy(Definitions.get(retired) == nil, retired .. " : retiré du jeu")
         end
-        for _, suffix in { ".category", ".desc" } do
-            T.truthy(Localization.has("vehicle.wk_comete" .. suffix), "wk_comete" .. suffix .. " FR/EN")
+        for _, id in ids do
+            for _, suffix in { ".category", ".desc" } do
+                T.truthy(Localization.has("vehicle." .. id .. suffix), id .. suffix .. " FR/EN")
+            end
         end
     end)
 
@@ -73,14 +76,16 @@ return function(T: any, H: any)
         T.truthy(Definitions.gearLimitedTopSpeedKmh(definition) >= 320 * 0.99, "démultiplication suffisante")
     end)
 
-    T.test("3. catalogue : une entrée liée (Comète), deux emplacements, jamais officielle", function()
-        T.equal(#VehicleCatalog.Entries, 1)
+    T.test("3. catalogue : deux entrées liées (Comète, Brio), deux emplacements, jamais officielles", function()
+        T.equal(#VehicleCatalog.Entries, 2)
         T.equal(VehicleCatalog.Slots, 2, "Comète et citadine")
-        local entry = VehicleCatalog.Entries[1]
-        T.equal(entry.DefinitionId, "wk_comete")
-        T.truthy(Definitions.get(entry.DefinitionId) ~= nil, "définition existante")
-        T.truthy(entry.Price > 0 and #entry.Dealers >= 1, "prix et concession")
-        T.truthy(entry.Availability ~= "Official", "aucune référence officielle")
+        for index, id in { "wk_comete", "wk_brio" } do
+            local entry = VehicleCatalog.Entries[index]
+            T.equal(entry.DefinitionId, id)
+            T.truthy(Definitions.get(entry.DefinitionId) ~= nil, "définition existante")
+            T.truthy(entry.Price > 0 and #entry.Dealers >= 1, "prix et concession")
+            T.truthy(entry.Availability ~= "Official", "aucune référence officielle")
+        end
     end)
 
     T.test("4. actifs provisoires séparés des officiels : achat en Dev seulement, aucun départ", function()

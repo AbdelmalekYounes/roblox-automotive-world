@@ -203,24 +203,27 @@ return function(T: any, H: any)
         T.equal(count, 1)
     end)
 
-    T.test("catalogue (lot BASE-01) : la Comète, achetable en Dev seulement, aucun prototype", function()
-        T.equal(#VehicleCatalog.Entries, 1)
-        for _, entry in VehicleCatalog.Entries do
-            T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id)
-            T.truthy(
-                not VehicleCatalog.purchasable(entry, "Test") and not VehicleCatalog.purchasable(entry, "Prod"),
-                entry.Id
+    T.test(
+        "catalogue (lots BASE-01, VEH3D-02) : Comète et Brio, achetables en Dev seulement, aucun prototype",
+        function()
+            T.equal(#VehicleCatalog.Entries, 2)
+            for _, entry in VehicleCatalog.Entries do
+                T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id)
+                T.truthy(
+                    not VehicleCatalog.purchasable(entry, "Test") and not VehicleCatalog.purchasable(entry, "Prod"),
+                    entry.Id
+                )
+                T.truthy(Definitions.get(entry.DefinitionId) ~= nil, entry.DefinitionId)
+                T.truthy(string.sub(entry.DefinitionId, 1, 6) ~= "proto_", "pas de prototype")
+            end
+            local profile = ProfileSchema.new(5, 0, "Prod")
+            Wallet.credit(profile, 500_000, "Seed", "s", 0)
+            T.equal(
+                select(2, Commerce.buyVehicle(profile, "comete", "Prod", Definitions.get("wk_comete"), 0)),
+                "CatalogNotPurchasable"
             )
-            T.truthy(Definitions.get(entry.DefinitionId) ~= nil, entry.DefinitionId)
-            T.truthy(string.sub(entry.DefinitionId, 1, 6) ~= "proto_", "pas de prototype")
         end
-        local profile = ProfileSchema.new(5, 0, "Prod")
-        Wallet.credit(profile, 500_000, "Seed", "s", 0)
-        T.equal(
-            select(2, Commerce.buyVehicle(profile, "comete", "Prod", Definitions.get("wk_comete"), 0)),
-            "CatalogNotPurchasable"
-        )
-    end)
+    )
 
     T.test("reprise ≈ 60 % ajustée à l'état ; pièces installées incluses, sans second versement", function()
         local profile = ProfileSchema.new(5, 0, "Dev")

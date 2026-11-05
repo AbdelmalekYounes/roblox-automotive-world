@@ -787,6 +787,11 @@ local E: { [string]: Entry } = {
     ["credits.url"] = { "Œuvre : {url}", "Work: {url}" },
     ["credits.licence"] = { "Licence {licence} : {url}", "{licence} licence: {url}" },
     ["credits.usage.comete"] = { "Modèle 3D de la Comète", "Comète 3D model" },
+    ["credits.usage.brio"] = { "Modèle 3D de la Brio", "Brio 3D model" },
+    ["credits.changes.brio"] = {
+        "insignes et plaques retirés, optiques et peinture en matériaux unis, roues séparées, mise à l'échelle",
+        "badges and plates removed, plain lights and paint, wheels separated, rescaled",
+    },
     ["credits.changes.comete"] = {
         "logos et inscriptions retirés, mise à l'échelle, roues séparées, vitrage et feux adaptés",
         "logos and lettering removed, rescaled, wheels separated, glazing and lights adapted",

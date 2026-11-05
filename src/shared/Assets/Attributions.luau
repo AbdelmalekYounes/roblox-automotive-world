@@ -42,6 +42,20 @@ Attributions.List = table.freeze({
         ShowTitle = false,
         ShowUrl = false,
     } :: Attribution),
+    -- Lot VEH3D-02 : carrosserie de la Brio (licence.txt du modèle, 2026-11-05).
+    table.freeze({
+        ManifestId = "veh.wk_brio.meshmilano95",
+        UsageKey = "credits.usage.brio",
+        ChangesKey = "credits.changes.brio",
+        Creator = "Daniel Zhabotinsky",
+        Source = "Sketchfab",
+        Licence = "CC BY 4.0",
+        LicenceUrl = "creativecommons.org/licenses/by/4.0",
+        Title = "Milano '95 - Low poly model",
+        Url = "https://sketchfab.com/3d-models/milano-95-low-poly-model-122a22d210234596ad23623588d0d166",
+        ShowTitle = false,
+        ShowUrl = false,
+    } :: Attribution),
 } :: { Attribution })
 
 -- Attribution d'une entrée du manifeste, ou nil.

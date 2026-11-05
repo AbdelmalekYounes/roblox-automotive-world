@@ -295,3 +295,10 @@ déclarée dans `EnvironmentConfig.TestGameIds` : environnement **Test**, DataSt
 production). C'est la première fois que le DataStore réel peut tourner : campagne QA-D01 à QA-D10 à mener par le
 propriétaire (sauvegarde, reconnexion, deux serveurs). Aucune expérience de production déclarée.
 
+## Lot VEH3D-02 — la Brio, citadine 3D (branche `feat/veh3d-02-citadine`)
+
+Décisions du propriétaire du 2026-11-05 ([rapport](vehicle-3d/VEH3D_02_BRIO.md)) : modèle tiers « Milano '95 » (CC BY 4.0),
+nommé Brio ; essence, automatique, traction ; véhicule de service des métiers et achetable en concession, pas véhicule de
+départ ; optiques et peinture unies, intérieur gardé. État du 2026-11-05 : préparation, finition et export faits (dépôt
+d'art), définition, kit mesuré, catalogue, métiers, crédits et tests intégrés ; gabarit importé par le
+propriétaire et intégré le même jour ; **validé en jeu par le propriétaire le 2026-11-05**.

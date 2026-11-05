@@ -184,9 +184,10 @@ return function(T: any, H: any)
         T.equal(tail, 2, "deux feux arrière")
     end)
 
-    T.test("6. fabrique : kit seulement pour la Comète, repli sur la coque générée par code", function()
+    T.test("6. fabrique : kit pour la Comète et la Brio (VEH3D-02), repli sur la coque générée par code", function()
         for _, definition in Definitions.all() do
-            T.truthy((Data.Kits[definition.Id] ~= nil) == (definition.Id == "wk_comete"), definition.Id)
+            local expected = definition.Id == "wk_comete" or definition.Id == "wk_brio"
+            T.truthy((Data.Kits[definition.Id] ~= nil) == expected, definition.Id)
         end
         local factory = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleFactory")
         T.truthy(
