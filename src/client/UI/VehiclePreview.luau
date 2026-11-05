@@ -35,7 +35,7 @@ local currentId: string? = nil
 local colorKey = ""
 local token = 0
 local center = Vector3.zero
-local radius = 1
+local half = Vector3.one -- demi-dimensions de la boîte du véhicule (studs)
 local angle = 210 -- trois quarts avant gauche à l'ouverture (degrés)
 local dragging = false
 local dragPixels = 0
@@ -45,15 +45,25 @@ local function rgb(values: { number }): Color3
     return Color3.fromRGB(values[1], values[2], values[3])
 end
 
-local function placeCamera()
+-- Distance de cadrage, recalculée seulement au chargement d'un modèle et au redimensionnement de la zone
+-- (576 coins examinés : jamais par image).
+local distance = 10
+
+local function refit()
     local view = viewport
-    local cam = camera
-    if view == nil or cam == nil or current == nil then
+    if view == nil then
         return
     end
     local size = view.AbsoluteSize
     local aspect = if size.Y > 0 then size.X / size.Y else 1
-    local distance = PreviewFraming.distance(radius, PreviewFraming.Fov, aspect)
+    distance = PreviewFraming.fitDistance(half.X, half.Y, half.Z, PreviewFraming.Fov, aspect, PreviewFraming.Pitch)
+end
+
+local function placeCamera()
+    local cam = camera
+    if viewport == nil or cam == nil or current == nil then
+        return
+    end
     cam.CFrame = CFrame.new(center)
         * CFrame.Angles(0, math.rad(angle), 0)
         * CFrame.Angles(math.rad(-PreviewFraming.Pitch), 0, 0)
@@ -143,7 +153,7 @@ local function load(modelId: string, cosmetics: any, ticket: number)
     paint(copy, modelId, cosmetics)
     local box, size = copy:GetBoundingBox()
     center = box.Position
-    radius = size.Magnitude / 2
+    half = size / 2
     copy.Parent = viewport
     current = copy
     local parts = 0
@@ -155,6 +165,7 @@ local function load(modelId: string, cosmetics: any, ticket: number)
     local view = viewport :: ViewportFrame
     view:SetAttribute("AWPreviewModel", modelId)
     view:SetAttribute("AWPreviewParts", parts)
+    refit()
     placeCamera()
 end
 
@@ -177,7 +188,10 @@ function VehiclePreview.attach(parent: GuiObject): ViewportFrame
     view.Parent = parent
     viewport = view
     camera = cam
-    view:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeCamera)
+    view:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        refit()
+        placeCamera()
+    end)
     view.InputBegan:Connect(function(input: InputObject)
         if
             input.UserInputType == Enum.UserInputType.MouseButton1

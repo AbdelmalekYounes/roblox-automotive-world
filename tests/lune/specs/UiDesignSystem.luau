@@ -215,25 +215,48 @@ return function(T: any, H: any)
 
     T.suite("UI-03 — aperçu 3D du garage (ViewportFrame)")
 
-    T.test("1. cadrage : le véhicule entier tient dans la zone, quel que soit son format", function()
+    T.test("1. cadrage serré : véhicule entier à toutes les orientations, tangent à la plus large", function()
         local Framing = H.require("ReplicatedStorage.Shared.UI.PreviewFraming")
-        local fov = Framing.Fov
-        for _, aspect in { 0.6, 1, 1.6, 2.4 } do
-            local radius = 12
-            local d = Framing.distance(radius, fov, aspect, 1)
-            -- Angle sous lequel la sphère est vue, comparé au plus petit demi-champ (vertical ou horizontal).
-            local seen = math.asin(radius / d)
-            local half = math.rad(fov) / 2
-            local limiting = math.min(half, math.atan(math.tan(half) * aspect))
-            T.truthy(math.abs(seen - limiting) < 1e-6, "tangente aux bords, rapport " .. aspect)
+        local fov, pitch, m = Framing.Fov, Framing.Pitch, Framing.Margin
+        local tanV = math.tan(math.rad(fov) / 2)
+        -- Projection indépendante (CFrame recomposé à la main) : plus grande occupation de la zone par un coin.
+        local function occupancy(hx: number, hy: number, hz: number, aspect: number, d: number, deg: number): number
+            local tanH = tanV * aspect
+            local a, p = math.rad(deg), math.rad(pitch)
+            local worst = 0
+            for _, sx in { -1, 1 } do
+                for _, sy in { -1, 1 } do
+                    for _, sz in { -1, 1 } do
+                        local x, y, z = sx * hx, sy * hy, sz * hz
+                        local x1, z1 = x * math.cos(a) - z * math.sin(a), x * math.sin(a) + z * math.cos(a)
+                        local y2, z2 = y * math.cos(p) - z1 * math.sin(p), y * math.sin(p) + z1 * math.cos(p)
+                        local depth = d - z2
+                        worst = math.max(worst, math.abs(x1) / (depth * tanH), math.abs(y2) / (depth * tanV))
+                    end
+                end
+            end
+            return worst
         end
-        T.truthy(
-            Framing.distance(12, fov, 0.6) > Framing.distance(12, fov, 1.6),
-            "zone étroite : caméra plus loin (limite horizontale)"
-        )
-        T.equal(Framing.distance(12, fov, 2.4), Framing.distance(12, fov, 4), "zone large : limite verticale seule")
-        T.truthy(Framing.distance(12, fov, 1.5) > Framing.distance(12, fov, 1.5, 1), "marge appliquée")
-        T.equal(Framing.distance(-1, fov, 1), 0, "rayon négatif ramené à 0")
+        -- Boîtes réelles : prototype (≈ 4,6 × 1,8 × 1,5 m) et Comète (≈ 4,5 × 1,9 × 1,2 m), en studs.
+        for _, box in { { 3.3, 2.7, 8.3 }, { 3.5, 2.2, 8.1 } } do
+            for _, aspect in { 0.8, 1.2, 1.8 } do
+                local d = Framing.fitDistance(box[1], box[2], box[3], fov, aspect, pitch)
+                local peak = 0
+                for deg = 0, 359 do
+                    peak = math.max(peak, occupancy(box[1], box[2], box[3], aspect, d, deg))
+                end
+                -- Entre deux orientations échantillonnées (5°), l'écart reste sous 1 % de la zone.
+                T.truthy(peak <= 1 / m + 0.01, string.format("jamais coupé (%.3f), rapport %.1f", peak, aspect))
+                T.truthy(
+                    peak >= 1 / m - 0.001,
+                    string.format("tangent avec la marge (%.3f), rapport %.1f", peak, aspect)
+                )
+                -- Plus près qu'un cadrage sur la sphère englobante (l'ancien réglage, marge 1,08).
+                local r = math.sqrt(box[1] ^ 2 + box[2] ^ 2 + box[3] ^ 2)
+                local limiting = math.min(math.rad(fov) / 2, math.atan(tanV * aspect))
+                T.truthy(d < r * 1.08 / math.sin(limiting), "plus grand qu'avec la sphère, rapport " .. aspect)
+            end
+        end
     end)
 
     T.test("2. demandes au serveur : seul un identifiant de modèle bien formé passe", function()
