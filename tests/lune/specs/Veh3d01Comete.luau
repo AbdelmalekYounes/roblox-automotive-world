@@ -267,4 +267,30 @@ return function(T: any, H: any)
             )
         end
     )
+
+    T.test(
+        "9. sorties : occupant sans collision avec les véhicules jusqu'à son placement, passager placé à droite",
+        function()
+            T.equal(Constants.CollisionGroups.Exiting, "AWSortie", "groupe de sortie")
+            local factory = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleFactory")
+            T.truthy(
+                string.find(factory, "CollisionGroupSetCollidable(groups.Vehicle, groups.Exiting, false)", 1, true)
+                    ~= nil,
+                "sortie et véhicule sans collision"
+            )
+            local service = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleService")
+            local _, seated = string.gsub(service, "setExiting%(seatedCharacter%)", "")
+            T.equal(seated, 2, "conducteur et passager passent dans le groupe en s'asseyant")
+            T.truthy(
+                string.find(service, "placeBeside(record, previous, character, 1)", 1, true) ~= nil,
+                "passager côté droit"
+            )
+            T.truthy(
+                string.find(service, "placeBeside(record, humanoid, character, -1)", 1, true) ~= nil,
+                "conducteur côté gauche"
+            )
+            T.truthy(string.find(service, "EXIT_ORPHAN_S", 1, true) ~= nil, "garde-fou : groupe rendu sans placement")
+            T.truthy(string.find(service, "Protected then", 1, true) ~= nil, "protection d'arrivée jamais rendue")
+        end
+    )
 end

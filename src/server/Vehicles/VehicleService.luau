@@ -81,6 +81,8 @@ type VehicleRecord = {
     Prompt: ProximityPrompt,
     -- Lot 0.8 : place passager (absente sur les prototypes sans habitacle).
     Passenger: Seat?,
+    -- Lot VEH3D-01 : occupant actuel de la place passager (placement à sa sortie).
+    PassengerHumanoid: Humanoid?,
     Definition: Types.VehicleDefinition,
     HomePivot: CFrame,
     Driver: Player?,
@@ -155,6 +157,71 @@ local function playerFromHumanoid(humanoid: Humanoid?): Player?
         return nil
     end
     return Players:GetPlayerFromCharacter(character)
+end
+
+--[[
+    Sorties (lot VEH3D-01, accord du propriétaire du 2026-11-05 : « Corrige les sorties »). Un occupant assis se trouve
+    DANS le volume de collision de l'habitacle (boîte `Habitacle` d'un kit de maillages, parois d'une carrosserie
+    provisoire) : soudé au siège, il fait partie de l'assemblage du véhicule ; libéré, le moteur physique l'expulsait
+    de ce volume (conducteur projeté et couché, passager sur le toit : QA-A15, A16, A18 ; Comète : 16 sorties sur 16
+    en échec, tâche 20261105-015804). L'occupant passe donc dans le groupe `Exiting`, sans collision avec les
+    véhicules, dès qu'il s'assied et jusqu'à son placement à côté du véhicule ; son groupe d'origine est ensuite rendu.
+]]
+local EXIT_RESTORE_S = 0.6 -- après le placement vérifié : le personnage est hors du volume du véhicule
+local EXIT_ORPHAN_S = 3 -- debout sans placement (sortie par un autre chemin) : groupe rendu après ce délai
+type ExitState = { Groups: { [BasePart]: string }, Added: RBXScriptConnection, Placing: boolean }
+local exiting: { [Model]: ExitState } = {}
+
+local function endExiting(character: Model)
+    local state = exiting[character]
+    if state == nil then
+        return
+    end
+    exiting[character] = nil
+    state.Added:Disconnect()
+    for part, group in state.Groups do
+        if part.Parent and part.CollisionGroup == Constants.CollisionGroups.Exiting then
+            -- La protection d'arrivée (OnboardingService) prend fin en montant en voiture : jamais rendue ici.
+            part.CollisionGroup = if group == Constants.CollisionGroups.Protected then "Default" else group
+        end
+    end
+end
+
+local function setExiting(character: Model)
+    if exiting[character] then
+        return
+    end
+    local groups: { [BasePart]: string } = {}
+    local function shield(item: Instance)
+        if item:IsA("BasePart") and groups[item] == nil then
+            groups[item] = item.CollisionGroup
+            item.CollisionGroup = Constants.CollisionGroups.Exiting
+        end
+    end
+    for _, item in character:GetDescendants() do
+        shield(item)
+    end
+    local state: ExitState = { Groups = groups, Added = character.DescendantAdded:Connect(shield), Placing = false }
+    exiting[character] = state
+    character.Destroying:Once(function()
+        if exiting[character] == state then
+            exiting[character] = nil
+            state.Added:Disconnect()
+        end
+    end)
+    -- Garde-fou : jamais de personnage durablement sans collision avec les véhicules.
+    task.spawn(function()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local standing = 0
+        while exiting[character] == state do
+            task.wait(0.5)
+            local free = humanoid == nil or humanoid.SeatPart == nil
+            standing = if free and not state.Placing then standing + 0.5 else 0
+            if standing >= EXIT_ORPHAN_S then
+                endExiting(character)
+            end
+        end
+    end)
 end
 
 local function unseatHumanoid(humanoid: Humanoid, seat: Seat)
@@ -350,6 +417,10 @@ end
 
 local function onOccupantChanged(record: VehicleRecord)
     local occupant = record.Seat.Occupant
+    local seatedCharacter = occupant and occupant.Parent
+    if seatedCharacter and seatedCharacter:IsA("Model") then
+        setExiting(seatedCharacter)
+    end
     if occupant == nil then
         if record.Driver then
             releaseDriver(record)
@@ -452,11 +523,28 @@ local function onPassengerPrompt(record: VehicleRecord, player: Player)
 end
 
 -- Occupation passager non validée (siège pris autrement) : libérée aussitôt.
+local placeBeside: (record: VehicleRecord, humanoid: Humanoid, character: Model, side: number) -> ()
+
 local function onPassengerChanged(record: VehicleRecord)
     local passenger = record.Passenger
     local occupant = if passenger then passenger.Occupant else nil
-    if passenger == nil or occupant == nil then
+    if passenger == nil then
         return
+    end
+    if occupant == nil then
+        -- Sortie du passager (saut du moteur, vraie touche Espace) : placé côté passager (QA-A15).
+        local previous = record.PassengerHumanoid
+        record.PassengerHumanoid = nil
+        local character = previous and previous.Parent
+        if previous and character and character:IsA("Model") then
+            placeBeside(record, previous, character, 1)
+        end
+        return
+    end
+    record.PassengerHumanoid = occupant
+    local seatedCharacter = occupant.Parent
+    if seatedCharacter and seatedCharacter:IsA("Model") then
+        setExiting(seatedCharacter)
     end
     local player = playerFromHumanoid(occupant)
     if
@@ -469,7 +557,7 @@ local function onPassengerChanged(record: VehicleRecord)
 end
 
 -- Cherche un emplacement libre à côté du véhicule pour déposer le personnage.
-local function findExitPivot(record: VehicleRecord, character: Model): CFrame?
+local function findExitPivot(record: VehicleRecord, character: Model, side: number?): CFrame?
     local root = record.Root
     local cframe = root.CFrame
     local halfWidth = record.Definition.Chassis.WidthM / METERS_PER_STUD / 2
@@ -483,11 +571,11 @@ local function findExitPivot(record: VehicleRecord, character: Model): CFrame?
     end
     flatRight = flatRight.Unit
     local base = root.Position + Vector3.new(0, 1.5, 0)
-    local candidates = {
-        base - flatRight * (halfWidth + 3), -- côté conducteur (gauche)
-        base + flatRight * (halfWidth + 3),
-        base + Vector3.new(0, 7, 0),
-    }
+    local left, right = base - flatRight * (halfWidth + 3), base + flatRight * (halfWidth + 3)
+    -- Côté de la place d'abord (conducteur à gauche, passager à droite), puis l'autre, puis au-dessus.
+    local candidates: { Vector3 } = if side == 1
+        then { right, left, base + Vector3.new(0, 7, 0) }
+        else { left, right, base + Vector3.new(0, 7, 0) }
     for _, position in candidates do
         local pivot = uprightPivot(position, cframe.LookVector)
         local blocking = Workspace:GetPartBoundsInBox(pivot, Vector3.new(2.5, 5, 2.5), params)
@@ -515,34 +603,51 @@ local function handleExit(record: VehicleRecord, player: Player)
     releaseCharacter(record, humanoid)
 end
 
--- Libère le siège puis dépose le personnage à côté du véhicule (vérifié).
-function releaseCharacter(record: VehicleRecord, humanoid: Humanoid)
-    local seat = record.Seat
-    local character = humanoid.Parent
-    local exitPivot = if character and character:IsA("Model") then findExitPivot(record, character) else nil
-    unseatHumanoid(humanoid, seat)
-    if exitPivot and character and character:IsA("Model") then
-        -- Le personnage appartient (réseau) à son joueur : un déplacement imposé
-        -- par le serveur pendant que le client reprend la main peut être écrasé
-        -- par la position envoyée par ce client (constaté en essai à deux joueurs).
-        -- On attend donc la libération effective du siège, on place le personnage,
-        -- puis on vérifie et on recommence une fois si nécessaire.
-        task.spawn(function()
-            local deadline = os.clock() + 1
-            while humanoid.SeatPart ~= nil and os.clock() < deadline do
-                task.wait()
-            end
+-- Dépose le personnage libéré à côté du véhicule (côté `side` : −1 gauche, 1 droite), vérifié, puis lui rend son
+-- groupe de collision. Le personnage appartient (réseau) à son joueur : un déplacement imposé par le serveur pendant
+-- que le client reprend la main peut être écrasé par la position envoyée par ce client (constaté en essai à deux
+-- joueurs). On attend donc la libération effective du siège, on place, on vérifie et on recommence si nécessaire.
+function placeBeside(record: VehicleRecord, humanoid: Humanoid, character: Model, side: number)
+    local exitPivot = findExitPivot(record, character, side)
+    local state = exiting[character]
+    if state then
+        state.Placing = true
+    end
+    task.spawn(function()
+        local deadline = os.clock() + 1
+        while humanoid.SeatPart ~= nil and os.clock() < deadline do
+            task.wait()
+        end
+        if exitPivot then
             for _ = 1, EXIT_PLACEMENT_ATTEMPTS do
                 if character.Parent == nil then
-                    return
+                    break
                 end
                 character:PivotTo(exitPivot)
                 task.wait(EXIT_PLACEMENT_CHECK_S)
                 if (character:GetPivot().Position - exitPivot.Position).Magnitude < 3 then
-                    return
+                    break
                 end
             end
-        end)
+        end
+        task.wait(EXIT_RESTORE_S)
+        -- Rassis entre-temps (autre place, même véhicule) : il garde le groupe de sortie.
+        if state then
+            state.Placing = false
+        end
+        if humanoid.SeatPart == nil then
+            endExiting(character)
+        end
+    end)
+end
+
+-- Libère le siège conducteur puis dépose le personnage à côté du véhicule.
+function releaseCharacter(record: VehicleRecord, humanoid: Humanoid)
+    local seat = record.Seat
+    local character = humanoid.Parent
+    unseatHumanoid(humanoid, seat)
+    if character and character:IsA("Model") then
+        placeBeside(record, humanoid, character, -1)
     end
 end
 
