@@ -517,7 +517,7 @@ record("comete.k03.pieces_de_roues_soudees", wheelsOk, table.concat(wheelRows, "
 
 -- K04 / K05 : sièges et repères.
 local seatRows, seatsOk = {}, true
-for seatName, pose in { DriverSeat = "Conduite", PassengerSeat = "Passager" } do
+for seatName, pose in { DriverSeat = KIT.SeatPoses.Driver, PassengerSeat = KIT.SeatPoses.Passenger } do
     local seat = model:FindFirstChild(seatName)
     local value = seat and seat:GetAttribute(SeatPose.Attribute)
     seatsOk = seatsOk and value == pose

@@ -25,6 +25,7 @@ SeatPose.Attribute = "AWSeatPose"
 SeatPose.BlendS = 0.3 -- mise en place et retrait progressifs
 
 export type JointOffset = { Pitch: number, Yaw: number?, Down: number? }
+-- Articulations des hanches (LeftHip, RightHip) : cuisses relevées (pose « Sportive »).
 export type Pose = { [string]: JointOffset }
 
 local LEGS: Pose = {
@@ -47,9 +48,26 @@ local function withArms(base: Pose): Pose
     return pose
 end
 
+-- Assise très basse (Comète, lot VEH3D-01) : coussin à 0,28 st du plancher (mesuré dans Blender le 2026-11-05).
+-- Avec LEGS, les pieds traversaient le plancher et le dessous de caisse (session VM, tâche 20261105-015804) :
+-- bassin peu abaissé, cuisses légèrement relevées, jambes tendues vers le pédalier. Réglage par mesure VM :
+-- genoux 40° → dessous des pieds à −1,5 st (sous le plancher) ; genoux 78° et cuisses 12° → +0,41 st (pieds à la
+-- planche de bord, tâche 20261105-020557) ; valeurs intermédiaires retenues, à confirmer par la mesure suivante.
+local LOW_LEGS: Pose = {
+    Root = { Pitch = 0, Down = 0.1 },
+    Waist = { Pitch = 22 },
+    Neck = { Pitch = -14 },
+    LeftHip = { Pitch = 4 },
+    RightHip = { Pitch = 4 },
+    LeftKnee = { Pitch = 52 },
+    RightKnee = { Pitch = 52 },
+}
+
 SeatPose.Poses = table.freeze({
     Conduite = table.freeze(withArms(LEGS)),
     Passager = table.freeze(table.clone(LEGS)),
+    Sportive = table.freeze(withArms(LOW_LEGS)),
+    SportivePassager = table.freeze(table.clone(LOW_LEGS)),
 } :: { [string]: Pose })
 
 -- Articulations des bras : jamais modifiées quand le téléphone est sorti (bras levé, QA-A10).

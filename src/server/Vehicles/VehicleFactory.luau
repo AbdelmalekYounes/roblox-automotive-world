@@ -465,10 +465,10 @@ function VehicleFactory.create(definition: Types.VehicleDefinition, pivot: CFram
         hood.Position = meshKit.CameraHood
         bumper.Position = meshKit.CameraBumper
         -- Pose assise du jeu (SeatPoseController), exigée par le contrat des modèles 3D.
-        seat:SetAttribute(SeatPose.Attribute, "Conduite")
+        seat:SetAttribute(SeatPose.Attribute, meshKit.SeatPoses.Driver)
         local passengerSeat = model:FindFirstChild("PassengerSeat")
         if passengerSeat then
-            passengerSeat:SetAttribute(SeatPose.Attribute, "Passager")
+            passengerSeat:SetAttribute(SeatPose.Attribute, meshKit.SeatPoses.Passenger)
         end
     end
 
