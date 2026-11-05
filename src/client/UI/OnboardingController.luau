@@ -20,6 +20,9 @@ local OnboardingRules = require(Shared.Onboarding.OnboardingRules)
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 
 local UITheme = require(script.Parent.UITheme)
+local Tokens =
+    require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
+local UIState = require(script.Parent.UIState)
 local UIManager = require(script.Parent.UIManager)
 local InputRouter = require(script.Parent.InputRouter)
 local NotificationService = require(script.Parent.NotificationService)
@@ -103,9 +106,33 @@ local function line(text: string, size: number?, bold: boolean?)
     }, body)
 end
 
-local function button(text: string, fn: () -> ())
+-- Bouton V1.2 (44 px) ; valeur facultative à droite en Roboto Mono (état d'un exercice).
+local function button(text: string, fn: () -> (), value: string?, valueToken: string?): TextButton
     order += 1
-    UITheme.button(text, { Size = UDim2.new(0, LINE_WIDTH, 0, 36), LayoutOrder = order }, body, fn)
+    local item = UITheme.button(text, {
+        Size = UDim2.new(0, LINE_WIDTH, 0, Tokens.PrimaryButtonHeight),
+        LayoutOrder = order,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, body, fn)
+    UITheme.make("UIPadding", {
+        PaddingLeft = UDim.new(0, 14),
+        PaddingRight = UDim.new(0, if value then 110 else 14),
+    }, item)
+    if value then
+        local label = UITheme.make("TextLabel", {
+            Name = "Valeur",
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, 100, 0.5, 0),
+            Size = UDim2.fromOffset(96, 20),
+            BackgroundTransparency = 1,
+            Text = value,
+            TextXAlignment = Enum.TextXAlignment.Right,
+            TextColor3 = Tokens.color(valueToken or "TextMuted"),
+        }, item)
+        label.FontFace = UITheme.face("Value")
+        label.TextSize = UITheme.text(12)
+    end
+    return item
 end
 
 local function report(response: any)
@@ -245,26 +272,32 @@ local function renderTraining()
     local done = if status and status.State then status.State.Exercises else {}
     for _, id in OnboardingRules.Exercises do
         local finished = done[id] ~= nil
-        button(string.format("%s %s", if finished then "●" else "○", Localization.t("exercise." .. id)), function()
-            local character = Players.LocalPlayer.Character
-            local root = character and character:FindFirstChild("HumanoidRootPart")
-            local first = nil
-            if root and root:IsA("BasePart") then
-                local look = root.CFrame.LookVector
-                first = {
-                    T = os.clock(),
-                    SpeedKmh = 0,
-                    Heading = math.atan2(look.X, -look.Z),
-                    Gear = 0,
-                    X = root.Position.X / S,
-                    Z = root.Position.Z / S,
-                    InVehicle = false,
-                }
-            end
-            active = TrainingRules.start(id, first)
-            NotificationService.notify("exercise." .. id .. ".hint", "Info", nil, "exercise")
-            UIManager.close("Onboarding")
-        end)
+        -- État de l'exercice en clair à droite (plus de rond plein ou vide en guise d'icône).
+        button(
+            Localization.t("exercise." .. id),
+            function()
+                local character = Players.LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local first = nil
+                if root and root:IsA("BasePart") then
+                    local look = root.CFrame.LookVector
+                    first = {
+                        T = os.clock(),
+                        SpeedKmh = 0,
+                        Heading = math.atan2(look.X, -look.Z),
+                        Gear = 0,
+                        X = root.Position.X / S,
+                        Z = root.Position.Z / S,
+                        InVehicle = false,
+                    }
+                end
+                active = TrainingRules.start(id, first)
+                NotificationService.notify("exercise." .. id .. ".hint", "Info", nil, "exercise")
+                UIManager.close("Onboarding")
+            end,
+            Localization.t(if finished then "onb.exercise.done" else "onb.exercise.todo"),
+            if finished then "Ok" else "TextMuted"
+        )
     end
     button(Localization.t("ui.back"), function()
         page = "Flow"
@@ -338,17 +371,37 @@ function OnboardingController.start()
         { Name = "AWOnboarding", ResetOnSpawn = false, DisplayOrder = 15, Enabled = false },
         Players.LocalPlayer:WaitForChild("PlayerGui")
     )
+    -- Fenêtre V1.2 : fond de base, filet, titre en H1 blanc ; filet ambre sous le titre (étape en cours) ;
+    -- échelle 1440 p (1,333) appliquée à la fenêtre entière.
     window = UITheme.panel({
+        Name = "Fenetre",
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UDim2.fromOffset(640, 560),
     }, gui)
+    window.BackgroundColor3 = Tokens.color("BgBase")
+    UITheme.make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, window)
+    local windowScale = UITheme.make("UIScale", {}, window)
+    local function rescale()
+        windowScale.Scale = UIState.layout().Scale
+    end
+    rescale()
+    UIState.onViewport(rescale)
     title = UITheme.label("", 22, {
+        Name = "Titre",
         Position = UDim2.fromOffset(20, 14),
         Size = UDim2.new(1, -40, 0, 32),
         Font = UITheme.FontBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = UITheme.color("Accent"),
+        TextColor3 = Tokens.color("Text"),
+    }, window)
+    title.FontFace = UITheme.face("H1")
+    UITheme.make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = Tokens.color("Amber"),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(20, 48),
+        Size = UDim2.fromOffset(48, Tokens.StatusRail),
     }, window)
     body = UITheme.make("ScrollingFrame", {
         Position = UDim2.fromOffset(16, 54),
@@ -367,7 +420,7 @@ function OnboardingController.start()
         Position = UDim2.new(0, 20, 1, -40),
         Size = UDim2.new(1, -40, 0, 30),
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextColor3 = UITheme.color("Warn"),
+        TextColor3 = Tokens.color("AmberSoftText"),
     }, window)
     UIManager.register({
         Name = "Onboarding",
