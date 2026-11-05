@@ -1,5 +1,7 @@
 # ASTER-02 — recommandations sur les décisions restantes
 
+> **ASTER-02 SUSPENDU par le propriétaire le 2026-11-04** (« aster on abandonne pour l'instant ») — travail conservé sur la PR #15 (`feat/aster-02-blockout`), **aucune étape active**, ne pas réactiver sans décision du propriétaire. Ce document reste comme historique.
+
 Statut : **décidé par le propriétaire le 2026-11-04**, recommandations retenues sur les quatre points. Décisions appliquées et mesurées (tâche VM `20261104-193715`, commit `9f1c4b7`) : voir « Décisions et vérification » en fin de document. Version d'origine des recommandations ci-dessous. Données :
 session VM `aster`, tâche `20261104-181108` (commit `6627a1f`), gabarit final (plancher −1,30 st). Il y a
 10 morphologies : H1 à H7 sur le corps masculin 995, F1, F2 et F4 sur le corps féminin 994, avec les têtes remplacées

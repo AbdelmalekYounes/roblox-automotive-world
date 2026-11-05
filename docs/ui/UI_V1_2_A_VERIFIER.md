@@ -4,10 +4,14 @@ Branche `feat/ui-premium-v1.2` (PR #17). Liste rédigée le 2026-11-05, après l
 par le propriétaire. Cocher au fur et à mesure ; noter tout écart avec une capture.
 
 **Préparation** : `rojo build default.project.json -o build\AutomotiveWorld.rbxlx`, ouvrir la place dans Studio, Jouer.
-Pour le monde ouvert : `rojo build openworld.project.json -o build\OpenWorld.rbxlx`. Profil neuf : passer
+Pour le monde ouvert : `rojo build -o build\AutomotiveWorld.rbxlx`, puis
+`lune run tools/world/build-world.luau build\AutomotiveWorld.rbxlx build\world\OpenWorld.rbxm`, puis
+`rojo build openworld.project.json -o build\AutomotiveWorld-OpenWorld.rbxl` (README, lot 0.3). Profil neuf : passer
 l'introduction, choisir une silhouette (si « apparence en chargement » s'affiche, recliquer après 2 s).
 
 ## 1. Garage (touche P)
+
+**Validé globalement par le propriétaire le 2026-11-05** (« garage ok ») ; points non cochés un par un.
 
 À faire d'abord hors garage, puis au **garage public d'essai** (préparation et configurations permises).
 
@@ -44,6 +48,8 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
 
 ## 3. Économie (J) et courses (K)
 
+**Confirmations et courses validées par le propriétaire le 2026-11-05** ; points non cochés un par un.
+
 - [ ] Plein écran, onglets à filet ambre, cartes ; boutons grisés : la raison doit être compréhensible.
 - [ ] Concession (invite E devant la concession d'essai) : « Devis d'achat » → confirmation avec le montant ;
       « Annuler » sans effet ; second devis → la confirmation revient ; « Confirmer » → achat confirmé par le serveur.
@@ -70,12 +76,13 @@ l'introduction, choisir une silhouette (si « apparence en chargement » s'affic
 
 ## 6. Manette (non testée automatiquement)
 
-- [ ] Select ouvre le garage ; LB / RB changent d'onglet ; stick droit tourne le véhicule ; B revient d'un niveau ;
+- [ ] Select ouvre le téléphone (garage par l'application Véhicules) ; LB / RB changent d'onglet ; stick droit tourne le véhicule ; B revient d'un niveau ;
       contour ambre de focus visible sur chaque bouton ; les tuiles du téléphone sont atteignables.
 
 ## 7. Points ouverts à trancher par le propriétaire
 
-- Propositions sans maquette à valider : économie, courses, HUD, carte, notifications, arrivée, photo.
+- Propositions sans maquette à valider : HUD, carte complète (gardée en l'état), notifications, arrivée, photo
+  (économie et courses validées le 2026-11-05).
 - Écarts de maquette : vue « Intérieur », graphique « effet estimé », 0–100 et v60 absents ; pièces posées dès la
   demande ; « Fermer » du garage dans la barre d'aide.
 - Bras levé en marchant avec le téléphone (monde ouvert) : 8° mesurés contre 25° attendus, cause non établie —

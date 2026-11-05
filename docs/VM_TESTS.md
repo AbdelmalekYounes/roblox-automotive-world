@@ -1,5 +1,8 @@
 # Tests Roblox Studio dans la VM VMware
 
+> **Depuis le 2026-11-05**, à la demande du propriétaire, les campagnes VM automatiques sont arrêtées : il teste
+> lui-même à partir de listes de vérification. Ce document décrit l'outil, conservé et lancé seulement sur sa demande.
+
 Objectif : exécuter les essais du lot 0.1 **dans Roblox Studio**, avec la vraie physique et le vrai réseau,
 **sans afficher de fenêtre sur ton PC ni utiliser ta souris ou ton clavier**. Tout se passe dans la VM
 « ROBLOX DEV » (`E:\VMS\ROBLOX DEV\ROBLOX DEV.vmx`) ; ton PC ne fait que déposer une tâche et lire le rapport.

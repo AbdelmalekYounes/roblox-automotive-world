@@ -7,8 +7,8 @@
     CC BY 4.0 (§3.a) : nom de l'auteur, mention de la licence (avec son adresse dans la mesure du raisonnable), lien
     vers l'œuvre dans la mesure du raisonnable, indication des modifications. Le titre de l'œuvre et son lien
     contiennent un nom de marque, et un lien externe affiché dans une expérience Roblox est encadré par les règles de la
-    plateforme : leur affichage en jeu (`ShowTitle`, `ShowUrl`) est une DÉCISION DU PROPRIÉTAIRE, faux tant qu'elle
-    n'est pas prise (docs/vehicle-3d/VEH3D_01_FINALISATION.md). Le texte complet reste dans docs/CREDITS_ACTIFS.md.
+    plateforme : leur affichage en jeu (`ShowTitle`, `ShowUrl`) est une DÉCISION DU PROPRIÉTAIRE, reportée (« plus
+    tard », masqués d'ici là : docs/vehicle-3d/VEH3D_01_REVUE.md, VEH3D_01_CLOTURE.md §3.F). Le texte complet reste dans docs/CREDITS_ACTIFS.md.
     Textes affichés par clé de localisation (FR, EN).
 ]]
 

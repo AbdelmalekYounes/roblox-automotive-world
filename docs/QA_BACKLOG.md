@@ -1,6 +1,6 @@
 # Registre QA — essais reportés et anomalies ouvertes
 
-Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.9. Décision du
+Registre **unique** des essais non effectués et des anomalies non résolues des lots 0.1 à 0.9.2, AVATAR-01, Aster phase 1, VEH3D-01 et UI V1.2. Décision du
 propriétaire (lot 0.3) : les essais humains, les campagnes approfondies de non-régression et les tests de charge sont
 regroupés dans un **lot QA ultérieur**, lancé à sa demande (« on testera tout d'un coup »).
 
@@ -13,10 +13,13 @@ Règles de ce registre :
 - Priorité : **P1** bloque la clôture du lot ou peut fausser d'autres essais ; **P2** comportement visible par le
   joueur ; **P3** confort, réglage, mesure.
 - Les essais Studio se lancent dans la VM (`docs/VM_TESTS.md`), jamais sur le poste principal ; les essais humains
-  sont faits par le propriétaire.
+  sont faits par le propriétaire. **Depuis le 2026-11-05**, plus de campagne VM automatique : le propriétaire teste
+  lui-même à partir de listes de vérification ; une session VM n'est lancée que sur sa demande.
 
-Dernière mise à jour : 2026-11-04, clôture de la phase 1 de l'Aster (branche `feat/aster-phase1` ; QA-A17 à A23 ; rapport `docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md` ; rapport `docs/vehicle-3d/ASTER_PHASE1.md`). Mise à jour précédente : lot 0.9.2 (QA-A08 à A12, U02, U10 ; `docs/lot-0.9.2/RAPPORT_STABILISATION.md`).
-probabilité, impact, exploitation, dépendances, coût) : `docs/lot-0.9/ANOMALIES_ET_CORRECTIONS.md` §4.
+Dernière mise à jour : 2026-11-05, audit d'intégration V1.0 (§3 octies ; `docs/audit/AUDIT_INTEGRATION_V1.0.md`).
+Mise à jour précédente : 2026-11-04, clôture de la phase 1 de l'Aster (branche `feat/aster-phase1` ; QA-A17 à A23 ; rapport `docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md` ; rapport `docs/vehicle-3d/ASTER_PHASE1.md`). Mise à jour précédente : lot 0.9.2 (QA-A08 à A12, U02, U10 ; `docs/lot-0.9.2/RAPPORT_STABILISATION.md`).
+Analyse détaillée des anomalies (probabilité, impact, exploitation, dépendances, coût) :
+`docs/lot-0.9/ANOMALIES_ET_CORRECTIONS.md` §4.
 
 ## 1. Anomalies ouvertes
 
@@ -274,6 +277,20 @@ Session VM : `test-vm.cmd -Sessions comete -GuiInput` (`tests/studio/CometeServe
 | QA-K06 | Collisions et dégâts | Chocs avant, arrière et latéraux ; zones de dégâts reconnues ; aucune collision sur les maillages visuels | **PARTIEL (VM, `20261105-002227`)** — choc avant contre `MurDeChoc` à 41,6 km/h (zone avant 1,00, moteur 0,38) ; choc arrière en marche arrière à 21,8 km/h (zone arrière 0,41) ; aucun bloc opaque après les chocs (défaut corrigé, voir VEH3D-01 §7) ; R engagée par l'appel de test (Ctrl jamais reçu par le jeu dans Studio). Choc latéral : NON TESTÉ (véhicule vide lancé par le serveur plafonné à 3 m/s par la validation anti-éjection). Dégâts visuels sur les maillages : non représentés (rayures seulement) |
 | QA-K07 | Vitrage et feux | Vitrage sombre transparent ; phares et feux allumés la nuit (sources invisibles ; maillage des feux non lumineux, feux non séparés dans le `.rbxm` reçu) | **FAIT pour les sources (VM, `20261105-002227`)** — 4 / 4 sources allumées la nuit, vitrage 2 / 2 transparent (≥ 0,3). Captures : lueur rouge à l'arrière ; maillage des phares non lumineux (feux non séparés) ; **vitres latérales noires vues de l'extérieur**, avatar invisible : ce sont bien des pièces de verre (`COMETE_Vitrage_glass`, 9 faces par côté, rayons traversants vérifiés dans Blender le 2026-11-05), c'est le réglage du jeu (verre sombre 28/32/38, transparence 0,45, matériau Glass) qui les assombrit. Comparatif de 5 réglages dans la VM (`20261105-003353`) : conducteur visible avec C (verre clair 120/135/145, 0,6), D ou E. **Réglage C choisi par le propriétaire le 2026-11-05**, appliqué (`a61a11c`) ; session `comete` `20261105-005339` : 59 / 1 (Ctrl), conducteur visible par la vitre latérale sur les captures |
 | QA-K08 | Performances D5 | 24 Comète visibles, jour et nuit : temps d'image ≤ référence + 2 ms | **NON CONCLUANT (`20261105-002227`)** — 24 Comète contre 24 P-01 immobiles : moyenne 16,66 / 16,66 ms le jour, 16,91 / 16,66 ms la nuit ; P95 18,56 / 18,68 et 18,81 / 18,51 ms. Studio de la VM plafonné à 60 images/s : écart invisible sous le plafond. Mesure D5 sur un poste réel : NON TESTÉ |
+
+## 3 octies. UI V1.2 et audit d'intégration V1.0 (2026-11-05)
+
+Constats relevés dans les rapports VM existants (aucune nouvelle exécution) et dans le code.
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-A24 | P1 | **Banc des 18 modèles (`lot08.client.banc_18_modeles`) : régression.** 18 / 18 à `c352f26` (lot 0.9.2, `20261104-042820`) ; 10 / 18 à `84cefab` (`20261105-141629`) et `bcfbae6` (`20261105-132615`). « Embarquement impossible » pour Zénith, Dune, Éclat, Comète, Vigie, Sentier, Atlas, Mistral (invite affichée, siège non occupé, conducteur 0). Classé à tort « identique sur la base » dans `docs/ui/UI_V1_2_FINALISATION_RAPPORT.md` §4 | **Ouverte, cause non établie** (commits suspects : AVATAR-01, Aster phase 1, VEH3D-01 ; audit §6.2). Diagnostic : essai d'embarquement manuel par le propriétaire, ou session VM ciblée sur son accord |
+| QA-A25 | P3 | Choix de silhouette : un clic pendant le chargement de l'apparence est refusé, il faut recliquer | Ouverte ; proposé : griser les boutons tant que l'apparence n'est pas prête |
+| QA-U14 | P2 | Navigation des interfaces V1.2 à la manette réelle | NON TESTÉ (la VM n'envoie aucune manette) |
+| QA-U15 | P3 | Interfaces V1.2 sur écrans réels 1080 p, 1440 p, ultralarge (essais VM sur écran virtuel) | NON TESTÉ |
+| QA-U16 | P2 | GPS sur le code V1.2 (tâche `20261105-155234` coupée) ; essai `ui_hud` corrigé, non relancé | NON TESTÉ |
+| QA-U17 | P3 | Téléphone en main en marchant (monde ouvert) : bras levé de 8° mesurés contre 25° attendus (`20261105-154646`), lien avec QA-A20 et QA-U10 | Ouverte, non classée |
+| QA-D11 | P1 (avant publication) | Une place publiée dont l'identifiant n'est pas déclaré dans `EnvironmentConfig` est traitée en « Dev / mémoire » : crédits synthétiques (`DevSeed`) attribués et modèles en attente achetables (`Environment.luau`, `ProfileService.luau`) | Ouverte : déclarer les identifiants ou refuser le mode Dev hors Studio avant toute publication |
 
 ## 4. Charge, performance et stabilité
 

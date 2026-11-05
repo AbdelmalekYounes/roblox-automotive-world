@@ -16,7 +16,7 @@
     - choix définitifs ou destructifs (véhicule de départ, revente, suppression d'une configuration) confirmés.
     Seules les données réelles sont affichées (instantané du serveur, définitions, VehicleCatalog, TuningRules,
     PartCatalog, CosmeticCatalog) ; règles de mise en forme dans le module pur Shared/UI/GarageView.
-    Touches : P (manette : Select / Vue) ; [ ] ou PageUp / PageDown et LB / RB pour les onglets ; Retour arrière et B
+    Touches : P (manette : par le téléphone, application Véhicules) ; [ ] ou PageUp / PageDown et LB / RB pour les onglets ; Retour arrière et B
     reviennent d'un niveau ; flèches gauche / droite tournent le véhicule.
     Textes joueur : le français sert de clé, l'anglais vient de PanelTexts (Localization.tr).
 ]]

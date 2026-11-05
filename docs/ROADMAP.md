@@ -186,9 +186,13 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   (ASTER-02 non lancé : GO conditionnel ; plancher abaissé validé ; décisions du 2026-11-04 appliquées — pose H5
   acceptée, toit 4,20 st, couleurs unifiées sur la tête, budgets de l'habitacle ; étalonnage Studio à relever). Rapport de clôture : `docs/vehicle-3d/ASTER_PHASE1_CLOTURE.md`.
 - Rapport : `docs/vehicle-3d/ASTER_PHASE1.md`. À arbitrer : corps par défaut, couleurs de peau, D7, hauteur sous pavillon,
-  pose adaptée à la taille. Étalonnage de l'import dans Studio à relever par le propriétaire.
+  pose adaptée à la taille. Étalonnage de l'import dans Studio : relevé et terminé le 2026-11-04
+  (`docs/vehicle-3d/PIPELINE_BLENDER_ROBLOX.md`).
 
-## ASTER-02 — modélisation de l'Aster (branche `feat/aster-02-blockout`, base : phase 1 de l'Aster)
+## ASTER-02 — modélisation de l'Aster (branche `feat/aster-02-blockout`, PR #15, **SUSPENDU**, non intégré)
+
+Les documents propres à ASTER-02 (`ASTER_02_BLOCKOUT.md`, `ASTER_02_HAUTE_FIDELITE.md`, `ASTER_02_REPRODUCTION.md`,
+captures) restent sur la PR #15 ; ils ne sont pas repris dans les branches reconstruites de l'option B (voir plus bas).
 
 - Étalonnage relevé par le propriétaire : glTF 1:1 retenu, FBX écarté ; orientation à confirmer (témoin v2).
 - Blockout extérieur et intérieur dans Blender (surface lofée, direction A « Trait »), contrôles automatiques 15/15,
@@ -206,12 +210,13 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
   travail est conservé (dessins « Trait » et « reproduction », outils, étalonnage terminé). La branche porte aussi
   l'essai de la Comète (modèle tiers 720s) et l'étalonnage, repris par le lot suivant.
 
-## VEH3D-01 — intégration de la Comète 3D (branche `feat/veh3d-01-comete`, base : ASTER-02)
+## VEH3D-01 — intégration de la Comète 3D (PR #16, branche `feat/veh3d-01-comete` ; reconstruite sans ASTER-02 dans `feat/veh3d-01-comete-v2`, base : phase 1 de l'Aster)
 
 - Lot ouvert le 2026-11-04 à la demande du propriétaire, ASTER-02 étant suspendu. Plan :
   `docs/vehicle-3d/VEH3D_01_INTEGRATION_COMETE.md`. Maillages envoyés par le propriétaire ; kit de maillages intégré à
   la fabrique, avec repli sur la carrosserie provisoire (Lune 371/371) ; essais en jeu dans la VM le 2026-11-05 (`20261105-002227`, 59 réussis, 1 échec : touche Ctrl non reçue dans Studio) : QA-K01, K02, K03, K05, K07 faits ; K04, K06 partiels ; K08 non concluant ; défaut des boucliers opaques après un choc corrigé ; finalisation du 2026-11-05 (crédits, feux stop, dégâts sur la surface, pose « Sportive », sorties corrigées 16 / 16, boîte séquentielle engagée par l'accélérateur) ; **revue du propriétaire : « tout fonctionne correctement »**, envoi groupé et crédits reportés (`VEH3D_01_CLOTURE.md`) ;
-  écran de crédits à faire.
+  écran de crédits fait (Téléphone › Paramètres › Crédits et licences) ; titre et lien de l'œuvre masqués, décision
+  reportée par le propriétaire (`VEH3D_01_REVUE.md`).
 
 ## Critères de passage du socle 0.0.1
 
@@ -220,3 +225,23 @@ dans un lot QA ultérieur (`docs/QA_BACKLOG.md`).
 - Chargement des scripts client et serveur dans Roblox Studio (à vérifier en Studio).
 - Aucun appel aux DataStores et aucun accès production.
 - Tests statiques passants et limites des tests documentées.
+
+## UI PREMIUM V1.2 (PR #17, branche `feat/ui-premium-v1.2` ; reconstruite dans `feat/ui-premium-v1.2-v2`)
+
+« V1.2 » est la version des maquettes de l'interface, pas celle du jeu. Système de conception, garage recomposé avec
+aperçu 3D, smartphone, économie, courses, HUD, carte, notifications, résolutions de 1280 × 720 à l'ultralarge.
+Rapports : `docs/ui/UI_V1_2_FINALISATION_RAPPORT.md`, liste de vérification `docs/ui/UI_V1_2_A_VERIFIER.md`.
+
+- **Validé en jeu par le propriétaire le 2026-11-05** : garage, confirmations de l'économie et des métiers, courses,
+  mini-carte, flèche du joueur, téléphone ; grande carte gardée en l'état pour l'instant. PR #17 prête pour revue.
+- NON TESTÉ : manette réelle, écrans réels, GPS sur ce code. Depuis le 2026-11-05, le propriétaire teste lui-même à
+  partir de listes de vérification (plus de campagne VM automatique) ; `scripts/verify.ps1` reste exigé.
+
+## État de la pile et intégration V1.0 (2026-11-05)
+
+Aucune des PR #1 à #17 n'est fusionnée ; `main` est au socle 0.0.1. Audit et stratégie :
+`docs/audit/AUDIT_INTEGRATION_V1.0.md`. **Option B choisie par le propriétaire le 2026-11-05** : la Comète et l'UI sont
+reconstruites sur la phase 1 de l'Aster, sans ASTER-02 (`feat/veh3d-01-comete-v2`, `feat/ui-premium-v1.2-v2` ;
+code identique aux PR #16 et #17 hors éléments propres à ASTER-02). Ordre proposé : #1 à #11, diagnostic de la
+régression du banc des 18 modèles (QA-A24), #12 à #14, puis les deux branches reconstruites ; #15 reste ouverte comme
+archive suspendue. **Aucune fusion sans l'accord du propriétaire.**

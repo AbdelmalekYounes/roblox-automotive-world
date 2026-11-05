@@ -1,4 +1,8 @@
-# UI PREMIUM V1.2 — dossier de lancement (préparation, chantier NON commencé)
+# UI PREMIUM V1.2 — dossier de lancement (historique)
+
+> **Chantier terminé** (2026-11-05) : voir `UI_V1_2_FINALISATION_RAPPORT.md`. Le préalable « PR #16 fusionnée » n'a
+> pas été rempli : le chantier a commencé sur exception du propriétaire (`UI_01_RAPPORT.md`). La méthode du §3
+> (sessions VM à chaque lot) n'est plus en vigueur depuis le 2026-11-05.
 
 Préparé le 2026-11-05 à la demande du propriétaire (« priorité officielle V1.0 », priorité 2 : interfaces, après la
 Comète). **Aucun code d'interface n'est écrit dans ce dossier.** Le chantier commence sur décision du propriétaire,

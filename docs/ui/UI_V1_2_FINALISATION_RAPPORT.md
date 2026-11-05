@@ -1,6 +1,7 @@
 # UI PREMIUM V1.2 — finalisation : rapport
 
-Branche `feat/ui-premium-v1.2`, PR #17 (brouillon). Rapport du 2026-11-05. Demande du propriétaire : « AUTOMOTIVE WORLD —
+Branche `feat/ui-premium-v1.2`, PR #17 (prête pour revue le 2026-11-05) ; reconstruite sans ASTER-02 dans
+`feat/ui-premium-v1.2-v2` (option B de `docs/audit/AUDIT_INTEGRATION_V1.0.md`, code identique). Rapport du 2026-11-05. Demande du propriétaire : « AUTOMOTIVE WORLD —
 UI PREMIUM V1.2 : FINALISATION » (garage, smartphone, autres interfaces, résolutions, navigation et sécurité,
 vérification, livraison). Rien n'a été fusionné ni publié.
 
@@ -104,7 +105,7 @@ pour les échecs hors référence, **même session sur la branche de base** `fea
 | collision, collision_latence, lot02 | 20261105-144014 | 256 réussis, 1 échec | QA-A01 connu (réattribution de propriété réseau) |
 | lot04, lot05 (et lot06, lot08) | 20261105-132615 | lot04 et lot05 sans échec | — |
 | lot06, metiers | 20261105-145247 | 55 réussis, 6 échecs | `lot06` drag, circuit, rallye, drift : **identiques sur la branche de base** (`20261105-141629`), défauts connus du pilote ; `metiers.Precision` : pilote bloqué après un choc mécanique sur une rampe (7 / 8 métiers) |
-| lot08 | 20261105-132615 | 2 échecs | volant du cockpit, banc des 18 modèles : **identiques sur la branche de base** (`20261105-141629`) |
+| lot08 | 20261105-132615 | 2 échecs | volant du cockpit, banc des 18 modèles : identiques sur la branche de base (`20261105-141629`). **Reclassé le 2026-11-05** : le banc est une **régression depuis le lot 0.9.2** (18 / 18 à `c352f26`, `20261104-042820`), QA-A24 |
 | social, ui_marche | 20261105-135409 | sans échec | — |
 | ui, ui_marche, ui_design, ui_phone, ui_garage | 20261105-153107 | 320 réussis, 1 échec | touche O jamais reçue dans Studio (limite connue depuis 0.9.1) |
 | ui_garage3d, ui_garage2, ui_panels, ui_panels2 | 20261105-153757 | 77 réussis, 0 échec, 1 limite | PageDown non transmis par le pont de la VM |
@@ -128,10 +129,22 @@ Le 2026-11-05, le propriétaire a demandé l'arrêt des essais automatiques : le
   l'apparence n'est pas prête (lot AVATAR).
 - Zone d'essai : la carte complète n'affiche aucune route (pas d'index routier dans la place de développement).
 
+## 5 bis. Retours du propriétaire du 2026-11-05 (après ce rapport)
+
+Deux commits de code postérieurs aux campagnes VM des §2 et §4, vérifiés par `scripts/verify.ps1` (toutes étapes OK)
+et **validés en jeu par le propriétaire le 2026-11-05**, sans nouvelle session VM :
+
+- `f1a52d5` : rotation du véhicule du garage à la souris et case « Rotation automatique », voile des confirmations
+  allégé, mini-carte fluide et routes rognées au cercle, grande carte et téléphone repensés ;
+- `9195740` : flèche du joueur redessinée, superpositions du téléphone corrigées.
+
+Détail et cases : `UI_V1_2_A_VERIFIER.md` §8. La grande carte est gardée en l'état pour l'instant.
+
 ## 6. Prochaines tâches
 
 1. Essai humain : manette réelle, écrans 1080 p, 1440 p et ultralarge réels, lisibilité des cartes et du HUD.
-2. Validation par le propriétaire des propositions sans maquette (économie, courses, HUD, carte, notifications).
+2. Validation par le propriétaire des propositions sans maquette (HUD, carte, notifications ; économie et courses
+   validées le 2026-11-05).
 3. Vue « Intérieur » de l'aperçu 3D et état des dégâts de l'exemplaire dans l'aperçu.
 4. Maquettes dédiées : concession, économie, courses, carte complète, HUD.
 
