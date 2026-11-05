@@ -232,7 +232,12 @@ function VehicleDynamics.requestShift(
 end
 
 -- Démarreur et calage du moteur thermique, panne d'énergie.
-local function updateEngineState(state: Types.VehicleRuntimeState, powertrain: Types.PowertrainDefinition, dt: number)
+local function updateEngineState(
+    state: Types.VehicleRuntimeState,
+    powertrain: Types.PowertrainDefinition,
+    driveThrottle: number,
+    dt: number
+)
     if not state.EnergyAvailable then
         -- Panne sèche ou batterie vide : plus de propulsion, aucune relance possible.
         state.EngineRunning = false
@@ -246,7 +251,13 @@ local function updateEngineState(state: Types.VehicleRuntimeState, powertrain: T
     -- Relance d'un moteur calé : démarreur quand l'embrayage est enfoncé ou au
     -- neutre (simplification : pas de clé), ou démarrage « à la poussette » si
     -- les roues entraînent le moteur au-dessus de 80 % du ralenti.
-    local free = state.Gear == 0 or state.ClutchPedal >= 0.9
+    -- Lot 0.9.2 : sans pédale d'embrayage (automatique, double embrayage, CVT…), le
+    -- sélecteur ne repasse jamais au neutre en jeu ; un moteur calé (rebond contre un
+    -- obstacle, par exemple) restait donc calé jusqu'à la sortie du véhicule. Le
+    -- démarreur y tourne quand le conducteur relâche l'accélérateur (équivalent du
+    -- passage par N/P et de la clé, sans commande supplémentaire).
+    local noClutchPedal = powertrain.Transmission.Kind ~= "Manual"
+    local free = state.Gear == 0 or state.ClutchPedal >= 0.9 or (noClutchPedal and driveThrottle < 0.05)
     if free then
         state.StarterTimer += dt
         if state.StarterTimer >= Transmission.StarterDurationS then
@@ -321,6 +332,15 @@ function VehicleDynamics.numericResets(): number
     return numericResets
 end
 
+-- Lot 0.9.2 : nombre de sous-pas où la borne de stabilité du convertisseur a agi (QA-A08).
+local converterLimits = 0
+-- Borne : après un sous-pas, l'écart pompe/turbine peut changer de signe (dépassement que le
+-- schéma explicite faisait déjà) mais son amplitude ne peut pas croître (facteur < 2).
+VehicleDynamics.ConverterStabilityFactor = 1.8
+function VehicleDynamics.converterLimits(): number
+    return converterLimits
+end
+
 local function sanitize(state: Types.VehicleRuntimeState, contacts: { Types.WheelContact }): { Types.WheelContact }
     local reset = false
     for _, wheel in state.Wheels do
@@ -392,7 +412,7 @@ function VehicleDynamics.step(
     local driveThrottle, brakePedal = Transmission.update(state, powertrain, input, forwardSpeed, wheelOmega0, dt)
     state.DriveThrottle = driveThrottle
     state.BrakePedal = brakePedal
-    updateEngineState(state, powertrain, dt)
+    updateEngineState(state, powertrain, driveThrottle, dt)
     -- Couple coupé pendant un passage (allumage coupé, embrayages qui se relaient).
     local torqueThrottle = if state.ShiftTimer > 0 then 0 else driveThrottle
 
@@ -566,6 +586,32 @@ function VehicleDynamics.step(
             end
         elseif mode == "Converter" and converter then
             local pump, turbine = Transmission.converterTorques(converter, stallTorque, omegaE, inputOmega)
+            -- Lot 0.9.2 (QA-A08, cause) : le couple hydraulique croît comme le carré des
+            -- vitesses ; intégré explicitement, il pouvait, en un sous-pas, dépasser
+            -- l'écart pompe/turbine qu'il réduit et l'inverser en l'amplifiant (roues
+            -- motrices lancées, véhicule plaqué, moteur qui cale : 10³ → 10⁶⁶ rad/s → NaN).
+            -- Borne de stabilité : le couple ne peut qu'annuler l'écart dans le sous-pas
+            -- (inertie du moteur d'un côté, des roues motrices ramenée par le rapport de
+            -- l'autre). Inactive en fonctionnement normal (le pas explicite y reste stable).
+            local slip = omegaE - inputOmega
+            if pump ~= 0 and overall ~= 0 then
+                local drivenInertia = 0
+                for _, wheel in state.Wheels do
+                    if wheel.DriveShare > 0 then
+                        drivenInertia += tire.WheelInertiaKgM2
+                    end
+                end
+                local ratio = math.max(turbine / pump, 1)
+                local inverseInertia = 1 / engineInertia
+                    + overall * overall * transmission.Efficiency * ratio / math.max(drivenInertia, 1e-3)
+                local limit = VehicleDynamics.ConverterStabilityFactor * math.abs(slip) / (h * inverseInertia)
+                if math.abs(pump) > limit then
+                    local scale = limit / math.abs(pump)
+                    pump *= scale
+                    turbine *= scale
+                    converterLimits += 1
+                end
+            end
             state.EngineOmega = math.max(0, omegaE + h * (torque - pump) / engineInertia)
             shaftTorque = turbine
         end

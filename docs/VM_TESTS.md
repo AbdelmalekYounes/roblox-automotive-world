@@ -78,6 +78,12 @@ Activated / KeyCode reçus par le jeu ◀──────────── cl
   la position du personnage et au contexte.
 - **Limites** : une seule fenêtre étalonnée à la fois ; les sessions à deux clients (deux fenêtres de Studio) passent
   par les remotes du jeu (instrumenté, signalé). Aucune manette n'est émulée (il faudrait installer un pilote dans la VM).
+- **Ordre des sessions (lot 0.9.2)** : placer les sessions à vrais clics (`ui`, `ui_marche`, `ui_monde`) **en tête** de
+  tâche. Placée en 7ᵉ position après six sessions à deux clients (`20261104-031015`), la session `ui` a obtenu un
+  étalonnage faux (échelle 1,763) et aucun clic n'est arrivé ; en tête (`20261104-035727`, `-042820`), l'étalonnage
+  est juste.
+- **Touche O** : jamais reçue par le jeu dans Studio (ni code virtuel ni code de balayage) ; le mode photo s'ouvre par
+  le téléphone. Limite de l'environnement, connue depuis le lot 0.9.1.
 Statut ⚠️ « limite connue » : contrôle en échec dont la cause est documentée ; jamais compté comme réussi.
 
 ## Préparation de la VM
@@ -164,4 +170,5 @@ dans la VM elle-même.
 | « L'agent de la VM ne répond pas » | Session Windows non ouverte, partage `aw-vm-exchange` absent, ou étape 2 non faite (ou faite depuis un autre compte) |
 | Avertissement « expose le dépôt à la VM » | Lancer `configure-share.ps1 -Apply -RemoveRepoShare` |
 | Délai dépassé, rapport sans sessions | Ouvrir Studio dans la VM : dialogue de mise à jour ou de connexion expirée ; voir les captures |
+| Session à vrais clics sans aucun clic reçu (étalonnage incohérent) | La placer en tête de tâche (voir « Ordre des sessions ») |
 | Journal de l'agent | `%LOCALAPPDATA%\AutomotiveWorldTests\agent.log` dans la VM |

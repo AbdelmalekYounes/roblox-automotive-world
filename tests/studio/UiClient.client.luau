@@ -398,15 +398,17 @@ phase("garage", function()
     Gui.key("Return")
     task.wait(1.2)
     local stateAfter = server()
+    -- Lot 0.9.2 : focus seulement à la manette ; au clavier et à la souris, Entrée ne doit
+    -- plus activer l'onglet d'ouverture (lot 0.9.1 : onglet changé sans demande).
     record(
-        "ui.garage.info_touche_entree_avec_focus",
-        true,
-        string.format(
-            "focus %s ; pied « %s » → « %s »",
-            if selected then "« " .. tostring((selected :: any).Text) .. " »" else "aucun",
-            beforeTexts,
-            footerText(root)
-        )
+        "ui.garage.aucun_focus_clavier_souris",
+        selected == nil,
+        if selected then "focus « " .. tostring((selected :: any).Text) .. " »" else "aucun"
+    )
+    record(
+        "ui.garage.entree_sans_changement_d_onglet",
+        footerText(root) == beforeTexts,
+        string.format("pied « %s » → « %s »", beforeTexts, footerText(root))
     )
     record(
         "ui.garage.entree_sans_effet_serveur",
@@ -524,6 +526,19 @@ phase("concession", function()
             return exact(root, "Confirmer") ~= nil
         end, 5)
         record("ui.concession.confirmation_affichee", confirmShown, footerText(root))
+        -- Touche Entrée pendant la confirmation : aucun achat (confirmation involontaire).
+        task.wait(0.4)
+        Gui.key("Return")
+        task.wait(1.5)
+        record(
+            "ui.concession.entree_ne_confirme_pas",
+            server().Balance == before.Balance and exact(root, "Confirmer") ~= nil,
+            string.format(
+                "solde %d, confirmation %s",
+                server().Balance,
+                if exact(root, "Confirmer") then "toujours affichée" else "disparue"
+            )
+        )
         Gui.shot("concession_confirmation", {})
         task.wait(0.4)
         click("ui.concession.annuler", exact(root, "Annuler"), "Annuler")
@@ -793,11 +808,12 @@ phase("carte", function()
         record("ui.carte.guidage_affiche", guidance, notifications())
         Gui.shot("carte_destination", {})
     end
-    click("ui.carte.fermer", Gui.findButton(map, "Fermer"), "Fermer")
+    -- Navigation retour : touche Retour (Backspace) pour fermer la carte.
+    Gui.key("Backspace")
     waitFor(function()
         return not (map :: ScreenGui).Enabled
     end, 4)
-    record("ui.carte.fermee", not (map :: ScreenGui).Enabled)
+    record("ui.carte.fermee_par_touche_retour", not (map :: ScreenGui).Enabled)
     task.wait(0.5)
     Gui.shot("hud_guidage_a_pied", {})
     Gui.key("X")
@@ -861,7 +877,16 @@ phase("photo", function()
         -- Autre chemin du jeu : application Photo du téléphone (vrais clics).
         Gui.key("T")
         if waitFor(phoneOpen, 4) then
-            click("ui.photo.app_photo_du_telephone", phoneButton("Photo"), "Photo")
+            -- Le téléphone redessine son accueil à l'ouverture : bouton recherché juste avant
+            -- le clic, nouvel essai si le clic visait un bouton déjà remplacé.
+            task.wait(0.6)
+            -- (Lot 0.9.2, tâche 20261104-035727 : la variable du clic ne doit pas masquer
+            -- `opened`, sinon le mode photo restait ouvert et bloquait l'embarquement.)
+            local clicked = click("ui.photo.app_photo_du_telephone", phoneButton("Photo"), "Photo")
+            if not clicked then
+                task.wait(0.4)
+                click("ui.photo.app_photo_du_telephone_2", phoneButton("Photo"), "Photo")
+            end
             task.wait(0.8)
             click("ui.photo.bouton_ouvrir_le_mode_photo", phoneButton("Ouvrir le mode photo"), "Ouvrir le mode photo")
             opened = waitFor(isOpen, 4)
