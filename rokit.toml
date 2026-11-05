@@ -1,2 +1,7 @@
 [tools]
 rojo = "rojo-rbx/rojo@7.7.1"
+# Outils de validation locale (versions déjà présentes dans le cache Rokit).
+selene = "kampfkarren/selene@0.27.1"
+stylua = "johnnymorganz/stylua@0.20.0"
+luau-lsp = "johnnymorganz/luau-lsp@1.70.1"
+lune = "lune-org/lune@0.11.1"
