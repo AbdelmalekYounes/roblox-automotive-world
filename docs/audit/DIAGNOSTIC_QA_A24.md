@@ -92,3 +92,19 @@ Faire apparaître un véhicule :
    - Si ça échoue encore : l'état est lié au **joueur** côté serveur (H2), ou à l'invite (H3).
 5. **Si l'étape 2 ne reproduit pas** : le dire. Je proposerais alors une session VM ciblée avec un journal des sorties
    silencieuses (sur ton accord, par exception à l'arrêt des tests automatiques).
+
+## 5. Résultat de l'essai du propriétaire (2026-11-05)
+
+Essai manuel du propriétaire dans Studio, place de `feat/ui-premium-v1.2-v2` (`9caba94`), véhicules apparus par
+`ServerStorage.AWRevue` :
+- témoin : Mistral (boîte automatique, l'un des 8 modèles en échec au banc), montée et conduite **OK** ;
+- Rafale lancée contre un mur, sortie au moment du choc, puis Mistral : **montée OK**.
+
+**La reproduction échoue** : un humain monte normalement dans un modèle « en échec » après une sortie pendant un choc.
+H1, sous la forme essayée, n'est pas confirmée. Restent possibles :
+- un état qui s'accumule seulement sur une longue séance (11 véhicules à la suite) ;
+- un artefact du chemin propre au banc (téléportation du personnage par le client, sortie par `Humanoid.Sit = false`,
+  invite déclenchée par script), révélé par les changements de l'intervalle.
+
+Impact joueur : non constaté à ce jour, sur un seul essai humain.
+
