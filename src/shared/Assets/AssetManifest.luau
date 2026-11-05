@@ -280,6 +280,40 @@ add({
     RobloxAssetId = nil,
 })
 
+-- Lot UI-02 : 12 icônes du téléphone (une entrée par icône : identifiant Roblox après l'envoi du propriétaire).
+for _, appName in
+    {
+        "Map",
+        "Vehicles",
+        "Properties",
+        "Missions",
+        "Races",
+        "Market",
+        "Social",
+        "Radio",
+        "Photo",
+        "Guide",
+        "Settings",
+        "Notifications",
+    }
+do
+    add({
+        Id = "ui.icon.phone." .. string.lower(appName), -- identifiants stables : minuscules
+        Category = "Interface",
+        Version = "1.2.0",
+        Status = "ReadyForReview",
+        Variants = { Low = "PNG 64 px", Medium = "PNG 64 px", High = "PNG 128 px" },
+        Lod = "Aucun",
+        Provenance = ORIGINAL
+            .. " : icône de la maquette V1.2 du propriétaire (tracé SVG de Smartphone.dc.html), rastérisée en PNG "
+            .. "blanc teinté dans le jeu (script de Source) ; à envoyer sur Roblox par le propriétaire",
+        Licence = LICENCE,
+        Source = { Kind = "File", Path = "tools/ui/make_phone_icons.py" },
+        Output = "assets/ui/icons/" .. appName .. "_128.png",
+        RobloxAssetId = nil,
+    })
+end
+
 AssetManifest.Assets = table.freeze(list)
 
 local byId: { [string]: Asset } = {}

@@ -415,6 +415,7 @@ local T: { [string]: string } = {
     -- Modules de garage (GarageModules).
     ["Atelier de réglage"] = "Tuning workshop",
     ["Cabine d'esthétique"] = "Paint booth",
+    ["Garage"] = "Garage", -- titre du garage (lot UI-03)
     ["Pont et diagnostic"] = "Lift and diagnostics",
     ["Rangement de pièces"] = "Parts storage",
     ["Borne privée (recharge payante)"] = "Private charger (paid charging)",

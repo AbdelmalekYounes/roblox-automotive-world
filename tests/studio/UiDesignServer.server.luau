@@ -9,7 +9,9 @@ local StudioTestService = game:GetService("StudioTestService")
 
 local args = StudioTestService:GetTestArgs()
 local session = if type(args) == "table" and type(args.Session) == "string" then args.Session else ""
-if session ~= "ui_design" then
+-- « ui_phone » (lot UI-02) : même serveur, sans la page de démonstration (téléphone seul).
+-- « ui_garage » (UI-03) et « ui_panels » (UI-04) : même serveur, écran concerné seul.
+if session ~= "ui_design" and session ~= "ui_phone" and session ~= "ui_garage" and session ~= "ui_panels" then
     return
 end
 
@@ -56,19 +58,21 @@ local function waitFor(predicate: () -> boolean, timeout: number): boolean
 end
 
 record(
-    "ui_design.serveur.joueur_connecte",
+    session .. ".serveur.joueur_connecte",
     waitFor(function()
         return #Players:GetPlayers() >= 1
     end, 60)
 )
 task.wait(3)
-ReplicatedStorage:SetAttribute("AWDesignDemo", true)
+if session == "ui_design" then
+    ReplicatedStorage:SetAttribute("AWDesignDemo", true)
+end
 record(
-    "ui_design.serveur.rapport_client",
+    session .. ".serveur.rapport_client",
     waitFor(function()
         return next(reports) ~= nil
     end, 300)
 )
 ReplicatedStorage:SetAttribute("AWDesignDemo", false)
-record("ui_design.serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
+record(session .. ".serveur.aucune_erreur_execution", #errors == 0, table.concat(errors, " || "))
 StudioTestService:EndTest({ session = session, players = 1, server = steps, clients = reports })

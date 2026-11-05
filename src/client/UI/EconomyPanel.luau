@@ -29,6 +29,9 @@ local Localization = require(Shared:WaitForChild("UI"):WaitForChild("Localizatio
 
 local Text = require(script.Parent.ProgressionMessages)
 local UIManager = require(script.Parent.UIManager)
+local UITheme = require(script.Parent.UITheme)
+local Tokens =
+    require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
 local InputRouter = require(script.Parent.InputRouter)
 local GPSController = require(script.Parent.GPSController)
 
@@ -66,6 +69,10 @@ local function make(className: string, props: { [string]: any }, parent: Instanc
     local item = Instance.new(className)
     for key, value in props do
         (item :: any)[key] = value
+    end
+    -- Lot UI-04 : repères Gotham convertis en Titillium Web (système de conception V1.2), même graisse.
+    if props.Font and (item:IsA("TextLabel") or item:IsA("TextButton") or item:IsA("TextBox")) then
+        UITheme.applyFont(item :: any, props.Font)
     end
     item.Parent = parent
     return item
@@ -192,7 +199,7 @@ local function line(text: string, bold: boolean?)
     make("TextLabel", {
         Size = UDim2.new(1, -8, 0, if bold then 26 else 22),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(230, 236, 244),
+        TextColor3 = UITheme.color("Text"),
         Font = if bold then Enum.Font.GothamBold else Enum.Font.Gotham,
         TextSize = if bold then 17 else 15,
         TextWrapped = true,
@@ -214,8 +221,8 @@ local function button(parent: Instance, text: string, width: number, callback: (
     local active = enabled ~= false
     local item = make("TextButton", {
         Size = UDim2.new(0, width, 0, 30),
-        BackgroundColor3 = if active then Color3.fromRGB(52, 92, 160) else Color3.fromRGB(60, 64, 72),
-        TextColor3 = if active then Color3.fromRGB(255, 255, 255) else Color3.fromRGB(150, 155, 165),
+        BackgroundColor3 = UITheme.color("PanelRaised"),
+        TextColor3 = if active then UITheme.color("Text") else UITheme.color("TextDim"),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
         Text = text,
@@ -233,7 +240,7 @@ local function label(parent: Instance, text: string, width: number)
     make("TextLabel", {
         Size = UDim2.new(0, width, 1, 0),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(215, 222, 232),
+        TextColor3 = UITheme.color("Text"),
         Font = Enum.Font.Gotham,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -553,7 +560,7 @@ function render()
         return
     end
     for name, item in tabButtons do
-        item.BackgroundColor3 = if name == tab then Color3.fromRGB(80, 130, 210) else Color3.fromRGB(44, 52, 66)
+        item.BackgroundColor3 = if name == tab then UITheme.color("AccentSoft") else UITheme.color("PanelRaised")
     end
     for _, child in body:GetChildren() do
         if not child:IsA("UIListLayout") then
@@ -619,7 +626,7 @@ local function placeBeacon(point: { X: number, Z: number })
         part.CanTouch = false
         part.CastShadow = false
         part.Material = Enum.Material.Neon
-        part.Color = Color3.fromRGB(255, 200, 40)
+        part.Color = UITheme.color("Accent")
         part.Transparency = 0.35
         part.Shape = Enum.PartType.Cylinder
         part.Size = Vector3.new(BEACON_HEIGHT, 8, 8)
@@ -637,9 +644,9 @@ local function placeBeacon(point: { X: number, Z: number })
         make("TextLabel", {
             Name = "Distance",
             Size = UDim2.fromScale(1, 1),
-            BackgroundColor3 = Color3.fromRGB(40, 32, 12),
+            BackgroundColor3 = Tokens.color("WarnBg"),
             BackgroundTransparency = 0.2,
-            TextColor3 = Color3.fromRGB(255, 220, 120),
+            TextColor3 = UITheme.color("AccentSoftText"),
             Font = Enum.Font.GothamBold,
             TextSize = 16,
             Text = "",
@@ -739,9 +746,9 @@ function EconomyPanel.start()
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 64),
         Size = UDim2.fromOffset(620, 28),
-        BackgroundColor3 = Color3.fromRGB(40, 32, 12),
+        BackgroundColor3 = Tokens.color("WarnBg"),
         BackgroundTransparency = 0.15,
-        TextColor3 = Color3.fromRGB(255, 220, 120),
+        TextColor3 = UITheme.color("AccentSoftText"),
         Font = Enum.Font.GothamMedium,
         TextSize = 15,
         Visible = false,
@@ -751,14 +758,14 @@ function EconomyPanel.start()
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 96),
         Size = UDim2.fromOffset(240, 34),
-        BackgroundColor3 = Color3.fromRGB(40, 32, 12),
+        BackgroundColor3 = Tokens.color("WarnBg"),
         BackgroundTransparency = 0.15,
         Visible = false,
     }, gui)
     guideArrow = make("TextLabel", {
         Size = UDim2.fromOffset(34, 34),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(255, 200, 40),
+        TextColor3 = UITheme.color("AccentSoftText"),
         Font = Enum.Font.GothamBold,
         TextSize = 24,
         Text = "▲",
@@ -767,7 +774,7 @@ function EconomyPanel.start()
         Position = UDim2.fromOffset(38, 0),
         Size = UDim2.new(1, -44, 1, 0),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(255, 220, 120),
+        TextColor3 = UITheme.color("AccentSoftText"),
         Font = Enum.Font.GothamMedium,
         TextSize = 15,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -778,7 +785,7 @@ function EconomyPanel.start()
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.52),
         Size = UDim2.fromOffset(940, 540),
-        BackgroundColor3 = Color3.fromRGB(24, 30, 40),
+        BackgroundColor3 = UITheme.color("Panel"),
         Visible = false,
     }, gui)
     make("UICorner", { CornerRadius = UDim.new(0, 10) }, panel)
@@ -793,8 +800,8 @@ function EconomyPanel.start()
     for index, name in TABS do
         local item = make("TextButton", {
             Size = UDim2.fromOffset(130, 32),
-            BackgroundColor3 = Color3.fromRGB(44, 52, 66),
-            TextColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundColor3 = UITheme.color("PanelRaised"),
+            TextColor3 = UITheme.color("Text"),
             Font = Enum.Font.GothamMedium,
             TextSize = 14,
             Text = tr(name),
@@ -809,8 +816,8 @@ function EconomyPanel.start()
     end
     local close = make("TextButton", {
         Size = UDim2.fromOffset(70, 32),
-        BackgroundColor3 = Color3.fromRGB(120, 50, 50),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundColor3 = UITheme.color("PanelRaised"),
+        TextColor3 = UITheme.color("Text"),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
         Text = tr("Fermer"),
@@ -831,7 +838,7 @@ function EconomyPanel.start()
         Position = UDim2.new(0, 12, 1, -38),
         Size = UDim2.new(1, -24, 0, 30),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(255, 214, 120),
+        TextColor3 = UITheme.color("AccentSoftText"),
         Font = Enum.Font.GothamMedium,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,

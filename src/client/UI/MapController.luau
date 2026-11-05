@@ -170,7 +170,7 @@ local function build()
     canvas = UITheme.make("Frame", {
         Position = UDim2.fromOffset(12, 44),
         Size = UDim2.new(0.7, -18, 1, -100),
-        BackgroundColor3 = Color3.fromRGB(12, 14, 18),
+        BackgroundColor3 = UITheme.color("Panel"),
         BorderSizePixel = 0,
         Active = true,
     }, window)

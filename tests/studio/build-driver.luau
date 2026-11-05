@@ -55,6 +55,11 @@ local KNOWN_SESSIONS = {
     comete_avatar = { Name = "comete_avatar", Players = 1 },
     -- Lot UI-01 : système de conception V1.2 (page de démonstration, vrais clics).
     ui_design = { Name = "ui_design", Players = 1 },
+    -- Lot UI-02 : téléphone V1.2 seul (vraies touches et vrais clics).
+    ui_phone = { Name = "ui_phone", Players = 1 },
+    -- Lots UI-03 et UI-04 : garage seul ; panneaux économie et courses seuls.
+    ui_garage = { Name = "ui_garage", Players = 1 },
+    ui_panels = { Name = "ui_panels", Players = 1 },
 }
 
 -- Suites supplémentaires (lot 0.9) : { nom de script, fichier, client ? }.
@@ -84,6 +89,8 @@ local EXTRA = {
     { "AW_TestCometeClient", "CometeClient.client.luau", true },
     { "AW_TestUiDesignServer", "UiDesignServer.server.luau", false },
     { "AW_TestUiDesignClient", "UiDesignClient.client.luau", true },
+    { "AW_TestUiPhoneClient", "UiPhoneClient.client.luau", true },
+    { "AW_TestUiScreensClient", "UiScreensClient.client.luau", true },
 }
 
 local output = process.args[1]

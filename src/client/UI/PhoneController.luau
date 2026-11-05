@@ -29,6 +29,9 @@ local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleC
 
 local UIState = require(script.Parent.UIState)
 local UITheme = require(script.Parent.UITheme)
+local Components = require(script.Parent.Components)
+local Tokens = require(Shared:WaitForChild("UI"):WaitForChild("DesignTokens"))
+local PhoneIcons = require(Shared:WaitForChild("UI"):WaitForChild("PhoneIcons"))
 local UIManager = require(script.Parent.UIManager)
 local GPSController = require(script.Parent.GPSController)
 local NotificationService = require(script.Parent.NotificationService)
@@ -56,26 +59,14 @@ local APPS = {
     "Settings",
     "Notifications",
 }
-local ICONS = {
-    Map = "🗺",
-    Vehicles = "🚗",
-    Properties = "⌂",
-    Missions = "★",
-    Races = "🏁",
-    Market = "$",
-    Social = "☺",
-    Radio = "♪",
-    Photo = "◎",
-    Guide = "?",
-    Settings = "⚙",
-    Notifications = "🔔",
-}
-
 local gui: ScreenGui
 local device: Frame
 local header: TextLabel
 local body: ScrollingFrame
 local quickBar: Frame
+local backButton: TextButton
+local quickTag: TextLabel
+local clockLabel: TextLabel
 local app = "Home"
 local enlarged = false
 local quick = false
@@ -115,30 +106,38 @@ local function clear()
     order = 0
 end
 
+-- Lignes de la maquette (§ téléphone) : titre en capitales (libellé), ligne de texte, note discrète.
 local function line(text: string, bold: boolean?, dim: boolean?)
     order += 1
-    UITheme.label(text, if bold then 16 else 14, {
+    local style = if bold then "Label" else "Body"
+    Components.text(body, text, style, {
         Size = UDim2.new(1, -8, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = if bold then UITheme.FontBold else UITheme.Font,
-        TextColor3 = if dim then UITheme.color("TextDim") else UITheme.color("Text"),
+        TextColor3 = if bold or dim then UITheme.color("TextDim") else UITheme.color("Text"),
         LayoutOrder = order,
-    }, body)
+    })
 end
 
+-- Bouton de ligne (44 px) ; inactif : opacité 0,45, aucune action (la raison est donnée par la ligne qui suit).
 local function button(text: string, fn: () -> (), enabled: boolean?)
     order += 1
-    local b = UITheme.button(
-        text,
-        { Size = UDim2.new(1, -8, 0, 32), LayoutOrder = order },
-        body,
-        if enabled == false then nil else fn
+    local b = UITheme.button(text, {
+        Size = UDim2.new(1, -8, 0, Tokens.PrimaryButtonHeight),
+        LayoutOrder = order,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, body, if enabled == false then nil else fn)
+    UITheme.make(
+        "UIPadding",
+        { PaddingLeft = UDim.new(0, Tokens.Space[3]), PaddingRight = UDim.new(0, Tokens.Space[3]) },
+        b
     )
     if enabled == false then
-        b.TextColor3 = UITheme.color("TextDim")
-        b.AutoButtonColor = false
+        b.Active = false
+        b.Selectable = false
+        b.BackgroundTransparency = Tokens.DisabledTransparency
+        b.TextTransparency = Tokens.DisabledTransparency
     end
 end
 
@@ -167,17 +166,117 @@ end
 
 -- ======================== Applications ========================
 
+local function appTile(parent: Instance, name: string, index: number)
+    local tile = UITheme.make("TextButton", {
+        Name = "App" .. name,
+        BackgroundTransparency = 1,
+        AutoButtonColor = false,
+        Text = "",
+        Size = UDim2.fromOffset(76, 88),
+        LayoutOrder = index,
+        Selectable = true,
+    }, parent) :: TextButton
+    local square = UITheme.make("Frame", {
+        BackgroundColor3 = UITheme.color("PanelRaised"),
+        BorderSizePixel = 0,
+        AnchorPoint = Vector2.new(0.5, 0),
+        Position = UDim2.fromScale(0.5, 0),
+        Size = UDim2.fromOffset(Tokens.Phone.AppTile, Tokens.Phone.AppTile),
+    }, tile)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.AppTile) }, square)
+    local stroke = UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 1 }, square)
+    local image = PhoneIcons.image(name)
+    if image then
+        UITheme.make("ImageLabel", {
+            Name = "Icone",
+            BackgroundTransparency = 1,
+            Image = image,
+            ImageColor3 = Tokens.color(PhoneIcons.tint(name)),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromOffset(Tokens.Phone.AppIcon, Tokens.Phone.AppIcon),
+        }, square)
+    else
+        -- Image pas encore envoyée sur Roblox : cadre vide à la place (aucun caractère de remplacement).
+        local slot = UITheme.make("Frame", {
+            Name = "IconeAEnvoyer",
+            BackgroundTransparency = 1,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.fromScale(0.5, 0.5),
+            Size = UDim2.fromOffset(Tokens.Phone.AppIcon, Tokens.Phone.AppIcon),
+        }, square)
+        UITheme.make("UICorner", { CornerRadius = UDim.new(0, 6) }, slot)
+        UITheme.make(
+            "UIStroke",
+            { Color = Tokens.color(PhoneIcons.tint(name)), Thickness = 1.5, Transparency = 0.3 },
+            slot
+        )
+    end
+    -- Nom de l'application en casse normale, 12 px (maquette).
+    local caption = Components.text(tile, Localization.t("phone.app." .. name), "Body", {
+        Name = "Nom",
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.fromScale(0.5, 1),
+        Size = UDim2.new(1, 0, 0, 16),
+        AutomaticSize = Enum.AutomaticSize.None,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        TextColor3 = UITheme.color("Text"),
+    })
+    caption.TextSize = UITheme.text(12)
+    local unread = if name == "Notifications" then NotificationService.unread() else 0
+    if unread > 0 then
+        local badge = UITheme.make("TextLabel", {
+            Name = "Pastille",
+            BackgroundColor3 = UITheme.color("Accent"),
+            Text = tostring(unread),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, Tokens.Phone.AppTile / 2 - 2, 0, 4),
+            Size = UDim2.fromOffset(20, 20),
+        }, tile) :: TextLabel
+        badge.FontFace = UITheme.face("Label")
+        badge.TextSize = UITheme.text(12)
+        badge.TextColor3 = UITheme.color("OnAccent")
+        UITheme.make("UICorner", { CornerRadius = UDim.new(1, 0) }, badge)
+    end
+    tile.SelectionGained:Connect(function()
+        stroke.Color = UITheme.color("Focus")
+        stroke.Thickness = Tokens.FocusStroke
+    end)
+    tile.SelectionLost:Connect(function()
+        stroke.Color = UITheme.color("Line")
+        stroke.Thickness = 1
+    end)
+    tile.Activated:Connect(function()
+        app = name
+        render()
+    end)
+end
+
 local function renderHome()
-    line(os.date("%H:%M") :: string, true)
     local unread = NotificationService.unread()
     if unread > 0 then
-        line(Localization.t("phone.unread", { count = unread }))
+        order += 1
+        Components.card(body, Localization.t("phone.unread", { count = unread }), nil, "Pending").LayoutOrder = order
     end
-    for _, name in APPS do
-        button(ICONS[name] .. "  " .. Localization.t("phone.app." .. name), function()
-            app = name
-            render()
-        end)
+    order += 1
+    local grid = UITheme.make("Frame", {
+        Name = "Grille",
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, -8, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        LayoutOrder = order,
+    }, body)
+    -- 4 colonnes calculées sur la largeur disponible : les 12 applications tiennent en 3 rangées, sans défilement,
+    -- même dans la taille compacte (4e rangée cachée dans une petite fenêtre : VM 20261105-034325).
+    local columnWidth = math.max(60, math.floor((body.AbsoluteSize.X - 8 - 3 * 6) / 4))
+    UITheme.make("UIGridLayout", {
+        CellSize = UDim2.fromOffset(columnWidth, 88),
+        CellPadding = UDim2.fromOffset(6, Tokens.Space[3]),
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, grid)
+    for index, name in APPS do
+        appTile(grid, name, index)
     end
 end
 
@@ -340,8 +439,8 @@ local function renderProperties()
                 string.format(
                     "%s — %s%s",
                     invitation.GuestName or tostring(invitation.GuestUserId),
-                    if invitation.Visit then "👁" else "",
-                    if invitation.Drive then " 🚗" else ""
+                    if invitation.Visit then Localization.t("social.tag.visit") else "",
+                    if invitation.Drive then " · " .. Localization.t("social.tag.drive") else ""
                 ),
                 false,
                 true
@@ -468,7 +567,7 @@ local function renderSocial()
                     member.Name,
                     if member.Leader then " — " .. Localization.t("social.leader") else "",
                     if member.Online then "" else " (" .. Localization.t("social.offline") .. ")",
-                    if member.Sharing then " 📍" else ""
+                    if member.Sharing then " · " .. Localization.t("social.tag.sharing") else ""
                 )
             )
             if group.IsLeader and member.UserId ~= Players.LocalPlayer.UserId then
@@ -754,16 +853,13 @@ render = function()
     header.Text = if quick
         then Localization.t("ui.panel.phone")
         else Localization.t(if app == "Home" then "phone.home" else "phone.app." .. app)
+    clockLabel.Text = os.date("%H:%M") :: string
     quickBar.Visible = quick
+    quickTag.Visible = quick
+    backButton.Visible = not quick and app ~= "Home"
     if quick then
         renderQuick()
         return
-    end
-    if app ~= "Home" then
-        button("← " .. Localization.t("ui.back"), function()
-            app = "Home"
-            render()
-        end)
     end
     if app == "Home" then
         renderHome()
@@ -811,59 +907,148 @@ local function load()
 end
 
 local function layout()
-    if enlarged then
-        device.AnchorPoint = Vector2.new(0.5, 0.5)
-        device.Position = UDim2.fromScale(0.5, 0.5)
-        device.Size = UDim2.fromOffset(440, 760)
-    else
-        device.AnchorPoint = Vector2.new(1, 1)
-        device.Position = UDim2.new(1, -24, 1, -24)
-        device.Size = UDim2.fromOffset(320, 580)
-    end
+    local camera = workspace.CurrentCamera :: Camera
+    local compact = Tokens.layout(camera.ViewportSize.X, camera.ViewportSize.Y).Compact
+    local big = enlarged and not quick
+    local phone = Tokens.Phone
+    local size = if compact
+        then (if big then phone.CompactEnlarged else phone.CompactNormal)
+        else (if big then phone.Enlarged else phone.Normal)
+    local margin = if compact then phone.MarginCompact else phone.Margin
+    -- Jamais plus haut que la vue (barre de Roblox comprise) : le haut du téléphone restait coupé dans une petite
+    -- fenêtre (VM 1250 × 593, tâche 20261105-033732).
+    local inset = game:GetService("GuiService"):GetGuiInset().Y
+    local height = math.min(size.Y, camera.ViewportSize.Y - inset - 2 * margin)
+    device.AnchorPoint = Vector2.new(1, 1)
+    device.Position = UDim2.new(1, -margin, 1, -margin)
+    UITheme.motion(device, { Size = UDim2.fromOffset(size.X, height) }, "PhoneResize")
+    gui:SetAttribute("AWPhoneSize", string.format("%dx%d", size.X, height))
 end
 
 local function build()
-    gui = UITheme.make(
-        "ScreenGui",
-        { Name = "AWPhone", ResetOnSpawn = false, DisplayOrder = 12, Enabled = false },
-        Players.LocalPlayer:WaitForChild("PlayerGui")
-    )
-    device = UITheme.panel({}, gui)
-    device.BackgroundColor3 = Color3.fromRGB(8, 9, 12)
-    UITheme.make("UIStroke", { Color = Color3.fromRGB(70, 74, 84), Thickness = 3 }, device)
-    header = UITheme.label("", 16, {
-        Position = UDim2.fromOffset(14, 10),
-        Size = UDim2.new(1, -110, 0, 24),
-        Font = UITheme.FontBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
+    gui = UITheme.make("ScreenGui", {
+        Name = "AWPhone",
+        ResetOnSpawn = false,
+        DisplayOrder = 12,
+        Enabled = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    }, Players.LocalPlayer:WaitForChild("PlayerGui"))
+    -- Coque (rayon 34) et écran (rayon 26) de la maquette.
+    device = UITheme.make("Frame", {
+        Name = "Coque",
+        BackgroundColor3 = UITheme.color("PanelChrome"),
+        BorderSizePixel = 0,
+        Size = UDim2.fromOffset(Tokens.Phone.Normal.X, Tokens.Phone.Normal.Y),
+    }, gui) :: Frame
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.PhoneFrame) }, device)
+    UITheme.make("UIStroke", { Color = UITheme.color("Line"), Thickness = 2 }, device)
+    local screen = UITheme.make("Frame", {
+        Name = "Ecran",
+        BackgroundColor3 = UITheme.color("Panel"),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(10, 10),
+        Size = UDim2.new(1, -20, 1, -20),
     }, device)
-    -- Lot 0.9.1 (QA-F14) : « ⤢ » et « ✕ » absents de la police (carrés vides dans les
-    -- captures) ; signes latins, toujours rendus.
-    UITheme.button("+", { Position = UDim2.new(1, -92, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
-        enlarged = not enlarged
-        layout()
-    end)
-    UITheme.button("×", { Position = UDim2.new(1, -48, 0, 8), Size = UDim2.fromOffset(38, 28) }, device, function()
-        UIManager.close("Phone")
-    end)
+    UITheme.make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.PhoneScreen) }, screen)
+    -- Barre d'état : heure.
+    clockLabel = Components.text(screen, "", "Value", {
+        Name = "Heure",
+        Position = UDim2.fromOffset(18, 8),
+        TextColor3 = UITheme.color("TextDim"),
+    })
+    -- En-tête : retour, titre, étiquette « mode rapide », agrandir et fermer.
+    backButton = UITheme.button(
+        Localization.t("ui.back"),
+        {
+            Name = "Retour",
+            Position = UDim2.fromOffset(12, 34),
+            Size = UDim2.fromOffset(0, Tokens.MinTarget),
+            AutomaticSize = Enum.AutomaticSize.X,
+        },
+        screen,
+        function()
+            app = "Home"
+            render()
+        end
+    )
+    UITheme.make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, backButton)
+    header = Components.text(screen, "", "H1", {
+        Name = "Titre",
+        Position = UDim2.fromOffset(16, 72),
+        Size = UDim2.new(1, -32, 0, 34),
+        AutomaticSize = Enum.AutomaticSize.None,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+    })
+    quickTag = Components.text(screen, Localization.t("phone.quickMode"), "Label", {
+        Name = "ModeRapide",
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, -16, 0, 80),
+        TextColor3 = UITheme.color("AccentSoftText"),
+        Visible = false,
+    })
+    -- Lot 0.9.1 (QA-F14) : signes latins, toujours rendus par la police.
+    UITheme.button(
+        "+",
+        {
+            Name = "Agrandir",
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, -56, 0, 34),
+            Size = UDim2.fromOffset(Tokens.MinTarget, Tokens.MinTarget),
+        },
+        screen,
+        function()
+            enlarged = not enlarged
+            layout()
+        end
+    )
+    UITheme.button(
+        "×",
+        {
+            Name = "Fermer",
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, -16, 0, 34),
+            Size = UDim2.fromOffset(Tokens.MinTarget, Tokens.MinTarget),
+        },
+        screen,
+        function()
+            UIManager.close("Phone")
+        end
+    )
     body = UITheme.make("ScrollingFrame", {
-        Position = UDim2.fromOffset(10, 44),
-        Size = UDim2.new(1, -20, 1, -100),
+        Name = "Contenu",
+        Position = UDim2.fromOffset(12, 114),
+        Size = UDim2.new(1, -24, 1, -176),
         BackgroundTransparency = 1,
         CanvasSize = UDim2.new(),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 6,
-    }, device)
-    UITheme.make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = UITheme.color("Line"),
+    }, screen)
+    UITheme.make(
+        "UIListLayout",
+        { Padding = UDim.new(0, Tokens.Space[2]), SortOrder = Enum.SortOrder.LayoutOrder },
+        body
+    )
     -- Réglages rapides autorisés en roulant (souris ou raccourcis, jamais une sélection manette).
     quickBar = UITheme.make(
         "Frame",
-        { Position = UDim2.new(0, 10, 1, -52), Size = UDim2.new(1, -20, 0, 42), BackgroundTransparency = 1 },
-        device
+        { Position = UDim2.new(0, 12, 1, -54), Size = UDim2.new(1, -24, 0, 44), BackgroundTransparency = 1 },
+        screen
     )
-    UITheme.make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }, quickBar)
+    UITheme.make(
+        "UIListLayout",
+        { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, Tokens.Space[2]) },
+        quickBar
+    )
     local function quickButton(text: string, fn: () -> ())
-        local b = UITheme.button(text, { Size = UDim2.fromOffset(92, 38) }, quickBar, fn)
+        local b = UITheme.button(
+            text,
+            { Size = UDim2.fromOffset(0, Tokens.PrimaryButtonHeight), AutomaticSize = Enum.AutomaticSize.X },
+            quickBar,
+            fn
+        )
+        UITheme.make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, b)
         b.Selectable = false
     end
     quickButton("HUD", function()
@@ -871,12 +1056,12 @@ local function build()
             p.Hud.Level = cycle({ "Minimal", "Standard", "Full" }, p.Hud.Level)
         end)
     end)
-    quickButton("🔍", function()
+    quickButton(Localization.t("phone.quick.zoom"), function()
         SettingsController.update(function(p)
             p.Hud.MinimapZoom = step(p.Hud.MinimapZoom, 1, 1, 4)
         end)
     end)
-    quickButton("× GPS", function()
+    quickButton(Localization.t("phone.quick.clearGps"), function()
         GPSController.clear()
         render()
     end)
@@ -1010,10 +1195,12 @@ function PhoneController.start()
         end,
         Quick = function(on: boolean)
             quick = on
+            layout() -- pas de téléphone agrandi en mode rapide
             render()
         end,
         Focus = function()
-            return body:FindFirstChildWhichIsA("GuiButton")
+            -- Tuiles de l'accueil comprises (dans la grille) : recherche dans toute la descendance.
+            return body:FindFirstChildWhichIsA("GuiButton", true)
         end,
     })
     UIState.onPrefs(function()

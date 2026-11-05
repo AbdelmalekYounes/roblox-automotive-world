@@ -1,0 +1,127 @@
+{
+  "source": "Smartphone.dc.html",
+  "grid": 24,
+  "stroke": 1.75,
+  "icons": {
+    "Map": {
+      "64": {
+        "file": "Map_64.png",
+        "sha256": "b686793e7596656d8dc6f95df04655412b614b7ea87db70fd4f3b8aa86a280db"
+      },
+      "128": {
+        "file": "Map_128.png",
+        "sha256": "23a5b4fab6c3f76a091a8bc9adef63552118ef625c16941d4af5c33f4bd22e09"
+      }
+    },
+    "Vehicles": {
+      "64": {
+        "file": "Vehicles_64.png",
+        "sha256": "36a1b96eb10bfb1df901f09cd02eb0529cca6eefa2fca45e68260afb7be0922f"
+      },
+      "128": {
+        "file": "Vehicles_128.png",
+        "sha256": "d4262f9fcda8fcc506f7ccf8cc93480c77be16cf849da461903e9d086f802de2"
+      }
+    },
+    "Properties": {
+      "64": {
+        "file": "Properties_64.png",
+        "sha256": "b8fcd4191b39f2a371403555e953cb66dd4ca669e4f8039f6d0c96a2a7951c2b"
+      },
+      "128": {
+        "file": "Properties_128.png",
+        "sha256": "0f5ffa174af333b83fba6cf86eea48687621414df6fef7d6e9d82ace9d5b9845"
+      }
+    },
+    "Missions": {
+      "64": {
+        "file": "Missions_64.png",
+        "sha256": "ec32e49bd268d688df5c84b1faaa2f2b21bfa69fccb15c04480a8727c4b36345"
+      },
+      "128": {
+        "file": "Missions_128.png",
+        "sha256": "edd8c66dc55421a688ac1ab40f80701eafd1c67b261dd70286d36ea257113934"
+      }
+    },
+    "Races": {
+      "64": {
+        "file": "Races_64.png",
+        "sha256": "9232643f083605efd26d82cf1479b23ae3a36759a1239a62f50429e911b2e9d8"
+      },
+      "128": {
+        "file": "Races_128.png",
+        "sha256": "d942d6c0d5cf927e0a086a49f61add43d6c70e96de42e3b9eb656431f7e12a6a"
+      }
+    },
+    "Market": {
+      "64": {
+        "file": "Market_64.png",
+        "sha256": "f92f5506317671632c78c23731359de30fc7f6ee768976b6e3d3161c2476da70"
+      },
+      "128": {
+        "file": "Market_128.png",
+        "sha256": "3e22ccab5ec66819d710ec7e4ce165a31ea856b5aea61526fd40a4016138918f"
+      }
+    },
+    "Social": {
+      "64": {
+        "file": "Social_64.png",
+        "sha256": "a8720f4ef71dfbf9da7ac96d75a3cb97e8e3411a93231afeffc29647e326ea12"
+      },
+      "128": {
+        "file": "Social_128.png",
+        "sha256": "a5234603075f7de5e5edbec5e6401f966291746e99ca78296516c9906564ea4a"
+      }
+    },
+    "Radio": {
+      "64": {
+        "file": "Radio_64.png",
+        "sha256": "270c289bae661b26d4d635736c3c5b2a46601c7efb2e8a02074d73ab75ad5a1e"
+      },
+      "128": {
+        "file": "Radio_128.png",
+        "sha256": "837a04746f693df4c9c64a705ac86d5b5d7167ececf19844b21bf45a80f38700"
+      }
+    },
+    "Photo": {
+      "64": {
+        "file": "Photo_64.png",
+        "sha256": "924f5a3b6a208677f7d0a93d0a1e4ceecf04d3aa7381d17eda40fc8616ef2b8e"
+      },
+      "128": {
+        "file": "Photo_128.png",
+        "sha256": "88979870e1144ab184bca550c4d2bc8c999b06718ae400195b68fc2d43845715"
+      }
+    },
+    "Guide": {
+      "64": {
+        "file": "Guide_64.png",
+        "sha256": "09fdd6bdae5a9b39bc1b1d50535380a77386426a299553bbdb60c8d372f734a0"
+      },
+      "128": {
+        "file": "Guide_128.png",
+        "sha256": "02f300056bdcdbbbf672b92ac5bbcd0516e668f18da7855a7aad251727f8d9b7"
+      }
+    },
+    "Settings": {
+      "64": {
+        "file": "Settings_64.png",
+        "sha256": "0ed6cba731c56c508c20e97ce12fa03fefba79b729786b3b75e0499a319b279a"
+      },
+      "128": {
+        "file": "Settings_128.png",
+        "sha256": "679a903761c828aed47085593c658e71877e3d24df69a4db840675b6643e07b2"
+      }
+    },
+    "Notifications": {
+      "64": {
+        "file": "Notifications_64.png",
+        "sha256": "a317b65fe6def1495dcba80028ea0f263426bf5ae26ee9b7cc5c0c656f736ed2"
+      },
+      "128": {
+        "file": "Notifications_128.png",
+        "sha256": "11e2f8a4691f651a7467c6cf92e9f43f609c49d4da5ad1b04c1b22d6422b4c1a"
+      }
+    }
+  }
+}
