@@ -2438,6 +2438,14 @@ function GaragePanel.start()
 
     player:GetAttributeChangedSignal("AWProfileState"):Connect(updateBadge)
     updateBadge()
+    -- Badge de sauvegarde masqué quand un écran est ouvert (il recouvrait les onglets et l'en-tête du téléphone,
+    -- VM 20261105-125026) ; chaque écran affiche alors son propre état du serveur.
+    task.spawn(function()
+        while true do
+            badge.Visible = not UIManager.anyOpen()
+            task.wait(0.25)
+        end
+    end)
 
     -- Changement de langue à chaud : textes des onglets, badge et contenu redessinés.
     Localization.changed(function()

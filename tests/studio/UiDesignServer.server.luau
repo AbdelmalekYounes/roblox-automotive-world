@@ -19,6 +19,7 @@ if
     and session ~= "ui_panels"
     and session ~= "ui_garage3d"
     and session ~= "ui_garage2"
+    and session ~= "ui_panels2"
 then
     return
 end

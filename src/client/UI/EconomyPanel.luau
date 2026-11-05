@@ -34,6 +34,7 @@ local Tokens =
     require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("DesignTokens"))
 local InputRouter = require(script.Parent.InputRouter)
 local GPSController = require(script.Parent.GPSController)
+local PanelKit = require(script.Parent.PanelKit)
 
 local EconomyPanel = {}
 
@@ -46,12 +47,10 @@ local S = 1 / Constants.MetersPerStud
 local TABS = { "Portefeuille", "Métiers", "Concession", "Marché", "Immobilier", "Services" }
 
 local request: RemoteFunction
+local shell: PanelKit.Shell
 local panel: Frame
 local body: ScrollingFrame
-local footer: TextLabel
 local missionLabel: TextLabel
-local tabButtons: { [string]: TextButton } = {}
-local closeButton: TextButton? = nil
 local state: any = nil
 local tab = "Portefeuille"
 local busy = false
@@ -59,7 +58,7 @@ local pending: any = nil -- opération en attente de confirmation (devis affich�
 local beacon: BasePart? = nil
 local beaconTag: BillboardGui? = nil
 local guideFrame: Frame
-local guideArrow: TextLabel
+local guideArrow: Frame
 local guideText: TextLabel
 local missionPoint: { X: number, Z: number }? = nil -- étape en cours, en mètres
 local groundCheckAt = 0
@@ -126,6 +125,26 @@ local function describe(response: any): string
     return tr(STATUS_TEXT[response.Status] or tostring(response.Status))
 end
 
+-- État affiché d'une réponse : confirmée (vert), en attente et récupérable (ambre), refusée (rouge), serveur
+-- injoignable (hors ligne), information (répétée ignorée, lecture).
+local function kindOf(response: any): string
+    local status = response.Status
+    if status == "Confirmed" then
+        return "Confirmed"
+    elseif status == "Pending" then
+        return "Pending"
+    elseif status == "Error" then
+        return "Offline"
+    elseif status == "Rejected" or status == "Unavailable" then
+        return "Rejected"
+    end
+    return "Info"
+end
+
+local function report(response: any)
+    shell:setStatus(kindOf(response), describe(response))
+end
+
 -- Exécute une opération sensible (identifiant de demande unique).
 local function execute(action: string, payload: any)
     if busy then
@@ -134,24 +153,52 @@ local function execute(action: string, payload: any)
     -- Lot 0.7 : confirmation seulement d'une pression neuve (jamais par un
     -- changement de périphérique ou une touche restée enfoncée).
     if not InputRouter.confirmAllowed() then
-        footer.Text = Text.text("ui.confirmAgain")
+        shell:setStatus("Info", Text.text("ui.confirmAgain"))
         return
     end
     if seatedAndMoving() then
-        footer.Text = Text.text("MenuWhileMoving")
+        shell:setStatus("Rejected", Text.text("MenuWhileMoving"))
         return
     end
     busy = true
+    panel:SetAttribute("AWBusy", true)
     payload.RequestId = HttpService:GenerateGUID(false)
-    footer.Text = tr("Demande envoyée…")
+    shell:setStatus("Pending", tr("Demande envoyée…"))
     local response = invoke(action, payload)
     busy = false
+    panel:SetAttribute("AWBusy", false)
     pending = nil
-    footer.Text = describe(response)
+    report(response)
     render()
 end
 
--- Devis puis confirmation.
+local function askConfirmation()
+    local q = pending.Quote or {}
+    local lines = { tr("Confirmation : %s", pending.Label) }
+    if q.Debit then
+        table.insert(lines, tr("Montant débité : %s", credits(q.Debit)))
+    end
+    if q.Credit then
+        table.insert(lines, tr("Montant crédité : %s", credits(q.Credit)))
+    end
+    if q.Fee then
+        table.insert(
+            lines,
+            tr("Prix %s • commission %s • net %s", credits(q.Price), credits(q.Fee), credits(q.Net))
+        )
+    end
+    local current = pending
+    PanelKit.confirm(shell.Gui, table.concat(lines, "\n"), function()
+        if pending == current then
+            execute(current.Action, table.clone(current.Payload))
+        end
+    end, function()
+        pending = nil
+        render()
+    end)
+end
+
+-- Devis puis confirmation (fenêtre modale protégée, montants calculés par le serveur).
 local function quote(label: string, action: string, payload: any, quoteArgs: any)
     if busy then
         return
@@ -160,18 +207,18 @@ local function quote(label: string, action: string, payload: any, quoteArgs: any
     local response = invoke("Quote", { Operation = action, Args = quoteArgs or payload })
     busy = false
     if response.Status ~= "Ok" then
-        footer.Text = describe(response)
+        report(response)
         return
     end
     pending = { Label = label, Action = action, Payload = payload, Quote = response.Result }
     InputRouter.armConfirm()
     -- Lot 0.9.1 (QA-F13, même cause) : le « Fait. » de la demande précédente laissait
     -- croire l'opération déjà faite pendant la confirmation.
-    footer.Text = ""
-    render()
+    shell:setStatus(nil, "")
+    askConfirmation()
 end
 
-local function simple(action: string, payload: any?)
+local function simple(action: string, payload: any?, quiet: boolean?)
     if busy then
         return
     end
@@ -187,102 +234,125 @@ local function simple(action: string, payload: any?)
     end
     local response = invoke(action, data)
     busy = false
-    footer.Text = describe(response)
+    if not quiet or kindOf(response) ~= "Info" then
+        report(response)
+    end
     render()
 end
 
 -- ======================== Éléments ========================
 
-local order = 0
-local function line(text: string, bold: boolean?)
-    order += 1
-    make("TextLabel", {
-        Size = UDim2.new(1, -8, 0, if bold then 26 else 22),
-        BackgroundTransparency = 1,
-        TextColor3 = UITheme.color("Text"),
-        Font = if bold then Enum.Font.GothamBold else Enum.Font.Gotham,
-        TextSize = if bold then 17 else 15,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Text = text,
-        LayoutOrder = order,
-    }, body)
+local function text(parent: Instance, value: string, style: string?, token: string?): TextLabel
+    return PanelKit.text(shell, parent, value, style, token)
 end
 
-local function row(): Frame
-    order += 1
-    local frame =
-        make("Frame", { Size = UDim2.new(1, -8, 0, 32), BackgroundTransparency = 1, LayoutOrder = order }, body)
-    make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }, frame)
+local function heading(value: string)
+    PanelKit.heading(shell, body, value)
+end
+
+local function card(name: string?, accent: string?): Frame
+    return PanelKit.card(shell, body, name, accent)
+end
+
+local function row(parent: Instance?): Frame
+    return PanelKit.row(shell, parent or body)
+end
+
+local function button(
+    parent: Instance,
+    value: string,
+    kind: PanelKit.ButtonKind,
+    callback: () -> (),
+    enabled: boolean?,
+    reason: string?,
+    name: string?
+): TextButton
+    return PanelKit.button(shell, parent, value, kind, callback, enabled, reason, name)
+end
+
+-- Grille de cartes (catalogue, annonces, biens) : 1 à 3 colonnes selon la largeur, hauteur automatique.
+local function grid(name: string): Frame
+    local width = body.AbsoluteSize.X - 56
+    local columns = if width >= 1000 then 3 elseif width >= 640 then 2 else 1
+    local frame = PanelKit.make("Frame", {
+        Name = name,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        LayoutOrder = shell:next(),
+    }, body)
+    local layout = PanelKit.make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 12),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    }, frame);
+    (layout :: any).Wraps = true
+    frame:SetAttribute("AWColumns", columns)
     return frame
 end
 
-local function button(parent: Instance, text: string, width: number, callback: () -> (), enabled: boolean?): TextButton
-    local active = enabled ~= false
-    local item = make("TextButton", {
-        Size = UDim2.new(0, width, 0, 30),
-        BackgroundColor3 = UITheme.color("PanelRaised"),
-        TextColor3 = if active then UITheme.color("Text") else UITheme.color("TextDim"),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        Text = text,
-        AutoButtonColor = active,
-        Selectable = active,
-    }, parent)
-    make("UICorner", { CornerRadius = UDim.new(0, 6) }, item)
-    if active then
-        item.Activated:Connect(callback)
-    end
-    return item
+-- Carte de grille : largeur d'une colonne (la rangée passe à la ligne).
+local function cell(parent: Frame, name: string, accent: string?): Frame
+    local attribute = parent:GetAttribute("AWColumns")
+    local columns: number = if type(attribute) == "number" then attribute else 1
+    local inner = PanelKit.card(shell, parent, name, accent)
+    local outer = inner.Parent :: Frame
+    outer.Size = UDim2.new(1 / columns, -12 * (columns - 1) / columns, 0, 0)
+    return inner
 end
 
-local function label(parent: Instance, text: string, width: number)
-    make("TextLabel", {
-        Size = UDim2.new(0, width, 1, 0),
-        BackgroundTransparency = 1,
-        TextColor3 = UITheme.color("Text"),
-        Font = Enum.Font.Gotham,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Text = text,
-    }, parent)
+local function inService(context: any): boolean
+    return context.Kind == "Service" or context.Kind == "PublicGarage" or context.Kind == "Dealership"
 end
 
 -- ======================== Onglets ========================
 
 local function renderWallet()
     local wallet = state.Wallet
-    line(tr("Solde : %s  •  réservé : %s", credits(wallet.Balance), credits(wallet.Reserved)), true)
-    line(tr("Total gagné %s  •  total dépensé %s", credits(wallet.Earned), credits(wallet.Spent)))
+    PanelKit.cells(shell, body, {
+        { tr("Solde"), credits(wallet.Balance), "AmberSoftText" },
+        { tr("Réservé"), credits(wallet.Reserved) },
+        { tr("Total gagné"), credits(wallet.Earned), "Ok" },
+        { tr("Total dépensé"), credits(wallet.Spent) },
+    }, "Portefeuille")
     local rep = state.Reputation
-    line(
-        tr(
-            "Réputation : %s (niveau %d/5) — %d points, %d %% vers le niveau suivant",
-            tr(rep.Name),
-            rep.Level,
-            rep.Points,
-            math.floor(rep.Progress * 100)
-        )
+    local repCard = card("Reputation", "Amber")
+    PanelKit.cardTitle(shell, repCard, tr("Réputation : %s", tr(rep.Name)), tr("niveau %d / 5", rep.Level))
+    PanelKit.progress(shell, repCard, rep.Progress or 0)
+    text(
+        repCard,
+        tr("%d points · %d %% vers le niveau suivant", rep.Points, math.floor((rep.Progress or 0) * 100)),
+        "Body",
+        "TextMuted"
     )
     if (state.PendingTransfers or 0) > 0 then
-        line(
+        PanelKit.notice(
+            shell,
+            body,
+            "Warn",
             tr(
                 "%d achat(s) sur le marché en cours de finalisation (fonds réservés, récupérables).",
                 state.PendingTransfers
             )
         )
     end
-    line(tr("Historique récent"), true)
+    heading(tr("Historique récent"))
+    local history = card("Historique")
+    if #(state.Ledger or {}) == 0 then
+        text(history, tr("Aucune opération."), "Body", "TextMuted")
+    end
     for _, entry in state.Ledger or {} do
-        line(
-            tr(
-                "%s  %s%s  (%s)  solde %s",
-                os.date("%H:%M", entry.At),
+        PanelKit.keyValue(
+            shell,
+            history,
+            string.format("%s · %s", os.date("%H:%M", entry.At) :: string, tostring(entry.Kind)),
+            string.format(
+                "%s%s · %s",
                 if entry.Amount >= 0 then "+" else "",
                 credits(entry.Amount),
-                entry.Kind,
-                credits(entry.Balance)
-            )
+                tr("solde %s", credits(entry.Balance))
+            ),
+            if entry.Amount >= 0 then "Ok" else "Text"
         )
     end
 end
@@ -294,11 +364,11 @@ local function jobLabel(id: any): string
 end
 
 -- Libellé d'étape de mission (texte français du serveur, parfois suivi d'un numéro).
-local function stepLabel(text: any): string
-    if type(text) ~= "string" then
-        return tostring(text)
+local function stepLabel(value: any): string
+    if type(value) ~= "string" then
+        return tostring(value)
     end
-    local prefix, number = string.match(text, "^(.-) (%d+)$")
+    local prefix, number = string.match(value, "^(.-) (%d+)$")
     if prefix == "Livraison" then
         return tr("Livraison %s", number)
     elseif prefix == "Porte" then
@@ -306,276 +376,357 @@ local function stepLabel(text: any): string
     elseif prefix == "Point d'exploration" then
         return tr("Point d'exploration %s", number)
     end
-    return tr(text)
+    return tr(value)
 end
 
 local function renderJobs()
     local mission = state.Mission
     if mission then
-        line(
-            tr(
-                "Mission en cours : %s — étape %d/%d : %s",
-                jobLabel(mission.Job),
-                mission.StepIndex,
-                mission.Steps,
-                stepLabel(mission.Label)
-            ),
-            true
+        heading(tr("Mission en cours"))
+        local box = card("MissionEnCours", "GpsCyan")
+        PanelKit.cardTitle(
+            shell,
+            box,
+            jobLabel(mission.Job),
+            tr("étape %d / %d", mission.StepIndex, mission.Steps),
+            "GpsCyan"
         )
-        line(
-            tr(
-                "Temps restant %d s%s%s",
-                math.floor(mission.TimeLeft),
-                if mission.Premium then tr(" • premium") else "",
-                if mission.Professional then tr(" • véhicule professionnel prêté") else ""
-            )
-        )
-        local actions = row()
-        button(actions, tr("Abandonner (sans paiement)"), 260, function()
-            simple("AbandonMission")
-        end)
+        PanelKit.progress(shell, box, (mission.StepIndex - 1) / math.max(mission.Steps, 1), "GpsCyan")
+        text(box, stepLabel(mission.Label), "Body")
+        text(box, tr("Temps restant %d s", math.floor(mission.TimeLeft)), "Value", "TextMuted")
+        local tags = row(box)
+        if mission.Premium then
+            PanelKit.tag(shell, tags, tr("premium"), "AmberSoftText")
+        end
+        if mission.Professional then
+            PanelKit.tag(shell, tags, tr("véhicule professionnel prêté"))
+        end
+        local actions = row(box)
+        button(actions, tr("Abandonner (sans paiement)"), "Revoke", function()
+            PanelKit.confirm(shell.Gui, tr("Abandonner la mission ? Aucun paiement ne sera versé."), function()
+                simple("AbandonMission")
+            end)
+        end, nil, nil, "Abandonner")
         return
     end
-    line(tr("Choisissez un métier : la mission est générée par le serveur."), true)
+    heading(tr("Métiers"))
+    text(body, tr("Choisissez un métier : la mission est générée par le serveur."), "Body", "TextMuted")
+    local list = grid("Metiers")
     for _, job in state.Jobs or {} do
-        local item = row()
-        button(item, tr(job.Label), 260, function()
-            simple("StartMission", { Job = job.Id })
-        end)
-        label(
-            item,
-            tr(
-                "%s • %d réussie(s) • %s",
-                if job.Vehicle == "Own"
-                    then tr("votre véhicule")
-                    elseif job.Vehicle == "Provided" then tr("véhicule fourni")
-                    else tr("véhicule pro si besoin"),
-                job.Completed,
-                tr(job.Description)
-            ),
-            560
+        local box = cell(list, "Metier_" .. tostring(job.Id))
+        PanelKit.cardTitle(shell, box, tr(job.Label), tr("%d réussie(s)", job.Completed), "TextMuted")
+        local tags = row(box)
+        PanelKit.tag(
+            shell,
+            tags,
+            if job.Vehicle == "Own"
+                then tr("votre véhicule")
+                elseif job.Vehicle == "Provided" then tr("véhicule fourni")
+                else tr("véhicule pro si besoin")
         )
+        text(box, tr(job.Description), "Body", "TextMuted")
+        local actions = row(box)
+        button(actions, tr("Démarrer"), "Primary", function()
+            simple("StartMission", { Job = job.Id })
+        end, nil, nil, "Demarrer")
     end
 end
 
 local function renderDealer()
     local context = state.Context or {}
-    line(
-        if context.Kind == "Dealership"
-            then tr("Concession : %s", context.Label)
-            else tr("Rendez-vous dans une concession pour acheter ou faire reprendre un véhicule."),
-        true
-    )
-    line(tr("Catalogue de travail (modèles PROVISOIRES) — 18 emplacements"), true)
-    for _, entry in state.Catalog or {} do
-        local item = row()
-        label(
-            item,
-            string.format(
-                "%s (%s) — %s%s",
-                entry.Name,
-                tr(entry.Category),
-                credits(entry.Price),
-                if entry.Availability == "Reserved"
-                    then tr(" • emplacement réservé")
-                    elseif not entry.Purchasable then tr(" • non achetable ici")
-                    else ""
-            ),
-            520
+    local here = context.Kind == "Dealership"
+    if not here then
+        PanelKit.notice(
+            shell,
+            body,
+            "Warn",
+            tr("Rendez-vous dans une concession pour acheter ou faire reprendre un véhicule.")
         )
-        button(item, tr("Devis d'achat"), 160, function()
-            quote(tr("Achat de %s", entry.Name), "BuyVehicle", { CatalogId = entry.Id })
-        end, entry.Purchasable and context.Kind == "Dealership")
     end
-    line(tr("Reprise de vos véhicules (≈ 60 % du prix neuf, selon l'état)"), true)
-    for _, vehicle in state.Vehicles or {} do
-        local item = row()
-        label(
-            item,
-            string.format(
-                "%s — %s",
-                vehicle.Name,
-                if vehicle.TradeIn then credits(vehicle.TradeIn) else Text.text(vehicle.TradeInBlocked)
-            ),
-            520
+    heading(tr("Catalogue de travail (modèles PROVISOIRES) — 18 emplacements"))
+    local list = grid("Catalogue")
+    for _, entry in state.Catalog or {} do
+        local reserved = entry.Availability == "Reserved"
+        local box = cell(list, "Modele_" .. tostring(entry.Id), if reserved then nil else "Amber")
+        PanelKit.cardTitle(shell, box, entry.Name, credits(entry.Price), "AmberSoftText")
+        text(box, tr(entry.Category), "Body", "TextMuted")
+        local tags = row(box)
+        if reserved then
+            PanelKit.tag(shell, tags, tr("emplacement réservé"))
+        elseif not entry.Purchasable then
+            PanelKit.tag(shell, tags, tr("non achetable ici"))
+        else
+            PanelKit.tag(shell, tags, tr("gamme proposée"), "AmberSoftText")
+        end
+        local actions = row(box)
+        button(
+            actions,
+            tr("Devis d'achat"),
+            "Secondary",
+            function()
+                quote(tr("Achat de %s", entry.Name), "BuyVehicle", { CatalogId = entry.Id })
+            end,
+            entry.Purchasable and here,
+            if not here
+                then tr("Exige d'être dans une concession")
+                elseif not entry.Purchasable then tr("Non achetable ici")
+                else nil,
+            "DevisAchat"
         )
-        button(item, tr("Devis de reprise"), 160, function()
-            quote(tr("Reprise de %s", vehicle.Name), "TradeIn", { VehicleId = vehicle.Id })
-        end, vehicle.TradeIn ~= nil and context.Kind == "Dealership")
+    end
+    heading(tr("Reprise de vos véhicules (≈ 60 % du prix neuf, selon l'état)"))
+    local trade = grid("Reprises")
+    for _, vehicle in state.Vehicles or {} do
+        local box = cell(trade, "Reprise_" .. tostring(vehicle.Id))
+        PanelKit.cardTitle(
+            shell,
+            box,
+            vehicle.Name,
+            if vehicle.TradeIn then credits(vehicle.TradeIn) else nil,
+            "AmberSoftText"
+        )
+        if not vehicle.TradeIn then
+            text(box, Text.text(vehicle.TradeInBlocked), "Body", "TextMuted")
+        end
+        local actions = row(box)
+        button(
+            actions,
+            tr("Devis de reprise"),
+            "Secondary",
+            function()
+                quote(tr("Reprise de %s", vehicle.Name), "TradeIn", { VehicleId = vehicle.Id })
+            end,
+            vehicle.TradeIn ~= nil and here,
+            if not here then tr("Exige d'être dans une concession") else nil,
+            "DevisReprise"
+        )
     end
 end
 
 local function renderMarket()
-    line(tr("Annonces (commission de 5 % à la charge du vendeur)"), true)
+    heading(tr("Annonces (commission de 5 % à la charge du vendeur)"))
+    local list = grid("Annonces")
+    if #(state.Listings or {}) == 0 then
+        PanelKit.notice(shell, body, "Neutral", tr("Aucune annonce."))
+    end
     for _, listing in state.Listings or {} do
-        local item = row()
-        label(
-            item,
-            tr(
-                "%s — %s • %.0f km • état %d %%%s",
-                listing.Model,
-                credits(listing.Price),
-                listing.OdometerKm,
-                math.floor(listing.Condition * 100),
-                if listing.Mine then tr(" • votre annonce") else ""
-            ),
-            520
+        local box = cell(list, "Annonce_" .. tostring(listing.Id), if listing.Mine then "Amber" else nil)
+        PanelKit.cardTitle(shell, box, listing.Model, credits(listing.Price), "AmberSoftText")
+        text(
+            box,
+            tr("%.0f km · état %d %%", listing.OdometerKm, math.floor(listing.Condition * 100)),
+            "Value",
+            "TextMuted"
         )
+        local actions = row(box)
         if listing.Mine then
-            button(item, tr("Retirer l'annonce"), 160, function()
+            PanelKit.tag(shell, actions, tr("votre annonce"), "AmberSoftText")
+            button(actions, tr("Retirer l'annonce"), "Revoke", function()
                 simple("CancelListing", { ListingId = listing.Id })
-            end)
+            end, nil, nil, "Retirer")
         else
-            button(item, tr("Devis d'achat"), 160, function()
+            button(actions, tr("Devis d'achat"), "Secondary", function()
                 quote(tr("Achat d'occasion : %s", listing.Model), "BuyListing", { ListingId = listing.Id })
-            end)
+            end, nil, nil, "DevisAchat")
         end
     end
-    line(tr("Mettre en vente (exemplaire cessible, non sorti)"), true)
-    local priceRow = row()
-    button(priceRow, "− 1 000", 90, function()
+    heading(tr("Mettre en vente (exemplaire cessible, non sorti)"))
+    local sell = card("MiseEnVente")
+    local priceRow = row(sell)
+    button(priceRow, "- 1 000", "Secondary", function()
         listPrice = math.max(500, listPrice - 1000)
         render()
-    end)
-    label(priceRow, tr("Prix demandé : %s", credits(listPrice)), 220)
-    button(priceRow, "+ 1 000", 90, function()
+    end, nil, nil, "Moins")
+    local priceLabel = PanelKit.make("TextLabel", {
+        Name = "Prix",
+        AutomaticSize = Enum.AutomaticSize.XY,
+        BackgroundTransparency = 1,
+        Text = tr("Prix demandé : %s", credits(listPrice)),
+        LayoutOrder = shell:next(),
+    }, priceRow)
+    priceLabel.FontFace = UITheme.face("Value")
+    priceLabel.TextSize = UITheme.text(16)
+    priceLabel.TextColor3 = PanelKit.color("AmberSoftText")
+    button(priceRow, "+ 1 000", "Secondary", function()
         listPrice += 1000
         render()
-    end)
+    end, nil, nil, "Plus")
     for _, vehicle in state.Vehicles or {} do
-        local item = row()
-        label(item, vehicle.Name .. (if vehicle.Listed then tr(" • en vente") else ""), 520)
-        button(item, tr("Devis de mise en vente"), 200, function()
-            quote(tr("Mise en vente de %s", vehicle.Name), "ListVehicle", { VehicleId = vehicle.Id, Price = listPrice })
-        end, not vehicle.Listed and vehicle.TradeIn ~= nil)
+        local line = PanelKit.make("Frame", {
+            Name = "Vente_" .. tostring(vehicle.Id),
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            BackgroundTransparency = 1,
+            LayoutOrder = shell:next(),
+        }, sell)
+        PanelKit.make("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            Padding = UDim.new(0, 10),
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+        }, line)
+        local nameLabel =
+            PanelKit.text(shell, line, vehicle.Name .. (if vehicle.Listed then tr(" • en vente") else ""))
+        nameLabel.Size = UDim2.new(0.5, 0, 0, 0)
+        button(
+            line,
+            tr("Devis de mise en vente"),
+            "Secondary",
+            function()
+                quote(
+                    tr("Mise en vente de %s", vehicle.Name),
+                    "ListVehicle",
+                    { VehicleId = vehicle.Id, Price = listPrice }
+                )
+            end,
+            not vehicle.Listed and vehicle.TradeIn ~= nil,
+            if vehicle.Listed
+                then tr("Déjà en vente")
+                elseif vehicle.TradeIn == nil then tr("Exemplaire non cessible ou sorti")
+                else nil,
+            "DevisVente"
+        )
     end
 end
 
 local function renderRealEstate()
-    line(tr("Vos propriétés (revente : 70 % du prix payé, 40 % des agrandissements, 60 % des modules)"), true)
+    heading(tr("Vos propriétés (revente : 70 % du prix payé, 40 % des agrandissements, 60 % des modules)"))
+    if #(state.Properties or {}) == 0 then
+        PanelKit.notice(shell, body, "Neutral", tr("Aucune propriété."))
+    end
     for _, property in state.Properties or {} do
-        local item = row()
-        label(
-            item,
-            tr("%s (%s) • niveau %d/%d", property.Label, property.Category, property.GarageLevel, property.MaxLevel),
-            380
+        local box = card("Propriete_" .. tostring(property.Id), "Amber")
+        PanelKit.cardTitle(
+            shell,
+            box,
+            property.Label,
+            tr("niveau %d / %d", property.GarageLevel, property.MaxLevel),
+            "AmberSoftText"
         )
-        button(item, tr("Agrandir"), 110, function()
+        text(box, tr(property.Category), "Body", "TextMuted")
+        PanelKit.progress(shell, box, property.GarageLevel / math.max(property.MaxLevel, 1))
+        local actions = row(box)
+        button(actions, tr("Agrandir"), "Secondary", function()
             quote(tr("Agrandissement : %s", property.Label), "UpgradeGarage", { PropertyId = property.Id })
-        end, property.GarageLevel < property.MaxLevel)
-        button(item, tr("Revendre"), 110, function()
+        end, property.GarageLevel < property.MaxLevel, tr("Niveau maximal atteint"), "Agrandir")
+        button(actions, tr("Revendre"), "Revoke", function()
             quote(tr("Revente : %s", property.Label), "SellProperty", { PropertyId = property.Id })
-        end, property.Sellable)
-        local modules = row()
+        end, property.Sellable, tr("Propriété invendable"), "Revendre")
+        local modules = row(box)
         for _, module in state.Modules or {} do
             if property.Modules[module.Id] == nil then
-                button(modules, tr(module.Label) .. " " .. credits(module.Price), 210, function()
+                button(modules, tr(module.Label) .. " · " .. credits(module.Price), "Secondary", function()
                     quote(
                         tr("Module %s", tr(module.Label)),
                         "BuyModule",
                         { PropertyId = property.Id, ModuleId = module.Id }
                     )
-                end)
+                end, nil, nil, "Module")
             end
         end
     end
-    line(tr("Biens en vente (achat sur place, à l'entrée du bien ; prix provisoires)"), true)
+    heading(tr("Biens en vente (achat sur place, à l'entrée du bien ; prix provisoires)"))
+    local list = grid("Biens")
     for _, offer in state.Offers or {} do
-        local item = row()
-        label(item, string.format("%s (%s) — %s", offer.Label, offer.Category, credits(offer.Price)), 520)
-        button(item, tr("Devis d'achat"), 160, function()
+        local box = cell(list, "Bien_" .. tostring(offer.Id))
+        PanelKit.cardTitle(shell, box, offer.Label, credits(offer.Price), "AmberSoftText")
+        text(box, tr(offer.Category), "Body", "TextMuted")
+        local actions = row(box)
+        button(actions, tr("Devis d'achat"), "Secondary", function()
             quote(tr("Achat : %s", offer.Label), "BuyProperty", { OfferId = offer.Id })
-        end)
+        end, nil, nil, "DevisAchat")
     end
 end
 
 local function renderServices()
     local context = state.Context or {}
-    line(tr("Lieu : %s", context.Label or tr("aucun service à proximité")), true)
-    local actions = row()
-    button(actions, tr("Faire le plein / recharger"), 220, function()
-        execute("StartEnergy", {})
-    end, context.Kind == "Service" and state.Energy == nil)
-    button(actions, tr("Arrêter et payer"), 160, function()
-        simple("StopEnergy")
-    end, state.Energy ~= nil)
-    button(actions, tr("Devis de lavage"), 160, function()
-        quote(tr("Lavage"), "Wash", {})
-    end, context.Kind == "Service")
-    button(actions, tr("Devis de réparation"), 180, function()
-        quote(tr("Réparation"), "Repair", {})
-    end, context.Kind == "PublicGarage")
-    if state.Energy then
-        line(
-            tr(
-                "Livraison en cours : %.1f / %.1f unités (paiement au réel à la fin)",
-                state.Energy.Delivered,
-                state.Energy.MaxUnits
-            )
+    if not inService(context) then
+        PanelKit.notice(
+            shell,
+            body,
+            "Warn",
+            tr("Aucun service à proximité : rendez-vous à une station, un lavage ou un garage public.")
         )
     end
-    line(tr("Pièces (garage public) — revente à 75 % du prix payé"), true)
+    local box = card("Services", if inService(context) then "GpsCyan" else nil)
+    PanelKit.cardTitle(shell, box, tr("Lieu : %s", context.Label or tr("aucun service à proximité")))
+    local actions = row(box)
+    button(
+        actions,
+        tr("Faire le plein / recharger"),
+        "Primary",
+        function()
+            execute("StartEnergy", {})
+        end,
+        context.Kind == "Service" and state.Energy == nil,
+        if context.Kind ~= "Service"
+            then tr("Exige une station")
+            elseif state.Energy then tr("Livraison déjà en cours")
+            else nil,
+        "Plein"
+    )
+    button(actions, tr("Arrêter et payer"), "Secondary", function()
+        simple("StopEnergy")
+    end, state.Energy ~= nil, tr("Aucune livraison en cours"), "Arreter")
+    button(actions, tr("Devis de lavage"), "Secondary", function()
+        quote(tr("Lavage"), "Wash", {})
+    end, context.Kind == "Service", tr("Exige une station"), "Lavage")
+    button(actions, tr("Devis de réparation"), "Secondary", function()
+        quote(tr("Réparation"), "Repair", {})
+    end, context.Kind == "PublicGarage", tr("Exige un garage public"), "Reparation")
+    if state.Energy then
+        local energy = card("Livraison", "Amber")
+        PanelKit.cardTitle(
+            shell,
+            energy,
+            tr("Livraison en cours"),
+            string.format("%.1f / %.1f", state.Energy.Delivered, state.Energy.MaxUnits),
+            "AmberSoftText"
+        )
+        PanelKit.progress(shell, energy, state.Energy.Delivered / math.max(state.Energy.MaxUnits, 0.001))
+        text(energy, tr("Paiement au réel à la fin."), "Body", "TextMuted")
+    end
+    heading(tr("Pièces (garage public) — revente à 75 % du prix payé"))
+    local list = grid("Pieces")
     for _, part in state.Parts or {} do
-        local item = row()
-        label(item, tr(part.Label) .. " — " .. credits(part.Price), 420)
-        button(item, tr("Devis d'achat"), 160, function()
+        local item = cell(list, "Piece_" .. tostring(part.Id))
+        PanelKit.cardTitle(shell, item, tr(part.Label), credits(part.Price), "AmberSoftText")
+        local partActions = row(item)
+        button(partActions, tr("Devis d'achat"), "Secondary", function()
             quote(tr("Achat : %s", tr(part.Label)), "BuyPart", { PartId = part.Id })
-        end, context.Kind == "PublicGarage")
+        end, context.Kind == "PublicGarage", tr("Exige un garage public"), "DevisAchat")
     end
     for _, owned in state.OwnedParts or {} do
         if not owned.Installed and owned.Resale > 0 then
-            local item = row()
-            label(item, tr("%s (détachée) — reprise %s", owned.PartId, credits(owned.Resale)), 420)
-            button(item, tr("Devis de revente"), 160, function()
+            local item = cell(list, "PieceDetachee_" .. tostring(owned.Id))
+            PanelKit.cardTitle(shell, item, tr("%s (détachée)", owned.PartId), credits(owned.Resale), "Ok")
+            local partActions = row(item)
+            button(partActions, tr("Devis de revente"), "Secondary", function()
                 quote(tr("Revente : %s", owned.PartId), "SellPart", { PartItemId = owned.Id })
-            end, context.Kind == "PublicGarage")
+            end, context.Kind == "PublicGarage", tr("Exige un garage public"), "DevisRevente")
         end
     end
 end
 
-local function renderConfirmation()
-    local q = pending.Quote or {}
-    line(tr("Confirmation : %s", pending.Label), true)
-    if q.Debit then
-        line(tr("Montant débité : %s", credits(q.Debit)))
+local function contextText(context: any): string
+    if context.Kind == "Dealership" or context.Kind == "Service" or context.Kind == "PublicGarage" then
+        return tostring(context.Label or "")
     end
-    if q.Credit then
-        line(tr("Montant crédité : %s", credits(q.Credit)))
-    end
-    if q.Fee then
-        line(tr("Prix %s • commission %s • net %s", credits(q.Price), credits(q.Fee), credits(q.Net)))
-    end
-    local actions = row()
-    button(actions, tr("Confirmer"), 160, function()
-        execute(pending.Action, table.clone(pending.Payload))
-    end, not seatedAndMoving())
-    button(actions, tr("Annuler"), 120, function()
-        pending = nil
-        render()
-    end)
+    return tr("Hors service · consultation")
 end
 
 function render()
     if not panel then
         return
     end
-    for name, item in tabButtons do
-        item.BackgroundColor3 = if name == tab then UITheme.color("AccentSoft") else UITheme.color("PanelRaised")
-    end
-    for _, child in body:GetChildren() do
-        if not child:IsA("UIListLayout") then
-            child:Destroy()
-        end
-    end
-    order = 0
+    shell:selectTab(tab)
+    local keep = body.CanvasPosition
+    shell:clear()
     if state == nil or state.Wallet == nil then
-        line(Text.text((state and state.State) or "Loading"))
+        text(body, Text.text((state and state.State) or "Loading"), "Body", "TextMuted")
         return
     end
-    if pending then
-        renderConfirmation()
-        return
-    end
+    shell.Context.Text = contextText(state.Context or {})
     if tab == "Portefeuille" then
         renderWallet()
     elseif tab == "Métiers" then
@@ -589,6 +740,9 @@ function render()
     else
         renderServices()
     end
+    task.defer(function()
+        body.CanvasPosition = keep
+    end)
 end
 
 -- Repère local de l'étape en cours (visible seulement par ce joueur) : une
@@ -741,109 +895,98 @@ function EconomyPanel.start()
     local folder = ReplicatedStorage:WaitForChild(EconomyProtocol.FolderName)
     request = folder:WaitForChild(EconomyProtocol.Request) :: RemoteFunction
     local pushEvent = folder:WaitForChild(EconomyProtocol.Push) :: RemoteEvent
-    local gui = make("ScreenGui", { Name = "AWEconomy", ResetOnSpawn = false }, player:WaitForChild("PlayerGui"))
+    -- Écran plein : au-dessus du HUD (la mini-carte recouvrait le panneau, VM 20261105-125026), comme le garage.
+    local gui = make(
+        "ScreenGui",
+        { Name = "AWEconomy", ResetOnSpawn = false, DisplayOrder = 20 },
+        player:WaitForChild("PlayerGui")
+    )
+    -- Bandeau de mission (haut, centré) : carte à filet cyan (GPS), texte en Titillium Web.
     missionLabel = make("TextLabel", {
+        Name = "BandeauMission",
         AnchorPoint = Vector2.new(0.5, 0),
         Position = UDim2.new(0.5, 0, 0, 64),
-        Size = UDim2.fromOffset(620, 28),
-        BackgroundColor3 = Tokens.color("WarnBg"),
-        BackgroundTransparency = 0.15,
-        TextColor3 = UITheme.color("AccentSoftText"),
+        Size = UDim2.fromOffset(620, 30),
+        BackgroundColor3 = Tokens.color("Surface1"),
+        BackgroundTransparency = 0.08,
+        TextColor3 = Tokens.color("Text"),
         Font = Enum.Font.GothamMedium,
         TextSize = 15,
         Visible = false,
         Text = "",
     }, gui)
+    make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, missionLabel)
+    make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, missionLabel)
+    make("Frame", {
+        Name = "Filet",
+        BackgroundColor3 = Tokens.color("GpsCyan"),
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, Tokens.StatusRail, 1, 0),
+    }, missionLabel)
     guideFrame = make("Frame", {
+        Name = "Guidage",
         AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0.5, 0, 0, 96),
+        Position = UDim2.new(0.5, 0, 0, 100),
         Size = UDim2.fromOffset(240, 34),
-        BackgroundColor3 = Tokens.color("WarnBg"),
-        BackgroundTransparency = 0.15,
+        BackgroundColor3 = Tokens.color("Surface1"),
+        BackgroundTransparency = 0.08,
         Visible = false,
     }, gui)
-    guideArrow = make("TextLabel", {
+    make("UICorner", { CornerRadius = UDim.new(0, Tokens.Radius.Button) }, guideFrame)
+    make("UIStroke", { Color = Tokens.color("Line"), Thickness = 1 }, guideFrame)
+    -- Flèche de direction dessinée (chevron), tournée vers l'objectif ; aucun caractère Unicode.
+    guideArrow = make("Frame", {
+        Name = "Fleche",
         Size = UDim2.fromOffset(34, 34),
         BackgroundTransparency = 1,
-        TextColor3 = UITheme.color("AccentSoftText"),
-        Font = Enum.Font.GothamBold,
-        TextSize = 24,
-        Text = "▲",
     }, guideFrame)
+    local chevron = PanelKit.chevronUp(guideArrow, 18, "GpsCyan")
+    chevron.AnchorPoint = Vector2.new(0.5, 0.5)
+    chevron.Position = UDim2.fromScale(0.5, 0.5)
     guideText = make("TextLabel", {
         Position = UDim2.fromOffset(38, 0),
         Size = UDim2.new(1, -44, 1, 0),
         BackgroundTransparency = 1,
-        TextColor3 = UITheme.color("AccentSoftText"),
+        TextColor3 = Tokens.color("Text"),
         Font = Enum.Font.GothamMedium,
         TextSize = 15,
         TextXAlignment = Enum.TextXAlignment.Left,
         Text = "",
     }, guideFrame)
     RunService.RenderStepped:Connect(updateGuide)
-    panel = make("Frame", {
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.52),
-        Size = UDim2.fromOffset(940, 540),
-        BackgroundColor3 = UITheme.color("Panel"),
-        Visible = false,
-    }, gui)
-    make("UICorner", { CornerRadius = UDim.new(0, 10) }, panel)
-    local tabsProps = { Size = UDim2.new(1, -16, 0, 36), Position = UDim2.fromOffset(8, 8), BackgroundTransparency = 1 }
-    local tabs = make("Frame", tabsProps, panel)
-    local layoutProps = {
-        FillDirection = Enum.FillDirection.Horizontal,
-        Padding = UDim.new(0, 6),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    }
-    make("UIListLayout", layoutProps, tabs)
-    for index, name in TABS do
-        local item = make("TextButton", {
-            Size = UDim2.fromOffset(130, 32),
-            BackgroundColor3 = UITheme.color("PanelRaised"),
-            TextColor3 = UITheme.color("Text"),
-            Font = Enum.Font.GothamMedium,
-            TextSize = 14,
-            Text = tr(name),
-            LayoutOrder = index,
-        }, tabs)
-        item.Activated:Connect(function()
-            tab = name
+    -- Panneau plein écran V1.2 (PanelKit) : barre haute, onglets à filet, contenu, état du serveur, barre d'aide.
+    shell = PanelKit.shell(gui, "Economie", tr("Économie"), TABS, tr, function(id: string)
+        tab = id
+        pending = nil
+        render()
+    end, toggle)
+    panel = shell.Panel
+    body = shell.Body
+    local function hints()
+        shell:hints(
+            if PanelKit.isGamepad()
+                then { { "LB / RB", tr("Onglets") }, { "A", tr("Valider") }, { "B", tr("Retour") } }
+                else { { "J", tr("Fermer") }, { tr("Retour arrière"), tr("Retour") } }
+        )
+    end
+    hints()
+    game:GetService("UserInputService").LastInputTypeChanged:Connect(hints)
+    -- Onglets à la manette (LB / RB) et au clavier (PageUp / PageDown).
+    game:GetService("UserInputService").InputBegan:Connect(function(input: InputObject)
+        if not panel.Visible or gui:FindFirstChild("VoileConfirmation") then
+            return
+        end
+        local index = table.find(TABS, tab) or 1
+        if input.KeyCode == Enum.KeyCode.ButtonR1 or input.KeyCode == Enum.KeyCode.PageDown then
+            tab = TABS[index % #TABS + 1]
             pending = nil
             render()
-        end)
-        tabButtons[name] = item
-    end
-    local close = make("TextButton", {
-        Size = UDim2.fromOffset(70, 32),
-        BackgroundColor3 = UITheme.color("PanelRaised"),
-        TextColor3 = UITheme.color("Text"),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        Text = tr("Fermer"),
-        LayoutOrder = 99,
-    }, tabs)
-    close.Activated:Connect(toggle)
-    closeButton = close
-    body = make("ScrollingFrame", {
-        Position = UDim2.fromOffset(8, 52),
-        Size = UDim2.new(1, -16, 1, -96),
-        BackgroundTransparency = 1,
-        CanvasSize = UDim2.new(),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 8,
-    }, panel)
-    make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, body)
-    footer = make("TextLabel", {
-        Position = UDim2.new(0, 12, 1, -38),
-        Size = UDim2.new(1, -24, 0, 30),
-        BackgroundTransparency = 1,
-        TextColor3 = UITheme.color("AccentSoftText"),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Text = "",
-    }, panel)
+        elseif input.KeyCode == Enum.KeyCode.ButtonL1 or input.KeyCode == Enum.KeyCode.PageUp then
+            tab = TABS[(index - 2) % #TABS + 1]
+            pending = nil
+            render()
+        end
+    end)
 
     pushEvent.OnClientEvent:Connect(function(kind: any, data: any)
         if kind == "Snapshot" and type(data) == "table" then
@@ -853,14 +996,17 @@ function EconomyPanel.start()
                 render()
             end
         elseif kind == "MissionEnded" and type(data) == "table" then
-            footer.Text = if data.Completed
-                then tr(
-                    "Mission réussie : %s, +%d réputation (%s).",
-                    credits(data.Credits),
-                    data.Reputation,
-                    tr(STATUS_TEXT[data.Status] or tostring(data.Status))
-                )
-                else tr("Mission échouée ou abandonnée : %s", Text.text(data.Reason))
+            shell:setStatus(
+                if data.Completed then kindOf(data) else "Rejected",
+                if data.Completed
+                    then tr(
+                        "Mission réussie : %s, +%d réputation (%s).",
+                        credits(data.Credits),
+                        data.Reputation,
+                        tr(STATUS_TEXT[data.Status] or tostring(data.Status))
+                    )
+                    else tr("Mission échouée ou abandonnée : %s", Text.text(data.Reason))
+            )
         elseif kind == "Open" and type(data) == "table" then
             if type(data.Tab) == "string" then
                 tab = data.Tab
@@ -871,22 +1017,25 @@ function EconomyPanel.start()
                 UIManager.open("Economy")
             end
         elseif kind == "EnergyEnded" and type(data) == "table" then
-            footer.Text = tr(
-                "Énergie livrée : %.1f unités, payé %s (%s).",
-                data.Delivered,
-                credits(data.Cost),
-                tr(STATUS_TEXT[data.Status] or tostring(data.Status))
+            shell:setStatus(
+                kindOf(data),
+                tr(
+                    "Énergie livrée : %.1f unités, payé %s (%s).",
+                    data.Delivered,
+                    credits(data.Cost),
+                    tr(STATUS_TEXT[data.Status] or tostring(data.Status))
+                )
             )
         end
     end)
     -- Changement de langue à chaud : onglets, bandeau de mission et contenu redessinés.
     Localization.changed(function()
-        for name, item in tabButtons do
+        for name, item in shell.Tabs do
             item.Text = tr(name)
         end
-        if closeButton then
-            closeButton.Text = tr("Fermer")
-        end
+        shell.Close.Text = tr("Fermer")
+        shell.Title.Text = Tokens.upper(tr("Économie"))
+        hints()
         updateMission()
         render()
     end)
@@ -907,13 +1056,18 @@ function EconomyPanel.start()
         Full = true,
         Open = function()
             panel.Visible = true
-            simple("Snapshot")
+            simple("Snapshot", nil, true)
         end,
         Close = function()
             panel.Visible = false
+            local veil = gui:FindFirstChild("VoileConfirmation")
+            if veil then
+                veil:Destroy()
+                pending = nil
+            end
         end,
         Focus = function()
-            return tabButtons[tab]
+            return shell.Tabs[tab]
         end,
     })
 end

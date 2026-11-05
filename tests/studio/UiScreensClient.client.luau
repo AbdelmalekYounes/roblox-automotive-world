@@ -208,6 +208,11 @@ else
                 then
                     active = true
                 end
+                -- Lot UI-04 recomposé : onglet actif signalé par son filet ambre (PanelKit).
+                local rail = item:IsA("TextButton") and item:FindFirstChild("Filet") :: Frame?
+                if rail and rail.Visible and Gui.shown(item) then
+                    active = true
+                end
             end
             record("ui_panels.onglet_actif_ambre_" .. spec[3], active)
             Gui.shot("ui_panels_" .. spec[3], { lot = "UI-04" })
