@@ -557,7 +557,12 @@ dans l'ordre (#1 `75d4962` … #11 `4457963`), chaque PR reciblée sur `main` pu
 vide (arbre identique au lot 0.9.2) ; `verify.ps1` toutes étapes OK sur `main` ; branches des lots conservées ; PR #12
 reciblée sur `main`, non fusionnée.
 
-**Non fait, en attente d'accord** : étapes 2, 3, 7 et 8 (fusions dans `main`, diagnostic de QA-A24, reciblage de
+**Étape 2 faite le 2026-11-05** : QA-A24 diagnostiquée comme défaut du banc (`DIAGNOSTIC_QA_A24.md`, tâche
+`20261105-183402`). **Étape 3 faite le 2026-11-05** (accord du propriétaire) : PR #12 `a16a24b`, #13 `3cc202a`, #14 `106c811`
+fusionnées dans `main` par commit de fusion ; `git diff origin/main c83b3de` vide ; `verify.ps1` toutes étapes OK sur
+`main`. **Étape 8 faite** : PR #15 reciblée sur `main`, brouillon, non fusionnée.
+
+**Non fait, en attente d'accord** : étape 7 (fusion des branches v2), et les étapes 2 et 3 désormais faites — (fusions dans `main`, diagnostic de QA-A24, reciblage de
 #15), ouverture des nouvelles PR, fermeture de #16 et #17, protection de `main`, étiquettes de sauvegarde.
 Validations du propriétaire du 2026-11-05 : reportées sur les branches v2 par l'identité du code ; **une courte
 revérification en jeu reste conseillée** avant fusion.

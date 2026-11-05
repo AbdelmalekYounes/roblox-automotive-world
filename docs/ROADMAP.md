@@ -249,4 +249,9 @@ archive suspendue. **Aucune fusion sans l'accord du propriétaire.**
 - **Étape 1 faite le 2026-11-05** (accord du propriétaire : « Oui, étape 1 ») : PR #1 à #11 fusionnées dans `main`, dans
   l'ordre, par commit de fusion (dernier : `4457963`) ; arbre de `main` identique à la tête du lot 0.9.2 (`82fd279`) ;
   `scripts/verify.ps1 -DownloadRobloxTypes` : toutes étapes OK sur `main`. PR #12 reciblée sur `main`, non fusionnée.
-  Suite : étape 2 (diagnostic de QA-A24), sur accord.
+- **Étape 2 faite le 2026-11-05** : QA-A24 est un défaut du banc (activation scriptée de l'invite), pas du jeu
+  (`docs/audit/DIAGNOSTIC_QA_A24.md`, session VM ciblée `20261105-183402` sur accord du propriétaire) ; reclassée P3.
+- **Étape 3 faite le 2026-11-05** (accord du propriétaire : « Oui, étape 3 ») : PR #12 (AVATAR-01), #13 (références 3D)
+  et #14 (phase 1 de l'Aster) fusionnées dans `main` par commit de fusion (dernier : `106c811`) ; arbre de `main`
+  identique à `c83b3de` ; `verify.ps1` toutes étapes OK sur `main`. PR #15 (ASTER-02, suspendu) reciblée sur `main`,
+  brouillon, non fusionnée. Suite : étape 7 (branches v2 de la Comète puis de l'UI), sur accord.
