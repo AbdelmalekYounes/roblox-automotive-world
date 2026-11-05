@@ -292,6 +292,24 @@ Constats relevés dans les rapports VM existants (aucune nouvelle exécution) et
 | QA-U17 | P3 | Téléphone en main en marchant (monde ouvert) : bras levé de 8° mesurés contre 25° attendus (`20261105-154646`), lien avec QA-A20 et QA-U10 | Ouverte, non classée |
 | QA-D11 | P1 (avant publication) | Une place publiée dont l'identifiant n'est pas déclaré dans `EnvironmentConfig` est traitée en « Dev / mémoire » : crédits synthétiques (`DevSeed`) attribués et modèles en attente achetables (`Environment.luau`, `ProfileService.luau`) | Ouverte : déclarer les identifiants ou refuser le mode Dev hors Studio avant toute publication |
 
+## 3 nonies. Lot BASE-01 — base propre à deux véhicules (2026-11-05)
+
+Les 17 modèles, les prototypes, le parc d'essai et les carrosseries provisoires sont retirés du jeu
+(`docs/lot-base-01/RAPPORT_BASE_01.md`).
+
+**Sans objet** désormais (constats propres aux carrosseries provisoires ou aux modèles retirés) :
+- QA-A13 et A14 : pavillons bas, jambes dans la planche de bord ;
+- QA-A17 : pieds sous le plancher ;
+- QA-A21 : tête contre le toit (Dune, Sentier) ;
+- QA-A15, A16 et A18 sur les 17 autres modèles : la Comète est corrigée ;
+- QA-A24 : banc des 18 modèles.
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-B01 | P2 | Sessions VM qui supposent le parc d'essai ou les modèles retirés : `lot02`, `lot04`, `lot06`, `lot08`, `scenarios`, `monde`, `gps`, `ui*`, `avatar*`, `comete*` (fichiers de `tests/studio` qui citent `proto_p0x`, `wk_…`, `VehiculesEssai`) | **NON ADAPTÉES** : elles se compilent (`verify.ps1`) mais échoueraient à l'exécution ; à reprendre si une campagne VM est relancée |
+| QA-B02 | P2 | Arrivée sans véhicule de départ, métiers à véhicule fourni refusés (« NoProfessionalVehicle »), concession limitée à la Comète en Dev | **Validé en jeu par le propriétaire le 2026-11-05** (rapport BASE-01 §6) |
+| QA-B03 | P3 | Reproductions QA-A08 et du calage par rebond liées aux modèles retirés (10 cas de la Mistral, rebond de l'Atlas) : non rejouables sur les jeux d'essai | Couverture réduite, consignée ; les 3 cas du P-01 et la règle de relance restent testés |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

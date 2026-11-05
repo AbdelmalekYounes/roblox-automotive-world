@@ -239,95 +239,10 @@ local T: { [string]: { string } } = {
     ["layout.AWD"] = { "transmission intégrale", "all-wheel drive" },
 
     -- ===================== Gamme proposée (18 modèles fictifs) =====================
-    ["vehicle.wk_pixel.category"] = { "Citadine électrique", "Electric city car" },
-    ["vehicle.wk_pixel.desc"] = {
-        "Minuscule et silencieuse, moteur arrière : idéale pour se faufiler en ville.",
-        "Tiny and quiet, rear motor: ideal for slipping through town.",
-    },
-    ["vehicle.wk_brio.category"] = { "Citadine", "City car" },
-    ["vehicle.wk_brio.desc"] = {
-        "Légère et vive, boîte manuelle : la plus simple pour apprendre à passer les rapports.",
-        "Light and lively, manual gearbox: the easiest way to learn shifting.",
-    },
-    ["vehicle.wk_fil.category"] = { "Citadine électrique", "Electric city car" },
-    ["vehicle.wk_fil.desc"] = {
-        "Couple immédiat et rapport unique : conduite douce, recharge aux bornes.",
-        "Instant torque and a single gear: smooth driving, charge at the hubs.",
-    },
-    ["vehicle.wk_aster.category"] = { "Compacte", "Compact" },
-    ["vehicle.wk_aster.desc"] = {
-        "Polyvalente, boîte automatique : confortable au quotidien comme sur route.",
-        "Versatile, automatic gearbox: comfortable every day and on the road.",
-    },
-    ["vehicle.wk_nova.category"] = { "Compacte", "Compact" },
-    ["vehicle.wk_nova.desc"] = {
-        "Boîte à variation continue, consommation sage : la compacte tranquille.",
-        "Continuously variable gearbox, frugal: the relaxed compact.",
-    },
-    ["vehicle.wk_cadence.category"] = { "Berline", "Saloon" },
-    ["vehicle.wk_cadence.desc"] = {
-        "Diesel automatique, grand empattement : stable et reposante sur longue distance.",
-        "Automatic diesel, long wheelbase: stable and relaxing over long distances.",
-    },
-    ["vehicle.wk_lumen.category"] = { "Break", "Estate" },
-    ["vehicle.wk_lumen.desc"] = {
-        "Diesel manuel et grand coffre : la voiture des métiers de livraison.",
-        "Manual diesel with a big boot: the delivery jobs car.",
-    },
-    ["vehicle.wk_oree.category"] = { "Berline électrique", "Electric saloon" },
-    ["vehicle.wk_oree.desc"] = {
-        "Deux moteurs, transmission intégrale : rapide, silencieuse et sûre.",
-        "Two motors, all-wheel drive: fast, quiet and secure.",
-    },
-    ["vehicle.wk_brise.category"] = { "Roadster", "Roadster" },
-    ["vehicle.wk_brise.desc"] = {
-        "Découvrable, légère et propulsion : le plaisir de conduire avant la puissance.",
-        "Open-top, light and rear-driven: driving fun before power.",
-    },
-    ["vehicle.wk_rafale.category"] = { "Sportive compacte", "Hot hatch" },
-    ["vehicle.wk_rafale.desc"] = {
-        "Traction vive à double embrayage et différentiel autobloquant.",
-        "Lively front-driver with a dual-clutch gearbox and limited-slip differential.",
-    },
-    ["vehicle.wk_eclat.category"] = { "Coupé sportif", "Sports coupé" },
-    ["vehicle.wk_eclat.desc"] = {
-        "Coupé propulsion à boîte manuelle, équilibré, exigeant sur le mouillé.",
-        "Rear-driven coupé with a manual gearbox, balanced, demanding in the wet.",
-    },
-    ["vehicle.wk_mistral.category"] = { "Coupé GT", "GT coupé" },
-    ["vehicle.wk_mistral.desc"] = {
-        "Grand tourisme puissant et stable à haute vitesse.",
-        "Powerful grand tourer, stable at high speed.",
-    },
     ["vehicle.wk_comete.category"] = { "Supercar", "Supercar" },
     ["vehicle.wk_comete.desc"] = {
         "Moteur central, boîte séquentielle, appui aérodynamique : réservée aux pilotes aguerris.",
         "Mid-engine, sequential gearbox, aerodynamic downforce: for seasoned drivers.",
-    },
-    ["vehicle.wk_zenith.category"] = { "Supercar électrique", "Electric supercar" },
-    ["vehicle.wk_zenith.desc"] = {
-        "Accélération foudroyante, intégrale, aides électroniques complètes.",
-        "Blistering acceleration, all-wheel drive, full electronic aids.",
-    },
-    ["vehicle.wk_dune.category"] = { "SUV compact", "Compact SUV" },
-    ["vehicle.wk_dune.desc"] = {
-        "Garde au sol relevée et intégrale : à l'aise sur les chemins de campagne.",
-        "Raised ride height and all-wheel drive: at home on country tracks.",
-    },
-    ["vehicle.wk_vigie.category"] = { "Grand SUV", "Large SUV" },
-    ["vehicle.wk_vigie.desc"] = {
-        "Lourd mais puissant, grand habitacle : confortable et rassurant.",
-        "Heavy yet powerful, roomy cabin: comfortable and reassuring.",
-    },
-    ["vehicle.wk_sentier.category"] = { "Tout-terrain", "Off-roader" },
-    ["vehicle.wk_sentier.desc"] = {
-        "Court, haut et manuel : conçu pour la montagne, pas pour l'autoroute.",
-        "Short, tall and manual: built for the mountains, not the motorway.",
-    },
-    ["vehicle.wk_atlas.category"] = { "Pick-up tout-terrain", "Off-road pickup" },
-    ["vehicle.wk_atlas.desc"] = {
-        "Diesel robuste à benne, intégral : le compagnon des chantiers et du port.",
-        "Rugged diesel pickup with a bed, all-wheel drive: the companion of building sites and the harbour.",
     },
 }
 

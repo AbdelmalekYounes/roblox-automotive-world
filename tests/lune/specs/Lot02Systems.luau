@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.2 — aides électroniques, énergie (autorité serveur) et dégâts.
 -- Modules purs ; banc planaire hors Roblox (sorties du modèle, pas des mesures en jeu).
 
@@ -17,9 +18,9 @@ return function(T: any, H: any)
     local DamageModel = H.require("ReplicatedStorage.Shared.Vehicles.Physics.DamageModel")
     local InputCodec = H.require("ReplicatedStorage.Shared.Vehicles.InputCodec")
     local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-    local P01 = Definitions.get("proto_p01")
-    local P02 = Definitions.get("proto_p02")
-    local P03 = Definitions.get("proto_p03")
+    local P01 = Fixtures.get("proto_p01")
+    local P02 = Fixtures.get("proto_p02")
+    local P03 = Fixtures.get("proto_p03")
 
     T.suite("Lot 0.2 — aides électroniques")
 

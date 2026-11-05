@@ -249,7 +249,11 @@ function MissionService.start(player: Player, jobId: any): (string, any)
             return "Rejected", "LeaveVehicleFirst"
         end
         local providedId = "PRO-" .. id
-        vehicle = spawnBeside(player, job.ProfessionalModel or "proto_p02", providedId)
+        -- Lot BASE-01 (point P2) : aucun véhicule professionnel tant que la citadine n'est pas intégrée.
+        if job.ProfessionalModel == nil then
+            return "Rejected", "NoProfessionalVehicle"
+        end
+        vehicle = spawnBeside(player, job.ProfessionalModel, providedId)
         if vehicle == nil then
             return "Rejected", "NoSpaceForVehicle"
         end

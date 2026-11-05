@@ -1,7 +1,7 @@
 --!strict
 --[[
     Éclairage de nuit (lot 0.8), local et limité :
-    - feux des véhicules (pièces AWLight = "Head" / "Tail" de BodyKits) : la
+    - feux des véhicules (pièces AWLight = "Head" / "Tail" des kits de maillages) : la
       pièce s'illumine (Neon) sur tous les véhicules dès que la règle
       ArtDirection.lightsOn est vraie ; les SOURCES de lumière réelles
       (Lumiere) ne sont activées que sur les N véhicules les plus proches ;

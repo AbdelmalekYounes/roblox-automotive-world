@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Tests de la validation des définitions : rien d'incohérent ne doit passer.
 
 local function deepCopy(value: any): any
@@ -14,7 +15,7 @@ end
 
 return function(T: any, H: any)
     local VehicleDefinitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-    local P01 = VehicleDefinitions.get("proto_p01")
+    local P01 = Fixtures.get("proto_p01")
 
     T.suite("Définitions de véhicules")
 
@@ -113,26 +114,28 @@ return function(T: any, H: any)
         d.Powertrain.Drivetrain.FrontTorqueShare = 0.4
     end)
 
-    T.test("toutes les définitions (prototypes, validation, modèles de travail) sont valides et gelées", function()
+    T.test("jeu : la Comète seule, valide et gelée ; jeux d'essai valides (lot BASE-01)", function()
         local ids = {}
         for _, definition in VehicleDefinitions.all() do
             local ok, errors = VehicleDefinitions.validate(definition)
             T.truthy(ok, definition.Id .. " : " .. table.concat(errors, " ; "))
             T.truthy(table.isfrozen(definition.Powertrain.Transmission), definition.Id .. " gelé")
-            -- Lot 0.5 : les modèles de travail du catalogue (« wk_ ») ne sont pas des prototypes.
-            local working = string.sub(definition.Id, 1, 3) == "wk_"
-            T.truthy(definition.IsTestPrototype ~= working, definition.Id .. " : statut prototype / travail")
+            T.truthy(definition.IsTestPrototype == false, definition.Id .. " : modèle du jeu, pas un prototype")
             table.insert(ids, definition.Id)
         end
-        for _, id in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "proto_p01_seq", "proto_p01_cvt" } do
-            T.truthy(VehicleDefinitions.get(id) ~= nil, id .. " enregistré")
+        T.equal(table.concat(ids, ","), "wk_comete", "registre du jeu")
+        -- Prototypes et variantes : retirés du jeu, conservés comme jeux d'essai, toujours valides.
+        for _, definition in Fixtures.all() do
+            local ok, errors = VehicleDefinitions.validate(definition)
+            T.truthy(ok, definition.Id .. " (jeu d'essai) : " .. table.concat(errors, " ; "))
+            T.truthy(VehicleDefinitions.get(definition.Id) == nil, definition.Id .. " absent du jeu")
         end
-        T.note("Définitions enregistrées : " .. table.concat(ids, ", "))
+        T.note("Définitions du jeu : " .. table.concat(ids, ", "))
     end)
 
     T.test("P-02 et P-03 conformes à la demande du lot 0.2", function()
-        local p02 = VehicleDefinitions.get("proto_p02")
-        local p03 = VehicleDefinitions.get("proto_p03")
+        local p02 = Fixtures.get("proto_p02")
+        local p03 = Fixtures.get("proto_p03")
         T.equal(p02.Powertrain.Drivetrain.Layout, "FWD")
         T.equal(p02.Powertrain.Energy.Kind, "Diesel")
         T.equal(p02.Powertrain.Transmission.Kind, "Manual")
@@ -144,9 +147,12 @@ return function(T: any, H: any)
         T.truthy(#p03.Powertrain.Motor.RegenLevels >= 2, "récupération réglable")
     end)
 
-    T.test("chaque type de boîte est couvert par une définition enregistrée", function()
+    T.test("chaque type de boîte reste couvert (jeu et jeux d'essai)", function()
         local kinds = {}
         for _, definition in VehicleDefinitions.all() do
+            kinds[definition.Powertrain.Transmission.Kind] = true
+        end
+        for _, definition in Fixtures.all() do
             kinds[definition.Powertrain.Transmission.Kind] = true
         end
         for _, kind in { "Automatic", "Manual", "DualClutch", "Sequential", "CVT", "SingleSpeed" } do
@@ -154,14 +160,9 @@ return function(T: any, H: any)
         end
     end)
 
-    T.test("parc de la zone d'essai : plots 1 à 4 inchangés (P-01), puis lot 0.2", function()
-        local fleet = VehicleDefinitions.TestFleet
-        for pad = 1, 4 do
-            T.equal(fleet[pad], "proto_p01")
-        end
-        for _, id in fleet do
-            T.truthy(VehicleDefinitions.get(id) ~= nil, id)
-        end
+    T.test("parc d'essai supprimé (lot BASE-01) ; marche arrière par boîte", function()
+        T.truthy((VehicleDefinitions :: any).TestFleet == nil, "plus de parc d'essai")
+        T.equal(VehicleDefinitions.DefaultTestVehicleId, "wk_comete", "bancs de Studio : la Comète")
     end)
 
     T.test("vitesse limitée par la boîte cohérente", function()
@@ -208,8 +209,12 @@ return function(T: any, H: any)
         T.equal(VehicleDefinitions.reverseEngagement(P01.Powertrain.Transmission.Kind), "HoldBrakeAtStop")
     end)
 
-    T.test("A4 : seuil de sortie provisoire = 20 km/h pour tous les prototypes", function()
-        for _, definition in VehicleDefinitions.all() do
+    T.test("A4 : seuil de sortie provisoire = 20 km/h (jeu et jeux d'essai)", function()
+        local all = VehicleDefinitions.all()
+        for _, definition in Fixtures.all() do
+            table.insert(all, definition)
+        end
+        for _, definition in all do
             T.equal(definition.Limits.ExitMaxSpeedKmh, 20, definition.Id)
         end
     end)

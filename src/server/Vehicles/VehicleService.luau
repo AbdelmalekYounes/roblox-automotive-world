@@ -1129,9 +1129,8 @@ local function createRecord(definition: Types.VehicleDefinition, pivot: CFrame, 
     return record
 end
 
--- Plots d'apparition des véhicules : zone d'essai (place de développement) ou
--- parc des prototypes du monde ouvert (lot 0.3). Un véhicule par plot, dans
--- l'ordre de VehicleDefinitions.TestFleet.
+-- Plots de la zone d'essai et du parc du monde ouvert (lot 0.3). Lot BASE-01 : le parc d'essai est supprimé
+-- (décision du propriétaire du 2026-11-05) ; les plots restent dans la carte, sans véhicule.
 export type SpawnSet = {
     Pads: { BasePart },
 }
@@ -1154,15 +1153,8 @@ function VehicleService.start(zone: SpawnSet)
     folder.Name = "VehiculesEssai"
     folder.Parent = Workspace
 
-    for index, pad in zone.Pads do
-        local definitionId = VehicleDefinitions.TestFleet[index] or VehicleDefinitions.DefaultTestVehicleId
-        local definition = VehicleDefinitions.get(definitionId)
-        assert(definition, "Définition du véhicule d'essai introuvable : " .. definitionId)
-        local pivot = VehicleFactory.spawnPivotForPad(definition, pad)
-        local model = VehicleFactory.create(definition, pivot, index)
-        model.Parent = folder
-        createRecord(definition, pivot, model)
-    end
+    -- Dossier conservé (bancs de mesure de Studio, nettoyage de ProgressionService) ; aucun véhicule de parc.
+    local _ = zone
 
     RunService.PreSimulation:Connect(function(dt)
         for _, record in records do

@@ -29,8 +29,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local OnboardingRules = require(Shared:WaitForChild("Onboarding"):WaitForChild("OnboardingRules"))
 local StarterCatalog = require(Shared:WaitForChild("Garage"):WaitForChild("StarterCatalog"))
 local VehicleCatalog = require(Shared:WaitForChild("Economy"):WaitForChild("VehicleCatalog"))
-local WorkingCatalog =
-    require(Shared:WaitForChild("Vehicles"):WaitForChild("Definitions"):WaitForChild("WorkingCatalog"))
+local VehicleDefinitions = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleDefinitions"))
+local GarageView = require(Shared:WaitForChild("UI"):WaitForChild("GarageView"))
 local Constants = require(Shared.Vehicles:WaitForChild("VehicleConstants"))
 
 local ProfileService = require(script.Parent.Parent.Persistence.ProfileService)
@@ -52,28 +52,20 @@ local function rejected(key: string): any
     return { Status = "Rejected", Error = key }
 end
 
-local function specOf(modelId: string): any?
-    for _, spec in WorkingCatalog.Specs do
-        if spec.Id == modelId then
-            return spec
-        end
-    end
-    return nil
-end
-
--- Fiche comparative d'un candidat (données de la gamme, aucune donnée de profil).
+-- Fiche comparative d'un candidat (définition du modèle et catalogue, aucune donnée de profil).
 local function candidateView(modelId: string): any
-    local spec = specOf(modelId)
+    local definition = VehicleDefinitions.get(modelId) :: any
     local entry = VehicleCatalog.forDefinition(modelId)
+    local powertrain = if definition then definition.Powertrain else nil
     return {
         Id = modelId,
-        Name = if spec then spec.Name else modelId,
+        Name = if definition then definition.DisplayName else modelId,
         Category = if entry then entry.Category else "",
-        Energy = if spec then spec.Base else "",
-        Gearbox = if spec then spec.Gearbox else "",
-        Layout = if spec then spec.Layout else "",
-        PowerKw = if spec then spec.PowerKw else 0,
-        MassKg = if spec then spec.MassKg else 0,
+        Energy = if powertrain then powertrain.Energy.Kind else "",
+        Gearbox = if powertrain then powertrain.Transmission.Kind else "",
+        Layout = if powertrain then powertrain.Drivetrain.Layout else "",
+        PowerKw = if definition then (GarageView.peakPowerKw(definition) or 0) else 0,
+        MassKg = if definition then definition.Chassis.MassKg else 0,
         Price = if entry then entry.Price else 0,
     }
 end

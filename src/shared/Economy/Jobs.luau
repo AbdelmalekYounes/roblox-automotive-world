@@ -41,7 +41,6 @@ local JOBS: { Job } = {
         RatePerMin = 165,
         Risk = 0,
         Vehicle = "Professional",
-        ProfessionalModel = "proto_p02",
     }),
     job({
         Id = "Delivery",
@@ -50,7 +49,6 @@ local JOBS: { Job } = {
         RatePerMin = 160,
         Risk = 0,
         Vehicle = "Professional",
-        ProfessionalModel = "proto_p02",
     }),
     job({
         Id = "SpecialParts",
@@ -75,7 +73,6 @@ local JOBS: { Job } = {
         RatePerMin = 160,
         Risk = 0.1,
         Vehicle = "Provided",
-        ProfessionalModel = "proto_p01",
     }),
     job({
         Id = "Precision",
@@ -100,7 +97,6 @@ local JOBS: { Job } = {
         RatePerMin = 165,
         Risk = 0.1,
         Vehicle = "Provided",
-        ProfessionalModel = "proto_p01",
     }),
 }
 Jobs.List = table.freeze(JOBS)

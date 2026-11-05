@@ -9,7 +9,6 @@ local SHARED = "ReplicatedStorage.Shared."
 local CLIENT = "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient."
 
 return function(T: any, H: any)
-    local WorkingCatalog = H.require(SHARED .. "Vehicles.Definitions.WorkingCatalog")
     local Definitions = H.require(SHARED .. "Vehicles.VehicleDefinitions")
     local VehicleCatalog = H.require(SHARED .. "Economy.VehicleCatalog")
     local StarterCatalog = H.require(SHARED .. "Garage.StarterCatalog")
@@ -48,69 +47,51 @@ return function(T: any, H: any)
         return n
     end
 
-    T.suite("Lot 0.8 — gamme proposée de 18 modèles")
+    T.suite("Lot BASE-01 — gamme réduite à la Comète (décision du propriétaire du 2026-11-05)")
 
-    T.test("1. intégrité des 18 fiches : identifiants, données complètes, textes FR/EN", function()
-        T.equal(#WorkingCatalog.Specs, 18, "18 fiches")
-        local seen, names = {}, {}
-        for _, spec in WorkingCatalog.Specs do
-            T.truthy(string.match(spec.Id, "^wk_[a-z]+$") ~= nil, spec.Id .. " : identifiant stable")
-            T.truthy(not seen[spec.Id] and not names[spec.Name], spec.Id .. " : unique")
-            seen[spec.Id], names[spec.Name] = true, true
-            for _, field in { "PowerKw", "MassKg", "LengthM", "WidthM", "HeightM", "WheelbaseM", "TopSpeedKmh" } do
-                T.truthy(type(spec[field]) == "number" and spec[field] > 0, spec.Id .. " : " .. field)
-            end
-            T.truthy(spec.WheelbaseM < spec.LengthM, spec.Id .. " : empattement < longueur")
-            for _, suffix in { ".category", ".desc" } do
-                T.truthy(Localization.has("vehicle." .. spec.Id .. suffix), spec.Id .. suffix .. " FR/EN")
-            end
+    T.test("1. registre : la Comète seule, sans prototype ni modèle retiré, textes FR/EN", function()
+        local ids = {}
+        for _, definition in Definitions.all() do
+            table.insert(ids, definition.Id)
+        end
+        T.equal(#ids, 1, "un seul modèle enregistré : " .. table.concat(ids, ", "))
+        T.equal(ids[1], "wk_comete")
+        for _, retired in { "proto_p01", "proto_p02", "proto_p03", "proto_p01_dct", "wk_brio", "wk_aster", "wk_atlas" } do
+            T.truthy(Definitions.get(retired) == nil, retired .. " : retiré du jeu")
+        end
+        for _, suffix in { ".category", ".desc" } do
+            T.truthy(Localization.has("vehicle.wk_comete" .. suffix), "wk_comete" .. suffix .. " FR/EN")
         end
     end)
 
-    T.test("2. compatibilité physique : chaque définition passe la validation et atteint sa vitesse", function()
-        for _, spec in WorkingCatalog.Specs do
-            local definition = Definitions.get(spec.Id)
-            T.truthy(definition ~= nil, spec.Id .. " : enregistré")
-            local ok, errors = Definitions.validate(definition)
-            T.truthy(ok, spec.Id .. " : " .. table.concat(errors, " ; "))
-            T.equal(definition.Appearance.BodyStyle, spec.Style, spec.Id .. " : silhouette")
-            T.equal(definition.Powertrain.Energy.Kind, spec.Base, spec.Id .. " : énergie")
-            T.equal(definition.Powertrain.Transmission.Kind, spec.Gearbox, spec.Id .. " : boîte")
-            local gearTop = Definitions.gearLimitedTopSpeedKmh(definition)
-            T.truthy(
-                gearTop >= spec.TopSpeedKmh * 0.99,
-                spec.Id .. " : démultiplication suffisante (" .. gearTop .. ")"
-            )
-        end
+    T.test("2. compatibilité physique : la Comète passe la validation et atteint sa vitesse", function()
+        local definition = Definitions.get("wk_comete")
+        local ok, errors = Definitions.validate(definition)
+        T.truthy(ok, table.concat(errors, " ; "))
+        T.equal(definition.Powertrain.Energy.Kind, "Petrol")
+        T.equal(definition.Powertrain.Transmission.Kind, "Sequential")
+        T.truthy(Definitions.gearLimitedTopSpeedKmh(definition) >= 320 * 0.99, "démultiplication suffisante")
     end)
 
-    T.test("3. identifiants du catalogue : 18 entrées liées, prix, concessions, jamais officielles", function()
-        local linked = 0
-        local slots = {}
-        for _, entry in VehicleCatalog.Entries do
-            T.truthy(not slots[entry.Slot], "emplacement unique " .. entry.Slot)
-            slots[entry.Slot] = true
-            if entry.DefinitionId then
-                linked += 1
-                T.truthy(Definitions.get(entry.DefinitionId) ~= nil, entry.Id .. " → définition existante")
-                T.equal(entry.DefinitionId, "wk_" .. entry.Id, entry.Id .. " : identifiant cohérent")
-                T.truthy(entry.Price > 0 and #entry.Dealers >= 1, entry.Id .. " : prix et concession")
-            end
-            T.truthy(entry.Availability ~= "Official", entry.Id .. " : aucune référence officielle")
-        end
-        T.equal(linked, 18)
-        T.equal(VehicleCatalog.Slots, 18)
+    T.test("3. catalogue : une entrée liée (Comète), deux emplacements, jamais officielle", function()
+        T.equal(#VehicleCatalog.Entries, 1)
+        T.equal(VehicleCatalog.Slots, 2, "Comète et citadine")
+        local entry = VehicleCatalog.Entries[1]
+        T.equal(entry.DefinitionId, "wk_comete")
+        T.truthy(Definitions.get(entry.DefinitionId) ~= nil, "définition existante")
+        T.truthy(entry.Price > 0 and #entry.Dealers >= 1, "prix et concession")
+        T.truthy(entry.Availability ~= "Official", "aucune référence officielle")
     end)
 
-    T.test("4. actifs provisoires séparés des officiels : achat et starter en Dev seulement", function()
+    T.test("4. actifs provisoires séparés des officiels : achat en Dev seulement, aucun départ", function()
         for _, entry in VehicleCatalog.Entries do
             T.equal(entry.Availability, "PendingApproval", entry.Id)
             T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id .. " : achetable en Dev")
             T.truthy(not VehicleCatalog.purchasable(entry, "Test"), entry.Id .. " : pas en test")
             T.truthy(not VehicleCatalog.purchasable(entry, "Production"), entry.Id .. " : pas en production")
         end
-        T.equal(#StarterCatalog.Candidates, 0, "liste officielle toujours vide")
-        T.equal(StarterCatalog.ProposalStatus, "PendingApproval")
+        T.equal(#StarterCatalog.Candidates, 0, "liste officielle vide")
+        T.equal(#StarterCatalog.Proposed, 0, "aucune proposition (point P2)")
         for _, asset in AssetManifest.Assets do
             T.truthy(asset.Status ~= "Validated", asset.Id .. " : rien n'est validé à la place du propriétaire")
         end
@@ -118,29 +99,22 @@ return function(T: any, H: any)
 
     T.suite("Lot 0.8 — véhicule de départ et propriété")
 
-    T.test("5. conditions du choix : candidats proposés en Dev seulement, refus hors liste", function()
-        local dev, synthetic = StarterCatalog.candidates("Dev")
-        T.equal(#dev, 3, "trois candidats en Dev")
-        T.truthy(synthetic, "exemplaires synthétiques")
-        for _, id in dev do
-            T.truthy(Definitions.get(id) ~= nil, id .. " : modèle existant")
-        end
-        for _, environment in { "Test", "Production" } do
+    T.test("5. aucun véhicule de départ en attendant la citadine (point P2) : choix refusé partout", function()
+        for _, environment in { "Dev", "Test", "Production" } do
             local list = StarterCatalog.candidates(environment)
-            T.equal(#list, 0, environment .. " : aucune attribution avant approbation")
+            T.equal(#list, 0, environment .. " : aucun candidat")
             local profile = ProfileSchema.new(1, 0, environment)
-            local ok, err = StarterSelection.choose(profile, dev[1], list, 0, prepare)
+            local ok, err = StarterSelection.choose(profile, "wk_comete", list, 0, prepare)
             T.truthy(not ok)
             T.equal(err, "StarterCatalogUnavailable", environment)
         end
-        local profile = ProfileSchema.new(1, 0, "Dev")
-        T.equal(select(2, StarterSelection.choose(profile, "wk_comete", dev, 0, prepare, true)), "StarterNotCandidate")
     end)
 
     T.test("6. attribution unique : un exemplaire synthétique, incessible, non répétable", function()
-        local dev = StarterCatalog.candidates("Dev")
+        -- Liste explicite (règles de StarterSelection, indépendantes du catalogue) : le seul modèle du jeu.
+        local dev = { "wk_comete" }
         local profile = ProfileSchema.new(2, 0, "Dev")
-        local ok, result = StarterSelection.choose(profile, dev[2], dev, 10, prepare, true)
+        local ok, result = StarterSelection.choose(profile, dev[1], dev, 10, prepare, true)
         T.truthy(ok, "premier choix")
         local again, err = StarterSelection.choose(profile, dev[1], dev, 11, prepare, true)
         T.truthy(not again)
@@ -407,7 +381,7 @@ return function(T: any, H: any)
         local v4: any = ProfileMigration.deepCopy(fresh)
         v4.SchemaVersion = 4
         v4.Onboarding = nil
-        v4.Starter = { State = "Chosen", ModelId = "wk_brio", VehicleId = "V1", ChosenAt = 1 }
+        v4.Starter = { State = "Chosen", ModelId = "wk_comete", VehicleId = "V1", ChosenAt = 1 }
         local migrated = ProfileMigration.migrate(v4)
         T.equal(migrated.Status, "Migrated")
         T.equal(migrated.Data.SchemaVersion, 5)
@@ -449,12 +423,8 @@ return function(T: any, H: any)
         for _, family in { "engine", "effect", "ambience", "ui", "radio" } do
             T.truthy(prefixes[family], family)
         end
-        for _, spec in WorkingCatalog.Specs do
-            T.truthy(
-                AssetManifest.get("vehicle.body." .. string.lower(spec.Style)) ~= nil,
-                spec.Id .. " : carrosserie déclarée"
-            )
-        end
+        T.truthy(AssetManifest.get("veh.wk_comete.mesh720s") ~= nil, "carrosserie 3D de la Comète déclarée")
+        T.truthy(AssetManifest.get("vehicle.body.prototype") ~= nil, "coque de repli déclarée")
         for zone in AmbienceModel.ZoneLoops do
             T.truthy(AssetManifest.get("world.decor." .. string.lower(zone)) ~= nil, zone .. " : habillage déclaré")
             T.truthy(AssetManifest.get(AmbienceModel.ZoneLoops[zone]) ~= nil, zone .. " : ambiance déclarée")

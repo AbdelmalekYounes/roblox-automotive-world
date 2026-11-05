@@ -260,3 +260,16 @@ archive suspendue. **Aucune fusion sans l'accord du propriétaire.**
   PR #19 (UI v2, cette branche) fusionnée à la suite ; PR #16 et #17 fermées avec renvoi. **Intégration de l'option B
   terminée** : `main` contient les lots 0.1 à 0.9.2, AVATAR-01, les références 3D, la phase 1 de l'Aster, la Comète et
   l'UI V1.2 ; ASTER-02 reste sur la PR #15 (suspendu). Blocages de la V1.0 : `docs/audit/AUDIT_INTEGRATION_V1.0.md` §7.
+
+## Lot BASE-01 — base propre à deux véhicules (branche `feat/base-01-deux-vehicules`)
+
+Décision du propriétaire du 2026-11-05 ([amendement A-01](AMENDEMENTS_CAHIER_DES_CHARGES.md),
+[plan](lot-base-01/PLAN_BASE_01.md), [rapport](lot-base-01/RAPPORT_BASE_01.md)) :
+- la Comète devient une définition autonome, aux valeurs identiques (test d'égalité) ;
+- sont retirés du jeu : les 17 autres modèles, les prototypes P-01 à P-03, les variantes de validation, le parc d'essai et
+  les carrosseries provisoires ; les prototypes restent des **jeux d'essai** des tests ;
+- aucun véhicule de départ, de service ni synthétique en attendant la citadine.
+
+Suite : ADMIN-01 (expérience privée et menu d'administration, [proposition](lot-admin-01/PROPOSITION_ADMIN_01.md)),
+puis VEH3D-02 (citadine Milano '95, [candidats](vehicle-3d/VEH3D_02_CANDIDATS.md)).
+

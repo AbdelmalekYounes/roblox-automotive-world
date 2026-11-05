@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.9.2 — stabilisation finale : non-régression des causes établies des anomalies
 -- QA-A08 (valeurs non finies) et suivantes. Règles pures et scénarios reproductibles ; les
 -- vérifications dans le moteur sont dans les sessions VM (docs/lot-0.9.2/RAPPORT_STABILISATION.md).
@@ -9,21 +10,12 @@ local PlanarSim = require("../PlanarSim")
 local SHARED = "ReplicatedStorage.Shared."
 
 -- Scénarios qui divergeaient (∞ puis NaN) avec le code du lot 0.9.1 (`bf81465`), trouvés par
--- tests/lune/tools/nan-hunt.luau : { modèle, graine de base, numéro de scénario }.
+-- tests/lune/tools/nan-hunt.luau : { modèle, graine de base, numéro de scénario }. Lot BASE-01 : les 10 cas de la
+-- Mistral (modèle retiré du jeu) ne sont plus rejouables ; restent les 3 cas du P-01 (jeu d'essai).
 local DIVERGED_BEFORE = {
     { "proto_p01", 8, 83 },
     { "proto_p01", 8, 104 },
     { "proto_p01", 8, 191 },
-    { "wk_mistral", 7, 3 },
-    { "wk_mistral", 7, 6 },
-    { "wk_mistral", 7, 8 },
-    { "wk_mistral", 7, 10 },
-    { "wk_mistral", 7, 13 },
-    { "wk_mistral", 8, 2 },
-    { "wk_mistral", 8, 3 },
-    { "wk_mistral", 8, 5 },
-    { "wk_mistral", 8, 6 },
-    { "wk_mistral", 8, 8 },
 }
 
 -- Contacts d'un véhicule posé sur le sol plat, à la vitesse de contact `forward` (m/s).
@@ -59,13 +51,17 @@ return function(T: any, H: any)
 
     T.suite("Lot 0.9.2 — stabilisation finale")
 
-    T.test("QA-A08 : les 13 scénarios qui divergeaient restent finis, sans neutralisation", function()
+    T.test("QA-A08 : les scénarios qui divergeaient (P-01) restent finis, sans neutralisation", function()
         local resets = Dynamics.numericResets()
         local limits = Dynamics.converterLimits()
         local failures = {}
         for _, case in DIVERGED_BEFORE do
-            local result =
-                NanHunt.scenario(Dynamics, DamageModel, { Definitions.get(case[1]) }, case[2] * 100003 + case[3])
+            local result = NanHunt.scenario(
+                Dynamics,
+                DamageModel,
+                { Definitions.get(case[1]) or Fixtures.get(case[1]) },
+                case[2] * 100003 + case[3]
+            )
             if result then
                 table.insert(
                     failures,
@@ -78,8 +74,11 @@ return function(T: any, H: any)
         T.truthy(Dynamics.converterLimits() > limits, "la borne de stabilité du convertisseur a agi")
     end)
 
-    T.test("QA-A08 : exploration élargie (tous les modèles) sans valeur non finie", function()
+    T.test("QA-A08 : exploration élargie (jeu et jeux d'essai) sans valeur non finie", function()
         local definitions = Definitions.all()
+        for _, fixture in Fixtures.all() do
+            table.insert(definitions, fixture)
+        end
         local failures = {}
         for n = 1, 60 do
             local result = NanHunt.scenario(Dynamics, DamageModel, definitions, 11 * 100003 + n)
@@ -148,7 +147,11 @@ return function(T: any, H: any)
 
     T.test("QA-A08 : borne du convertisseur inactive en conduite normale (physique inchangée)", function()
         local checked = 0
-        for _, definition in Definitions.all() do
+        local all = Definitions.all()
+        for _, fixture in Fixtures.all() do
+            table.insert(all, fixture)
+        end
+        for _, definition in all do
             if definition.Powertrain.Transmission.Converter then
                 checked += 1
                 local before = Dynamics.converterLimits()
@@ -167,13 +170,14 @@ return function(T: any, H: any)
                 T.equal(Dynamics.converterLimits(), before, definition.Id .. " : aucune limitation pendant l'essai")
             end
         end
-        T.truthy(checked >= 5, "modèles à convertisseur contrôlés : " .. checked)
+        -- Lot BASE-01 : seul le P-01 (jeu d'essai) a un convertisseur ; la Comète est séquentielle.
+        T.truthy(checked >= 1, "modèles à convertisseur contrôlés : " .. checked)
     end)
     T.test("Calage : une boîte sans pédale d'embrayage relance quand l'accélérateur est relâché", function()
         local pedals = { Throttle = 0.6, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
         local released = { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }
         -- Automatique à convertisseur calée en D (cas de la course GPS, tâche 20261104-021402).
-        local auto = Definitions.get("proto_p01")
+        local auto = Fixtures.get("proto_p01")
         local state = Dynamics.createState(auto)
         Dynamics.startEngine(state, auto)
         state.Gear = 1
@@ -185,7 +189,7 @@ return function(T: any, H: any)
         T.equal(state.Gear, 1, "toujours en D")
         -- Boîte manuelle : règle inchangée (embrayage enfoncé ou neutre ; la pédale suit la
         -- commande avec une rampe, puis 0,6 s de démarreur).
-        local manual = Definitions.get("proto_p02")
+        local manual = Fixtures.get("proto_p02")
         local m = Dynamics.createState(manual)
         Dynamics.startEngine(m, manual)
         m.Gear = 1
@@ -195,42 +199,6 @@ return function(T: any, H: any)
         holdPinned(Dynamics, manual, m, { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 1 }, 2)
         T.truthy(m.EngineRunning and not m.EngineStalled, "manuelle, embrayage enfoncé : relancée")
     end)
-
-    T.test("Calage par rebond contre un obstacle : borne du convertisseur inactive, relance", function()
-        -- Reproduction (tests/lune/tools/stall-impact.luau) : wk_atlas, départ à 40 %
-        -- d'accélérateur pendant 4 s, choc puis rebond à 5 m/s pendant 0,25 s, pilote qui
-        -- accélère encore : le moteur cale, à l'identique avec ou sans la borne.
-        local definition = Definitions.get("wk_atlas")
-        local state = Dynamics.createState(definition)
-        Dynamics.startEngine(state, definition)
-        local forward, dt = 0, 1 / 60
-        local limits = Dynamics.converterLimits()
-        for step = 1, math.floor(4.5 / dt) do
-            local t = step * dt
-            if t <= 4 then
-                local omega, share = 0, 0
-                for _, wheel in state.Wheels do
-                    omega += wheel.AngularVelocity * wheel.DriveShare
-                    share += wheel.DriveShare
-                end
-                forward += (omega / share * definition.Tires.RadiusM - forward) * math.min(1, dt * 3)
-            else
-                forward = if t < 4.25 then -5 else 0
-            end
-            local input =
-                { Throttle = if t <= 4 then 0.4 else 0.6, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
-            Dynamics.step(
-                state,
-                definition,
-                input,
-                flatContacts(Dynamics, definition, forward),
-                { Forward = forward, Lateral = 0, YawRate = 0 },
-                dt
-            )
-        end
-        T.truthy(state.EngineStalled, "moteur calé par le rebond")
-        T.equal(Dynamics.converterLimits(), limits, "borne du convertisseur jamais active")
-        holdPinned(Dynamics, definition, state, { Throttle = 0, Brake = 0, Steer = 0, Handbrake = true, Clutch = 0 }, 1)
-        T.truthy(state.EngineRunning, "relancé, pédales relâchées")
-    end)
+    -- Calage par rebond (reproduction sur le wk_atlas, modèle retiré au lot BASE-01) : non rejouable sur les jeux
+    -- d'essai, le P-01 ne cale pas dans ce scénario. La règle de relance reste couverte par le test précédent.
 end

@@ -3,9 +3,9 @@
 > **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
-> trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée et des **prototypes techniques fictifs** (P-01
-> essence/automatique/propulsion, P-02 diesel/manuelle/traction, P-03 électrique/rapport unique/intégrale, et trois
-> configurations de validation des boîtes double embrayage, séquentielle et CVT). Lot 0.4 : profils versionnés
+> trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée ; **lot BASE-01** : un seul véhicule, la
+> **Comète** (carrosserie 3D tierce CC BY), en attendant la citadine (VEH3D-02) ; prototypes P-01 à P-03 et 17 modèles
+> de la gamme proposée retirés du jeu (les prototypes restent des jeux d'essai des tests). Lot 0.4 : profils versionnés
 > (verrou de session, transactions idempotentes), collection, propriétés et garages, préparation, configurations,
 > invitations. Lot 0.5 : crédits, réputation, huit métiers, concessions (catalogue de travail provisoire), marché
 > d'occasion à transferts multiprofils récupérables, immobilier, pièces, énergie, réparation, lavage. Lot 0.6 : six
@@ -38,8 +38,10 @@
 > validée en jeu par le propriétaire le 2026-11-05 ([rapport](docs/ui/UI_V1_2_FINALISATION_RAPPORT.md)).
 > **Intégration V1.0** : [audit et stratégie](docs/audit/AUDIT_INTEGRATION_V1.0.md) ; option B choisie le 2026-11-05
 > (branches reconstruites sans ASTER-02 : `feat/veh3d-01-comete-v2`, `feat/ui-premium-v1.2-v2`).
-> **Statut** (2026-11-05) : pile de 17 PR non fusionnées (#1 lot 0.1 → #17 UI V1.2) ; sommet reconstruit :
-> `feat/ui-premium-v1.2-v2`. Lot 0.9.2 : `feat/final-stabilization-0.9.2` (PR #11). Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
+> **Statut** (2026-11-05) : `main` contient les lots 0.1 à 0.9.2, AVATAR-01, les références 3D, la phase 1 de l'Aster,
+> la Comète et l'UI V1.2 (option B de l'audit, PR #18 et #19 ; dépôt d'art : PR d'art #1) ; ASTER-02 reste sur la
+> PR #15. En cours : **lot BASE-01** (`feat/base-01-deux-vehicules`, [plan](docs/lot-base-01/PLAN_BASE_01.md),
+> [rapport](docs/lot-base-01/RAPPORT_BASE_01.md)), puis ADMIN-01 et VEH3D-02. Rapports : [docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md](docs/lot-0.9/TESTS_INTERACTIFS_AUTONOMES.md),
 > [couverture](docs/lot-0.9/COUVERTURE_QA.md), [validation globale](docs/lot-0.9/RAPPORT_VALIDATION_GLOBALE.md). Essais
 > humains : [checklist](docs/lot-0.9/CHECKLIST_TESTS_HUMAINS.md) ; DataStore, charge et appareils réels : **NON
 > TESTÉS** ([docs/QA_BACKLOG.md](docs/QA_BACKLOG.md)).
@@ -65,8 +67,9 @@ rojo build -o build\AutomotiveWorld.rbxlx
 
 1. Ouvrir `build\AutomotiveWorld.rbxlx` dans Roblox Studio (ne pas publier la place).
 2. **Ne pas** activer « Enable Studio Access to API Services » : le lot n'utilise aucun DataStore et aucun test ne doit en toucher.
-3. Cliquer sur **Play**. La bannière « Zone d'essai véhicule » apparaît ; neuf véhicules sont stationnés sur les plots
-   verts (plots 1 à 4 : P-01 ; puis P-02, P-03, P-01 DCT, P-01 SEQ, P-01 CVT). La zone comprend aussi une zone mouillée
+3. Cliquer sur **Play**. La bannière « Zone d'essai véhicule » apparaît ; depuis le lot BASE-01, **aucun véhicule** n'est
+   stationné sur les plots verts (parc d'essai supprimé) ; un véhicule s'obtient par la concession (Comète, en
+   développement) ou, dans Studio, par `ServerStorage.AWRevue`. La zone comprend aussi une zone mouillée
    (sud-ouest), des bordures et bosses (est), un mur de choc (sud) et la bosse à 10 %.
 4. S'approcher de la portière gauche d'un véhicule et **maintenir E** (manette : **X**) pour monter.
 5. Pour la synchronisation en direct pendant le développement : `rojo serve`, puis connecter le plugin Rojo.
@@ -80,14 +83,15 @@ rojo build openworld.project.json -o build\AutomotiveWorld-OpenWorld.rbxl
 ```
 
 La carte est générée hors ligne, de façon déterministe, à partir des données versionnées de `src/shared/World/Data`.
-La place `build\AutomotiveWorld-OpenWorld.rbxl` contient la carte, le streaming activé, le parc des neuf prototypes en
-métropole et le point d'apparition voisin. Comportement en jeu **non encore vérifié** (`docs/QA_BACKLOG.md` §3).
+La place `build\AutomotiveWorld-OpenWorld.rbxl` contient la carte, le streaming activé, les plots du parc en métropole
+(sans véhicule depuis le lot BASE-01) et le point d'apparition voisin. Comportement en jeu **non encore vérifié** (`docs/QA_BACKLOG.md` §3).
 
 ## Collection, propriétés et garages (lot 0.4)
 
 Touche **P** (manette : par le téléphone, application Véhicules ; Select ouvre le téléphone) : panneau (collection, véhicule, propriétés, préparation,
 configurations, invitations) et badge d'état de sauvegarde. En développement, chaque joueur reçoit une propriété
-gratuite et des données **synthétiques** (trois prototypes, une propriété moyenne, une pièce de chaque type),
+gratuite et des données **synthétiques** (une propriété moyenne, une pièce de chaque type ; plus aucun véhicule
+depuis le lot BASE-01),
 perdues à l'arrêt du serveur. Zone d'essai : entrée de propriété (repère bleu) et garage public (repère orange)
 à l'ouest du point d'apparition.
 
@@ -133,9 +137,9 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
 | Monter en passager (propriétaire ou groupe) | E près de la portière droite | X |
 | Radio (le conducteur choisit, chacun règle ou coupe son écoute) | application Radio du téléphone | idem |
 
-- **Gamme proposée** : 18 modèles fictifs, achetables en développement seulement
-  ([catalogue](docs/lot-0.8/CATALOGUE_18_VEHICULES.md)). Trois véhicules de départ proposés (Brio, Fil, Aster) :
-  la liste officielle reste vide jusqu'à l'approbation du propriétaire.
+- **Gamme** (lot BASE-01, [amendement A-01](docs/AMENDEMENTS_CAHIER_DES_CHARGES.md)) : la Comète, achetable en
+  développement seulement ; la citadine suivra (VEH3D-02). Aucun véhicule de départ tant qu'elle n'est pas intégrée.
+  Gamme de 18 modèles du lot 0.8 : [archive](docs/lot-0.8/CATALOGUE_18_VEHICULES.md).
 - **Sons** : `python tools/audio/synth.py` produit 30 sons originaux dans `build/audio/` ; rien n'est téléversé, donc
   rien n'est joué en jeu et les stations de radio sont indisponibles
   ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).

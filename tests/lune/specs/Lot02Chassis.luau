@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Lot 0.2 — architectures motrices, différentiels, pneus (sec/mouillé, frottement
 -- statique, relaxation). Banc planaire hors Roblox : sorties du modèle, pas des
 -- mesures en jeu. Pour isoler l'effet de l'architecture, les variantes FWD/AWD
@@ -30,8 +31,8 @@ return function(T: any, H: any)
     local TireModel = H.require("ReplicatedStorage.Shared.Vehicles.Physics.TireModel")
     local Driveline = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Driveline")
     local Definitions = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions")
-    local P01 = Definitions.get("proto_p01")
-    local P02 = Definitions.get("proto_p02")
+    local P01 = Fixtures.get("proto_p01")
+    local P02 = Fixtures.get("proto_p02")
 
     local function layoutVariant(layout: string, share: number, center: any?, rear: any?): any
         local copy = deepCopy(P01)

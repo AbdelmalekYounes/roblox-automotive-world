@@ -1,4 +1,5 @@
 --!strict
+local Fixtures = require("../fixtures/Fixtures")
 -- Tests unitaires des briques physiques pures (pneu, suspension, groupe motopropulseur).
 -- Les tests propres au lot 0.2 (moteurs, boîtes, différentiels, aides, énergie,
 -- dégâts) sont dans Lot02Powertrain, Lot02Chassis et Lot02Systems.
@@ -10,7 +11,7 @@ return function(T: any, H: any)
     local Transmission = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Transmission")
     local Driveline = H.require("ReplicatedStorage.Shared.Vehicles.Physics.Driveline")
     local SurfaceFriction = H.require("ReplicatedStorage.Shared.Vehicles.Physics.SurfaceFriction")
-    local P01 = H.require("ReplicatedStorage.Shared.Vehicles.VehicleDefinitions").get("proto_p01")
+    local P01 = Fixtures.get("proto_p01")
 
     T.suite("Pneumatique")
 

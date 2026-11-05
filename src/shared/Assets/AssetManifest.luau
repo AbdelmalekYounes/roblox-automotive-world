@@ -8,7 +8,7 @@
     Validated (validé — réservé au propriétaire ; aucune entrée ne l'est ici).
 
     Toutes les ressources sont ORIGINALES : géométrie construite par code
-    (BodyKits, générateur de carte), sons synthétisés par un script du dépôt.
+    (générateur de carte), sons synthétisés par un script du dépôt.
     Aucun actif Marketplace, aucun emprunt à un autre projet. SEULE EXCEPTION, accordée par le propriétaire
     (lot VEH3D-01, 2026-11-04) : le modèle 3D tiers de la Comète (CC BY 4.0, crédité ; registre
     docs/vehicle-3d/MODELES_TIERS.md), dont les maillages ont été envoyés sur Roblox par le propriétaire.
@@ -52,7 +52,6 @@ export type Asset = {
 
 local ORIGINAL = "Original — conçu pour Automotive World"
 local LICENCE = "Propriété du projet Automotive World (aucun tiers)"
-local BODY_MODULE = "src/server/Vehicles/BodyKits.luau"
 local WORLD_GENERATOR = "tools/world/build-world.luau"
 local AUDIO_GENERATOR = "tools/audio/synth.py"
 
@@ -62,35 +61,14 @@ local function add(asset: Asset)
     table.insert(list, asset)
 end
 
--- ======================== Carrosseries (10 silhouettes) ========================
-for _, style in { "Micro", "Hatch", "Sedan", "Wagon", "Coupe", "Roadster", "Supercar", "SUV", "OffRoad", "Pickup" } do
-    add({
-        Id = "vehicle.body." .. string.lower(style),
-        Category = "VehicleBody",
-        Version = "0.8.0",
-        Status = "Provisional",
-        Variants = {
-            Low = "Coque, vitrages et roues ; détails masqués",
-            Medium = "Détails visibles jusqu'à 120 m",
-            High = "Détails visibles jusqu'à 250 m",
-        },
-        Lod = "Dossier Carrosserie/Details masqué au-delà de la distance de la variante (client)",
-        Provenance = ORIGINAL .. " : pièces Roblox de base assemblées par code (silhouette " .. style .. ")",
-        Licence = LICENCE,
-        Source = { Kind = "File", Path = BODY_MODULE },
-        Output = nil,
-        RobloxAssetId = nil,
-    })
-end
-
 add({
     Id = "vehicle.body.prototype",
     Category = "VehicleBody",
     Version = "0.1.0",
     Status = "Provisional",
     Variants = { Low = "Identique", Medium = "Identique", High = "Identique" },
-    Lod = "Aucun (prototypes de développement P-01 à P-03)",
-    Provenance = ORIGINAL .. " : carrosserie de prototype des lots 0.1–0.2",
+    Lod = "Aucun (coque de repli si le kit de maillages d'un modèle manque ; lot BASE-01)",
+    Provenance = ORIGINAL .. " : coque de prototype des lots 0.1–0.2, générée par code",
     Licence = LICENCE,
     Source = { Kind = "File", Path = "src/server/Vehicles/VehicleFactory.luau" },
     Output = nil,
@@ -108,7 +86,7 @@ add({
         High = "Sources limitées aux 8 véhicules les plus proches",
     },
     Lod = "Sources de lumière (Lumiere) activées la nuit, par proximité et selon la qualité",
-    Provenance = ORIGINAL .. " : phares et feux arrière de BodyKits, pilotés par VehicleLights",
+    Provenance = ORIGINAL .. " : pilotage des optiques (pièces AWLight des kits de maillages) par VehicleLights",
     Licence = LICENCE,
     Source = { Kind = "File", Path = "src/client/World/VehicleLights.luau" },
     Output = nil,

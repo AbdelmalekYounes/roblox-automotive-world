@@ -28,6 +28,7 @@ Le jeu ne sera jamais monétisé (décision du propriétaire, `ASTER_02_DECISION
 | Date | Modèle | Auteur | Licence | Usage | Décision | État |
 |---|---|---|---|---|---|---|
 | 2026-11-04 | [2017 Mclaren 720s](https://sketchfab.com/3d-models/2017-mclaren-720s-f7bece69400f4640a4a3be746b44998b) (6 917 faces) | _Sheep19 (crédit retenu ; l'API affichait « s0h1o9b » le 2026-11-04, renommage supposé, non prouvé) | CC BY 4.0 (page du modèle, relevée par l'API le 2026-11-04) ; description : « Modelled in Blender, textures made in Photoshop » | Essai d'import pour la Comète (`wk_comete`) | Propriétaire : « Tester la 720s » | Téléchargé par le propriétaire ; inspecté (§1) ; préparé (§2) ; attaches, collisions et LOD faits (§3) ; LOD0 exporté et **importé dans Studio par le propriétaire : géométrie conforme, vitrage opaque** (§5) ; intégré par VEH3D-01 (`VEH3D_01_CLOTURE.md`) |
+| 2026-11-05 | [Milano '95 – Low poly model](https://sketchfab.com/3d-models/milano-95-low-poly-model-122a22d210234596ad23623588d0d166) (18,1 k triangles, page relevée par l'API le 2026-11-05) | Daniel Zhabotinsky | CC BY 4.0, plus une permission sans condition de l'auteur | Citadine (VEH3D-02, véhicule de départ) | Propriétaire : choix « Milano '95 » parmi les candidats (`VEH3D_02_CANDIDATS.md`) | **À télécharger par le propriétaire** ; inspection, préparation et crédits à faire. Silhouette proche de la Fiat Punto mk1 ; insigne et plaque à retirer |
 
 ## Modèles examinés et refusés
 

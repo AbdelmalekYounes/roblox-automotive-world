@@ -7,6 +7,14 @@
 -- Usage : lune run tests/lune/tools/stall-impact.luau build/AutomotiveWorld.rbxlx [modèle]
 local process = require("@lune/process")
 local Harness = require("../Harness")
+-- Lot BASE-01 : prototypes et variantes retirés du jeu, conservés comme jeux d'essai.
+local Fixtures = require("../fixtures/Fixtures")
+local function withFixtures(list: { any }): { any }
+    for _, fixture in Fixtures.all() do
+        table.insert(list, fixture)
+    end
+    return list
+end
 Harness.loadPlace(process.args[1] or "build/AutomotiveWorld.rbxlx")
 local SHARED = "ReplicatedStorage.Shared."
 local Dynamics = Harness.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
@@ -125,7 +133,7 @@ local ids = {}
 if process.args[2] then
     ids = { process.args[2] }
 else
-    for _, definition in Definitions.all() do
+    for _, definition in withFixtures(Definitions.all()) do
         if definition.Powertrain.Transmission.Converter then
             table.insert(ids, definition.Id)
         end
@@ -133,7 +141,7 @@ else
 end
 local differences, trials, stalls = 0, 0, 0
 for _, id in ids do
-    local definition = Definitions.get(id)
+    local definition = (Definitions.get(id) or Fixtures.get(id))
     for _, throttle in { 0.4, 0.8 } do
         for _, cruise in { 4, 10 } do
             for _, health in { 1, 0.4 } do

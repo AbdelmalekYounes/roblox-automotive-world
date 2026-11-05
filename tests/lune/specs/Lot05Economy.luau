@@ -93,9 +93,9 @@ return function(T: any, H: any)
                     Wallet.credit(profile, balance, "Seed", "seed", clock.Now)
                 end
                 if withVehicle then
-                    local definition = Definitions.get("wk_brio")
+                    local definition = Definitions.get("wk_comete")
                     vehicleId = VehicleOwnership.add(profile, {
-                        ModelId = "wk_brio",
+                        ModelId = "wk_comete",
                         Origin = "Purchase",
                         Untransferable = false,
                         Synthetic = false,
@@ -172,7 +172,7 @@ return function(T: any, H: any)
         local s = session(BUYER)
         local before = s.Data.Counters.Vehicle
         local result = s:commit("C:buy-0001", "BuyVehicle", function(profile)
-            return Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+            return Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
         end)
         T.equal(result.Status, "Rejected")
         T.equal(result.Error, "InsufficientFunds")
@@ -184,18 +184,18 @@ return function(T: any, H: any)
         local _, _, _, _, session = world()
         local s = session(BUYER)
         s:commit("seed", "Seed", function(profile)
-            return Wallet.credit(profile, 50_000, "Seed", "s", 0)
+            return Wallet.credit(profile, 500_000, "Seed", "s", 0)
         end)
         local function buy()
             return s:commit("C:buy-0002", "BuyVehicle", function(profile)
-                return Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+                return Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
             end)
         end
         local first, second = buy(), buy()
         T.equal(first.Status, "Confirmed")
         T.equal(second.Status, "Duplicate")
         T.equal(second.Result.VehicleId, first.Result.VehicleId)
-        T.equal(s.Data.Wallet.Balance, 50_000 - VehicleCatalog.get("brio").Price)
+        T.equal(s.Data.Wallet.Balance, 500_000 - VehicleCatalog.get("comete").Price)
         local count = 0
         for _ in s.Data.Vehicles do
             count += 1
@@ -203,54 +203,41 @@ return function(T: any, H: any)
         T.equal(count, 1)
     end)
 
-    T.test(
-        "catalogue : 18 emplacements, modèles de travail achetables en Dev seulement, prototypes absents",
-        function()
-            T.equal(#VehicleCatalog.Entries, 18)
-            local working = 0
-            for _, entry in VehicleCatalog.Entries do
-                if entry.Availability == "Working" or entry.Availability == "PendingApproval" then
-                    working += 1
-                    T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id)
-                    T.truthy(
-                        not VehicleCatalog.purchasable(entry, "Test") and not VehicleCatalog.purchasable(entry, "Prod"),
-                        entry.Id
-                    )
-                    T.truthy(Definitions.get(entry.DefinitionId) ~= nil, entry.DefinitionId)
-                else
-                    T.truthy(not VehicleCatalog.purchasable(entry, "Dev"), entry.Id .. " réservé")
-                end
-                T.truthy(
-                    entry.DefinitionId == nil or string.sub(entry.DefinitionId, 1, 6) ~= "proto_",
-                    "pas de prototype"
-                )
-            end
-            T.equal(working, 18) -- lot 0.8 : gamme proposée complète, en attente d'approbation
-            local profile = ProfileSchema.new(5, 0, "Prod")
-            Wallet.credit(profile, 100_000, "Seed", "s", 0)
-            T.equal(
-                select(2, Commerce.buyVehicle(profile, "brio", "Prod", Definitions.get("wk_brio"), 0)),
-                "CatalogNotPurchasable"
+    T.test("catalogue (lot BASE-01) : la Comète, achetable en Dev seulement, aucun prototype", function()
+        T.equal(#VehicleCatalog.Entries, 1)
+        for _, entry in VehicleCatalog.Entries do
+            T.truthy(VehicleCatalog.purchasable(entry, "Dev"), entry.Id)
+            T.truthy(
+                not VehicleCatalog.purchasable(entry, "Test") and not VehicleCatalog.purchasable(entry, "Prod"),
+                entry.Id
             )
+            T.truthy(Definitions.get(entry.DefinitionId) ~= nil, entry.DefinitionId)
+            T.truthy(string.sub(entry.DefinitionId, 1, 6) ~= "proto_", "pas de prototype")
         end
-    )
+        local profile = ProfileSchema.new(5, 0, "Prod")
+        Wallet.credit(profile, 500_000, "Seed", "s", 0)
+        T.equal(
+            select(2, Commerce.buyVehicle(profile, "comete", "Prod", Definitions.get("wk_comete"), 0)),
+            "CatalogNotPurchasable"
+        )
+    end)
 
     T.test("reprise ≈ 60 % ajustée à l'état ; pièces installées incluses, sans second versement", function()
         local profile = ProfileSchema.new(5, 0, "Dev")
-        Wallet.credit(profile, 100_000, "Seed", "s", 0)
-        local _, bought = Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+        Wallet.credit(profile, 1_000_000, "Seed", "s", 0)
+        local _, bought = Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
         Commerce.buyPart(profile, "TIRE-SPORT", 0)
-        Customization.setPart(profile, bought.VehicleId, "Tires", "TIRE-SPORT", Definitions.get("wk_brio"), PUBLIC, 0)
+        Customization.setPart(profile, bought.VehicleId, "Tires", "TIRE-SPORT", Definitions.get("wk_comete"), PUBLIC, 0)
         local ok, quote = Commerce.tradeInQuote(profile, bought.VehicleId, 0)
         T.truthy(ok)
-        T.equal(quote.Amount, math.floor(VehicleCatalog.get("brio").Price * 0.6), "neuf : 60 %")
+        T.equal(quote.Amount, math.floor(VehicleCatalog.get("comete").Price * 0.6), "neuf : 60 %")
         local balance = profile.Wallet.Balance
         T.truthy((Commerce.tradeIn(profile, bought.VehicleId, 0)), "reprise")
         T.equal(profile.Wallet.Balance, balance + quote.Amount)
         T.equal(next(profile.Parts), nil, "pièce installée partie avec le véhicule")
         T.truthy((ProfileSchema.validate(profile)), "cohérent")
         -- Un véhicule abîmé vaut moins.
-        local _, second = Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+        local _, second = Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
         profile.Vehicles[second.VehicleId].Damage.Zones.Front = 1
         profile.Vehicles[second.VehicleId].Damage.Engine = 0.5
         local _, worn = Commerce.tradeInQuote(profile, second.VehicleId, 0)
@@ -262,16 +249,10 @@ return function(T: any, H: any)
         local s = session(SELLER)
         local starterId = nil
         s:commit("Grant:Starter", "Starter", function(profile)
-            local ok, result = StarterSelection.choose(
-                profile,
-                "wk_brio",
-                { "wk_brio", "wk_aster", "wk_fil" },
-                0,
-                function(id)
-                    local definition = Definitions.get(id)
-                    return definition.Powertrain.Energy.InitialFraction, CosmeticCatalog.defaults(definition)
-                end
-            )
+            local ok, result = StarterSelection.choose(profile, "wk_comete", { "wk_comete" }, 0, function(id)
+                local definition = Definitions.get(id)
+                return definition.Powertrain.Energy.InitialFraction, CosmeticCatalog.defaults(definition)
+            end)
             starterId = if ok then result.VehicleId else nil
             return ok, result
         end)
@@ -329,8 +310,8 @@ return function(T: any, H: any)
         local _, _, _, _, session = world()
         local s = session(BUYER)
         s:commit("seed", "Seed", function(profile)
-            Wallet.credit(profile, 20_000, "Seed", "s", 0)
-            local _, bought = Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+            Wallet.credit(profile, 300_000, "Seed", "s", 0)
+            local _, bought = Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
             local vehicle = profile.Vehicles[bought.VehicleId]
             vehicle.Damage.Zones.Front = 0.5
             vehicle.Dirt = 0.6
@@ -362,8 +343,8 @@ return function(T: any, H: any)
         local clock, repo, _, _, session = world()
         local s = session(BUYER)
         s:commit("seed", "Seed", function(profile)
-            Wallet.credit(profile, 20_000, "Seed", "s", 0)
-            Commerce.buyVehicle(profile, "aster", "Dev", Definitions.get("wk_aster"), 0)
+            Wallet.credit(profile, 300_000, "Seed", "s", 0)
+            Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
             return true, nil
         end)
         local id = next(s.Data.Vehicles)
@@ -371,11 +352,11 @@ return function(T: any, H: any)
         local balanceBefore = s.Data.Wallet.Balance
         T.equal(
             s:commit("C:energy-0001", "Energy", function(profile)
-                return Commerce.startEnergy(profile, "E1", id, "Diesel", 20, 0)
+                return Commerce.startEnergy(profile, "E1", id, "Petrol", 20, 0)
             end).Status,
             "Confirmed"
         )
-        local unit = EconomyCatalog.EnergyPrice.Diesel
+        local unit = EconomyCatalog.EnergyPrice.Petrol
         T.equal(s.Data.Wallet.Reserved, 20 * unit)
         -- Serveur arrêté brutalement : la session disparaît sans régler.
         clock.Now += 400
@@ -402,7 +383,7 @@ return function(T: any, H: any)
         T.equal(recovered.Data.Vehicles[id].Energy, energyBefore, "aucune énergie gratuite")
         -- Règlement normal : seule la quantité livrée est payée.
         recovered:commit("C:energy-0002", "Energy", function(profile)
-            return Commerce.startEnergy(profile, "E2", id, "Diesel", 20, clock.Now)
+            return Commerce.startEnergy(profile, "E2", id, "Petrol", 20, clock.Now)
         end)
         local settle = recovered:commit("C:energy-0003", "Energy", function(profile)
             return Commerce.settleEnergy(profile, "E2", 7.5, 42, clock.Now)
@@ -636,13 +617,13 @@ return function(T: any, H: any)
             local s = session(SELLER)
             local vehicleId: string = ""
             s:commit("prep", "Test", function(profile)
-                Wallet.credit(profile, 50_000, "Seed", "s", 0)
-                local _, bought = Commerce.buyVehicle(profile, "brio", "Dev", Definitions.get("wk_brio"), 0)
+                Wallet.credit(profile, 300_000, "Seed", "s", 0)
+                local _, bought = Commerce.buyVehicle(profile, "comete", "Dev", Definitions.get("wk_comete"), 0)
                 vehicleId = bought.VehicleId
                 Commerce.buyPart(profile, "TIRE-SPORT", 0)
                 Commerce.buyPart(profile, "BRAKE-SPORT", 0)
                 Commerce.buyPart(profile, "TIRE-RAIN", 0)
-                local definition = Definitions.get("wk_brio")
+                local definition = Definitions.get("wk_comete")
                 Customization.setPart(profile, vehicleId, "Tires", "TIRE-SPORT", definition, PUBLIC, 0)
                 Customization.setPart(profile, vehicleId, "Brakes", "BRAKE-SPORT", definition, PUBLIC, 0)
                 Customization.saveConfiguration(profile, vehicleId, 1, "Complet", 0)
