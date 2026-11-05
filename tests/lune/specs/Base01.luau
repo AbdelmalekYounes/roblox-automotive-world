@@ -2,6 +2,8 @@
 -- Lot BASE-01 (décision du propriétaire du 2026-11-05) : la Comète devient une définition AUTONOME, aux valeurs
 -- IDENTIQUES à celles que calculait WorkingCatalog sur `main` (6a2dc34) ; référence figée dans
 -- tests/lune/fixtures/comete_definition_reference.json par tests/lune/tools/dump-definition.luau.
+-- Lot AUDIO-01 (décision D3 du 2026-11-05) : référence régénérée après la montée du rupteur à 8 500 tr/min (seuls
+-- rupteur, zone rouge, passage conseillé et courbe de couple ont changé).
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 

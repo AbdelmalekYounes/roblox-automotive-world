@@ -76,9 +76,9 @@
       "IdleFuelLph": 0.8,
       "IdleRpm": 850,
       "InertiaKgM2": 0.3,
-      "LimiterRpm": 7200,
+      "LimiterRpm": 8500,
       "PartLoadPenalty": 1.2,
-      "RedlineRpm": 7000,
+      "RedlineRpm": 8300,
       "StallRpm": 450,
       "TorqueCurve": [
         {
@@ -106,12 +106,20 @@
           "TorqueNm": 735
         },
         {
-          "Rpm": 6800,
-          "TorqueNm": 660
+          "Rpm": 7000,
+          "TorqueNm": 650
         },
         {
-          "Rpm": 7200,
-          "TorqueNm": 603
+          "Rpm": 7600,
+          "TorqueNm": 600
+        },
+        {
+          "Rpm": 8100,
+          "TorqueNm": 560
+        },
+        {
+          "Rpm": 8500,
+          "TorqueNm": 520
         }
       ]
     },
@@ -134,7 +142,7 @@
       "ReverseRatio": 3.3,
       "ShiftDownRpm": 2856,
       "ShiftDurationS": 0.06,
-      "ShiftUpRpm": 6800
+      "ShiftUpRpm": 8100
     }
   },
   "Steering": {

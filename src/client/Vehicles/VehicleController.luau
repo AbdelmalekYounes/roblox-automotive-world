@@ -513,7 +513,10 @@ local function sendInput(current: Session, driverInput: Types.DriverInput, dt: n
         return
     end
     current.SendTimer = 0
-    local encoded = InputCodec.encode(driverInput, sessionEnergyUsed(current))
+    -- Régime déclaré pour le son des autres joueurs (lot AUDIO-01) : 0 si moteur arrêté, calé ou non simulé ici.
+    local telemetry = if current.Simulating then current.Simulator.Telemetry else nil
+    local rpm = if telemetry and telemetry.EngineRunning and not telemetry.EngineStalled then telemetry.EngineRpm else 0
+    local encoded = InputCodec.encode(driverInput, sessionEnergyUsed(current), rpm)
     local previous = current.LastSent
     local changed = previous == nil
     if previous then
@@ -826,6 +829,10 @@ local function onPreRender(dt: number)
             TransmissionKind = powertrain.Transmission.Kind,
             Electric = powertrain.Engine == nil,
             Stalled = state.EngineStalled,
+            EngineRunning = telemetry.EngineRunning,
+            -- Charge RÉELLE du moteur pour le son (lot AUDIO-01) : nulle pendant un passage de rapport (couple coupé par
+            -- la boîte, VehicleDynamics), sinon accélérateur effectif après les aides.
+            EngineLoad = if state.ShiftTimer > 0 then 0 else telemetry.DriveThrottle,
             Model = current.Model,
         })
     end

@@ -56,6 +56,10 @@ local VehicleConstants = {
         VisualSteer = "VisualSteer",
         -- Freinage affiché (feux stop) : écrit par le serveur d'après la commande du conducteur (lot VEH3D-01).
         VisualBrake = "VisualBrake",
+        -- Son du moteur vu par les autres joueurs (lot AUDIO-01), écrit par le serveur d'après la déclaration du
+        -- conducteur, bornée : régime (tr/min, 0 = moteur arrêté) et charge (accélérateur, 0 à 1). Aucun effet de jeu.
+        AudioRpm = "AudioRpm",
+        AudioLoad = "AudioLoad",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",
         -- Énergie (écrite par le serveur seul) : niveau en L ou kWh, réserve vide.

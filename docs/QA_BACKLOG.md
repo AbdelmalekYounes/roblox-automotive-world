@@ -336,6 +336,17 @@ Liste détaillée : `docs/vehicle-3d/VEH3D_02_BRIO.md` §4 (vérification par le
 | QA-C03 | P2 | Métiers Taxi, Livraison, Convoyage, Essais : Brio de service fournie, plus de refus « NoProfessionalVehicle » | **Validé en jeu par le propriétaire le 2026-11-05** |
 | QA-C04 | P3 | Motif de la texture d'intérieur (`UCB_Interiors_2`) : absence de logo à confirmer | **Confirmé par le propriétaire le 2026-11-05** (point 1 de la liste) |
 
+## 3 duodecies. Lot AUDIO-01 — sons de moteur (2026-11-06)
+
+Liste détaillée : `docs/lot-audio-01/PLAN_AUDIO_01.md` §13.
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-S01 | P1 | Sons de la Brio en jeu : démarrage, ralenti, montée sans découpage, passages et rétrogradages, cockpit, réglage du volume | **Validé en jeu par le propriétaire le 2026-11-06** (liste du plan §13, place `build/AW-Audio-Brio.rbxlx`) |
+| QA-S02 | P2 | Son des autres joueurs : régime transmis, Doppler, véhicule garé silencieux (2 joueurs) | **Validé par le propriétaire le 2026-11-06** (point 9 de la liste) |
+| QA-S03 | P2 | Comète à 8 500 tr/min (décision D3) : conduite, compte-tours | **Validé par le propriétaire le 2026-11-06** (point 10 de la liste) |
+| QA-S04 | P2 | Brio pied au plancher : moteur au rupteur jusqu'à 1,5 s en 1ʳᵉ et 2ᵉ avant le passage (relevé de la dynamique) | **OUVERT**, réglage de boîte à arbitrer par le propriétaire |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

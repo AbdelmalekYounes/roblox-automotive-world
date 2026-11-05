@@ -302,3 +302,19 @@ nommé Brio ; essence, automatique, traction ; véhicule de service des métiers
 départ ; optiques et peinture unies, intérieur gardé. État du 2026-11-05 : préparation, finition et export faits (dépôt
 d'art), définition, kit mesuré, catalogue, métiers, crédits et tests intégrés ; gabarit importé par le
 propriétaire et intégré le même jour ; **validé en jeu par le propriétaire le 2026-11-05**.
+
+## Lot AUDIO-01 — sons de moteur réalistes (branche `feat/audio-01-moteurs`)
+
+Décisions du propriétaire du 2026-11-05 ([plan et rapport](lot-audio-01/PLAN_AUDIO_01.md)) :
+- **D1, enregistrements libres :** pack CC0 « The Dyno Sessions: 190E », [registre](audio/SONS_TIERS.md) ;
+- **D2, périmètre :** charge et décharge, événements, habitacle et extérieur, autres joueurs ;
+- **D3 :** Comète montée à 8 500 tr/min ;
+- **priorité :** la Brio d'abord.
+
+État du 2026-11-06 :
+- outil de boucles, profil sonore v2 (fondus à puissance constante, passages et rétrogradages audibles) et régime
+  transmis aux autres joueurs ;
+- 19 sons de la Brio (variante « moteur ») envoyés sur Roblox par le propriétaire ;
+- **validé en jeu par le propriétaire le 2026-11-06**.
+
+Suite possible : sons de la Comète (AUDIO-02), et rupteur de la Brio en 1ʳᵉ et 2ᵉ (QA-S04, réglage de boîte).
