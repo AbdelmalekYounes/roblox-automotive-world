@@ -163,6 +163,8 @@ local function ensureCollisionGroups()
         PhysicsService:RegisterCollisionGroup(groups.Vehicle)
         PhysicsService:RegisterCollisionGroup(groups.Protected)
         PhysicsService:CollisionGroupSetCollidable(groups.Vehicle, groups.Protected, false)
+        PhysicsService:RegisterCollisionGroup(groups.Exiting)
+        PhysicsService:CollisionGroupSetCollidable(groups.Vehicle, groups.Exiting, false)
     end)
 end
 

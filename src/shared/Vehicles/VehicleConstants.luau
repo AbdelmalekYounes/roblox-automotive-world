@@ -16,7 +16,8 @@ local VehicleConstants = {
 
     -- Lot 0.8 : groupes de collision. Les véhicules entrent en collision avec
     -- tout, SAUF un personnage protégé à sa première apparition (60 s au plus).
-    CollisionGroups = table.freeze({ Vehicle = "AWVehicule", Protected = "AWArrivee" }),
+    -- Exiting (lot VEH3D-01) : occupant assis puis sortant, sans collision avec les véhicules (voir VehicleService).
+    CollisionGroups = table.freeze({ Vehicle = "AWVehicule", Protected = "AWArrivee", Exiting = "AWSortie" }),
 
     RemotesFolderName = "AutomotiveWorldRemotes",
     Remotes = table.freeze({
