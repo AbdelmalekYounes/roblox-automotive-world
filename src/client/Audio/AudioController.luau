@@ -150,7 +150,7 @@ local function playEvents(model: Model, part: BasePart, profile: EngineAudioMode
         local last = (fired :: { [string]: number })[name]
         if last == nil or clock - last >= ((EVENT_COOLDOWN_S :: any)[name] or 0) then
             (fired :: { [string]: number })[name] = clock
-            local sound = soundFor(part, profile.Prefix .. name, false)
+            local sound = soundFor(part, profile.Prefix .. string.lower(name), false)
             if sound then
                 sound.Volume = profile.Gain
                 sound:Play()

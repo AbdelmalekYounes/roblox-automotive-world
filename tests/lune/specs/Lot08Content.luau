@@ -415,7 +415,8 @@ return function(T: any, H: any)
             T.equal(asset.RobloxAssetId, nil, asset.Id .. " : aucun identifiant Roblox inventé")
             T.equal(AssetManifest.contentId(asset.Id), nil, asset.Id .. " : non jouable")
             T.truthy(not AssetManifest.playable(asset.Id))
-            if asset.Category == "Audio" then
+            -- Sons ENREGISTRÉS du lot AUDIO-01 (build/audio/engines/…) : contrôlés par la suite Audio01.
+            if asset.Category == "Audio" and string.sub(asset.Output or "", 1, 20) ~= "build/audio/engines/" then
                 audio += 1
                 T.truthy(
                     asset.Output ~= nil and string.match(asset.Output :: string, "^build/audio/[a-z_]+%.wav$") ~= nil,

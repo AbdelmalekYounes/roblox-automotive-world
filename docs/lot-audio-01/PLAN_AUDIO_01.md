@@ -114,3 +114,26 @@ Non vérifié :
 - la charge réseau de la 6e valeur (envoi seulement quand une valeur change, au plus 15 fois par seconde comme avant).
 
 En attente : le téléchargement des enregistrements du §3 par le propriétaire (étape 1).
+
+## 7. Brio d'abord (décision du propriétaire, 2026-11-05)
+
+Le propriétaire a choisi de traiter **la Brio seule pour l'instant** et a téléchargé le pack 190E (64 fichiers, tous
+en CC0).
+
+Fait le 2026-11-05 :
+- **Inspection et mesure des régimes** : registre `docs/audio/SONS_TIERS.md`. Les numéros des noms de fichiers ne sont
+  pas tous des régimes.
+- **Outil** `tools/audio/engine_loops.py` :
+  - 12 boucles (6 régimes, en charge et en décharge) ;
+  - démarrage, arrêt et calage ;
+  - démo d'écoute rendue avec le mélange du jeu ;
+  - `rapport.json`.
+- **Profil `wk_brio`** (`EngineSoundProfiles`) et 15 ressources au manifeste (`audio.engine.brio.*`, CC0, sans
+  identifiant). Les événements sont nommés en minuscules (`start`, `stop`, `stall`).
+- **Tests** :
+  - Audio01 6 : profil valide, rupteur de la définition, chaque ressource déclarée ;
+  - `tests/test_audio01.py` : mesure du régime, dépliage d'un balayage, niveaux, cohérence avec le profil du jeu ;
+  - Lot08 16 : les sons enregistrés sont comptés à part.
+
+Étape suivante : écoute par le propriétaire (démo et boucles), puis envoi des 15 sons sur Roblox, puis identifiants
+au manifeste.

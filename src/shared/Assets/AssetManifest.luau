@@ -269,6 +269,36 @@ local function sound(id: string, file: string, note: string, variants: { [string
     })
 end
 
+-- ======================== Audio enregistré (lot AUDIO-01) ========================
+-- Brio : boucles tirées du pack « The Dyno Sessions: 190E » (Chippy569, Freesound), CC0 1.0 : domaine public, aucun
+-- crédit exigé (registre docs/audio/SONS_TIERS.md). Fichiers produits par tools/audio/engine_loops.py, à écouter
+-- puis envoyer sur Roblox par le propriétaire ; aucun identifiant tant que l'envoi n'est pas fait.
+local ENGINE_LOOPS = "tools/audio/engine_loops.py"
+local function recordedEngine(vehicle: string, name: string, note: string)
+    add({
+        Id = "audio.engine." .. vehicle .. "." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "Provisional",
+        Variants = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = "Tiers : pack « The Dyno Sessions: 190E » de Chippy569 (Freesound), CC0, transformé ("
+            .. note
+            .. ") ; docs/audio/SONS_TIERS.md",
+        Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
+        Source = { Kind = "File", Path = ENGINE_LOOPS },
+        Output = "build/audio/engines/" .. vehicle .. "/" .. name .. ".wav",
+        RobloxAssetId = nil,
+    })
+end
+for _, rpm in { 1000, 1450, 2100, 3000, 4300, 6200 } do
+    recordedEngine("brio", "on." .. rpm, "boucle en charge à " .. rpm .. " tr/min")
+    recordedEngine("brio", "off." .. rpm, "boucle en décharge à " .. rpm .. " tr/min")
+end
+recordedEngine("brio", "start", "démarrage")
+recordedEngine("brio", "stop", "arrêt")
+recordedEngine("brio", "stall", "calage")
+
 local LAYERS = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" }
 for _, layer in { "idle", "low", "mid", "high" } do
     sound("engine.petrol." .. layer, "engine_petrol_" .. layer .. ".wav", "moteur essence, couche " .. layer, LAYERS)

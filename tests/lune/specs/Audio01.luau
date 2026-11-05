@@ -148,7 +148,8 @@ return function(T: any, H: any)
         T.equal(Model.doppler(-1000), Model.DopplerMin)
     end)
 
-    T.test("6. profils : contrôle de cohérence ; aucun profil inscrit sans boucles produites", function()
+    T.test("6. profils : contrôle de cohérence ; chaque ressource d'un profil déclarée au manifeste", function()
+        local AssetManifest = H.require(SHARED .. "Assets.AssetManifest")
         T.equal(#Profiles.validate(PROFILE), 0, "profil d'essai valide")
         local gap = table.clone(PROFILE)
         gap.Points = { 900, 2500, 6500 }
@@ -159,8 +160,26 @@ return function(T: any, H: any)
         for id, profile in Profiles.Profiles do
             local errors = Profiles.validate(profile)
             T.equal(#errors, 0, id .. " : " .. table.concat(errors, " ; "))
-            T.truthy(Definitions.get(id) ~= nil, id .. " : définition existante")
+            local definition = Definitions.get(id)
+            T.truthy(definition ~= nil, id .. " : définition existante")
+            T.equal(profile.LimiterRpm, definition.Powertrain.Engine.LimiterRpm, id .. " : rupteur de la définition")
+            for _, assetId in Profiles.assetIds(profile) do
+                local asset = AssetManifest.get(assetId)
+                T.truthy(asset ~= nil and asset.Category == "Audio", assetId .. " : déclaré au manifeste")
+            end
         end
+        -- Brio (lot AUDIO-01) : 15 sons enregistrés (CC0), aucun identifiant Roblox avant l'envoi du propriétaire.
+        local brio = Profiles.Profiles.wk_brio
+        T.truthy(brio ~= nil, "profil de la Brio")
+        local ids = Profiles.assetIds(brio)
+        T.equal(#ids, 15, "6 régimes × charge / décharge + démarrage, arrêt, calage")
+        for _, assetId in ids do
+            local asset = AssetManifest.get(assetId)
+            T.truthy(string.find(asset.Licence, "CC0", 1, true) ~= nil, assetId .. " : licence CC0")
+            T.truthy(string.match(asset.Output, "^build/audio/engines/brio/[a-z0-9.]+%.wav$") ~= nil, assetId)
+            T.equal(asset.RobloxAssetId, nil, assetId .. " : pas encore envoyé")
+        end
+        T.equal(#AssetManifest.validate(), 0, "manifeste cohérent")
         local count = 0
         for _ in Profiles.Profiles do
             count += 1
