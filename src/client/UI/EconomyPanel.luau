@@ -272,7 +272,7 @@ end
 
 -- Grille de cartes (catalogue, annonces, biens) : 1 à 3 colonnes selon la largeur, hauteur automatique.
 local function grid(name: string): Frame
-    local width = body.AbsoluteSize.X - 56
+    local width = require(script.Parent.Components).logicalSize(body).X - 56
     local columns = if width >= 1000 then 3 elseif width >= 640 then 2 else 1
     local frame = PanelKit.make("Frame", {
         Name = name,

@@ -115,9 +115,9 @@ if session == "ui_garage" then
     task.wait(1.5)
     local view = (Workspace.CurrentCamera :: Camera).ViewportSize
     local compact = Tokens.layout(view.X, view.Y).Compact
-    local top = panel:FindFirstChild("BarreHaute") :: Frame?
-    local tabsBar = panel:FindFirstChild("Onglets") :: Frame?
-    local help = panel:FindFirstChild("BarreAide") :: Frame?
+    local top = panel:FindFirstChild("BarreHaute", true) :: Frame?
+    local tabsBar = panel:FindFirstChild("Onglets", true) :: Frame?
+    local help = panel:FindFirstChild("BarreAide", true) :: Frame?
     record(
         "ui_garage.disposition_maquette",
         top ~= nil

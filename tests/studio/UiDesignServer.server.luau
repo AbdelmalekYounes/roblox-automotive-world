@@ -21,6 +21,7 @@ if
     and session ~= "ui_garage2"
     and session ~= "ui_panels2"
     and session ~= "ui_hud"
+    and session ~= "ui_resolutions"
 then
     return
 end

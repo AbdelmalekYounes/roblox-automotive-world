@@ -111,12 +111,14 @@ function PanelKit.shell(
         BorderSizePixel = 0,
         Visible = false,
     }, gui)
+    -- Racine logique (1440 p : disposition 1080 p à l'échelle 1,333 ; compacte sous 1400 px logiques).
+    local logical = Components.logicalRoot(panel)
     local top = make("Frame", {
         Name = "BarreHaute",
         Size = UDim2.new(1, 0, 0, Tokens.Garage.TopBar),
         BackgroundColor3 = color("BgChrome"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("UIPadding", { PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) }, top)
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
@@ -139,14 +141,14 @@ function PanelKit.shell(
         Position = UDim2.fromOffset(0, Tokens.Garage.TopBar - 1),
         Size = UDim2.new(1, 0, 0, 1),
         ZIndex = 2,
-    }, panel)
+    }, logical)
     local tabsBar = make("Frame", {
         Name = "Onglets",
         Position = UDim2.fromOffset(0, Tokens.Garage.TopBar),
         Size = UDim2.new(1, 0, 0, Tokens.Garage.Tabs),
         BackgroundColor3 = color("BgBase"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("UIPadding", { PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }, tabsBar)
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
@@ -188,7 +190,7 @@ function PanelKit.shell(
         Size = UDim2.new(1, 0, 1, -(Tokens.Garage.TopBar + Tokens.Garage.Tabs + Tokens.Garage.HelpBar)),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
-    }, panel)
+    }, logical)
     make("Frame", {
         BackgroundColor3 = color("Line"),
         BorderSizePixel = 0,
@@ -212,7 +214,7 @@ function PanelKit.shell(
     vlist(body, 12)
     -- Contenu centré, largeur de lecture bornée ; marges de 28 px au minimum.
     local function center()
-        local width = body.AbsoluteSize.X
+        local width = Components.logicalSize(body).X
         local side = math.max(28, math.floor((width - PanelKit.MaxContentWidth) / 2))
         bodyPadding.PaddingLeft = UDim.new(0, side)
         bodyPadding.PaddingRight = UDim.new(0, side)
@@ -256,7 +258,7 @@ function PanelKit.shell(
         Size = UDim2.new(1, 0, 0, Tokens.Garage.HelpBar),
         BackgroundColor3 = color("BgChrome"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("Frame", { BackgroundColor3 = color("Line"), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 1) }, help)
     local hintsRow = make("Frame", {
         Name = "Touches",
@@ -626,7 +628,7 @@ end
 
 -- Cellules de valeurs (clé en capitales, valeur Roboto Mono 20 px), sur 2 à 4 colonnes selon la largeur.
 function PanelKit.cells(shell: Shell, parent: Instance, cells: { { string } }, name: string?)
-    local width = (parent :: any).AbsoluteSize and (parent :: any).AbsoluteSize.X or 800
+    local width = if parent:IsA("GuiObject") then Components.logicalSize(parent).X else 800
     local columns = if width >= 900 then 4 elseif width >= 520 then 3 else 2
     columns = math.min(columns, #cells)
     local rows = math.ceil(#cells / math.max(columns, 1))

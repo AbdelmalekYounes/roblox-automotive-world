@@ -146,8 +146,7 @@ local function percent(value: number): string
 end
 
 local function compact(): boolean
-    local camera = workspace.CurrentCamera :: Camera
-    return Tokens.layout(camera.ViewportSize.X, camera.ViewportSize.Y).Compact
+    return UIState.layout().Compact
 end
 
 local function vehicleById(id: string?): any
@@ -700,7 +699,7 @@ local function renderCollection()
     local view = collectionView
     clearChildren(view)
     order = 0
-    local width = view.AbsoluteSize.X - 2 * 28
+    local width = Components.logicalSize(view).X - 2 * 28
     local head = make("Frame", {
         Name = "Entete",
         Size = UDim2.new(1, 0, 0, 0),
@@ -1625,7 +1624,7 @@ local function renderStage()
     local definition = if vehicle then VehicleDefinitions.get(vehicle.ModelId) else nil
     local entry = if vehicle then VehicleCatalog.forDefinition(vehicle.ModelId) else nil
     stageName.Text = if vehicle then vehicle.DisplayName else ""
-    local stageWidth = stage.AbsoluteSize.X
+    local stageWidth = Components.logicalSize(stage).X
     stageName.TextSize = UITheme.text(if stageWidth < 700 then 28 elseif compact() then 40 else 56)
     local views = stage:FindFirstChild("Vues") :: Frame?
     local camRow = stage:FindFirstChild("Camera") :: Frame?
@@ -1987,12 +1986,14 @@ function GaragePanel.start()
         BorderSizePixel = 0,
         Visible = false,
     }, gui)
+    -- Racine logique (1440 p : disposition 1080 p à l'échelle 1,333 ; compacte sous 1400 px logiques).
+    local logical = Components.logicalRoot(panel)
     local top = make("Frame", {
         Name = "BarreHaute",
         Size = UDim2.new(1, 0, 0, Tokens.Garage.TopBar),
         BackgroundColor3 = color("BgChrome"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("UIPadding", { PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) }, top)
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
@@ -2030,14 +2031,14 @@ function GaragePanel.start()
         Position = UDim2.fromOffset(0, Tokens.Garage.TopBar - 1),
         Size = UDim2.new(1, 0, 0, 1),
         ZIndex = 2,
-    }, panel)
+    }, logical)
     local tabs = make("Frame", {
         Name = "Onglets",
         Position = UDim2.fromOffset(0, Tokens.Garage.TopBar),
         Size = UDim2.new(1, 0, 0, Tokens.Garage.Tabs),
         BackgroundColor3 = color("BgBase"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("UIPadding", { PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }, tabs)
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal,
@@ -2078,7 +2079,7 @@ function GaragePanel.start()
         Size = UDim2.new(1, 0, 1, -(Tokens.Garage.TopBar + Tokens.Garage.Tabs + Tokens.Garage.HelpBar)),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
-    }, panel)
+    }, logical)
     make("Frame", {
         BackgroundColor3 = color("Line"),
         BorderSizePixel = 0,
@@ -2107,8 +2108,9 @@ function GaragePanel.start()
     local lastWidth = 0
     collectionView:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
         -- Nombre de colonnes recalculé quand la largeur change (redimensionnement, changement de résolution).
-        if math.abs(collectionView.AbsoluteSize.X - lastWidth) > 8 and tab == "Collection" and panel.Visible then
-            lastWidth = collectionView.AbsoluteSize.X
+        local logicalWidth = Components.logicalSize(collectionView).X
+        if math.abs(logicalWidth - lastWidth) > 8 and tab == "Collection" and panel.Visible then
+            lastWidth = logicalWidth
             render()
         end
     end)
@@ -2404,7 +2406,7 @@ function GaragePanel.start()
         Size = UDim2.new(1, 0, 0, Tokens.Garage.HelpBar),
         BackgroundColor3 = color("BgChrome"),
         BorderSizePixel = 0,
-    }, panel)
+    }, logical)
     make("Frame", {
         BackgroundColor3 = color("Line"),
         BorderSizePixel = 0,

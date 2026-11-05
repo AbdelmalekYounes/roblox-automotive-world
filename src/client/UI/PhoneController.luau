@@ -427,7 +427,7 @@ local function renderHome()
     }, body)
     -- 4 colonnes calculées sur la largeur disponible : les 12 applications tiennent en 3 rangées, sans défilement,
     -- même dans la taille compacte (4e rangée cachée dans une petite fenêtre : VM 20261105-034325).
-    local columnWidth = math.max(60, math.floor((body.AbsoluteSize.X - 8 - 3 * 6) / 4))
+    local columnWidth = math.max(60, math.floor((Components.logicalSize(body).X - 8 - 3 * 6) / 4))
     UITheme.make("UIGridLayout", {
         CellSize = UDim2.fromOffset(columnWidth, 88),
         CellPadding = UDim2.fromOffset(6, Tokens.Space[3]),
@@ -1137,7 +1137,7 @@ render = function()
     clockLabel.Text = os.date("%H:%M") :: string
     quickBar.Visible = quick
     quickTag.Visible = quick
-    header.Size = UDim2.new(1, if quick then -(quickTag.AbsoluteSize.X + 40) else -32, 0, 34)
+    header.Size = UDim2.new(1, if quick then -(Components.logicalSize(quickTag).X + 40) else -32, 0, 34)
     backButton.Visible = not quick and app ~= "Home"
     if quick then
         renderQuick()
@@ -1195,7 +1195,11 @@ end
 
 local function layout()
     local camera = workspace.CurrentCamera :: Camera
-    local compact = Tokens.layout(camera.ViewportSize.X, camera.ViewportSize.Y).Compact
+    local view = UIState.layout()
+    local compact = view.Compact
+    local deviceScale = device:FindFirstChildOfClass("UIScale") or UITheme.make("UIScale", {}, device)
+    -- 1440 p : la coque garde ses cotes 1080 p et s'agrandit de 1,333 (maquette §3).
+    deviceScale.Scale = view.Scale
     local big = enlarged and not quick
     local phone = Tokens.Phone
     local size = if compact
@@ -1205,9 +1209,10 @@ local function layout()
     -- Jamais plus haut que la vue (barre de Roblox comprise) : le haut du téléphone restait coupé dans une petite
     -- fenêtre (VM 1250 × 593, tâche 20261105-033732).
     local inset = game:GetService("GuiService"):GetGuiInset().Y
-    local height = math.min(size.Y, camera.ViewportSize.Y - inset - 2 * margin)
+    local viewHeight = if camera then UIState.viewport().Y else 1080
+    local height = math.min(size.Y, math.floor((viewHeight - inset) / view.Scale) - 2 * margin)
     device.AnchorPoint = Vector2.new(1, 1)
-    device.Position = UDim2.new(1, -margin, 1, -margin)
+    device.Position = UDim2.new(1, -math.floor(margin * view.Scale), 1, -math.floor(margin * view.Scale))
     UITheme.motion(device, { Size = UDim2.fromOffset(size.X, height) }, "PhoneResize")
     gui:SetAttribute("AWPhoneSize", string.format("%dx%d", size.X, height))
 end
@@ -1362,6 +1367,11 @@ local function build()
         render()
     end)
     layout()
+    -- Taille de la vue changée (fenêtre, 1440 p, surcharge d'essai) : coque et grille recalculées.
+    UIState.onViewport(function()
+        layout()
+        render()
+    end)
 end
 
 -- Saisie d'une nouvelle touche (paramètres des commandes).
