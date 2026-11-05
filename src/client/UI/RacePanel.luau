@@ -110,9 +110,7 @@ local function km(meters: number): string
 end
 
 local function invoke(action: string, payload: any?): any
-    local ok, response = pcall(function()
-        return request:InvokeServer(action, payload or {})
-    end)
+    local ok, response = PanelKit.invoke(request, action, payload or {})
     if not ok or type(response) ~= "table" then
         return { Status = "Error", Error = "ServerUnreachable" }
     end
@@ -122,6 +120,10 @@ end
 local render: () -> ()
 
 local function describe(response: any): string
+    -- Hors ligne : ni « refusé » ni « fait » (le serveur n'a pas répondu).
+    if response.Status == "Error" then
+        return tr("Serveur injoignable : rien n'est confirmé.")
+    end
     if response.Status == "Ok" or response.Status == "Confirmed" or response.Status == "Pending" then
         return tr("Fait.")
     end
@@ -157,6 +159,7 @@ local function send(action: string, payload: any?)
         data.RequestId = HttpService:GenerateGUID(false)
     end
     shell:setStatus("Pending", tr("Demande envoyée…"))
+    PanelKit.countSent(panel)
     local response = invoke(action, data)
     busy = false
     panel:SetAttribute("AWBusy", false)

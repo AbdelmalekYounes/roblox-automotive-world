@@ -50,6 +50,7 @@ if
     or sessionName == "ui_panels2"
     or sessionName == "ui_hud"
     or sessionName == "ui_resolutions"
+    or sessionName == "ui_navigation"
 then
     return
 end

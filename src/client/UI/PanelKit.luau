@@ -373,6 +373,38 @@ function PanelKit.shell(
     return shell
 end
 
+-- Appel au serveur BORNÉ dans le temps : sans réponse au bout de `timeout` secondes (serveur injoignable, canal
+-- perdu), renvoie (false, "Timeout") au lieu d'attendre indéfiniment ; l'écran affiche alors « hors ligne » et rien
+-- n'est confirmé. Une réponse tardive est ignorée (le serveur reste l'autorité, l'instantané suivant la reflète).
+PanelKit.InvokeTimeoutS = 12
+function PanelKit.invoke(remote: RemoteFunction, ...: any): (boolean, any)
+    local args = table.pack(...)
+    local finished, ok, response = false, false, nil :: any
+    task.spawn(function()
+        local a, b = pcall(function()
+            return remote:InvokeServer(table.unpack(args, 1, args.n))
+        end)
+        if not finished then
+            finished, ok, response = true, a, b
+        end
+    end)
+    local start = os.clock()
+    while not finished and os.clock() - start < PanelKit.InvokeTimeoutS do
+        task.wait(0.05)
+    end
+    if not finished then
+        finished = true
+        return false, "Timeout"
+    end
+    return ok, response
+end
+
+-- Compteur des demandes réellement envoyées (attribut lu par les essais : un double clic n'en envoie qu'une).
+function PanelKit.countSent(panel: Instance)
+    local count = panel:GetAttribute("AWSent")
+    panel:SetAttribute("AWSent", (if type(count) == "number" then count else 0) + 1)
+end
+
 -- Touches de la barre d'aide selon le dernier périphérique utilisé.
 function PanelKit.isGamepad(): boolean
     return string.sub(UserInputService:GetLastInputType().Name, 1, 7) == "Gamepad"

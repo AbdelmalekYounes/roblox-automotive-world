@@ -98,9 +98,7 @@ local function seatedAndMoving(): boolean
 end
 
 local function invoke(action: string, payload: any?): any
-    local ok, response = pcall(function()
-        return request:InvokeServer(action, payload or {})
-    end)
+    local ok, response = PanelKit.invoke(request, action, payload or {})
     if not ok or type(response) ~= "table" then
         return { Status = "Error", Error = "ServerUnreachable" }
     end
@@ -119,7 +117,11 @@ local STATUS_TEXT = {
 }
 
 local function describe(response: any): string
-    if response.Status == "Rejected" or response.Status == "Unavailable" or response.Status == "Error" then
+    -- Hors ligne : ni « refusée » ni « confirmée » (le serveur n'a pas répondu).
+    if response.Status == "Error" then
+        return tr("Serveur injoignable : rien n'est confirmé.")
+    end
+    if response.Status == "Rejected" or response.Status == "Unavailable" then
         return tr("Refusée : %s", Text.text(response.Error))
     end
     return tr(STATUS_TEXT[response.Status] or tostring(response.Status))
@@ -164,6 +166,7 @@ local function execute(action: string, payload: any)
     panel:SetAttribute("AWBusy", true)
     payload.RequestId = HttpService:GenerateGUID(false)
     shell:setStatus("Pending", tr("Demande envoyée…"))
+    PanelKit.countSent(panel)
     local response = invoke(action, payload)
     busy = false
     panel:SetAttribute("AWBusy", false)
@@ -232,6 +235,7 @@ local function simple(action: string, payload: any?, quiet: boolean?)
         copy.RequestId = HttpService:GenerateGUID(false)
         data = copy
     end
+    PanelKit.countSent(panel)
     local response = invoke(action, data)
     busy = false
     if not quiet or kindOf(response) ~= "Info" then

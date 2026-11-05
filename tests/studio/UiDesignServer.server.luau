@@ -22,6 +22,7 @@ if
     and session ~= "ui_panels2"
     and session ~= "ui_hud"
     and session ~= "ui_resolutions"
+    and session ~= "ui_navigation"
 then
     return
 end
@@ -76,7 +77,7 @@ record(
 )
 task.wait(3)
 -- « ui_garage2 » (UI-03) : joueur placé dans le garage public d'essai (préparation et configurations permises).
-if session == "ui_garage2" then
+if session == "ui_garage2" or session == "ui_navigation" then
     local player = Players:GetPlayers()[1]
     local character = player and (player.Character or player.CharacterAdded:Wait())
     local garage = workspace:FindFirstChild("GaragePublicEssai", true)
