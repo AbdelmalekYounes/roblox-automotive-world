@@ -40,6 +40,7 @@ if
     or sessionName == "comete_vitres"
     or sessionName == "comete_perf"
     or sessionName == "comete2"
+    or sessionName == "comete_avatar"
 then
     return
 end

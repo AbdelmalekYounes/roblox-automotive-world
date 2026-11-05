@@ -23,6 +23,7 @@ end
 local session = ReplicatedStorage:GetAttribute("AWTestSession")
 if
     session ~= "avatar"
+    and session ~= "comete_avatar"
     and session ~= "avatar2"
     and session ~= "aster"
     and session ~= "silhouette"
