@@ -6,10 +6,9 @@
 - Demande du propriétaire : « ajouter les animations d'entrée et de sortie du véhicule avec les portières ».
 - Dépôt d'art : branche locale `anim-02-portieres`, commit `c1ce4ac`, créée depuis `origin/main` `e678ac2`, non
   poussée (worktree `E:\ROBLOX DEV\aw-art-anim02`).
-- **État : terminé côté assistant, À ESSAYER EN JEU par le propriétaire (§8).** Maillages importés et envoyés sur
-  Roblox par le propriétaire le 2026-11-06, intégrés aux gabarits (§5 bis) ; `verify.ps1` vert ; place de test
-  `build\AW-ANIM-02.rbxlx` construite. Rien n'a été essayé en jeu. Garde-fou conservé : une porte n'est articulée que
-  si toutes ses pièces sont dans le gabarit (sinon entrée et sortie sans porte, comme avant).
+- **État : validé en jeu par le propriétaire le 2026-11-06** (« c'est bon »), sur la place `build\AW-ANIM-02.rbxlx`
+  après l'intégration des maillages (§5 bis). Essai mené par le propriétaire lui-même ; le détail des points du §8
+  qu'il a parcourus n'a pas été précisé. Aucun test VM ni test automatisé en jeu.
 
 ## 1. Décisions du propriétaire (2026-11-06, toutes posées en une fois au début du lot)
 
@@ -203,9 +202,10 @@ Tests ANIM-02 (Lune) :
 6. câblage serveur et client, `DamageService` non modifié ;
 7. gabarits réels : pièces des portes présentes, une fois, aux centres de l'export (±0,01 st).
 
-## 7. NON TESTÉ, limites et risques
+## 7. Limites et risques
 
-**Rien n'a été essayé en jeu** : aucun test VM, selon la règle du propriétaire. Tout le §8 reste à vérifier.
+Validation du propriétaire sans détail des points du §8 parcourus (voir l'en-tête) : les limites ci-dessous restent
+valables tant qu'elles n'ont pas été explicitement vérifiées.
 
 - **Collisions et dégâts** : portes purement visuelles. Une porte ouverte traverse les murs et les autres joueurs. Les
   boîtes `Collisions` et `DamageService` sont inchangées ; les **marques de dégâts du flanc** (posées sur la surface
