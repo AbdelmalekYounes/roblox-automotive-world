@@ -148,6 +148,11 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   La Comète reste muette pour l'instant. Les 30 sons synthétiques du lot 0.8 (`tools/audio/synth.py`) ne sont pas
   téléversés : les ambiances et la radio restent indisponibles
   ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).
+- **Pneus** (lot AUDIO-03, [rapport](docs/lot-audio-03/RAPPORT_AUDIO_03.md)) : roulement et crissement tirés
+  d'enregistrements CC0, selon le glissement réel des roues (transmis aux autres joueurs). L'antipatinage est actif au
+  départ de chaque session de conduite, et un avis s'affiche en cas de patinage ([amendement A-02](docs/AMENDEMENTS_CAHIER_DES_CHARGES.md)).
+- **Animations de conduite** (lot ANIM-01, [rapport](docs/lot-anim-01/RAPPORT_ANIM_01.md)) : volants qui tournent
+  avec le braquage (Brio et Comète), mains du conducteur sur le volant, avant-bras visibles en vue cockpit.
 - **Caméra en conduite** (lot CAMERA-01) : regard libre au clic droit maintenu, au stick droit ou au doigt, retour
   au centre automatique ; sensibilité et inversion dans Téléphone › Paramètres › Commandes.
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute

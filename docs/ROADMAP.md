@@ -341,3 +341,23 @@ Rapport : [`lot-camera-01/RAPPORT_CAMERA_01.md`](lot-camera-01/RAPPORT_CAMERA_01
 
 **Validé en jeu par le propriétaire le 2026-11-06.**
 
+## Lot AUDIO-03 — sons des pneus (branche `claude/audio-03-pneus-ba577d`)
+
+Vague 1 en parallèle (exception du propriétaire du 2026-11-06). Roulement et crissement tirés d'enregistrements CC0,
+selon le glissement des roues, transmis aux autres joueurs ; 6 sons envoyés sur Roblox par le propriétaire.
+Plan et rapport : [`lot-audio-03/`](lot-audio-03/RAPPORT_AUDIO_03.md). **Validé en jeu par le propriétaire le
+2026-11-06.**
+
+## Proposition patinage (branche `feat/proposition-patinage`)
+
+Décisions E et B du propriétaire (2026-11-06) : avis de patinage ; antipatinage actif au départ des sessions de
+conduite ([amendement A-02](AMENDEMENTS_CAHIER_DES_CHARGES.md),
+[proposition](PROPOSITION_PATINAGE.md)). **Validé en jeu par le propriétaire le 2026-11-06.**
+
+## Lot ANIM-01 — volants et mains au volant (branche `claude/anim-01-volants-mains-f84390`)
+
+Vague 2 en parallèle de PHONE-01. Les volants de la Brio et de la Comète tournent avec le braquage ; le volant de la
+Comète a été séparé dans le dépôt d'art. Les mains du conducteur suivent la jante, avant-bras visibles en vue cockpit.
+Téléphone sorti : seul le bras qui le tient quitte le volant. Rapport : [`lot-anim-01/`](lot-anim-01/RAPPORT_ANIM_01.md).
+**Validé en jeu par le propriétaire le 2026-11-06.**
+
