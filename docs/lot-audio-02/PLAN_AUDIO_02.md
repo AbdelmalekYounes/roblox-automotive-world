@@ -153,6 +153,14 @@ l'original.
 Proposition au propriétaire : prendre ce pack comme source principale, avec un crédit de l'auteur en jeu. Le
 démarreur (190E), le turbo (Supra) et les pétarades (anti-lag) restent comme décidé.
 
+**Décision du propriétaire (2026-11-06) : « Oui, le pack Lotus ».**
+- Le pack « V8 Lotus » de wikusv (CC BY 4.0) devient la source principale. Les 5 fichiers sont à télécharger dans le
+  même dossier.
+- **Crédit obligatoire** : en jeu (`Shared/Assets/Attributions`) et dans `docs/CREDITS_ACTIFS.md`. Ce dernier
+  fichier est tenu par la coordination.
+- Les sources CC0 déjà reçues restent disponibles : le ralenti de la Maserati est à 850 tr/min, la Supra sert au
+  turbo et l'anti-lag aux pétarades.
+
 ## 5. Déroulement
 
 Le déroulement est celui d'AUDIO-01 :
