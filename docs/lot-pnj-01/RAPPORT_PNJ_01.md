@@ -244,7 +244,11 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   genou mesuré à moins de 12 cm du haut de la jambe basse, 12 palettes autorisées, manifeste identique au gabarit.
 - **Crédits à ajouter à `docs/CREDITS_ACTIFS.md`** par la coordination : Comrade1280 et David Jalbert.
 
-## 7. Liste de vérification en jeu (propriétaire) — **NON TESTÉ**
+## 7. Liste de vérification en jeu (propriétaire)
+
+**Validé en jeu par le propriétaire le 2026-11-06** (« c'est bon c'est validé »), dans `build/AW-PNJ-01-monde.rbxl`
+construite à 18 h 30. Le détail point par point n'a pas été communiqué. Aucune mesure de performance n'a été
+transmise (point 10).
 
 Ouvrir `build/AW-PNJ-01-monde.rbxl` (monde ouvert), lancer Play et aller en ville (Métropole). Les voitures et
 piétons sont les **modèles 3D** (§6). La place `build/AW-PNJ-01.rbxlx` sert à voir le contenu du dossier
@@ -324,7 +328,7 @@ Les places de test ont été reconstruites à 18 h 30 :
 
 ## 9. Non testé / limites connues
 
-- **Aucun essai en jeu** (§7 à faire par le propriétaire). Ni le rendu, ni le coût, ni la synchronisation des feux
+- Essai en jeu : validé globalement par le propriétaire (§7), sans détail point par point ni mesure d'images par seconde. Ni le rendu, ni le coût, ni la synchronisation des feux
   n'ont été vus dans Studio.
 - Les modèles 3D sont intégrés mais **jamais vus dans le moteur** :
   - origine retrouvée depuis les roues (voitures) et le bassin (piétons) ;
