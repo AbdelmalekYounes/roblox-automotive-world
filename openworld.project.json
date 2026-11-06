@@ -11,6 +11,12 @@
         "$path": "places/openworld/PlaceConfig.luau"
       }
     },
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "AutomotiveWorldFirst": {
+        "$path": "src/first"
+      }
+    },
     "ServerStorage": {
       "$className": "ServerStorage",
       "AutomotiveWorldMeshKits": {

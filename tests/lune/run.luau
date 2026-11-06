@@ -68,6 +68,8 @@ for _, spec in
         require("./specs/Anim02"),
         -- Lot ANIM-03 : gestes d’entrée et de sortie du véhicule.
         require("./specs/Anim03"),
+        -- Lot BRAND-01 : nom du jeu, logo et écran de chargement.
+        require("./specs/Brand01"),
     }
 do
     spec(TestKit, Harness)
