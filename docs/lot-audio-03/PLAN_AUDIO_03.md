@@ -129,7 +129,26 @@ une valeur change, au plus `InputSendRateHz` fois par seconde comme avant).
 
 En attente : le téléchargement des enregistrements du §3 par le propriétaire.
 
-## 7. Hors périmètre
+## 7. Boucles version 1 et validation à l'écoute (2026-11-06)
+
+Les 9 fichiers ont été téléchargés par le propriétaire le 2026-11-06. Inspection, licences, extraits retenus et
+mesures : `docs/audio/SONS_TIERS.md` § 2. Outil : `tools/audio/tire_loops.py` (commit b2b1840).
+
+Fichiers d'écoute remis au propriétaire :
+- `build/audio/tires/ecoute_boucles.wav` : chaque boucle trois fois ;
+- `build/audio/tires/demo_pneus.wav` : 47 s, pneus seuls, d'après le relevé de la dynamique de la Brio.
+
+Réponse du propriétaire : « C'est bon ». C'est un essai humain d'écoute sur des fichiers, pas un essai en jeu.
+
+Sons à envoyer sur Roblox par le propriétaire : `build/audio/tires/a_envoyer/`. Le dossier contient 6 fichiers WAV
+(48 kHz, mono, 1,2 Mo au total). Chaque nom `tire_<nom>` correspond à la ressource `audio.effect.tire.<nom>` (le
+`_` remplace le `.`), sauf `squeal` et `scrub`, inchangés.
+
+Retour attendu : un `.rbxm` des 6 objets Sound, enregistré dans `aw-vm-exchange` sous un nom préfixé `audio03_`.
+L'assistant y relève les identifiants avec Lune (propriété `AudioContent`), puis les reporte au manifeste. Aucun
+identifiant n'est saisi à la main.
+
+## 8. Hors périmètre
 
 - Chocs de suspension, bosses, plaques d'égout, crevaison, vent : possibles plus tard, à proposer.
 - Klaxon, portes, frein à main (le bruit du levier) : hors de ce lot.
