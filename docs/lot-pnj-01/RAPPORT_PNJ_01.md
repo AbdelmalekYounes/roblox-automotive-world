@@ -328,9 +328,9 @@ Les places de test ont été reconstruites à 18 h 30 :
 
 ## 9. Non testé / limites connues
 
-- Essai en jeu : validé globalement par le propriétaire (§7), sans détail point par point ni mesure d'images par seconde. Ni le rendu, ni le coût, ni la synchronisation des feux
-  n'ont été vus dans Studio.
-- Les modèles 3D sont intégrés mais **jamais vus dans le moteur** :
+- Essai en jeu : validé globalement par le propriétaire (§7), sans détail point par point ni mesure d'images par seconde : le coût client et serveur reste **non mesuré**.
+- Contrôles automatiques (Lune) faits sur les données du gabarit ; le rendu dans le moteur n'a été vu que par le
+  propriétaire :
   - origine retrouvée depuis les roues (voitures) et le bassin (piétons) ;
   - couleurs réappliquées par nom de pièce ;
   - `TextureID` changé à l'exécution sur les piétons.
