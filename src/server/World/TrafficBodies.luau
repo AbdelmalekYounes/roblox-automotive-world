@@ -40,6 +40,9 @@ export type Body = {
 
 -- Gabarits validés (nil = repli), mis en cache par silhouette ; la raison est consultable pour le rapport.
 local templates: { [string]: Model } = {}
+-- Repère d'origine du contrat dans chaque gabarit (au sol, centre de l'empattement, avant vers −Z), déduit des roues :
+-- le pivot d'un modèle importé dans Studio n'est pas fiable.
+local origins: { [string]: CFrame } = {}
 local refused: { [string]: boolean } = {}
 TrafficBodies.TemplateStatus = {} :: { [string]: string }
 
@@ -88,6 +91,21 @@ local function template(car: PnjKits.CarSilhouette): Model?
     if #PnjKits.missingCarParts(names) > 0 then
         return refuse("GabaritIncomplet")
     end
+    local centers: { [string]: Vector3 } = {}
+    local radius = 0
+    for _, name in PnjKits.Wheels do
+        local wheel = model:FindFirstChild(name, true) :: BasePart
+        centers[name] = wheel.Position
+        radius += math.max(wheel.Size.Y, wheel.Size.Z) / 8
+    end
+    local front = (centers.Roue_AVG + centers.Roue_AVD) / 2
+    local rear = (centers.Roue_ARG + centers.Roue_ARD) / 2
+    local forward = Vector3.new(front.X - rear.X, 0, front.Z - rear.Z)
+    if forward.Magnitude < 1e-3 then
+        return refuse("RouesIncoherentes")
+    end
+    local base = (front + rear) / 2 - Vector3.new(0, radius, 0)
+    origins[car.Id] = CFrame.lookAt(base, base + forward.Unit)
     templates[car.Id] = model
     TrafficBodies.TemplateStatus[car.Id] = "Gabarit3D"
     return model
@@ -182,14 +200,14 @@ local function buildFallback(model: Model, root: BasePart, car: PnjKits.CarSilho
         wheelJoint(root, wheel, wheel.Position)
     end
 
-    local halfL, halfW = car.LengthM / 2, car.WidthM / 2
+    local halfW = car.WidthM / 2
     local lampY = PnjKits.ClearanceM + car.BoxHeightM * 0.7
     local function lamp(name: string, x: number, z: number, size: Vector3, tint: Color3)
         local part = visualPart(model, name, size * S, tint, Enum.Material.SmoothPlastic)
         part.CFrame = at(x, lampY, z)
         weld(root, part)
     end
-    local back, front = halfL + 0.01, -(halfL + 0.01)
+    local back, front = car.ArriereM + 0.01, -(car.AvantM + 0.01)
     lamp("Feu_Stop_G", -(halfW - 0.2), back, Vector3.new(0.3, 0.15, 0.04), Color3.fromRGB(110, 15, 15))
     lamp("Feu_Stop_D", halfW - 0.2, back, Vector3.new(0.3, 0.15, 0.04), Color3.fromRGB(110, 15, 15))
     lamp("Clignotant_ARG", -(halfW - 0.05), back, Vector3.new(0.1, 0.12, 0.04), Color3.fromRGB(120, 75, 20))
@@ -200,10 +218,19 @@ local function buildFallback(model: Model, root: BasePart, car: PnjKits.CarSilho
     lamp("Clignotant_AVD", halfW - 0.06, front, Vector3.new(0.1, 0.1, 0.04), Color3.fromRGB(120, 75, 20))
 end
 
--- Visuel 3D cloné du gabarit, posé sur le repère voiture `origin` (pivot du gabarit = origine du contrat).
-local function buildFromTemplate(model: Model, root: BasePart, source: Model, origin: CFrame, color: Color3)
+-- Visuel 3D cloné du gabarit, posé sur le repère voiture `origin` ; couleurs unies réappliquées (PnjKits.PartStyles),
+-- peinture teintée ; roues en Motor6D, jantes soudées à leur roue, le reste soudé à la caisse.
+local function buildFromTemplate(
+    model: Model,
+    root: BasePart,
+    source: Model,
+    sourceOrigin: CFrame,
+    origin: CFrame,
+    color: Color3
+)
     local clone = source:Clone()
-    clone:PivotTo(origin)
+    clone:PivotTo(origin * sourceOrigin:Inverse() * source:GetPivot())
+    local parts: { BasePart } = {}
     for _, item in clone:GetDescendants() do
         if item:IsA("BasePart") then
             item.Anchored = false
@@ -213,20 +240,34 @@ local function buildFromTemplate(model: Model, root: BasePart, source: Model, or
             item.Massless = true
             if string.find(item.Name, PnjKits.PaintPattern, 1, true) then
                 item.Color = color
+                item.Material = Enum.Material.SmoothPlastic
+            else
+                local style = PnjKits.partStyle(item.Name)
+                if style then
+                    item.Color = style.Color
+                    item.Material = style.Material
+                    item.Transparency = style.Transparency
+                end
             end
+            item.Parent = model
+            table.insert(parts, item)
         end
     end
-    for _, item in clone:GetChildren() do
-        item.Parent = model
-    end
     clone:Destroy()
-    for _, item in model:GetDescendants() do
-        if item:IsA("BasePart") and item ~= root then
-            if table.find(PnjKits.Wheels, item.Name) then
-                wheelJoint(root, item, item.Position)
-            else
-                weld(root, item)
-            end
+    local wheels: { [string]: BasePart } = {}
+    for _, part in parts do
+        local wheel, isWheel = PnjKits.wheelOf(part.Name)
+        if wheel and isWheel then
+            wheels[wheel] = part
+            wheelJoint(root, part, part.Position)
+        end
+    end
+    for _, part in parts do
+        local wheel, isWheel = PnjKits.wheelOf(part.Name)
+        if wheel and not isWheel and wheels[wheel] then
+            weld(wheels[wheel], part)
+        elseif wheel == nil then
+            weld(root, part)
         end
     end
 end
@@ -262,7 +303,7 @@ function TrafficBodies.build(
     if source then
         -- La boîte devient invisible : seul le maillage se voit.
         root.Transparency = 1
-        buildFromTemplate(model, root, source, origin, color)
+        buildFromTemplate(model, root, source, origins[car.Id], origin, color)
     else
         buildFallback(model, root, car, origin, color)
     end

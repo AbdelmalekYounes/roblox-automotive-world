@@ -30,14 +30,15 @@ return function(T: any, H: any)
 
     T.suite("PNJ-01 : contrat des modèles 3D")
 
-    T.test("4 silhouettes de voitures aux cotes cohérentes, tirage pondéré", function()
-        T.equal(#PnjKits.Cars, 4, "silhouettes")
+    T.test("10 variantes de voitures aux cotes mesurées cohérentes, tirage pondéré", function()
+        T.equal(#PnjKits.Cars, 10, "variantes")
         local total = 0
         for _, car in PnjKits.Cars do
             total += car.Weight
-            T.truthy(car.LengthM > 3.5 and car.LengthM < 5.6, car.Id .. " longueur")
+            T.truthy(car.LengthM > 3.0 and car.LengthM < 5.6, car.Id .. " longueur")
             T.truthy(car.WidthM > 1.6 and car.WidthM < 2.1, car.Id .. " largeur")
             T.truthy(car.WheelbaseM + 2 * car.WheelRadiusM < car.LengthM, car.Id .. " roues dans la longueur")
+            T.near(car.AvantM + car.ArriereM, car.LengthM, 0.01, car.Id .. " porte-à-faux = longueur")
             T.truthy(car.TrackM + car.WheelWidthM <= car.WidthM, car.Id .. " roues dans la largeur")
             T.truthy(PnjKits.ClearanceM + car.BoxHeightM < car.HeightM, car.Id .. " boîte sous le toit")
             T.truthy(car.WheelRadiusM * 2 > PnjKits.ClearanceM, car.Id .. " roues touchent le sol sous la boîte")
@@ -54,9 +55,22 @@ return function(T: any, H: any)
             local id = PnjKits.pickCar((i + 0.5) / 1000).Id
             counts[id] = (counts[id] or 0) + 1
         end
-        T.equal(counts.Citadine, 350, "citadines")
-        T.equal(counts.Utilitaire, 100, "utilitaires")
+        T.equal(counts.Berline, 180, "berlines")
+        T.equal(counts.Coupe, 20, "coupés (rares)")
+        T.equal(counts.Sportive, 20, "sportives (rares)")
         T.truthy(PnjKits.car("SUV") ~= nil and PnjKits.car("Inconnue") == nil, "recherche par identifiant")
+    end)
+
+    T.test("gabarit 3D : jantes soudées à leur roue, couleurs unies par type de pièce", function()
+        local wheel, isWheel = PnjKits.wheelOf("Roue_AVG")
+        T.truthy(wheel == "Roue_AVG" and isWheel, "roue")
+        wheel, isWheel = PnjKits.wheelOf("Roue_ARD_Jante")
+        T.truthy(wheel == "Roue_ARD" and not isWheel, "jante portée par sa roue")
+        T.equal(PnjKits.wheelOf("Garniture"), nil, "pièce de caisse")
+        T.equal((PnjKits.partStyle("Roue_AVG_Jante") :: any).Pattern, "_Jante", "jante avant pneu")
+        T.equal((PnjKits.partStyle("Roue_AVG") :: any).Pattern, "Roue_", "pneu")
+        T.equal((PnjKits.partStyle("Feu_Stop_G") :: any).Pattern, "Feu_Stop", "feu stop")
+        T.equal(PnjKits.partStyle("Peinture_Caisse"), nil, "peinture tirée à part")
     end)
 
     T.test("piétons : squelette complet, apparence stable et variée, contrôle des gabarits", function()

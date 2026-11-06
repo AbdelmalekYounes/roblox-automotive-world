@@ -13,7 +13,7 @@
 |---|---|
 | Ordre | Le comportement attend MAP-01. La partie modèles se fait maintenant, sans toucher à la carte. |
 | Source des modèles 3D | **Modèles tiers sous licence CC** : le propriétaire les télécharge, je les prépare dans le dépôt d'art, et lui seul envoie les maillages sur Roblox. |
-| Voitures PNJ | **4 silhouettes d'environ 2 000 triangles** : citadine, berline, SUV/break, utilitaire. Roues séparées qui tournent, feux séparés, carrosserie teintable, collision gardée en boîte simple. |
+| Voitures PNJ | Voitures d'environ 2 000 triangles, roues séparées qui tournent, feux séparés, carrosserie teintable, collision gardée en boîte simple. Puis : **les 10 modèles du pack de Comrade1280** (CC BY 4.0), coupé et sportive rares (§6.1). |
 | Piétons | **Humains low-poly découpés en pièces rigides et animés par le code** : aucun actif d'animation. |
 | Encore ouvert (à reprendre après MAP-01) | Recommandations 1 (réaction au joueur), 2 (piétons face aux véhicules), 4 (densité et coût) et 6 (découpage), décrites dans la note de passation. |
 
@@ -49,16 +49,10 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
 
 ### 3.1 Contrat des modèles 3D — `src/shared/World/PnjKits.luau` (pur)
 
-- **Silhouettes de voitures** (cotes réalistes de catégorie, aucune voiture réelle visée) :
-
-  | Silhouette | Part | Long. | Larg. | Haut. | Empatt. | Rayon roue |
-  |---|---|---|---|---|---|---|
-  | Citadine | 35 % | 3,95 m | 1,75 m | 1,50 m | 2,50 m | 0,30 m |
-  | Berline | 30 % | 4,65 m | 1,82 m | 1,45 m | 2,80 m | 0,32 m |
-  | SUV | 25 % | 4,55 m | 1,86 m | 1,68 m | 2,72 m | 0,36 m |
-  | Utilitaire | 10 % | 5,20 m | 2,00 m | 2,25 m | 3,25 m | 0,34 m |
-
-- **Pièces nommées d'une voiture** (gabarit `PNJ_<Silhouette>`) :
+- **Variantes de voitures** : d'abord 4 silhouettes de catégorie, puis remplacées par les **10 modèles mesurés** du
+  pack (§6.1). Pour chacune : longueur, porte-à-faux, largeur, hauteur, empattement, voie, rayon et largeur des
+  roues, part du trafic.
+- **Pièces nommées d'une voiture** (gabarit `PNJ_<Id>`) :
   - `Roue_AVG`, `Roue_AVD`, `Roue_ARG`, `Roue_ARD` (obligatoires) ;
   - `Feu_Stop_G/D`, `Clignotant_AVG/AVD/ARG/ARD`, `Phare_G/D` (facultatifs) ;
   - les pièces peintes contiennent `Peinture` dans leur nom.
@@ -164,41 +158,71 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   - câblage.
 - `scripts\verify.ps1 -DownloadRobloxTypes` : résultat au §8.
 - **Non mesurés** : coût client des 660 pièces de piétons animées, coût serveur des pièces visuelles supplémentaires
-  du repli (16 pièces par voiture au lieu de 4, au plus 48 voitures), coût réseau des attributs de feux. À mesurer
+  du repli (16 pièces par voiture au lieu de 4 pour le repli, environ 21 pour un modèle 3D, au plus 48 voitures), coût réseau des attributs de feux. À mesurer
   par le propriétaire (§7) ou lors du lot de performance.
 
-## 6. Suite : intégration des modèles tiers (quand le propriétaire les aura téléchargés)
+## 6. Modèles 3D tiers
 
-1. **Téléchargement par le propriétaire**, dans `E:\ROBLOX DEV\aw-vehicle-references\pnj\<silhouette|pietons>\<source>\`,
-   avec une capture de la page de licence :
-   - licence CC0 ou CC BY, jamais NC ou ND, et rien qui soit tiré d'un jeu ou d'un configurateur ;
-   - pistes : Kenney Car Kit (CC0), Quaternius Universal Base Characters (CC0, environ 13 000 triangles, corps de
-     base), Sketchfab filtré sur « Téléchargeable » avec la licence CC0 ou CC BY ;
-   - liste et licences à vérifier à réception.
-2. **Préparation dans le dépôt d'art** (Blender 4.5.9 portable, scripts sans interface) :
-   - voitures : logos retirés, échelle uniforme vers les cotes du §3.1, roues séparées et nommées, feux séparés,
-     pièces peintes nommées `Peinture…`, réduction à environ 2 000 triangles ;
-   - piétons : mise en pose debout bras le long du corps, **découpage par os dominant** en 11 pièces, réduction à
-     environ 1 200 triangles ;
-   - export glTF selon la règle d'étalonnage (demi-tour autour de Z avant export), puis contrôles et aperçus.
-3. **Import et envoi** des maillages par le propriétaire ; il fournit le `.rbxm` des gabarits.
-4. **Intégration dans le jeu** :
-   - fichiers partagés, à arbitrer par la coordination :
-     - `default.project.json` et `openworld.project.json` : `ReplicatedStorage.AutomotiveWorldPnjKits` →
-       `assets/pnjkits` ;
-     - `.gitignore` : `!assets/pnjkits/*.rbxm` ;
-     - `AssetManifest` : entrées `world.pnj.cars` et `world.pnj.pedestrians` avec les identifiants ;
-   - cotes et repos réels mesurés sur les gabarits ;
-   - crédits CC BY dans `docs/CREDITS_ACTIFS.md`, par la coordination.
+### 6.1 Voitures : préparées le 2026-11-06, en attente d'import par le propriétaire
+
+- **Source** : « Generic passenger car pack » de Comrade1280, licence **CC BY 4.0** (crédit obligatoire).
+  - Page : <https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5>.
+  - Téléchargé par le propriétaire, avec le fichier de licence, dans
+    `E:\ROBLOX DEVw-vehicle-references\pnjoitures\` (hors dépôt).
+  - Inspection (`inspect_import.py`) : 10 voitures, 69 310 triangles, roues séparées, aucune animation, aucun
+    script, aucun nom évoquant un logo.
+  - **Crédit à ajouter à `docs/CREDITS_ACTIFS.md`** et à l'écran des attributions (par la coordination).
+- **Décision du propriétaire** : les 10 modèles entrent dans le trafic, avec ces parts :
+  - berline 18 %, hayon 16 %, SUV 16 %, compacte 14 %, break 12 % ;
+  - monospace 10 %, pick-up 6 %, tout-terrain 4 % ;
+  - coupé 2 %, sportive 2 %.
+- **Préparation** dans le dépôt d'art, worktree `E:\ROBLOX DEVw-art-pnj01`, branche `pnj-01-modeles`, commit
+  610f62f, non poussé :
+  - script `tools/blender/pnj01_voitures.py`, détail dans `vehicles/pnj/README.md` ;
+  - **toutes les textures sont retirées**, parce que l'atlas des optiques assemble des photos de vrais feux ;
+  - chaque face est classée d'après la couleur de la texture d'origine, puis reçoit un matériau uni : peinture
+    teintable, garniture, chrome, vitrage, feu stop, clignotant, phare, optique, pneu, jante ;
+  - environ 7 000 → **environ 2 000 triangles** par voiture (2 001 à 2 159) ;
+  - origine au sol au centre de l'empattement ;
+  - 10 GLB (`vehicles/pnj/export/PNJ_<Id>.glb`, environ 130 Ko chacun), selon la règle d'étalonnage ;
+  - aperçus dans `vehicles/pnj/apercus/`.
+- **Jeu** : `PnjKits.Cars` reprend les **cotes mesurées** des 10 modèles (`vehicles/pnj/releves/voitures.json`).
+  - `PnjKits.PartStyles` réapplique les couleurs unies, car l'import glTF de Studio les perd.
+  - Les jantes sont soudées à leur roue ; elles tournent avec elle.
+  - L'origine de chaque gabarit est **déduite des 4 roues**, parce que le pivot d'un modèle importé n'est pas fiable.
+  - La boîte de collision est centrée sur la longueur hors tout.
+- **Import par le propriétaire** :
+  1. importer les 10 GLB depuis `E:\ROBLOX DEVw-vm-exchange\pnj01_voitures\` avec les réglages par défaut ;
+  2. placer les 10 modèles `PNJ_<Id>` dans un dossier `AutomotiveWorldPnjKits` ;
+  3. enregistrer ce dossier dans un fichier `.rbxm`.
+- **Intégration ensuite**, fichiers partagés à arbitrer par la coordination :
+  - `default.project.json` et `openworld.project.json` : `ReplicatedStorage.AutomotiveWorldPnjKits` →
+    `assets/pnjkits/AutomotiveWorldPnjKits.rbxm` ;
+  - `.gitignore` : `!assets/pnjkits/*.rbxm` ;
+  - `AssetManifest` : entrée `world.pnj.cars` avec les identifiants des maillages.
+
+### 6.2 Piétons : source à télécharger
+
+- Les « Universal Base Characters » de Quaternius, en version gratuite (CC0), ne contiennent que 2 corps
+  « Superhero » : bodybuilders en sous-vêtements, environ 12 500 triangles. **Écartés** par le propriétaire.
+- Proposition retenue : chercher d'autres modèles. Piste : « Ultimate Animated Character Pack » de Quaternius (CC0,
+  plus de 50 personnages avec squelette, couleurs unies). À télécharger par le propriétaire en FBX dans
+  `E:\ROBLOX DEVw-vehicle-references\pnj\pietons\quaternius_uacp\`, avec contrôle des tenues civiles à
+  réception.
+- Préparation prévue :
+  - pose debout, bras le long du corps ;
+  - **découpage par os dominant** en 11 pièces ;
+  - environ 1 200 triangles ;
+  - export selon la règle d'étalonnage.
 
 ## 7. Liste de vérification en jeu (propriétaire) — **NON TESTÉ**
 
 Ouvrir `build/AW-PNJ-01-monde.rbxl` (monde ouvert), lancer Play, aller en ville (Métropole). Ce que l'on voit est
-le **repli** (pièces simples) : les modèles 3D viendront à l'intégration.
+le **repli** (pièces simples) aux cotes des 10 modèles. Les modèles 3D viendront à l'intégration (§6).
 
 1. **Voitures PNJ, aspect** :
-   - plusieurs tailles de voitures circulent : petites citadines, berlines, SUV plus hauts, quelques utilitaires
-     longs et hauts ;
+   - plusieurs tailles de voitures circulent : petites compactes, berlines et breaks, SUV et monospaces plus hauts,
+     quelques pick-up longs, rarement un coupé ou une sportive basse ;
    - chacune a 4 roues noires avec un enjoliveur clair, un habitacle sombre vitré et un toit de la couleur de la
      caisse.
 2. **Roues** : derrière ou à côté d'une voiture PNJ en mouvement, l'enjoliveur tourne dans le bon sens. Dans un
