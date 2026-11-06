@@ -37,6 +37,8 @@ local VehicleCamera = require(script.Parent.VehicleCamera)
 local WheelVisuals = require(script.Parent.WheelVisuals)
 -- Lot ANIM-01 : volant du véhicule piloté (rotation et mains appliquées par SeatPoseController).
 local SteeringWheelVisuals = require(script.Parent.SteeringWheelVisuals)
+-- Lot ANIM-03 : commandes neutres et caméra à la 3e personne pendant l'entrée et la sortie.
+local BoardingLock = require(script.Parent.BoardingLock)
 local DevHud = require(script.Parent.Parent.UI.DevHud)
 local TireAudioModel = require(ReplicatedStorage.Shared:WaitForChild("Audio"):WaitForChild("TireAudioModel"))
 
@@ -599,6 +601,8 @@ local function onPreSimulation(dt: number)
     end
     local provider = testInputProvider
     local driverInput = if provider then provider() else input:poll(dt)
+    -- Lot ANIM-03 : entrée ou sortie en cours, ou passager qui monte ou descend : véhicule immobile.
+    driverInput = BoardingLock.filterInput(current.Model, player.Character, driverInput)
     if driverInput.Clutch == nil then
         driverInput.Clutch = 0
     end
@@ -758,6 +762,8 @@ local function onPreRender(dt: number)
     local current = session
     local cam = Workspace.CurrentCamera
     if current then
+        -- Lot ANIM-03 : caméra du véhicule suspendue pendant les gestes d'entrée et de sortie.
+        BoardingLock.holdCamera(camera, current.Model, player.Character)
         camera:update(dt)
         local simulator = current.Simulator
         local telemetry = simulator:getTelemetry()

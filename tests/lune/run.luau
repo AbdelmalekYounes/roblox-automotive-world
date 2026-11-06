@@ -64,6 +64,8 @@ for _, spec in
         require("./specs/Phone01"),
         -- Lot ANIM-02 : portières, animations d’entrée et de sortie.
         require("./specs/Anim02"),
+        -- Lot ANIM-03 : gestes d’entrée et de sortie du véhicule.
+        require("./specs/Anim03"),
     }
 do
     spec(TestKit, Harness)
