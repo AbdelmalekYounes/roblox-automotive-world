@@ -5,7 +5,8 @@ Entrée : les fichiers d'origine téléchargés par le propriétaire, hors dép�
 Sortie (dans `build/audio/tires/`, jamais versionnée) :
 - six boucles mono 48 kHz 16 bits, une par ressource du manifeste (`audio.effect.tire.<nom>`) : `roll.dry`,
   `roll.loose`, `roll.wet`, `squeal`, `scrub`, `slide.loose` ;
-- `a_envoyer/` : les mêmes fichiers nommés `tire_<nom>.wav` pour l'importation groupée de Studio ;
+- `a_envoyer/` : les mêmes fichiers nommés `tire_<nom avec _ au lieu de .>.wav` (ex. `tire_roll_dry.wav`) pour
+  l'importation groupée de Studio ; `ecoute_boucles.wav` : chaque boucle trois fois, pour juger les raccords ;
 - des DÉMOS d'écoute rendues avec le mélange du jeu (portage Python de TireAudioModel), à partir d'un relevé de la
   vraie dynamique (`tests/lune/tools/tire-sound-trace.luau`) ;
 - `rapport.json` : sources, extraits retenus, niveaux et contrôles de raccord.
@@ -47,14 +48,33 @@ MODEL = ROOT / "src/shared/Audio/TireAudioModel.luau"
 # ============================== Sources retenues ==============================
 
 # Chaque boucle : fichier (préfixe d'identifiant Freesound), extrait (début, fin en s ; None = choisi par l'analyse),
-# bande passante (Hz) et niveau RMS visé (dBFS). Les extraits sont fixés après `inspect` et l'écoute du propriétaire.
+# bande passante (Hz), niveau RMS visé (dBFS) et méthode :
+# - "grains" pour un BRUIT (roulement, eau, gravier) : grains brassés, aucune répétition reconnaissable ;
+# - "direct" pour un SIFFLEMENT (crissement) : l'extrait naturel est gardé tel quel et bouclé au point le plus
+#   ressemblant, car des grains d'un son presque pur, superposés avec des phases au hasard, battent (chevrotement).
+# Extraits fixés le 2026-11-06 d'après l'analyse par trames de 0,5 s (`inspect`, spectre lissé) ; l'oreille du
+# propriétaire tranche.
 LOOPS: dict[str, dict] = {
-    "roll.dry": {"file": "170421", "span": None, "band": (60.0, 9000.0), "rms_db": -20.0, "pick": "loudest"},
-    "roll.loose": {"file": "529225", "span": None, "band": (80.0, 12000.0), "rms_db": -20.0, "pick": "loudest"},
-    "roll.wet": {"file": "462862", "span": None, "band": (300.0, 12000.0), "rms_db": -22.0, "pick": "loudest"},
-    "squeal": {"file": "71736", "span": None, "band": (600.0, 7000.0), "rms_db": -18.0, "pick": "squeal"},
-    "scrub": {"file": "71741", "span": None, "band": (120.0, 3000.0), "rms_db": -22.0, "pick": "squeal"},
-    "slide.loose": {"file": "529225", "span": None, "band": (100.0, 12000.0), "rms_db": -20.0, "pick": "loudest"},
+    # Nissan Leaf (électrique, pas de moteur thermique) : passage au plus près, 5,5 à 7,5 s (−19 dBFS, bruit large).
+    "roll.dry": {"file": "170421", "span": (5.5, 7.5), "band": (60.0, 9000.0), "rms_db": -20.0, "mode": "grains"},
+    # Gravier, micro près du pneu : roulement régulier du premier départ, 4,0 à 8,5 s (−31 à −34 dBFS).
+    "roll.loose": {"file": "529225", "span": (4.0, 8.5), "band": (80.0, 12000.0), "rms_db": -20.0, "mode": "grains"},
+    # Chaussée mouillée à ~100 km/h : passage, 1,3 à 3,3 s ; chuintement dominant entre 1 et 4 kHz.
+    "roll.wet": {"file": "462862", "span": (1.3, 3.3), "band": (300.0, 12000.0), "rms_db": -22.0, "mode": "grains"},
+    # Crissement en virage (Chrysler) : 6,0 à 9,0 s, raie vers 1 kHz, 25 à 34 dB au-dessus de la bande.
+    "squeal": {"file": "71738", "span": (6.0, 9.0), "band": (400.0, 8000.0), "rms_db": -18.0, "mode": "direct"},
+    # Glissade franche : patinage (Nissan), 3,0 à 5,5 s, raie vers 1,5 kHz, le plus net et le plus régulier des
+    # enregistrements (moteur à −20 dB sous le crissement).
+    "scrub": {"file": "71740", "span": (3.0, 5.5), "band": (400.0, 8000.0), "rms_db": -18.0, "mode": "direct"},
+    # Glissade sur gravier : second passage du même enregistrement, plus fort et plus dense, 17,0 à 20,5 s. Aucune
+    # vraie glissade sur gravier lisible (le n° 10, FLAC, n'a pas pu être lu) : à juger à l'écoute.
+    "slide.loose": {
+        "file": "529225",
+        "span": (17.0, 20.5),
+        "band": (200.0, 12000.0),
+        "rms_db": -19.0,
+        "mode": "grains",
+    },
 }
 LOOP_SECONDS = 2.0
 
@@ -193,6 +213,32 @@ def make_loop(signal: np.ndarray, sr: int, seconds: float, crossfade: float = 0.
     ramp = np.linspace(0, np.pi / 2, xf)
     loop[:xf] = loop[:xf] * np.sin(ramp) + signal[length : length + xf] * np.cos(ramp)
     return loop
+
+
+def natural_loop(signal: np.ndarray, sr: int, crossfade: float = 0.2, search: float = 0.8) -> tuple[np.ndarray, float]:
+    """Boucle d'un extrait naturel : la longueur L est choisie dans la dernière `search` s pour que la suite du signal
+    après L ressemble le plus au début : corrélation normalisée sur la durée du fondu, pénalisée par l'écart de niveau
+    (0,1 par dB ; un crissement change de hauteur, la corrélation seule ne suffit pas). Puis fondu de la suite dans le
+    début : linéaire si les deux sont corrélés (sinon ils s'annulent en partie), à puissance constante sinon."""
+    xf = int(crossfade * sr)
+    head = signal[:xf]
+    head_db = db(head)
+    best_score, best, best_l = -1e9, 0.0, len(signal) - xf
+    for length in range(max(xf * 2, len(signal) - xf - int(search * sr)), len(signal) - xf, 8):
+        tail = signal[length : length + xf]
+        c = float(np.dot(head, tail) / (np.linalg.norm(head) * np.linalg.norm(tail) + 1e-12))
+        score = c - 0.1 * abs(db(tail) - head_db)
+        if score > best_score:
+            best_score, best, best_l = score, c, length
+    loop = signal[:best_l].copy()
+    tail = signal[best_l : best_l + xf]
+    if best > 0.5:
+        ramp = np.linspace(0.0, 1.0, xf)
+        loop[:xf] = loop[:xf] * ramp + tail * (1 - ramp)
+    else:
+        ramp = np.linspace(0, np.pi / 2, xf)
+        loop[:xf] = loop[:xf] * np.sin(ramp) + tail * np.cos(ramp)
+    return loop, best
 
 
 def level(signal: np.ndarray, rms_db: float, peak_db: float = -1.0) -> np.ndarray:
@@ -357,8 +403,9 @@ def render_demo(trace: list[dict], loops: dict[str, np.ndarray], mass: float, c:
         s = np.interp(times, steps, spd)
         phase = np.cumsum(s) % len(loop)
         out += v * np.interp(phase, np.arange(len(loop), dtype=np.float64), loop, period=len(loop))
+    # Démo normalisée à −3 dBFS de crête : seules les proportions entre couches et phases comptent à l'écoute.
     peak = np.max(np.abs(out)) + 1e-12
-    return out * min(1.0, 0.89 / peak)
+    return out * (0.708 / peak)
 
 
 # ============================== Construction ==============================
@@ -367,14 +414,23 @@ def render_demo(trace: list[dict], loops: dict[str, np.ndarray], mass: float, c:
 def build_loop(name: str, spec: dict, refs: Path) -> tuple[np.ndarray, dict]:
     path = find_source(refs, spec["file"])
     sr, x = read_audio(path)
-    span = spec["span"] or pick_span(x, sr, spec["pick"])
+    span = spec["span"] or pick_span(x, sr, spec.get("pick", "loudest"))
     seg = x[int(span[0] * sr) : int(span[1] * sr)]
     seg = to_out_rate(seg, sr)
     seg = bandpass(seg, OUT_RATE, *spec["band"])
-    seg = flatten(seg, OUT_RATE)
-    long = extend(seg, OUT_RATE, LOOP_SECONDS + 0.2, seed=sum(map(ord, name)))
-    loop = level(make_loop(long, OUT_RATE, LOOP_SECONDS), spec["rms_db"])
-    info = {"source": path.name, "extrait_s": [round(span[0], 2), round(span[1], 2)], "bande_hz": list(spec["band"]),
+    info: dict = {}
+    if spec.get("mode", "grains") == "direct":
+        # Sifflement : enveloppe aplanie en partie seulement (les variations naturelles du crissement sont gardées).
+        seg = flatten(seg, OUT_RATE, seconds=0.2, strength=0.85)
+        loop, corr = natural_loop(seg, OUT_RATE)
+        info["correlation_raccord"] = round(corr, 3)
+    else:
+        seg = flatten(seg, OUT_RATE)
+        long = extend(seg, OUT_RATE, LOOP_SECONDS + 0.2, seed=sum(map(ord, name)))
+        loop = make_loop(long, OUT_RATE, LOOP_SECONDS)
+    loop = level(loop, spec["rms_db"])
+    info |= {"source": path.name, "methode": spec.get("mode", "grains"), "duree_s": round(len(loop) / OUT_RATE, 3),
+             "extrait_s": [round(span[0], 2), round(span[1], 2)], "bande_hz": list(spec["band"]),
             "niveau_db": round(db(loop), 1), "raccord_db": round(seam_jump_db(loop, OUT_RATE), 2),
             "creux_max_db": round(max_frame_dip_db(loop, OUT_RATE), 2)}
     return loop, info
@@ -388,7 +444,12 @@ def build(refs: Path, out: Path, trace: Path | None) -> dict:
         loops[name] = loop
         report["boucles"][name] = info
         write_wav(out / f"{name}.wav", loop)
-        write_wav(out / "a_envoyer" / f"tire_{name}.wav", loop)
+        # Noms sans point pour l'importation groupée de Studio (comme brio_on_1000 au lot AUDIO-01).
+        write_wav(out / "a_envoyer" / f"tire_{name.replace('.', '_')}.wav", loop)
+    # Écoute des raccords : chaque boucle répétée 3 fois, dans l'ordre de LOOPS, séparées par 0,6 s de silence.
+    gap = np.zeros(int(0.6 * OUT_RATE))
+    write_wav(out / "ecoute_boucles.wav", np.concatenate([np.concatenate([np.tile(lp, 3), gap]) for lp in loops.values()]))
+    report["ecoute_boucles"] = {"fichier": "ecoute_boucles.wav", "ordre": list(loops)}
     if trace is not None:
         c = model_constants()
         rows = read_trace(trace)
