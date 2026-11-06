@@ -65,14 +65,16 @@ Demande du propriétaire (2026-11-06) : « ajouter le son moteur etc. de la Com�
 Place de test : `build/AW-AUDIO-02.rbxlx`, construite par `rojo build default.project.json -o build/AW-AUDIO-02.rbxlx`
 au commit bae4289. Elle contient les 20 identifiants (relevé dans le fichier construit) et la boîte `DualClutch`. Elle contient aussi les sons de la Brio, des pneus et des collisions, déjà dans `main`.
 
-## 4. Points non vérifiés
+## 4. Validation en jeu et points non vérifiés
 
-- **Tout le rendu en jeu** : aucun essai Studio n'a été exécuté par l'assistant. La liste du § 5 est à faire par le
-  propriétaire.
-- **Double embrayage en conduite réelle** : seulement mesuré au banc planaire. Le test Studio `Lot08Client`, qui traite
-  déjà le double embrayage comme une boîte automatique, n'a pas été exécuté.
-- **Écoute par les autres joueurs** (régime transmis, Doppler) : non essayée à deux joueurs.
-- **Écran des crédits** : l'entrée de wikusv est contrôlée par Lune, pas vue à l'écran.
+**Validation en jeu par le propriétaire (2026-11-06).** Il a joué `build/AW-AUDIO-02.rbxlx` (commit bae4289) dans
+Studio et a répondu **« Tout est bon »**. C'est un essai humain du propriétaire ; l'assistant n'a exécuté aucun essai
+Studio. La réponse porte sur l'ensemble de la liste du § 5, sans détail point par point.
+
+Non vérifié :
+- **Points facultatifs ou conditionnels du § 5** : le rupteur (n° 9, peut ne pas être atteint avec la boîte
+  automatique) et l'essai à deux joueurs (n° 14). Ils ne sont pas détaillés dans la réponse.
+- **Test Studio `Lot08Client`** (double embrayage traité comme une boîte automatique) : non exécuté.
 
 ## 5. Liste de vérification en jeu (propriétaire)
 
