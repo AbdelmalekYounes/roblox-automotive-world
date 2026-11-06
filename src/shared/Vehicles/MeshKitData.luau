@@ -125,8 +125,8 @@ local COMETE: Kit = {
     Paint = { Pattern = "_body", NeutralColorMap = nil },
     LightMeshes = { COMETE_Feu_Av = "Head", COMETE_Feu_Ar = "Tail" },
     -- Volant (lot ANIM-01) : séparé de `COMETE_Habitacle_interior` dans le dépôt d'art (`comete_volant_separe.py`,
-    -- 2026-11-06), pièce `COMETE_Volant` à importer par le propriétaire ; tant qu'elle manque au gabarit, le volant
-    -- reste fixe (dans l'habitacle) et les mains se posent dessus à 9 h 15. Jante ajustée sur 98 sommets : centre
+    -- 2026-11-06), pièce `COMETE_Volant` importée et envoyée sur Roblox par le propriétaire le 2026-11-06, intégrée au
+    -- gabarit (`tests/lune/tools/anim01-volant-comete.luau`). Jante ajustée sur 98 sommets : centre
     -- (−1,157 ; 0,960 ; −2,951), plan incliné de 12° sur la verticale, rayon 0,593 st (0,533 à 0,648 : boudin).
     -- Rapport 12:1 (sportive, plus directe) : ±360° de volant à fond en manœuvre (30°), ±108° à 140 km/h (9°).
     SteeringWheel = {

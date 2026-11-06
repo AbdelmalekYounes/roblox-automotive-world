@@ -61,7 +61,7 @@ return function(T: any, H: any)
 
     T.suite("VEH3D-01 — Comète 3D (kit de maillages)")
 
-    T.test("1. gabarit présent dans ServerStorage, 28 maillages, aucun script", function()
+    T.test("1. gabarit présent dans ServerStorage, 29 maillages, aucun script", function()
         T.truthy(template ~= nil and template.ClassName == "Model", "ServerStorage.AutomotiveWorldMeshKits.Comete720s")
         local meshes, scripts = 0, 0
         for _, item in template:GetDescendants() do
@@ -71,7 +71,8 @@ return function(T: any, H: any)
                 scripts += 1
             end
         end
-        T.equal(meshes, 28, "maillages du gabarit")
+        -- 29 depuis le lot ANIM-01 (volant séparé de l'habitacle, COMETE_Volant).
+        T.equal(meshes, 29, "maillages du gabarit")
         T.equal(scripts, 0, "aucun code dans un modèle importé")
     end)
 

@@ -112,8 +112,12 @@ add({
     Output = "assets/meshkits/Comete720s.rbxm",
     RobloxAssetId = nil,
     RobloxAssetIds = {
+        -- Lot ANIM-01 (2026-11-06) : volant séparé de l'habitacle, importé et envoyé sur Roblox par le propriétaire
+        -- (aw-vm-exchange/comete_volant.rbxm) : COMETE_Habitacle_interior sans volant (77774849215644, remplace
+        -- 106049474235075) et COMETE_Volant (90303387073911). Texture de l'habitacle d'origine reprise.
         72070150876445,
         73457381515552,
+        77774849215644,
         79005674751505,
         81144738448567,
         81797127978233,
@@ -121,6 +125,7 @@ add({
         85421020854464,
         87224242574848,
         89081965660812,
+        90303387073911,
         92270039932160,
         93486246899499,
         95185700118311,
@@ -128,7 +133,6 @@ add({
         102573121267361,
         103640134917186,
         104886086089628,
-        106049474235075,
         115446736871757,
         117440140283283,
         118010695887646,

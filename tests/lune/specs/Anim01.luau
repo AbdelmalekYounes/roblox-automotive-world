@@ -221,6 +221,23 @@ return function(T: any, H: any)
                 0.01,
                 "pivot du volant au centre de la jante"
             )
+            -- Gabarit de la Comète (volant séparé, importé le 2026-11-06) : pièce présente, à sa place mesurée, jante
+            -- dans sa boîte (la pièce contient aussi la colonne : son centre n'est pas celui de la jante).
+            local comete = Data.Kits.wk_comete
+            local cTemplate = game.ServerStorage.AutomotiveWorldMeshKits:FindFirstChild(comete.Template)
+            local cReference = cTemplate:FindFirstChild(comete.Reference, true)
+            local wheel = cTemplate:FindFirstChild(COMETE.Part, true)
+            T.truthy(wheel ~= nil and wheel.ClassName == "MeshPart", "COMETE_Volant dans le gabarit")
+            local center = wheel.CFrame.Position - (cReference.CFrame.Position - comete.ReferenceCenter)
+            T.near((center - Vector3.new(-1.157, 0.992, -3.445)).Magnitude, 0, 0.01, "centre de boîte de l'export")
+            local d = COMETE.Hub - center
+            T.truthy(
+                math.abs(d.X) < wheel.Size.X / 2
+                    and math.abs(d.Y) < wheel.Size.Y / 2
+                    and math.abs(d.Z) < wheel.Size.Z / 2,
+                "centre de la jante dans la pièce"
+            )
+            T.truthy(cTemplate:FindFirstChild("COMETE_Habitacle_interior", true) ~= nil, "habitacle conservé")
         end
     )
 

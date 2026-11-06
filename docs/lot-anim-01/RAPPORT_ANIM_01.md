@@ -80,7 +80,7 @@
   écrit lui-même la transparence locale du bras droit, de la main droite et du téléphone pendant le zoom, puis
   rétablit les valeurs d'origine. Note de coordination : `ANIM-01.md` dans le dossier des notes partagées.
 
-### 2.4 Comète : volant séparé (en attente de l'import du propriétaire)
+### 2.4 Comète : volant séparé (importé par le propriétaire le 2026-11-06, intégré : §6 quater)
 
 Le volant de la Comète faisait partie du maillage `COMETE_Habitacle_interior`.
 
@@ -274,6 +274,36 @@ Ce qui change :
 Vérifications : `verify.ps1 -DownloadRobloxTypes` (terminé à 02:18) tout OK, Lune 441/441, test 8 mis à jour (bras
 droit seulement). La place est reconstruite. **Non vérifié en jeu** (§7, points 14 à 16).
 
+## 6 quater. Comète : intégration du volant importé (2026-11-06)
+
+Le propriétaire a importé l'export réduit et envoyé les maillages sur Roblox. Il a déposé
+`aw-vm-exchange\comete_volant.rbxm` (02:18, SHA-256 `c6a749d7…`).
+
+Relevé du fichier (Lune, lecture seule) :
+- 5 instances : modèle `Scene`, 2 modèles `_Node`, 2 MeshParts ; **aucun script** ;
+- `COMETE_Habitacle_interior` : maillage `77774849215644` ;
+- `COMETE_Volant` : maillage `90303387073911` ;
+- texture importée : `130234559526056` (non reprise) ;
+- tailles identiques à l'export : 5,430 × 3,737 × 8,736 et 1,294 × 1,200 × 1,294 ;
+- écart entre les deux pièces : (−1,157 ; 0,060 ; −2,318), pour (−1,158 ; 0,061 ; −2,317) attendu par l'export.
+
+Intégration :
+- `lune run tests/lune/tools/anim01-volant-comete.luau <comete_volant.rbxm> <wk_comete_720s_volant_anim01.json>` :
+  - les deux pièces sont placées à leur centre attendu (repère du châssis) ;
+  - la texture d'origine de l'habitacle (`76606382409640`) est reprise ;
+  - l'ancien habitacle (`106049474235075`) est retiré.
+- `assets/meshkits/Comete720s.rbxm` : 29 pièces. SHA-256 `4dc7dbff…` avant, `e2872b58…` après.
+- Manifeste `veh.wk_comete.mesh720s` : `77774849215644` et `90303387073911` ajoutés, `106049474235075` retiré ;
+  textures inchangées.
+- Tests :
+  - VEH3D-01 : 28 → 29 maillages ; manifeste = gabarit ;
+  - ANIM-01 7 : `COMETE_Volant` au centre de l'export à 0,01 st près, centre de la jante dans la pièce.
+- `verify.ps1 -DownloadRobloxTypes` (terminé à 02:21) : tout OK, Lune 441/441, pytest 23, luau-lsp 0 erreur.
+  `build\AW-ANIM-01.rbxlx` est reconstruite.
+
+**Non vérifié en jeu** (§7 D, point 13) : volant de la Comète qui tourne, absence de trou dans la planche de bord,
+commodos fixes.
+
 ## 7. Liste de vérification en jeu (propriétaire)
 
 Place : `build\AW-ANIM-01.rbxlx`. Véhicules par le menu d'administration (F2) ou la concession (Dev). Prévoir au
@@ -304,9 +334,8 @@ Rthro si possible.
 11. Le passager garde sa pose actuelle : bras non modifiés, aucune main sur le volant.
 
 **D. Comète**
-12. Avant l'import (§2.4) : mains posées à 9 h 15 sur le volant, qui ne tourne pas. **Les mains atteignent-elles la
-    jante, avec chaque avatar (§6) ?**
-13. Après l'import et l'intégration : refaire A à C. Volant d'environ un tour (360°) à fond, environ 1/3 de tour à
+12. **Les mains atteignent-elles la jante, avec chaque avatar (§6) ?**
+13. Volant intégré (§6 quater) : refaire A à C. Volant d'environ un tour (360°) à fond, environ 1/3 de tour à
     140 km/h ; commodos et bloc d'instruments fixes ; aucun trou dans la planche de bord à l'emplacement du volant.
 
 **E. Téléphone sorti en conduisant**
