@@ -7,7 +7,8 @@
 - **Contexte** : 2e vague en parallèle d'ANIM-01 (exception du propriétaire du 2026-11-06, fichiers disjoints). Rien
   n'a été poussé ; ni pull request ni fusion (session de coordination). Aucune publication Roblox.
 - **Date** : 2026-11-06.
-- **État** : code et tests hors Studio terminés ; **rien n'a été essayé en jeu** (tout le §6 est NON TESTÉ).
+- **État** : code et tests hors Studio terminés. Premier essai du propriétaire (§7) : défaut corrigé, à revérifier ;
+  le reste du §6 est NON TESTÉ.
 
 ## 1. Décisions
 
@@ -39,8 +40,9 @@
   par une `Weld` dont le décalage est la **prise en main** partagée (`PhoneHold.Grip`), puis pose l'attribut
   `AWPhoneRaised` du personnage.
 - Chaque client lève le bras de **tous** les personnages portant l'attribut (`PhoneHoldController`, `PreSimulation`) :
-  épaule (65° vers l'avant, 45° vers l'axe du corps) et coude (55°) multipliés dans `Transform` après l'animation,
-  Motor6D comme AnimationConstraint (méthode QA-A10). Montée / descente en 0,3 s.
+  épaule (65° vers l'avant, 45° vers l'axe du corps) et coude (55°) en **pose absolue** qui remplace l'animation du
+  bras droit pendant l'usage (fondu de 0,3 s depuis l'animation et retour), Motor6D comme AnimationConstraint
+  (`Transform` écrit après l'animation, méthode QA-A10). Même main à pied et assis (§7).
 - Assis (conducteur, passager), la pose assise d'ANIM-01 (`SeatPoseController`) laisse les bras dès que l'attribut est
   posé (règle existante, `SeatPose.ArmJoints`, non modifiée) : c'est ce lot qui pilote alors le bras droit.
 - L'ancien réglage C0 du Motor6D côté serveur (lot 0.7) est **retiré** : il se serait ajouté à la pose du client.
@@ -63,6 +65,8 @@
   est masqué) ; la tête et ses accessoires sont masqués localement au-delà de la moitié du zoom (la caméra passe
   devant le visage). Valeurs d'origine rétablies au retour.
 - Souris libérée pendant l'usage (elle restait bloquée au centre en vue à la première personne).
+- **Garde-fou** : la caméra ne suit l'écran que s'il est à moins de 3 st (≈ 84 cm) de la tête ; sinon elle reste en
+  place (dans Studio, un avertissement `[PHONE-01] écran du téléphone à … st de la tête` est écrit dans la sortie).
 - **Replis** : affichage classique si le réglage le demande, en disposition compacte (Auto), ou si le modèle du
   serveur n'arrive pas dans les 2 s (personnage sans main droite…). Changer le réglage pendant l'usage bascule
   aussitôt, sans ranger le téléphone.
@@ -126,6 +130,9 @@ Non touchés : `SeatPose.luau`, `SeatPoseController.luau` (ANIM-01), `src/client
   dans les sources (soudure, visée imposée, caméra rendue, aucun actif importé).
 - **Aucun essai en jeu, aucun test VM** (règle du 2026-11-05 : le propriétaire teste lui-même).
 
+- Correctif du §7 (2026-11-06, même tâche) : `verify.ps1 -DownloadRobloxTypes` relancé : **toutes les étapes OK** (Selene 0 erreur, pytest 23, luau-lsp 0 erreur) ;
+  Lune 441 réussis / 0 échoué (2 tests ajoutés) ; place `build/AW-PHONE-01.rbxlx` reconstruite.
+
 ## 6. Liste de vérification en jeu (NON TESTÉ — à faire par le propriétaire)
 
 Place : `build/AW-PHONE-01.rbxlx`. Réglage par défaut « Auto » ; fenêtre de taille normale (pas compacte).
@@ -185,3 +192,21 @@ Sauf mention, la touche est T (manette : X).
     changement s'applique sans fermer le téléphone ; le réglage est conservé après reconnexion.
 19. « Réduire les animations » (Accessibilité) : zoom quasi instantané.
 20. Langue EN : libellés du réglage traduits.
+
+## 7. Retours d'essai du propriétaire
+
+### 7.1 Essai du 2026-11-06 — conducteur à l'arrêt (Brio), touche T
+
+- **Constaté par le propriétaire** (capture) : « la caméra va dans le ciel au lieu de zoomer sur la main du
+  personnage » ; l'interface s'affichait au centre, la vue montrait le sol de haut.
+- **Cause probable** (déduite du code, non mesurée en jeu) : la pose du bras était **ajoutée** à l'animation. Assis,
+  l'animation du moteur avance déjà les bras ; épaule + 65° : le bras partait vers le haut, le téléphone au-dessus
+  de la tête, et la caméra, placée devant l'écran, montait avec lui. Le test hors Studio d'origine supposait un bras
+  le long du corps (debout), d'où l'écart. Second point : le modèle était construit à l'origine du monde puis soudé.
+- **Correctifs** :
+  - pose **absolue** du bras droit (`PhoneHold.blendJoint`) : la même à pied et assis, quelle que soit l'animation ;
+  - garde-fou : zoom seulement si l'écran est près de la tête (≤ 3 st), avertissement dans la sortie de Studio ;
+  - serveur : modèle posé dans la main (`PivotTo`) avant la soudure.
+- Tests ajoutés : pose exacte assis / debout, ancien défaut reproduit (l'ajout levait le bras), garde-fou.
+- **À revérifier en jeu** : points 1 et 11 à 16 du §6. Si la caméra ne zoome toujours pas, noter la ligne
+  `[PHONE-01] …` de la sortie (distance mesurée) et, au bout de 2 s, l'affichage classique attendu.

@@ -44,8 +44,11 @@ PhoneHold.Body = table.freeze({
 })
 
 --[[
-    Pose du bras droit (téléphone dans la main droite), décalages multipliés dans `Transform` après
-    l'animation, sur l'épaule et le coude du R15 (Motor6D ou AnimationConstraint).
+    Pose du bras droit (téléphone dans la main droite) : rotations ABSOLUES de l'épaule et du coude du R15
+    (Motor6D ou AnimationConstraint), qui REMPLACENT l'animation du bras pendant l'usage (`blendJoint`).
+    Retour du propriétaire (2026-11-06, conducteur à l'arrêt) : la première version AJOUTAIT ces angles à
+    l'animation ; assis, l'animation du moteur avance déjà les bras, le bras partait vers le haut et la
+    caméra, qui suit l'écran, montait au-dessus du véhicule. Pose absolue : même main à pied et assis.
     Ordre des rotations (`CFrame.fromEulerAnglesYXZ`) : tangage d'abord (bras levé vers l'avant), puis
     lacet autour de la verticale du buste (bras ramené vers l'axe du corps), dans le repère de l'épaule.
     Recherche sur le gabarit R15 « bloc » par défaut (cotes approchées, voir tests/lune/specs/Phone01) :
@@ -80,7 +83,7 @@ function PhoneHold.gripCFrame(): CFrame
     return CFrame.new(g.Position) * CFrame.fromEulerAnglesYXZ(math.rad(g.Pitch), math.rad(g.Yaw), math.rad(g.Roll))
 end
 
--- Décalage d'une articulation du bras au taux `alpha` (0 = bras libre, 1 = téléphone tenu).
+-- Rotation d'une articulation du bras au taux `alpha` (0 = aucune, 1 = pose du téléphone).
 function PhoneHold.jointOffset(name: string, alpha: number): CFrame
     local entry = PhoneHold.Arm[name]
     if entry == nil then
@@ -92,6 +95,24 @@ function PhoneHold.jointOffset(name: string, alpha: number): CFrame
         math.rad((entry.Yaw or 0) * a),
         math.rad((entry.Roll or 0) * a)
     )
+end
+
+-- `Transform` à écrire : animation `base` (bras libre) fondue vers la pose absolue du téléphone (alpha 1 :
+-- pose exacte, quelle que soit l'animation : debout, assis, marche).
+function PhoneHold.blendJoint(name: string, base: CFrame, alpha: number): CFrame
+    if PhoneHold.Arm[name] == nil then
+        return base
+    end
+    local a = math.clamp(if alpha == alpha then alpha else 0, 0, 1)
+    return base:Lerp(PhoneHold.jointOffset(name, 1), a)
+end
+
+-- Garde-fou du zoom : l'écran doit être près de la tête (téléphone réellement dans la main). Sinon (modèle
+-- pas encore soudé, pose inattendue d'un avatar), la caméra ne le suit pas.
+PhoneHold.MaxHeadDistance = 3 -- st (≈ 84 cm ; pose nominale : ≈ 1,1 st des yeux)
+function PhoneHold.screenNearHead(screen: Vector3, head: Vector3): boolean
+    local d = (screen - head).Magnitude
+    return d == d and d <= PhoneHold.MaxHeadDistance
 end
 
 --[[

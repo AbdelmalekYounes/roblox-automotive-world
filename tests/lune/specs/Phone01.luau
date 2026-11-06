@@ -88,6 +88,42 @@ return function(T: any, H: any)
         T.truthy(PhoneHold.ArmParts.RightElbow == "RightLowerArm", "coude du R15")
     end)
 
+    -- Retour du propriétaire (2026-11-06) : au volant, la caméra partait « dans le ciel ». La pose AJOUTÉE à
+    -- l'animation assise (bras déjà avancés) levait la main au-dessus de l'épaule. La pose est désormais absolue.
+    T.test("pose absolue : même main debout et assis, l'animation du bras est remplacée", function()
+        -- Égalité à la précision des CFrame (simple précision dans Lune).
+        local function same(a: CFrame, b: CFrame): boolean
+            return (a.Position - b.Position).Magnitude < 1e-5
+                and a.LookVector:Dot(b.LookVector) > 1 - 1e-5
+                and a.UpVector:Dot(b.UpVector) > 1 - 1e-5
+        end
+        local sitting = CFrame.fromEulerAnglesYXZ(math.rad(70), math.rad(10), 0) -- bras avancé par l'animation assise
+        for _, name in { "RightShoulder", "RightElbow" } do
+            local target = PhoneHold.jointOffset(name, 1)
+            T.truthy(same(PhoneHold.blendJoint(name, sitting, 1), target), name .. " : pose exacte assis")
+            T.truthy(same(PhoneHold.blendJoint(name, CFrame.identity, 1), target), name .. " : pose exacte debout")
+            T.truthy(same(PhoneHold.blendJoint(name, sitting, 0), sitting), name .. " : animation rendue au repos")
+            T.truthy(same(PhoneHold.blendJoint(name, sitting, 0 / 0), sitting), name .. " : valeur non finie")
+        end
+        T.truthy(PhoneHold.blendJoint("LeftShoulder", sitting, 1) == sitting, "bras gauche laissé à l'animation")
+        -- Ancienne méthode (ajout) sur cette animation : épaule à 135° vers l'avant, main au-dessus de l'épaule.
+        local added = PhoneHold.jointOffset("RightShoulder", 1) * sitting
+        local hanging = Vector3.new(0, -1, 0)
+        T.truthy(added:VectorToWorldSpace(hanging).Y > 0.3, "l'ajout levait le bras vers le haut (défaut corrigé)")
+        T.truthy(
+            PhoneHold.jointOffset("RightShoulder", 1):VectorToWorldSpace(hanging).Y < 0,
+            "pose : bras vers l'avant"
+        )
+    end)
+
+    T.test("garde-fou : zoom seulement si l'écran est près de la tête", function()
+        local torso, phone = rig(1)
+        local head = (torso * CFrame.new(0, 1.4, 0)).Position
+        T.truthy(PhoneHold.screenNearHead(phone.Position, head), "pose nominale")
+        T.truthy(not PhoneHold.screenNearHead(Vector3.new(0, 0, 0), Vector3.new(0, 80, 0)), "modèle loin (origine)")
+        T.truthy(not PhoneHold.screenNearHead(Vector3.new(0 / 0, 0, 0), head), "position non finie")
+    end)
+
     T.test("cadrage : caméra sur la normale de l'écran, écran exactement à la hauteur voulue de la vue", function()
         local f = PhoneHold.Framing
         local _, phone = rig(1)

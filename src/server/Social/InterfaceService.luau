@@ -306,6 +306,8 @@ local function takeOut(player: Player): boolean
     local owner = character :: Model
     local model = makePhone()
     local body = model.PrimaryPart :: BasePart
+    -- Posé d'abord dans la main (le modèle est construit à l'origine du monde) : aucune image où il serait loin.
+    model:PivotTo(hand.CFrame * PhoneHold.gripCFrame())
     -- Prise en main (PhoneHold.Grip) : soudure à décalage fixe ; le modèle suit la main sur chaque client.
     local weld = Instance.new("Weld")
     weld.Name = "PriseEnMain"

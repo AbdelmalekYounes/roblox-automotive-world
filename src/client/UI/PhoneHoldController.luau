@@ -40,7 +40,8 @@ local RENDER_NAME = "AWPhoneHold"
 
 -- ======================== 1. Bras (tous les personnages) ========================
 
-type ArmEntry = { Alpha: number, Written: CFrame, Offset: CFrame }
+-- Par articulation : avancement, dernier `Transform` écrit et dernière valeur de l'animation (bras libre).
+type ArmEntry = { Alpha: number, Written: CFrame, Base: CFrame }
 local arms: { [any]: ArmEntry } = {}
 
 local function sameFrame(a: CFrame, b: CFrame): boolean
@@ -68,14 +69,16 @@ local function updateArms(dt: number)
             if entry == nil and not wanted then
                 continue
             end
-            local current: ArmEntry = entry or { Alpha = 0, Written = joint.Transform, Offset = CFrame.identity }
+            local current: ArmEntry = entry or { Alpha = 0, Written = joint.Transform, Base = joint.Transform }
+            -- Animation non réévaluée depuis notre écriture : reprendre la dernière valeur de l'animation.
             local base: CFrame = joint.Transform
             if entry and sameFrame(base, entry.Written) then
-                base = entry.Offset:Inverse() * base
+                base = entry.Base
             end
+            current.Base = base
             current.Alpha = math.clamp(current.Alpha + (if wanted then dt else -dt) / PhoneHold.RaiseS, 0, 1)
-            current.Offset = PhoneHold.jointOffset(name, FreeLook.ease(current.Alpha))
-            current.Written = current.Offset * base
+            -- Pose absolue (remplace l'animation du bras) : même main à pied et assis.
+            current.Written = PhoneHold.blendJoint(name, base, FreeLook.ease(current.Alpha))
             joint.Transform = current.Written
             if current.Alpha > 0 or wanted then
                 arms[joint] = current
@@ -118,11 +121,30 @@ local function blendS(): number
     return if UIState.prefs().Access.ReduceMotion then FRAMING.ReducedBlendS else FRAMING.BlendS
 end
 
+local warnedFar = false
+
+-- Écran du téléphone du joueur local, seulement s'il est près de la tête (garde-fou du zoom).
 local function phoneScreen(): BasePart?
     local character = player.Character
     local model = character and character:FindFirstChild(PhoneHold.ModelName)
     local screen = model and model:FindFirstChild(PhoneHold.ScreenName, true)
-    return if screen and screen:IsA("BasePart") then screen else nil
+    local head = character and character:FindFirstChild("Head")
+    if screen == nil or not screen:IsA("BasePart") or head == nil or not head:IsA("BasePart") then
+        return nil
+    end
+    if not PhoneHold.screenNearHead(screen.Position, head.Position) then
+        if not warnedFar and RunService:IsStudio() then
+            warnedFar = true
+            warn(
+                string.format(
+                    "[PHONE-01] écran du téléphone à %.1f st de la tête : zoom suspendu",
+                    (screen.Position - head.Position).Magnitude
+                )
+            )
+        end
+        return nil
+    end
+    return screen
 end
 
 local function currentView(): CFrame?
@@ -388,6 +410,7 @@ function PhoneHoldController.open(hand: boolean)
     if not wantOpen then
         openedAt = os.clock()
         timedOut = false
+        warnedFar = false
     end
     wantOpen = true
     inHand = hand
