@@ -4,7 +4,8 @@
 --
 -- - Automatique : convertisseur de couple (glissement, multiplication de couple
 --   au démarrage) + pontage sur les rapports longs ; passages selon le régime
---   de turbine et la charge ; marche arrière par maintien de « freiner » (A3).
+--   de turbine et la charge (montée aussi sur le régime moteur, convertisseur
+--   ouvert, lot BRIO-02) ; marche arrière par maintien de « freiner » (A3).
 -- - Manuelle : embrayage commandé par le conducteur ; un passage exige la
 --   pédale enfoncée ; le moteur peut caler ; marche arrière par sélecteur (A3).
 -- - Double embrayage : passages automatiques très rapides, palettes du
@@ -136,10 +137,21 @@ local function updateHoldBrakeSelection(
     return throttle, brake
 end
 
+-- Automatique, montée décidée sur le régime MOTEUR (lot BRIO-02) : le régime côté roues après la montée doit rester
+-- au moins à ce multiple du seuil de rétrogradation (pas de pompage, quel que soit le glissement du convertisseur).
+Transmission.EngineUpshiftDownMargin = 1.1
+
 --[[
     Passages automatiques (automatique et double embrayage), selon le régime
     côté roues (turbine) : les seuils baissent à faible charge ; l'hystérésis
     est garantie par la validation (pas de pompage).
+    Automatique (lot BRIO-02, QA-S04) : convertisseur ouvert, le glissement porte
+    le MOTEUR bien au-dessus de la turbine ; pied au plancher, il atteignait le
+    rupteur (Brio : 0,5 s en 1re, 1,7 s en 2e) avant que la turbine n'atteigne
+    `ShiftUpRpm`. La montée se décide donc aussi quand le moteur dépasse le seuil,
+    si le régime côté roues du rapport suivant reste au-dessus du seuil de
+    rétrogradation (marge `EngineUpshiftDownMargin`). Rétrogradages inchangés
+    (régime côté roues seulement).
 ]]
 local function autoShift(
     state: Types.VehicleRuntimeState,
@@ -157,7 +169,16 @@ local function autoShift(
     end
     local rpm = Engine.rpm(math.abs(wheelOmega * overall))
     local factor = 0.55 + 0.45 * driveThrottle
-    if rpm > transmission.ShiftUpRpm * factor and gear < #transmission.ForwardRatios then
+    local upRpm = transmission.ShiftUpRpm * factor
+    local top = #transmission.ForwardRatios
+    local wantsUp = rpm > upRpm
+    if not wantsUp and transmission.Kind == "Automatic" and gear < top then
+        -- Régime côté roues juste après la montée (étagement du rapport suivant).
+        local nextRpm = rpm * transmission.ForwardRatios[gear + 1] / transmission.ForwardRatios[gear]
+        wantsUp = Engine.rpm(state.EngineOmega) > upRpm
+            and nextRpm > transmission.ShiftDownRpm * factor * Transmission.EngineUpshiftDownMargin
+    end
+    if wantsUp and gear < top then
         state.Gear = gear + 1
         state.ShiftTimer = transmission.ShiftDurationS
     elseif rpm < transmission.ShiftDownRpm * factor and gear > 1 then

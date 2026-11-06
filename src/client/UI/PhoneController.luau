@@ -1070,6 +1070,14 @@ local function renderSettings()
         set(Localization.t("settings.reset"), function(p)
             p.Bindings = {}
         end)
+        -- Lot CAMERA-01 : regard libre en conduite (clic droit maintenu, stick droit, doigt).
+        line(Localization.t("settings.cameraSection"), true)
+        set(Localization.t("settings.cameraSensitivity", { value = prefs.Camera.Sensitivity }), function(p)
+            p.Camera.Sensitivity = step(p.Camera.Sensitivity, 1, 1, 5)
+        end)
+        set(Localization.t("settings.cameraInvertY", { state = onoff(prefs.Camera.InvertY) }), function(p)
+            p.Camera.InvertY = not p.Camera.InvertY
+        end)
     elseif settingsPage == "Accessibility" then
         local a = prefs.Access
         set(Localization.t("settings.textScale", { value = a.TextScale }), function(p)

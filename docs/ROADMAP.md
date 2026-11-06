@@ -318,3 +318,26 @@ Décisions du propriétaire du 2026-11-05 ([plan et rapport](lot-audio-01/PLAN_A
 - **validé en jeu par le propriétaire le 2026-11-06**.
 
 Suite possible : sons de la Comète (AUDIO-02), et rupteur de la Brio en 1ʳᵉ et 2ᵉ (QA-S04, réglage de boîte).
+
+## Lot BRIO-02 — boîte et assise de la Brio (branche `claude/brio-02-boite-assise-6ffe29`)
+
+Lot mené en parallèle d'AUDIO-03 et de CAMERA-01, sur exception accordée par le propriétaire le 2026-11-06.
+Rapport : [`lot-brio-02/RAPPORT_BRIO_02.md`](lot-brio-02/RAPPORT_BRIO_02.md).
+
+- **Boîte automatique :** la montée se décide aussi sur le régime moteur. Plus de palier au rupteur en 1ʳᵉ et en 2ᵉ
+  (QA-S04).
+- **Assise :** sièges posés sur le vrai coussin, avec une pose « Citadine ». Les têtes restent sous le toit.
+
+## Lot CAMERA-01 — caméra libre en conduite (branche `claude/camera-01-camera-libre-5d3237`)
+
+Lot mené en parallèle de BRIO-02 et d'AUDIO-03, sur exception accordée par le propriétaire le 2026-11-06.
+Rapport : [`lot-camera-01/RAPPORT_CAMERA_01.md`](lot-camera-01/RAPPORT_CAMERA_01.md).
+
+- **Regard libre :** clic droit maintenu à la souris, stick droit à la manette, glisser au doigt en tactile.
+- **Retour au centre :** après 1,5 s à l'arrêt, plus vite en roulant.
+- **Limites :** ±120° dans les vues embarquées, orbite complète dans les vues de poursuite.
+- **Réglages :** sensibilité et inversion verticale.
+- **Interface posée pour la 2ᵉ vague :** visée imposée pour le téléphone en main, bras visibles en vue cockpit.
+
+**Validé en jeu par le propriétaire le 2026-11-06.**
+

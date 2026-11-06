@@ -49,6 +49,9 @@ for _, spec in
         require("./specs/Admin01"),
         require("./specs/Veh3d02Brio"),
         require("./specs/Audio01"),
+        require("./specs/Brio02"),
+        -- Lot CAMERA-01 : caméra libre en conduite.
+        require("./specs/Camera01FreeLook"),
         -- Lot AUDIO-03 : sons des pneus.
         require("./specs/Audio03"),
     }

@@ -6,8 +6,9 @@
 
     Seules des préférences DURABLES utiles sont conservées : HUD, mini-carte,
     notifications, accessibilité, langue, audio, graphismes (lot 0.8),
-    préférences sociales et
-    raccourcis clavier personnalisés. Rien de temporaire (état d'un menu,
+    préférences sociales,
+    raccourcis clavier personnalisés et caméra en conduite (lot CAMERA-01 :
+    sensibilité, inversion verticale). Rien de temporaire (état d'un menu,
     animation). Le partage de position n'est JAMAIS une préférence durable :
     il est désactivé par défaut à chaque groupe (AUD-PRIV-01).
     Toute valeur reçue du client est nettoyée (bornes, énumérations) ; un
@@ -63,6 +64,8 @@ export type Prefs = {
     Graphics: { Quality: "Low" | "Medium" | "High" },
     Social: { ShowSharedMembers: boolean, AcceptInvites: boolean },
     Bindings: { [string]: string }, -- action → touche clavier personnalisée
+    -- Lot CAMERA-01 : caméra libre en conduite (sensibilité 1 à 5, inversion verticale).
+    Camera: { Sensitivity: number, InvertY: boolean },
 }
 
 function Preferences.defaults(): Prefs
@@ -102,6 +105,8 @@ function Preferences.defaults(): Prefs
         Graphics = { Quality = "Medium" },
         Social = { ShowSharedMembers = true, AcceptInvites = true },
         Bindings = {},
+        -- Lot CAMERA-01 : un profil existant sans ces champs reçoit ces valeurs (aucune migration).
+        Camera = { Sensitivity = 3, InvertY = false },
     }
 end
 
@@ -112,6 +117,8 @@ Preferences.Ranges = table.freeze({
     PanelOpacity = { 50, 100 },
     NavSensitivity = { 1, 5 },
     Volume = { 0, 100 },
+    -- Lot CAMERA-01.
+    CameraSensitivity = { 1, 5 },
 })
 
 local function number(value: any, fallback: number, range: { number }): number
@@ -154,6 +161,7 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
     local audio = if type(source.Audio) == "table" then source.Audio else {}
     local social = if type(source.Social) == "table" then source.Social else {}
     local graphics = if type(source.Graphics) == "table" then source.Graphics else {}
+    local cameraPrefs = if type(source.Camera) == "table" then source.Camera else {}
     local bindings: { [string]: string } = {}
     if type(source.Bindings) == "table" then
         local count = 0
@@ -215,6 +223,11 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
             AcceptInvites = bool(social.AcceptInvites, d.Social.AcceptInvites),
         },
         Bindings = bindings,
+        -- Lot CAMERA-01.
+        Camera = {
+            Sensitivity = number(cameraPrefs.Sensitivity, d.Camera.Sensitivity, r.CameraSensitivity),
+            InvertY = bool(cameraPrefs.InvertY, d.Camera.InvertY),
+        },
     }
 end
 

@@ -1132,6 +1132,13 @@ function VehicleController.getTestSnapshot(): TestSnapshot
     }
 end
 
+-- Lot CAMERA-01 : caméra du véhicule piloté, pour les lots de la 2e vague
+-- (visée imposée, bras visibles en cockpit ; voir VehicleCamera). Instance
+-- unique, valable entre deux sessions de conduite.
+function VehicleController.getCamera(): VehicleCamera.VehicleCamera
+    return camera
+end
+
 -- Bascule de caméra par le même code que la touche V (tests Studio uniquement).
 function VehicleController.toggleCameraForTest(): string
     assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
