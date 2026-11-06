@@ -108,12 +108,21 @@ export type Summary = {
 -- Utilisation d'un pneu : glissement combiné rapporté au pic, √((κ/κpic)² + (α/αpic)²) ; 1 = pic d'adhérence.
 TireAudioModel.SquealOnsetUsage = 1.25 -- utilisation où le crissement commence (au-delà du pic)
 TireAudioModel.SquealFullUsage = 4 -- utilisation donnant le plein crissement
--- Braquage à basse vitesse : au clavier, le braquage est tout ou rien ; l'avant dépasse alors son pic de dérive sans
--- que la voiture glisse vraiment (banc planaire, Brio, 20 km/h roues braquées à fond : dérive avant 9,7°, pic 7°).
--- La part latérale est donc ignorée sous 15 km/h et pleine au-dessus de 25 km/h ; le blocage et le patinage restent
--- audibles à toute vitesse.
-TireAudioModel.LateralMinSpeed = 4.2 -- m/s (15 km/h)
-TireAudioModel.LateralFullSpeed = 7 -- m/s (25 km/h)
+-- Version 3 (second retour du propriétaire en jeu, 2026-11-06 : « c'est toujours pareil »). Mesure sur le banc
+-- planaire (Brio, aides coupées comme au départ d'une session, braquage à fond comme au clavier) :
+-- - accélérateur enfoncé, la roue avant INTÉRIEURE patine seule (glissement 16 à 27 × le pic de 20 à 40 km/h) ;
+-- - l'avant dépasse son pic de dérive dans chaque virage serré (3,4 à 4,2 × de 30 à 60 km/h) : sous-virage, la
+--   voiture tourne moins mais ne glisse pas pour le joueur.
+-- Le crissement est donc réservé à la perte d'adhérence du VÉHICULE :
+-- - glissement longitudinal d'un ESSIEU (le plus faible de ses deux roues au sol) : démarrage en patinage, roues
+--   bloquées ; une roue intérieure qui patine seule ne crisse pas ;
+-- - dérive de l'ARRIÈRE (dérapage, frein à main), dès 15 km/h ;
+-- - dérive de l'AVANT seulement à vitesse élevée (sous-virage franc), de 50 à 90 km/h.
+-- Roues 1 et 2 à l'avant, 3 et 4 à l'arrière (ordre de VehicleDynamics.wheelLayout).
+TireAudioModel.LateralMinSpeed = 4.2 -- m/s (15 km/h), arrière
+TireAudioModel.LateralFullSpeed = 7 -- m/s (25 km/h), arrière
+TireAudioModel.FrontLateralMinSpeed = 14 -- m/s (50 km/h), avant
+TireAudioModel.FrontLateralFullSpeed = 25 -- m/s (90 km/h), avant
 TireAudioModel.SlipSpeedGate = 1 -- m/s : en dessous, la gomme ne glisse pas assez vite pour crisser
 TireAudioModel.SlipSpeedFull = 4 -- m/s : vitesse de glissement donnant le plein crissement
 -- Volume du crissement = intensité ^ 1,5 : un début de glisse reste discret, une vraie glissade est franche.
@@ -151,23 +160,36 @@ function TireAudioModel.summarize(
 ): Summary
     local grounded, speedSum, wetSum, squealPower, scrubPower, slipSpeedMax = 0, 0, 0, 0, 0, 0
     local counts: { [string]: number } = { Hard = 0, Loose = 0, Soft = 0, Ice = 0 }
-    for _, wheel in wheels do
+    -- Glissement longitudinal de chaque essieu : le plus faible de ses roues au sol.
+    local axleRatio = { math.huge, math.huge }
+    for index, wheel in wheels do
+        if wheel.Grounded then
+            local axle = if index <= 2 then 1 else 2
+            axleRatio[axle] = math.min(axleRatio[axle], math.abs(wheel.SlipRatio))
+        end
+    end
+    for index, wheel in wheels do
         if not wheel.Grounded then
             continue
         end
+        local isFront = index <= 2
         grounded += 1
         speedSum += math.sqrt(wheel.ContactVx * wheel.ContactVx + wheel.ContactVy * wheel.ContactVy)
         wetSum += math.clamp(wheel.Wetness, 0, 1)
         counts[wheel.Surface] += 1
-        -- Vitesse de glissement de la gomme sur le sol : écart longitudinal (roue bloquée ou qui patine) et latéral.
+        -- Vitesse de glissement de la gomme sur le sol : écart longitudinal (roue bloquée ou qui patine) et latéral. La
+        -- part latérale est tirée de l'angle de dérive (|vx| × tan α) : même valeur en jeu et sur le banc planaire.
+        local vx = math.abs(wheel.ContactVx)
         local dx = wheel.RollingSpeed - wheel.ContactVx
-        local slipSpeed = math.sqrt(dx * dx + wheel.ContactVy * wheel.ContactVy)
+        local dy = vx * math.tan(math.min(math.abs(wheel.SlipAngle), 1.2))
+        local slipSpeed = math.sqrt(dx * dx + dy * dy)
         slipSpeedMax = math.max(slipSpeedMax, slipSpeed)
         local gate = ramp(slipSpeed, TireAudioModel.SlipSpeedGate, TireAudioModel.SlipSpeedFull)
-        local lateralWeight =
-            ramp(math.abs(wheel.ContactVx), TireAudioModel.LateralMinSpeed, TireAudioModel.LateralFullSpeed)
+        local lateralWeight = if isFront
+            then ramp(vx, TireAudioModel.FrontLateralMinSpeed, TireAudioModel.FrontLateralFullSpeed)
+            else ramp(vx, TireAudioModel.LateralMinSpeed, TireAudioModel.LateralFullSpeed)
         local lateral = math.abs(wheel.SlipAngle) / peakSlipAngleRad * lateralWeight
-        local longitudinal = math.abs(wheel.SlipRatio) / peakSlipRatio
+        local longitudinal = axleRatio[if isFront then 1 else 2] / peakSlipRatio
         local usage = math.sqrt(lateral * lateral + longitudinal * longitudinal)
         local level = ramp(usage, TireAudioModel.SquealOnsetUsage, TireAudioModel.SquealFullUsage)
         local squeal = level * gate

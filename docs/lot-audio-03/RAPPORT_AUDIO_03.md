@@ -72,17 +72,18 @@ d'administration (F2) ou par la concession, puis montez à bord. Réglez le volu
 2. **Roulement** :
    - le bruit de roulement apparaît dès quelques km/h ;
    - il monte avec la vitesse, sans coupure ni « tic » répété toutes les 2 s.
-3. **Virage** (version 2, voir § 6) :
-   - en virage normal, même roues braquées à fond à basse vitesse : **aucun crissement** ;
-   - vers 70–80 km/h, braquer à fond : la voiture glisse, et un crissement apparaît, puis disparaît en ligne droite.
-4. **Freinage fort avec ABS** (ABS actif, touche **1** pour l'activer ou le couper) :
+3. **Virage** (version 3, voir § 6). Toutes les aides sont **coupées** au début de chaque session de conduite :
+   - virages au clavier jusqu'à 60 km/h, même en braquant à fond et en gardant l'accélérateur : **aucun
+     crissement** ;
+   - vers 90–100 km/h, braquer à fond : l'avant glisse franchement, un crissement apparaît.
+4. **Freinage fort avec ABS** (l'activer d'abord avec la touche **1**) :
    - vers 80 km/h, freiner à fond (**S**) ;
    - on entend un grondement saccadé, pas un crissement continu.
 5. **Freinage sans ABS** :
-   - couper l'ABS (**1**), puis freiner à fond vers 50 km/h ;
+   - ABS coupé (état de départ, ou touche **1**), puis freiner à fond vers 50 km/h ;
    - gros crissement de roues bloquées jusqu'à l'arrêt.
 6. **Frein à main** (**Espace**) en roulant, ou en virage : glissade audible.
-7. **Départ sans antipatinage** : couper l'antipatinage (**2**), puis accélérer à fond à l'arrêt. Sur le banc
+7. **Départ sans antipatinage** (état de départ ; la touche **2** l'active) : accélérer à fond à l'arrêt. Sur le banc
    planaire, la Brio patine à peine : un crissement bref ou absent est attendu.
 8. **Pluie** :
    - menu d'administration (F2) › météo « Pluie » ;
@@ -132,7 +133,43 @@ Les sons envoyés sur Roblox ne changent pas.
 `build/AW-AUDIO-03.rbxlx` a été reconstruite. Le point 3 de la liste du § 5 est à revérifier en jeu : en virage
 normal, aucun crissement ; il n'apparaît qu'en glissade (braquage brutal à vitesse élevée, frein à main, blocage).
 
+### Version 3 (second essai en jeu, 2026-11-06)
+
+Retour du propriétaire sur la version 2 : « c'est toujours pareil ».
+
+**Causes, mesurées sur le banc planaire.** Conditions : Brio, aides coupées comme au départ d'une session, braquage
+d'un coup comme au clavier.
+1. **Patinage de la roue intérieure.** Accélérateur enfoncé en braquant à fond, la roue avant intérieure patine
+   seule, de 20 à 40 km/h (glissement de 16 à 27 fois le pic). Le crissement atteignait 0,71 alors que la voiture
+   tourne normalement.
+2. **Sous-virage dans chaque virage serré.** Au clavier, l'avant dépasse son pic de dérive à chaque virage serré, de
+   3,4 à 4,2 fois de 30 à 60 km/h. La voiture tourne moins, mais elle ne glisse pas pour le joueur.
+3. **Écart entre le banc et le jeu.** Le banc donnait aux roues avant la vitesse latérale de la caisse. En jeu, c'est
+   la vitesse latérale de chaque roue braquée, bien plus forte, donc le crissement s'y déclenchait davantage. La vitesse
+   de glissement latérale est désormais tirée de l'angle de dérive (|vx| × tan α), identique en jeu et sur le banc.
+
+**Correction.** Le crissement est réservé à la perte d'adhérence du **véhicule** :
+- **glissement longitudinal d'un essieu**, c'est-à-dire de ses deux roues : démarrage en patinage, roues bloquées. Une
+  roue intérieure qui patine seule ne crisse plus ;
+- **dérive de l'arrière** (dérapage, frein à main), dès 15 km/h ;
+- **dérive de l'avant** (sous-virage franc) seulement de 50 à 90 km/h et plus.
+
+**Mesure après correction (banc planaire, tests Audio03 n° 2 et n° 8)** :
+
+| Situation | Crissement |
+|---|---|
+| Braquage à fond de 20 à 60 km/h, accélérateur relâché ou enfoncé | aucun |
+| 40 km/h à mi-braquage | aucun |
+| 80 km/h, braquage à fond | 0,30 |
+| 100 km/h, braquage à fond | 0,82 |
+| Frein à main en virage à 40 km/h | 1,00 |
+| Freinage roues bloquées, ABS | inchangés |
+
 ## 7. Écarts et limites
+
+- **Physique, hors périmètre** : dans la dynamique, la roue avant intérieure de la Brio patine dès qu'on accélère en
+  braquant à fond, même à 20 km/h, quand l'antipatinage est coupé (c'est l'état de départ). Le son l'ignore désormais.
+  Le comportement physique lui-même reste à arbitrer par le propriétaire.
 
 - **Glissade sur gravier** : aucune vraie glissade sur gravier n'a été trouvée dans les enregistrements lisibles. Le
   n° 10 (FLAC) ne peut pas être décodé sans dépendance hors numpy. Le son vient d'un passage plus dense du gravier.

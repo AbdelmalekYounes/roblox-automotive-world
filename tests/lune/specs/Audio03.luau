@@ -106,11 +106,26 @@ return function(T: any, H: any)
         spin[2].RollingSpeed, spin[2].SlipRatio = 8, 1
         local burnout = Model.summarize(spin, PEAK_RATIO, PEAK_ANGLE)
         T.truthy(burnout.Squeal > 0.9, "patinage de deux roues : plein crissement")
-        -- Une seule roue en glisse : nettement moins fort que deux.
+        -- Version 3 : une roue seule qui patine (roue intérieure en virage) ne crisse pas ; les deux roues d'un essieu,
+        -- si (frein à main : arrière bloqué).
         local one = four(wheel(20))
-        one[1].SlipRatio, one[1].RollingSpeed = -1, 0
-        local single = Model.summarize(one, PEAK_RATIO, PEAK_ANGLE).Squeal
-        T.truthy(single > 0.5 and single < 0.8, string.format("une roue : %.2f", single))
+        one[1].SlipRatio, one[1].RollingSpeed = 1, 30
+        T.equal(Model.summarize(one, PEAK_RATIO, PEAK_ANGLE).Squeal, 0, "roue intérieure qui patine seule : muet")
+        local handbrake = four(wheel(15))
+        handbrake[3].SlipRatio, handbrake[3].RollingSpeed = -1, 0
+        handbrake[4].SlipRatio, handbrake[4].RollingSpeed = -1, 0
+        local rear = Model.summarize(handbrake, PEAK_RATIO, PEAK_ANGLE).Squeal
+        T.truthy(rear > 0.9, string.format("essieu arrière bloqué (deux roues) : %.2f", rear))
+        -- Sous-virage : l'avant seul au-delà de son pic ne crisse qu'à vitesse élevée.
+        local function understeer(v: number): number
+            local w = four(wheel(v))
+            for index = 1, 2 do
+                w[index].SlipAngle = math.rad(28)
+            end
+            return Model.summarize(w, PEAK_RATIO, PEAK_ANGLE).Squeal
+        end
+        T.equal(understeer(11), 0, "40 km/h, avant à 28° de dérive : muet")
+        T.truthy(understeer(25) > 0.5, "90 km/h, avant à 28° de dérive : crissement")
         -- Manœuvre lente : grand angle de dérive mais vitesse de glissement minime → muet.
         local slow = wheel(0.2, { SlipAngle = math.rad(30), ContactVy = 0.1 })
         T.equal(Model.summarize(four(slow), PEAK_RATIO, PEAK_ANGLE).Squeal, 0, "parking : muet")
@@ -317,12 +332,14 @@ return function(T: any, H: any)
             local Dynamics = H.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
             local definition = H.require(SHARED .. "Vehicles.VehicleDefinitions").get("wk_brio")
             local tires = definition.Tires
-            -- Vitesse tenue, braquage amené en 0,5 s puis tenu 2,5 s ; crissement maximal après 0,1 s.
-            local function corner(kmh: number, steer: number): number
+            -- Braquage d'un coup (crémaillère limitée, comme au clavier) puis tenu ; accélérateur fixe (`throttle`) ou
+            -- vitesse tenue (nil) ; frein à main facultatif entre 0,3 et 1,5 s ; aides coupées (comme au départ d'une
+            -- session). Crissement maximal après 0,1 s.
+            local function corner(kmh: number, steer: number, throttle: number?, handbrake: boolean?): number
                 local peak = 0
                 PlanarSim.run(Dynamics, definition, {
                     Dt = 1 / 240,
-                    Duration = 3,
+                    Duration = 2.5,
                     InitialForward = kmh / 3.6,
                     Input = function(t: number, snapshot: any, state: any)
                         local samples = {}
@@ -343,22 +360,38 @@ return function(T: any, H: any)
                             peak = math.max(peak, s.Squeal)
                         end
                         return {
-                            Throttle = math.clamp((kmh / 3.6 - snapshot.Forward) * 0.5 + 0.2, 0, 1),
+                            Throttle = throttle or math.clamp((kmh / 3.6 - snapshot.Forward) * 0.5 + 0.2, 0, 1),
                             Brake = 0,
-                            Steer = steer * math.clamp(t / 0.5, 0, 1),
-                            Handbrake = false,
+                            Steer = steer,
+                            Handbrake = handbrake == true and t > 0.3 and t < 1.5,
                             Clutch = 0,
                         }
                     end,
                 })
                 return peak
             end
-            for _, case in { { 10, 1 }, { 20, 1 }, { 40, 0.5 }, { 60, 0.25 }, { 60, 0.5 } } do
-                T.equal(corner(case[1], case[2]), 0, string.format("%d km/h, braquage %.2f : muet", case[1], case[2]))
+            -- Second retour du propriétaire en jeu : virages au clavier (braquage à fond), accélérateur relâché ou
+            -- enfoncé (la roue avant intérieure patine alors seule), de 20 à 60 km/h → muets.
+            for _, kmh in { 20, 30, 40, 60 } do
+                for _, throttle in { 0, 1 } do
+                    T.equal(
+                        corner(kmh, 1, throttle),
+                        0,
+                        string.format("%d km/h, braquage à fond, accélérateur %d : muet", kmh, throttle)
+                    )
+                end
             end
-            local hard = corner(80, 1)
-            print(string.format("      80 km/h roues braquées à fond : crissement max %.2f", hard))
-            T.truthy(hard > 0.3, "80 km/h roues braquées à fond : l'avant glisse, crissement net")
+            T.equal(corner(40, 0.5), 0, "40 km/h, mi-braquage, vitesse tenue : muet")
+            local fast, handbrake = corner(100, 1, 0), corner(40, 0.5, 0, true)
+            print(
+                string.format(
+                    "      100 km/h braquage à fond : crissement %.2f ; frein à main en virage à 40 km/h : %.2f",
+                    fast,
+                    handbrake
+                )
+            )
+            T.truthy(fast > 0.5, "100 km/h braquage à fond : sous-virage franc, crissement")
+            T.truthy(handbrake > 0.8, "frein à main en virage : l'arrière glisse, crissement")
         end
     )
 end
