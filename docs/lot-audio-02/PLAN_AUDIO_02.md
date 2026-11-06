@@ -122,6 +122,37 @@ vilebrequin croisé), trames de 0,12 s :
 être prises sur de courts extraits (départ de la Maserati, passage n° 2), puis transposées. La qualité est à juger à
 l'écoute des démos.
 
+### Mesure du régime et nouvelle piste : pack « V8 Lotus » (CC BY 4.0, 2026-11-06)
+
+**Suivi du régime au-delà du ralenti.** Il est peu fiable sur les enregistrements reçus (peigne de demi-ordres,
+trames de 0,12 s) :
+- **passage de la Maserati** : effet Doppler mêlé au régime ;
+- **coups de gaz de l'AMG** : 0,3 à 0,5 s chacun, scores bas et erreurs d'octave ;
+- **départ de la Maserati** : moins de 2 s exploitables.
+
+Des boucles en charge tirées de ces extraits seraient fortement transposées, avec un risque élevé de « découpage »
+audible, déjà rencontré en AUDIO-01.
+
+**Recherche élargie à la licence CC BY**, admise par la décision D1 (crédit en jeu). Elle a trouvé le pack « V8 Lotus »
+de **wikusv** (Pretoria), en **CC BY 4.0**. Ses 5 fichiers sont des WAV 48 kHz 16 bits stéréo, chacun pris par **deux
+micros**, un par canal (un canon sous la voiture ou qui suit la voiture, un statique) :
+
+| Fichier (lien) | Durée | Contenu |
+|---|---|---|
+| Idle — <https://freesound.org/s/232274/> | 6,8 s | ralenti |
+| Idle and Rev - Engine — <https://freesound.org/s/232272/> | 33,1 s | ralenti et nombreux coups de gaz à vide (décharge) |
+| Rev and Pull — <https://freesound.org/s/232271/> | 8,5 s | coups de gaz puis départ en accélération (**en charge**) |
+| Tirespin 1 — <https://freesound.org/s/232276/> | 7,1 s | départ très brutal (en charge, roues qui patinent) |
+| Full Take - Car Approach and Pass By — <https://freesound.org/s/232273/> | 18,5 s | approche et passage |
+
+L'auteur n'indique pas le modèle. Une Lotus V8 est très probablement une **Esprit V8** : V8 biturbo à **vilebrequin
+plat**, la même architecture que la McLaren 720S. C'est à confirmer à l'écoute, et ce n'est pas vérifié. Une version
+retravaillée du deuxième fichier par jimmygu3 (369486, « declipping ») signale des **crêtes écrêtées** dans
+l'original.
+
+Proposition au propriétaire : prendre ce pack comme source principale, avec un crédit de l'auteur en jeu. Le
+démarreur (190E), le turbo (Supra) et les pétarades (anti-lag) restent comme décidé.
+
 ## 5. Déroulement
 
 Le déroulement est celui d'AUDIO-01 :
