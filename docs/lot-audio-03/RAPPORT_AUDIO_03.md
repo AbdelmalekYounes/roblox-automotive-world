@@ -99,7 +99,9 @@ d'administration (F2) ou par la concession, puis montez à bord. Réglez le volu
     - les pneus de la Brio de l'autre joueur s'entendent : roulement, crissement en virage et au freinage, effet
       Doppler au passage ;
     - une voiture garée immobile est silencieuse.
-13. **Comète** : ses pneus s'entendent, un peu plus forts et plus graves (masse 1 450 kg). Son moteur reste muet
+13. **Comète** (version 4, voir § 6) : à fond en ligne droite une fois lancée, presque aucun crissement ; départ
+    arrêté à fond ou tête-à-queue : crissement. Ses pneus sont un peu plus forts et plus graves (masse 1 450 kg).
+    Son moteur reste muet
     (décision « la Brio d'abord » d'AUDIO-01).
 
 ## 6. Correction après le premier essai en jeu (2026-11-06)
@@ -164,6 +166,33 @@ d'un coup comme au clavier.
 | 100 km/h, braquage à fond | 0,82 |
 | Frein à main en virage à 40 km/h | 1,00 |
 | Freinage roues bloquées, ABS | inchangés |
+
+### Version 4 : Comète, patinage toléré (2026-11-06)
+
+Précision du propriétaire : « en fait c'est sur la Comète que ça fait ça ».
+
+**Mesure sur le banc planaire.** Conditions : Comète (propulsion, 475 kW), aides coupées comme au départ d'une
+session, accélérateur à fond comme au clavier. Le crissement correspondait à un vrai patinage des roues arrière :
+- en ligne droite, de 20 à 60 km/h : glissement de 6 à 18 fois le pic d'adhérence ;
+- au départ arrêté : 51 fois le pic ;
+- avec l'antipatinage (touche **2**) : environ 2 fois le pic.
+
+**Décision du propriétaire, après présentation des deux voies : « Son plus tolérant ».**
+
+**Correction.** Le patinage (roue plus rapide que le sol) n'est audible qu'au-delà de **8 fois** le pic, et il est
+plein à **40 fois**. Le blocage au freinage garde les seuils communs (1,25 à 4 fois).
+
+**Mesure après correction (test Audio03 n° 8)** :
+- Comète à fond sans antipatinage :
+  - départ arrêté : crissement maximal 1,00, moyen 0,45 (démarrage en force) ;
+  - lancée à 20 km/h : moyen 0,09 ;
+  - lancée à 40 km/h : moyen 0,01 ;
+- avec l'antipatinage : 0 ;
+- Brio : muette dans tous ces cas, comme en version 3.
+
+**Limite connue.** Sans antipatinage, braquer à fond en accélérant fait partir l'arrière de la Comète en
+tête-à-queue (dérive arrière d'environ 10 fois le pic). Ce cas crisse toujours, car c'est une vraie perte
+d'adhérence de la voiture.
 
 ## 7. Écarts et limites
 

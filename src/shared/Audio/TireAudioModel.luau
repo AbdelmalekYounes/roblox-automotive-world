@@ -123,6 +123,13 @@ TireAudioModel.LateralMinSpeed = 4.2 -- m/s (15 km/h), arrière
 TireAudioModel.LateralFullSpeed = 7 -- m/s (25 km/h), arrière
 TireAudioModel.FrontLateralMinSpeed = 14 -- m/s (50 km/h), avant
 TireAudioModel.FrontLateralFullSpeed = 25 -- m/s (90 km/h), avant
+-- Version 4 (décision du propriétaire, 2026-11-06 : « son plus tolérant », après la mesure sur la Comète). Aides
+-- coupées (départ de session) et accélérateur à fond au clavier, les roues arrière de la Comète patinent de 6 à 18 ×
+-- le pic en ligne droite de 20 à 60 km/h (2 × avec l'antipatinage). Le PATINAGE (roue plus rapide que le sol) n'est
+-- donc audible qu'au-delà de 8 × le pic et plein à 40 × (démarrage en force, tête-à-queue) ; le BLOCAGE au freinage
+-- garde les seuils communs.
+TireAudioModel.SpinOnsetUsage = 8
+TireAudioModel.SpinFullUsage = 40
 TireAudioModel.SlipSpeedGate = 1 -- m/s : en dessous, la gomme ne glisse pas assez vite pour crisser
 TireAudioModel.SlipSpeedFull = 4 -- m/s : vitesse de glissement donnant le plein crissement
 -- Volume du crissement = intensité ^ 1,5 : un début de glisse reste discret, une vraie glissade est franche.
@@ -160,12 +167,21 @@ function TireAudioModel.summarize(
 ): Summary
     local grounded, speedSum, wetSum, squealPower, scrubPower, slipSpeedMax = 0, 0, 0, 0, 0, 0
     local counts: { [string]: number } = { Hard = 0, Loose = 0, Soft = 0, Ice = 0 }
-    -- Glissement longitudinal de chaque essieu : le plus faible de ses roues au sol.
-    local axleRatio = { math.huge, math.huge }
+    -- Glissement longitudinal de chaque essieu (rapporté au pic) : le plus faible de ses roues au sol. Le patinage est
+    -- ramené sur l'échelle commune : 8 × le pic compte comme le seuil commun (1,25), 40 × comme le plein (4).
+    local onset, full = TireAudioModel.SquealOnsetUsage, TireAudioModel.SquealFullUsage
+    local spinOnset, spinFull = TireAudioModel.SpinOnsetUsage, TireAudioModel.SpinFullUsage
+    local axleUsage = { math.huge, math.huge }
     for index, wheel in wheels do
         if wheel.Grounded then
+            local usage = math.abs(wheel.SlipRatio) / peakSlipRatio
+            if math.abs(wheel.RollingSpeed) > math.abs(wheel.ContactVx) then
+                usage = if usage <= spinOnset
+                    then usage * onset / spinOnset
+                    else onset + (usage - spinOnset) * (full - onset) / (spinFull - spinOnset)
+            end
             local axle = if index <= 2 then 1 else 2
-            axleRatio[axle] = math.min(axleRatio[axle], math.abs(wheel.SlipRatio))
+            axleUsage[axle] = math.min(axleUsage[axle], usage)
         end
     end
     for index, wheel in wheels do
@@ -189,7 +205,7 @@ function TireAudioModel.summarize(
             then ramp(vx, TireAudioModel.FrontLateralMinSpeed, TireAudioModel.FrontLateralFullSpeed)
             else ramp(vx, TireAudioModel.LateralMinSpeed, TireAudioModel.LateralFullSpeed)
         local lateral = math.abs(wheel.SlipAngle) / peakSlipAngleRad * lateralWeight
-        local longitudinal = axleRatio[if isFront then 1 else 2] / peakSlipRatio
+        local longitudinal = axleUsage[if isFront then 1 else 2]
         local usage = math.sqrt(lateral * lateral + longitudinal * longitudinal)
         local level = ramp(usage, TireAudioModel.SquealOnsetUsage, TireAudioModel.SquealFullUsage)
         local squeal = level * gate

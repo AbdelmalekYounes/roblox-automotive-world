@@ -102,10 +102,23 @@ return function(T: any, H: any)
         T.truthy(locked.SlipSpeed > 19, "vitesse de glissement = vitesse du véhicule")
         -- Patinage au départ (roues motrices avant seulement, véhicule presque arrêté).
         local spin = four(wheel(0.5))
-        spin[1].RollingSpeed, spin[1].SlipRatio = 8, 1
-        spin[2].RollingSpeed, spin[2].SlipRatio = 8, 1
+        -- Démarrage en force : roues à 8 m/s pour 0,5 m/s au sol, glissement 15 (150 × le pic).
+        spin[1].RollingSpeed, spin[1].SlipRatio = 8, 15
+        spin[2].RollingSpeed, spin[2].SlipRatio = 8, 15
         local burnout = Model.summarize(spin, PEAK_RATIO, PEAK_ANGLE)
-        T.truthy(burnout.Squeal > 0.9, "patinage de deux roues : plein crissement")
+        T.truthy(burnout.Squeal > 0.9, "démarrage en force des deux roues : plein crissement")
+        -- Version 4 (« son plus tolérant ») : patinage modéré d'un essieu muet, blocage au même glissement audible.
+        local function axle(ratio: number, rolling: number): number
+            local w = four(wheel(15))
+            for index = 3, 4 do
+                w[index].SlipRatio, w[index].RollingSpeed = ratio, rolling
+            end
+            return Model.summarize(w, PEAK_RATIO, PEAK_ANGLE).Squeal
+        end
+        T.equal(axle(0.6, 24), 0, "patinage à 6 × le pic : muet")
+        T.truthy(axle(0.6, 24) < axle(-0.6, 6), "blocage au même glissement : audible")
+        T.truthy(axle(-0.6, 6) > 0.5, "blocage à 6 × le pic : crissement")
+        T.truthy(axle(4, 75) > 0.9, "patinage à 40 × le pic : plein crissement")
         -- Version 3 : une roue seule qui patine (roue intérieure en virage) ne crisse pas ; les deux roues d'un essieu,
         -- si (frein à main : arrière bloqué).
         local one = four(wheel(20))
@@ -392,6 +405,65 @@ return function(T: any, H: any)
             )
             T.truthy(fast > 0.5, "100 km/h braquage à fond : sous-virage franc, crissement")
             T.truthy(handbrake > 0.8, "frein à main en virage : l'arrière glisse, crissement")
+
+            -- Version 4, Comète (propulsion, 475 kW), aides coupées comme au départ d'une session, accélérateur à fond
+            -- en ligne droite : le patinage modéré de l'arrière ne crisse presque plus ; le départ arrêté reste audible.
+            local comete = H.require(SHARED .. "Vehicles.VehicleDefinitions").get("wk_comete")
+            local function straight(kmh: number, tc: boolean): (number, number)
+                local peak, sum, count = 0, 0, 0
+                PlanarSim.run(Dynamics, comete, {
+                    Dt = 1 / 240,
+                    Duration = 3,
+                    InitialForward = kmh / 3.6,
+                    Prepare = function(state: any)
+                        state.Aids.TractionControl = tc
+                    end,
+                    Input = function(t: number, snapshot: any, state: any)
+                        local samples = {}
+                        for _, w in state.Wheels do
+                            table.insert(samples, {
+                                Grounded = true,
+                                SlipRatio = w.SlipRatio,
+                                SlipAngle = w.SlipAngle,
+                                ContactVx = snapshot.Forward,
+                                ContactVy = snapshot.Lateral,
+                                RollingSpeed = w.AngularVelocity * comete.Tires.RadiusM,
+                                Surface = "Hard",
+                                Wetness = 0,
+                            })
+                        end
+                        if t >= 0.1 then
+                            local s = Model.summarize(
+                                samples,
+                                comete.Tires.PeakSlipRatio,
+                                math.rad(comete.Tires.PeakSlipAngleDeg)
+                            )
+                            peak = math.max(peak, s.Squeal)
+                            sum += s.Squeal
+                            count += 1
+                        end
+                        return { Throttle = 1, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 }
+                    end,
+                })
+                return peak, sum / math.max(count, 1)
+            end
+            local launchPeak, launchMean = straight(0, false)
+            local _, mean20 = straight(20, false)
+            local _, mean40 = straight(40, false)
+            local _, tcMean = straight(20, true)
+            print(
+                string.format(
+                    "      Comète à fond sans antipatinage : départ arrêté max %.2f moyen %.2f ; 20 km/h moyen %.2f ; 40 km/h moyen %.2f ; avec antipatinage 20 km/h moyen %.2f",
+                    launchPeak,
+                    launchMean,
+                    mean20,
+                    mean40,
+                    tcMean
+                )
+            )
+            T.truthy(launchPeak > 0.8, "Comète, départ arrêté à fond : démarrage en force audible")
+            T.truthy(mean20 < 0.15 and mean40 < 0.05, "Comète à fond en ligne droite lancée : presque muette")
+            T.equal(tcMean, 0, "Comète avec antipatinage : muette")
         end
     )
 end
