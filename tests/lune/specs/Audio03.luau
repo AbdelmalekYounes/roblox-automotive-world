@@ -220,6 +220,13 @@ return function(T: any, H: any)
             T.equal(AmbienceModel.categoryOf(id), "Effects", id .. " : volume « Effets » (décision Q4)")
             T.truthy(string.sub(asset.Output or "", 1, 18) == "build/audio/tires/", id .. " : sortie de l'outil")
             T.truthy(string.find(asset.Licence, "CC0", 1, true) ~= nil, id .. " : licence relevée")
+            -- Envoyés sur Roblox par le propriétaire le 2026-11-06 (audio03_pneus.rbxm) : jouables.
+            T.truthy(AssetManifest.playable(id), id .. " : identifiant Roblox présent")
+        end
+        local seen = {}
+        for _, number in AssetManifest.TireSoundIds do
+            T.truthy(seen[number] == nil, "identifiants distincts")
+            seen[number] = true
         end
     end)
 
