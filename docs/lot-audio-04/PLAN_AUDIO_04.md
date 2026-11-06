@@ -99,7 +99,21 @@ Non vérifié :
 
 En attente : le téléchargement des enregistrements du § 3 par le propriétaire.
 
-## 6. Hors périmètre
+## 6. Sons version 1 et validation à l'écoute (2026-11-06)
+
+Les 6 fichiers ont été téléchargés par le propriétaire le 2026-11-06. Inspection, licences, extraits retenus et
+mesures : `docs/audio/SONS_TIERS.md` § 3. L'outil est `tools/audio/collision_sounds.py` (commit 7b4f48a).
+
+Le propriétaire a écouté `build/audio/collisions/demo_collisions.wav` et a répondu « C'est bon ». C'est un essai humain
+d'écoute sur un fichier, pas un essai en jeu.
+
+Sons à envoyer sur Roblox par le propriétaire : `build/audio/collisions/a_envoyer/` (7 fichiers WAV, 48 kHz, mono).
+Chaque nom `collision_<nom>` correspond à la ressource `audio.effect.collision.<nom>` (le `_` remplace le `.`).
+
+Retour attendu : un `.rbxm` des 7 objets Sound, enregistré dans `aw-vm-exchange` sous un nom préfixé `audio04_`.
+L'assistant y relève les identifiants avec Lune, puis les reporte au manifeste.
+
+## 7. Hors périmètre
 
 - Changement de la détection des dégâts ou de leurs seuils : seule une diffusion sonore est ajoutée au serveur.
 - Sons de klaxon, de portes, d'alarme.
