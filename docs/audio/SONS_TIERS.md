@@ -167,3 +167,62 @@ Limites connues :
 - **Roulement sec** : il vient d'un passage de voiture à distance, et non d'un micro placé au pneu.
 - **Démo** : elle ne contient que les pneus (pas le moteur). Elle suit une dynamique relevée sur le banc planaire,
   et non dans Roblox.
+
+## 3. Collisions (lot AUDIO-04) : enregistrements séparés de Freesound, tous CC0
+
+Téléchargés un par un par le propriétaire le 2026-11-06 dans
+`E:\ROBLOX DEV\aw-sound-references\collisions\freesound\` (6 fichiers). La licence est celle **relevée sur la page de
+chaque son le 2026-11-06** (« Creative Commons 0 »). Aucun nom de marque n'est diffusé dans le jeu.
+
+| N° | Fichier | Auteur | Licence | Format lu | SHA-256 (début) |
+|---|---|---|---|---|---|
+| 1 | `385937__pol__s021_metal_impact_mono.wav` | Pól (pack « Foundation Sound Effects ») | CC0 | 48 kHz, mono, 1,5 s | `a62fa2874fff2f0e` |
+| 2 | `385938__pol__s020_rock_impact_mono.wav` | Pól | CC0 | 48 kHz, mono, 0,8 s | `fbaae0ffe06a71b6` |
+| 3 | `385940__pol__s022_plastic_impact_mono.wav` | Pól | CC0 | 48 kHz, mono, 1,0 s | `48f1945be32c2ea1` |
+| 4 | `385939__pol__s023_metal_rail_scrape_mono.wav` | Pól | CC0 | 48 kHz, mono, 4,2 s | `902a3308718e2bee` |
+| 5 | `346301__pauliusi__car-crash_m-s.wav` | PauliusI | CC0 | 48 kHz, stéréo, 10,0 s | `781ccfb0f6613950` |
+| 6 | `848312__dwswords__glass-smash.wav` | dwswords | CC0 | 48 kHz, stéréo, 2,7 s | `29fdd63d45b1f551` |
+
+### Analyse (2026-11-06)
+
+Analyse par trames de 0,1 s (0,25 s pour le n° 5), spectre lissé :
+- **n° 1 (métal) :** choc puis résonance grave jusqu'à 1,4 s. **3,5 % des échantillons sont écrêtés** à l'origine.
+- **n° 2 (roche) :** coup sec, éteint vers 0,35 s. **1,3 % des échantillons sont écrêtés**.
+- **n° 4 (raclement) :** régulier de 0,2 à 3,8 s, entre −17 et −25 dBFS.
+- **n° 5 (choc entre voitures) :** la voiture approche de 0 à 3,6 s (moteur, −22 à −50 dB sous le choc). L'impact
+  survient à **3,645 s**, d'après l'enveloppe de 5 ms (de −28 à −2 dB du maximum en 20 ms). Les débris durent jusqu'à
+  ~6,5 s.
+- **n° 6 (verre) :** éclat de 0,4 à 1,3 s, surtout au-dessus de 4 kHz.
+
+### Sons produits — version 1 (2026-11-06)
+
+Commande :
+
+```
+python -I tools/audio/collision_sounds.py build "E:\ROBLOX DEV\aw-sound-references\collisions\freesound"
+```
+
+Sortie dans `build/audio/collisions/` : sept sons en WAV 48 kHz, 16 bits, mono, plus `demo_collisions.wav` et
+`rapport.json`.
+
+| Ressource | Source, extrait | Traitement |
+|---|---|---|
+| `hard.light` | n° 2, depuis l'attaque (0,161 s), 0,55 s | 50 Hz–9 kHz, crête −6 dBFS |
+| `hard.heavy` | n° 1, depuis l'attaque (0,137 s), 1,35 s | 40 Hz–12 kHz, crête −2 dBFS |
+| `object` | n° 3, depuis l'attaque (0,015 s), 0,8 s | 60 Hz–12 kHz, crête −4 dBFS |
+| `vehicle.light` | n° 5, depuis l'attaque (3,641 s), 0,7 s | 50 Hz–12 kHz, crête −5 dBFS |
+| `vehicle.heavy` | n° 5, depuis l'attaque (3,641 s), 2,6 s (impact et débris) | 40 Hz–14 kHz, crête −1,5 dBFS |
+| `glass` | n° 6, depuis l'attaque (0,403 s), 1,0 s | 300 Hz–16 kHz, crête −4 dBFS |
+| `scrape` (boucle) | n° 4, 0,3–3,5 s, grains, 2,0 s | 150 Hz–12 kHz, −18 dBFS ; raccord 2,35 dB, plus grand creux 1,86 dB |
+
+Chaque son ponctuel :
+- commence 3 ms avant l'attaque ;
+- monte en 1 ms (aucun clic) ;
+- se termine par un fondu de 80 ms.
+
+**La démo** dure 30 s et rend les volumes et les hauteurs du jeu (`CollisionAudioModel`) :
+- chocs à 2, 5, 9 et 14 m/s, pour le décor, l'objet léger puis le véhicule ;
+- un bris de verre ;
+- un raclement de 6 s, de 2 à 15 m/s puis retour.
+
+Limite connue : l'écrêtage d'origine des n° 1 et 2 ne peut pas être corrigé.

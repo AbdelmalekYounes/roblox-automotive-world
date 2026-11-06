@@ -28,6 +28,8 @@ local EngineAudioModel = require(Shared:WaitForChild("Audio"):WaitForChild("Engi
 local EngineSoundProfiles = require(Shared.Audio:WaitForChild("EngineSoundProfiles"))
 local AmbienceModel = require(Shared.Audio.AmbienceModel)
 local TireAudioModel = require(Shared.Audio:WaitForChild("TireAudioModel"))
+local CollisionAudioModel = require(Shared.Audio:WaitForChild("CollisionAudioModel"))
+local Players = game:GetService("Players")
 local WeatherModel = require(Shared:WaitForChild("World"):WaitForChild("WeatherModel"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 local VehicleDefinitions = require(Shared.Vehicles.VehicleDefinitions)
@@ -309,6 +311,168 @@ end
 
 local ambienceHolder: Folder? = nil
 
+-- ======================== Lot AUDIO-04 : bruits de collision ========================
+local METERS_PER_STUD = Constants.MetersPerStud
+local HISTORY_S = 0.35
+local SCRAPE_MARGIN_STUDS = 0.4
+local IMPACT_MARGIN_STUDS = 1.2
+-- Un choc entre deux véhicules n'est joué qu'une fois : la diffusion du serveur est ignorée si le véhicule conduit
+-- vient d'entendre son propre choc contre un véhicule.
+local VEHICLE_DEDUP_S = 0.6
+local overlap = OverlapParams.new()
+overlap.FilterType = Enum.RaycastFilterType.Exclude
+overlap.RespectCanCollide = true
+local drivenHistory: { { Time: number, X: number, Z: number } } = {}
+local drivenHistoryModel: Model? = nil
+local impactCooldownUntil = 0
+local lastLocalVehicleImpact = -math.huge
+local scrapeTimer = 0
+local SCRAPE_DRIVEN_S = 0.05
+
+local function isVehicle(part: BasePart): boolean
+    local model = part:FindFirstAncestorOfClass("Model")
+    while model do
+        if CollectionService:HasTag(model, Constants.VehicleTag) then
+            return true
+        end
+        model = model:FindFirstAncestorOfClass("Model")
+    end
+    return false
+end
+
+-- Pièces au contact de la carrosserie (au-dessus des roues ; le sol et les bordures basses ne comptent pas), comme
+-- DamageService. `margin` : marge autour de la caisse (studs).
+local function contactParts(model: Model, root: BasePart, margin: number): { BasePart }
+    local definition = VehicleDefinitions.get(model:GetAttribute(Constants.Attributes.DefinitionId) :: any)
+    if definition == nil then
+        return {}
+    end
+    local chassis = definition.Chassis
+    local cg = chassis.CgHeightM * S
+    local bottom, top = -0.5, chassis.HeightM * S - cg
+    local size = Vector3.new(chassis.WidthM * S + 2 * margin, top - bottom, chassis.LengthM * S + 2 * margin)
+    local excluded: { Instance } = { model }
+    for _, player in Players:GetPlayers() do
+        if player.Character then
+            table.insert(excluded, player.Character)
+        end
+    end
+    overlap.FilterDescendantsInstances = excluded
+    return Workspace:GetPartBoundsInBox(root.CFrame * CFrame.new(0, (top + bottom) / 2, 0), size, overlap)
+end
+
+local function playShot(parent: Instance, shot: CollisionAudioModel.Shot)
+    local sound = soundFor(parent, shot.Id, false)
+    if sound then
+        sound.Volume = shot.Volume
+        sound.PlaybackSpeed = shot.Speed
+        sound:Play()
+    end
+end
+
+-- Véhicule conduit : choc détecté LOCALEMENT, sans attendre le serveur (vitesse simulée ici, obstacle au contact du
+-- côté opposé à la poussée). Purement sonore.
+local function detectDrivenImpact(model: Model, root: BasePart)
+    if drivenHistoryModel ~= model then
+        drivenHistoryModel = model
+        table.clear(drivenHistory)
+    end
+    local now = os.clock()
+    local velocity = root.AssemblyLinearVelocity * METERS_PER_STUD
+    local excess = CollisionAudioModel.excess(drivenHistory, now, velocity.X, velocity.Z)
+    -- Poussée : variation depuis le relevé le plus ancien (sens du choc).
+    local oldest = drivenHistory[1]
+    table.insert(drivenHistory, { Time = now, X = velocity.X, Z = velocity.Z })
+    while #drivenHistory > 0 and now - drivenHistory[1].Time > HISTORY_S do
+        table.remove(drivenHistory, 1)
+    end
+    if excess < CollisionAudioModel.MinImpactMs or now < impactCooldownUntil or oldest == nil then
+        return
+    end
+    local push = Vector3.new(velocity.X - oldest.X, 0, velocity.Z - oldest.Z)
+    if push.Magnitude < 1e-3 then
+        return
+    end
+    push = push.Unit
+    local best: BasePart? = nil
+    local bestScore = -math.huge
+    for _, part in contactParts(model, root, IMPACT_MARGIN_STUDS) do
+        local offset = part.Position - root.Position
+        offset = Vector3.new(offset.X, 0, offset.Z)
+        local score = if offset.Magnitude > 1e-3 then offset.Unit:Dot(-push) else 0
+        if score > bestScore then
+            bestScore = score
+            best = part
+        end
+    end
+    if best == nil or bestScore <= -0.2 then
+        return -- variation de vitesse sans obstacle (saut, réapparition) : pas de choc
+    end
+    local obstacle = best :: BasePart
+    local vehicleHit = isVehicle(obstacle)
+    local kind =
+        CollisionAudioModel.classify(vehicleHit, obstacle.Anchored, obstacle.AssemblyMass * 1000 * METERS_PER_STUD ^ 3)
+    local shot = CollisionAudioModel.impact(kind, excess, math.random())
+    if shot then
+        impactCooldownUntil = now + CollisionAudioModel.ImpactCooldownS
+        if vehicleHit then
+            lastLocalVehicleImpact = now
+        end
+        playShot(root, shot)
+    end
+end
+
+-- Raclement : boucle sur la caisse, selon le contact et la vitesse horizontale.
+local function updateScrape(model: Model, root: BasePart, pitch: number?)
+    local velocity = root.AssemblyLinearVelocity
+    local speed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude * METERS_PER_STUD
+    local contact = speed > CollisionAudioModel.ScrapeMinSpeed and #contactParts(model, root, SCRAPE_MARGIN_STUDS) > 0
+    local shot = CollisionAudioModel.scrape(contact, speed)
+    local existing = sounds[root]
+    if shot.Volume <= 0 and not (existing and existing[shot.Id]) then
+        return -- aucun son créé tant qu'il n'y a jamais eu de raclement
+    end
+    local sound = soundFor(root, shot.Id, true)
+    if sound then
+        sound.Volume = shot.Volume
+        sound.PlaybackSpeed = shot.Speed * (pitch or 1)
+    end
+end
+
+-- Diffusion du serveur (autres joueurs, bris d'optique) : véhicule, famille, intensité, position.
+local function onImpactSound(model: any, kind: any, intensity: any, position: any)
+    if typeof(model) ~= "Instance" or not model:IsA("Model") or type(kind) ~= "string" then
+        return
+    end
+    if type(intensity) ~= "number" or intensity ~= intensity or typeof(position) ~= "Vector3" then
+        return
+    end
+    local root = (model :: Model).PrimaryPart
+    local camera = Workspace.CurrentCamera
+    if root == nil or camera == nil or (position - camera.CFrame.Position).Magnitude / S > HEARING_M then
+        return
+    end
+    local data = DevHud.latest()
+    local driven = if data then data.Model else nil
+    if kind == "Glass" then
+        playShot(root, CollisionAudioModel.glass(math.random()))
+        return
+    end
+    if model == driven then
+        return -- déjà joué localement, sans délai
+    end
+    if kind == "Vehicle" and driven and os.clock() - lastLocalVehicleImpact < VEHICLE_DEDUP_S then
+        return -- même choc entre deux véhicules, déjà entendu par le conducteur
+    end
+    if kind ~= "Hard" and kind ~= "Object" and kind ~= "Vehicle" then
+        return
+    end
+    local shot = CollisionAudioModel.impact(kind :: any, math.clamp(intensity, 0, 60), math.random())
+    if shot then
+        playShot(root, shot)
+    end
+end
+
 -- Véhicule conduit : régime réel, recalculé À CHAQUE IMAGE (lot AUDIO-01, retour d'écoute du propriétaire : une
 -- mise à jour toutes les 0,1 s faisait entendre des marches de volume et de hauteur). Habitacle en vue cockpit.
 local lastCockpit: boolean? = nil
@@ -343,6 +507,14 @@ local function updateDriven(dt: number)
                 driven.PrimaryPart :: Instance,
                 TireAudioModel.layers(tires, massOf(driven), quality, os.clock())
             )
+        end
+        -- Lot AUDIO-04 : chocs détectés localement à chaque image ; raclement toutes les 0,05 s.
+        local root = driven.PrimaryPart :: BasePart
+        detectDrivenImpact(driven, root)
+        scrapeTimer += dt
+        if scrapeTimer >= SCRAPE_DRIVEN_S then
+            scrapeTimer = 0
+            updateScrape(driven, root)
         end
     end
 end
@@ -380,6 +552,10 @@ local function update()
                 end
             end
             applyTireLayers(tirePart, tireLayers, dopplerFor(tirePart, eye))
+            -- Lot AUDIO-04 : raclement des véhicules observés proches (contact détecté localement).
+            if index <= (OBSERVED[quality] or 0) then
+                updateScrape(entry.Model, tirePart, dopplerFor(tirePart, eye))
+            end
         end
         local layers = vehicleLayers(entry.Model, nil, quality)
         if layers then
@@ -447,6 +623,14 @@ function AudioController.start()
     holder.Name = "AWAmbiance"
     holder.Parent = SoundService
     ambienceHolder = holder
+    -- Lot AUDIO-04 : chocs et bris d'optique diffusés par le serveur.
+    task.spawn(function()
+        local folder = ReplicatedStorage:WaitForChild(Constants.RemotesFolderName)
+        local remote = folder:WaitForChild(Constants.Remotes.ImpactSound)
+        if remote:IsA("UnreliableRemoteEvent") then
+            remote.OnClientEvent:Connect(onImpactSound)
+        end
+    end)
     local timer = 0
     RunService.Heartbeat:Connect(function(dt)
         updateDriven(dt)

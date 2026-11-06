@@ -415,6 +415,8 @@ return function(T: any, H: any)
                 or string.sub(asset.Id, 1, 18) == "audio.engine.brio."
                 -- Sons des pneus (lot AUDIO-03, essai Audio03), envoyés par le propriétaire.
                 or string.sub(asset.Id, 1, 18) == "audio.effect.tire."
+                -- Bruits de collision (lot AUDIO-04, essai Audio04), envoyés par le propriétaire.
+                or string.sub(asset.Id, 1, 23) == "audio.effect.collision."
             then
                 continue
             end
@@ -427,6 +429,8 @@ return function(T: any, H: any)
                 asset.Category == "Audio"
                 and string.sub(asset.Output or "", 1, 20) ~= "build/audio/engines/"
                 and string.sub(asset.Output or "", 1, 18) ~= "build/audio/tires/"
+                -- Bruits de collision du lot AUDIO-04 (build/audio/collisions/…) : contrôlés par la suite Audio04.
+                and string.sub(asset.Output or "", 1, 23) ~= "build/audio/collisions/"
             then
                 audio += 1
                 T.truthy(

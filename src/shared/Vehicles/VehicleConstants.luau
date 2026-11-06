@@ -27,6 +27,9 @@ local VehicleConstants = {
         -- RemoteEvent serveur → client : complément d'impulsion après une collision
         -- confirmée par le serveur. Le serveur n'écoute RIEN sur ce canal.
         Impulse = "VehicleImpulse",
+        -- UnreliableRemoteEvent serveur → clients (lot AUDIO-04) : bruit d'un choc ou d'un bris d'optique observé par
+        -- le serveur (véhicule, famille, intensité, position). Purement sonore ; le serveur n'écoute RIEN sur ce canal.
+        ImpactSound = "VehicleImpactSound",
     }),
 
     -- Actions discrètes acceptées par le serveur (liste fermée).

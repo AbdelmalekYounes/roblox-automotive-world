@@ -8,7 +8,8 @@
     notifications, accessibilité, langue, audio, graphismes (lot 0.8),
     préférences sociales,
     raccourcis clavier personnalisés et caméra en conduite (lot CAMERA-01 :
-    sensibilité, inversion verticale). Rien de temporaire (état d'un menu,
+    sensibilité, inversion verticale) et affichage du téléphone (lot PHONE-01 :
+    en main, classique ou automatique). Rien de temporaire (état d'un menu,
     animation). Le partage de position n'est JAMAIS une préférence durable :
     il est désactivé par défaut à chaque groupe (AUD-PRIV-01).
     Toute valeur reçue du client est nettoyée (bornes, énumérations) ; un
@@ -66,7 +67,13 @@ export type Prefs = {
     Bindings: { [string]: string }, -- action → touche clavier personnalisée
     -- Lot CAMERA-01 : caméra libre en conduite (sensibilité 1 à 5, inversion verticale).
     Camera: { Sensitivity: number, InvertY: boolean },
+    -- Lot PHONE-01 : affichage du téléphone. « InHand » : interface sur l'écran du téléphone tenu en main (zoom de la
+    -- caméra) ; « Classic » : ancien téléphone dans le coin de l'écran ; « Auto » : en main sauf disposition compacte.
+    Phone: { Display: "Auto" | "InHand" | "Classic" },
 }
+
+-- Lot PHONE-01 : valeurs admises de `Phone.Display` (ordre du réglage du téléphone).
+Preferences.PhoneDisplays = table.freeze({ "Auto", "InHand", "Classic" })
 
 function Preferences.defaults(): Prefs
     return {
@@ -107,6 +114,8 @@ function Preferences.defaults(): Prefs
         Bindings = {},
         -- Lot CAMERA-01 : un profil existant sans ces champs reçoit ces valeurs (aucune migration).
         Camera = { Sensitivity = 3, InvertY = false },
+        -- Lot PHONE-01.
+        Phone = { Display = "Auto" },
     }
 end
 
@@ -162,6 +171,7 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
     local social = if type(source.Social) == "table" then source.Social else {}
     local graphics = if type(source.Graphics) == "table" then source.Graphics else {}
     local cameraPrefs = if type(source.Camera) == "table" then source.Camera else {}
+    local phonePrefs = if type(source.Phone) == "table" then source.Phone else {}
     local bindings: { [string]: string } = {}
     if type(source.Bindings) == "table" then
         local count = 0
@@ -227,6 +237,10 @@ function Preferences.sanitize(raw: any, knownActions: { string }?): Prefs
         Camera = {
             Sensitivity = number(cameraPrefs.Sensitivity, d.Camera.Sensitivity, r.CameraSensitivity),
             InvertY = bool(cameraPrefs.InvertY, d.Camera.InvertY),
+        },
+        -- Lot PHONE-01.
+        Phone = {
+            Display = enum(phonePrefs.Display, Preferences.PhoneDisplays :: any, d.Phone.Display),
         },
     }
 end
