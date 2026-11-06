@@ -41,14 +41,21 @@ MODEL = ROOT / "src/shared/Audio/CollisionAudioModel.luau"
 # Sons ponctuels : fichier (préfixe Freesound), début de recherche de l'attaque (s ; None = début du fichier),
 # durée gardée (s), bande (Hz), crête visée (dBFS). Boucle : extrait (début, fin). Fixés après `inspect` et l'écoute.
 SHOTS: dict[str, dict] = {
-    "hard.light": {"file": "385938", "search": None, "length": 0.6, "band": (50.0, 9000.0), "peak_db": -6.0},
-    "hard.heavy": {"file": "385937", "search": None, "length": 1.4, "band": (40.0, 12000.0), "peak_db": -2.0},
+    # Roche (Pól 385938) : coup sec, attaque à ~0,1 s, éteint vers 0,35 s. Écrêté à 1,3 % à l'origine.
+    "hard.light": {"file": "385938", "search": None, "length": 0.55, "band": (50.0, 9000.0), "peak_db": -6.0},
+    # Métal (Pól 385937) : choc et résonance de 1,3 s. Écrêté à 3,5 % à l'origine (à juger à l'oreille).
+    "hard.heavy": {"file": "385937", "search": None, "length": 1.35, "band": (40.0, 12000.0), "peak_db": -2.0},
+    # Plastique (Pól 385940) : objet léger.
     "object": {"file": "385940", "search": None, "length": 0.8, "band": (60.0, 12000.0), "peak_db": -4.0},
-    "vehicle.light": {"file": "346301", "search": None, "length": 0.8, "band": (50.0, 12000.0), "peak_db": -5.0},
-    "vehicle.heavy": {"file": "346301", "search": None, "length": 2.5, "band": (40.0, 14000.0), "peak_db": -1.5},
-    "glass": {"file": "848312", "search": None, "length": 1.8, "band": (300.0, 16000.0), "peak_db": -4.0},
+    # Vrai choc Peugeot 406 contre Ford Ka (PauliusI 346301) : la voiture approche de 0 à 3,2 s, impact vers 3,4 s,
+    # débris jusqu'à ~6,5 s. Léger : l'impact seul ; lourd : impact et débris.
+    "vehicle.light": {"file": "346301", "search": 3.0, "length": 0.7, "band": (50.0, 12000.0), "peak_db": -5.0},
+    "vehicle.heavy": {"file": "346301", "search": 3.0, "length": 2.6, "band": (40.0, 14000.0), "peak_db": -1.5},
+    # Verre (dwswords 848312) : éclat de 0,4 à 1,3 s, puis silence.
+    "glass": {"file": "848312", "search": 0.3, "length": 1.0, "band": (300.0, 16000.0), "peak_db": -4.0},
 }
-LOOP = {"name": "scrape", "file": "385939", "span": None, "band": (150.0, 12000.0), "rms_db": -18.0}
+# Raclement d'une voiture de rallye le long d'une glissière (Pól 385939) : régulier de 0,2 à 3,8 s.
+LOOP = {"name": "scrape", "file": "385939", "span": (0.3, 3.5), "band": (150.0, 12000.0), "rms_db": -18.0}
 LOOP_SECONDS = 2.0
 FADE_S = 0.08
 
