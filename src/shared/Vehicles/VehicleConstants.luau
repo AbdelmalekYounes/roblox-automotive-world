@@ -42,6 +42,10 @@ local VehicleConstants = {
 
     -- Aides connues (liste fermée, validée par le serveur).
     AidNames = table.freeze({ "Abs", "TractionControl", "StabilityControl" }),
+    -- Aides ACTIVES au début de chaque session de conduite, si le modèle en est équipé (amendement A-02 du propriétaire,
+    -- 2026-11-06, docs/AMENDEMENTS_CAHIER_DES_CHARGES.md) : l'antipatinage seul. Les autres partent désactivées
+    -- (cahier des charges, ligne 55) ; toutes restent réglables par le joueur.
+    AidsOnAtStart = table.freeze({ TractionControl = true } :: { [string]: boolean }),
 
     Attributes = table.freeze({
         VehicleId = "VehicleId",
@@ -60,6 +64,11 @@ local VehicleConstants = {
         -- conducteur, bornée : régime (tr/min, 0 = moteur arrêté) et charge (accélérateur, 0 à 1). Aucun effet de jeu.
         AudioRpm = "AudioRpm",
         AudioLoad = "AudioLoad",
+        -- Sons des pneus vus par les autres joueurs (lot AUDIO-03), écrits par le serveur d'après la déclaration du
+        -- conducteur, bornée : glissement sonore (0 à 1, pas de 0,1) et famille de revêtement (code 0 à 3,
+        -- TireAudioModel.Surfaces). Aucun effet de jeu.
+        AudioTireSlip = "AudioTireSlip",
+        AudioTireSurface = "AudioTireSurface",
         IsTestVehicle = "IsTestVehicle",
         PadIndex = "PadIndex",
         -- Énergie (écrite par le serveur seul) : niveau en L ou kWh, réserve vide.

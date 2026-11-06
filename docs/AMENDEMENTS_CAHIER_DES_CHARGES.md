@@ -22,3 +22,22 @@ seulement la Comète et on va faire un autre véhicule en 3D bien fait ». Choix
 | §3.1, §10.1, AUD-ONB-01 | trois véhicules de départ au choix | **un** (la citadine) ; aucun tant qu'elle n'est pas intégrée |
 | Gamme par familles et marques fictives | 4 marques, familles | sans objet pour l'instant ; marques conservées dans les documents |
 | Métiers à véhicule fourni (taxi, livraison, convoi, essais) | véhicule de service | indisponibles avec une raison affichée, tant qu'aucun véhicule de service n'existe |
+
+## A-02 — antipatinage actif au départ des sessions de conduite (2026-11-06)
+
+**Décision du propriétaire.** Il a répondu « E puis B » à la proposition `docs/PROPOSITION_PATINAGE.md`, rédigée
+après le lot AUDIO-03. Cette proposition s'appuie sur des mesures au banc planaire :
+- **Comète**, aides coupées : 3,7 s de patinage au départ, et tête-à-queue dès qu'on accélère en braquant ;
+- **avec l'antipatinage** : plus de tête-à-queue, et un 0 à 100 km/h plus rapide (4,19 s au lieu de 4,49 s).
+
+| Cahier des charges | Exigence d'origine | Désormais |
+|---|---|---|
+| Ligne 55 (§1.2) | aides « état par défaut désactivé » | **antipatinage actif** au début de chaque session de conduite, s'il équipe le modèle ; ABS et contrôle de stabilité toujours désactivés par défaut |
+
+Ce qui ne change pas :
+- **Aides absentes** : un modèle sans antipatinage n'en reçoit pas.
+- **Réglage par le joueur** : l'antipatinage reste désactivable (touche 2, ou réglages à la croix de la manette) ; son
+  état est affiché au HUD.
+- **Aucune aide cachée** : l'avis « antipatinage désactivé » (option E) est une information, pas une aide.
+
+Mise en œuvre : `Constants.AidsOnAtStart` et `VehicleService.assignDriver`.

@@ -421,9 +421,10 @@ end
 -- Aides : état par défaut, activation/désactivation, HUD.
 local function aidsStateStage(stage: string)
     local s = snapshot()
+    -- Amendement A-02 (2026-11-06) : l'antipatinage part ACTIF s'il équipe le modèle ; ABS et ESP désactivés.
     record(
-        "client.aides_desactivees_par_defaut",
-        s.Aids.Abs == false and s.Aids.TractionControl == false and s.Aids.StabilityControl == false,
+        "client.aides_etat_par_defaut",
+        s.Aids.Abs == false and s.Aids.TractionControl == true and s.Aids.StabilityControl == false,
         s.HudSystems
     )
     record(

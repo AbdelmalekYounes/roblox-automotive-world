@@ -112,8 +112,12 @@ add({
     Output = "assets/meshkits/Comete720s.rbxm",
     RobloxAssetId = nil,
     RobloxAssetIds = {
+        -- Lot ANIM-01 (2026-11-06) : volant séparé de l'habitacle, importé et envoyé sur Roblox par le propriétaire
+        -- (aw-vm-exchange/comete_volant.rbxm) : COMETE_Habitacle_interior sans volant (77774849215644, remplace
+        -- 106049474235075) et COMETE_Volant (90303387073911). Texture de l'habitacle d'origine reprise.
         72070150876445,
         73457381515552,
+        77774849215644,
         79005674751505,
         81144738448567,
         81797127978233,
@@ -121,6 +125,7 @@ add({
         85421020854464,
         87224242574848,
         89081965660812,
+        90303387073911,
         92270039932160,
         93486246899499,
         95185700118311,
@@ -128,7 +133,6 @@ add({
         102573121267361,
         103640134917186,
         104886086089628,
-        106049474235075,
         115446736871757,
         117440140283283,
         118010695887646,
@@ -323,6 +327,47 @@ end
 recordedEngine("brio", "start", "démarrage")
 recordedEngine("brio", "stop", "arrêt")
 recordedEngine("brio", "stall", "calage")
+
+-- ======================== Audio enregistré (lot AUDIO-03 : pneus) ========================
+-- Boucles des pneus (TireAudioModel), tirées d'enregistrements libres de Freesound (CC0) relevés au registre
+-- docs/audio/SONS_TIERS.md (§ pneus) et transformées par tools/audio/tire_loops.py. Catégorie « Effets » (préfixe
+-- audio.effect.). Validées à l'écoute par le propriétaire le 2026-11-06.
+local TIRE_LOOPS = "tools/audio/tire_loops.py"
+-- Identifiants des sons ENVOYÉS SUR ROBLOX PAR LE PROPRIÉTAIRE (importation groupée de Studio, 2026-11-06), relevés
+-- par Lune dans son fichier aw-vm-exchange/audio03_pneus.rbxm (6 objets Sound « tire_<nom> », propriété AudioContent) ;
+-- aucun n'est inventé (contrôle pytest : table exacte).
+local TIRE_SOUND_IDS: { [string]: number } = {
+    ["roll.dry"] = 90291890857090,
+    ["roll.loose"] = 79688428452888,
+    ["roll.wet"] = 109725784350976,
+    ["squeal"] = 108267751330014,
+    ["scrub"] = 79292953985747,
+    ["slide.loose"] = 112587939989359,
+}
+AssetManifest.TireSoundIds = table.freeze(TIRE_SOUND_IDS)
+local function recordedTire(name: string, note: string)
+    add({
+        Id = "audio.effect.tire." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "ReadyForReview",
+        Variants = { Low = "2 couches", Medium = "4 couches", High = "Toutes les couches" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = "Tiers : enregistrements CC0 de Freesound, transformés ("
+            .. note
+            .. ") ; docs/audio/SONS_TIERS.md",
+        Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
+        Source = { Kind = "File", Path = TIRE_LOOPS },
+        Output = "build/audio/tires/" .. name .. ".wav",
+        RobloxAssetId = TIRE_SOUND_IDS[name],
+    })
+end
+recordedTire("roll.dry", "roulement sur revêtement dur")
+recordedTire("roll.loose", "roulement sur gravier et terre")
+recordedTire("roll.wet", "chuintement sur chaussée mouillée")
+recordedTire("squeal", "crissement de glissement")
+recordedTire("scrub", "frottement de glissade franche")
+recordedTire("slide.loose", "glissade sur gravier")
 
 local LAYERS = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" }
 for _, layer in { "idle", "low", "mid", "high" } do

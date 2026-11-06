@@ -387,6 +387,8 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
             contact.SurfaceFriction = SurfaceFriction.forMaterialName(result.Material.Name)
             contact.Wet = isWet(hitPart)
             contact.Wetness = roadWetness
+            -- Lot AUDIO-03 : famille sonore du revêtement (aucun effet physique).
+            contact.Material = result.Material.Name
             if contact.Wet or roadWetness >= 0.5 then
                 wetWheels += 1
             end
@@ -402,6 +404,7 @@ function VehicleSimulator.step(self: VehicleSimulator, input: Types.DriverInput,
             contact.SurfaceFriction = 1
             contact.Wet = false
             contact.Wetness = 0
+            contact.Material = nil
         end
     end
 

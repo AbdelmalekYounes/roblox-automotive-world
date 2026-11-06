@@ -58,6 +58,18 @@ BRIO_ENGINE_SOUND_IDS = {
 }
 
 
+# Identifiants des 6 sons de pneus envoyés par le propriétaire (lot AUDIO-03, 2026-11-06), relevés dans son fichier
+# audio03_pneus.rbxm.
+TIRE_SOUND_IDS = {
+    "roll.dry": 90291890857090,
+    "roll.loose": 79688428452888,
+    "roll.wet": 109725784350976,
+    "squeal": 108267751330014,
+    "scrub": 79292953985747,
+    "slide.loose": 112587939989359,
+}
+
+
 def test_asset_manifest_declares_no_roblox_id():
     """Aucun identifiant Roblox n'est inventé : RobloxAssetId vaut nil, sauf les 12 icônes du téléphone et les 19 sons
     de moteur de la Brio envoyés par le propriétaire, lus dans deux tables uniques dont le contenu doit être exactement
@@ -66,10 +78,17 @@ def test_asset_manifest_declares_no_roblox_id():
     values = re.findall(r"RobloxAssetId\s*=\s*([^,\n]+)", source)
     assert values, "champ RobloxAssetId absent"
     others = [value.strip() for value in values if value.strip() != "nil"]
-    assert others == ["if vehicle == \"brio\" then BRIO_ENGINE_SOUND_IDS[name] else nil", "PHONE_ICON_IDS[appName]"], others
+    assert others == [
+        "if vehicle == \"brio\" then BRIO_ENGINE_SOUND_IDS[name] else nil",
+        "TIRE_SOUND_IDS[name]",
+        "PHONE_ICON_IDS[appName]",
+    ], others
     sounds = re.search(r"local BRIO_ENGINE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert sounds, "table BRIO_ENGINE_SOUND_IDS absente"
     assert {k: int(v) for k, v in re.findall(r'\["([a-z0-9.]+)"\] = (\d+),', sounds.group(1))} == BRIO_ENGINE_SOUND_IDS
+    tires = re.search(r"local TIRE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
+    assert tires, "table TIRE_SOUND_IDS absente"
+    assert {k: int(v) for k, v in re.findall(r'\["([a-z.]+)"\] = (\d+),', tires.group(1))} == TIRE_SOUND_IDS
     block = re.search(r"local PHONE_ICON_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert block, "table PHONE_ICON_IDS absente"
     declared = {name: int(number) for name, number in re.findall(r"(\w+) = (\d+),", block.group(1))}
