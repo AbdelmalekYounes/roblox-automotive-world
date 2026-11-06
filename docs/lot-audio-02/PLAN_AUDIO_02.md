@@ -102,6 +102,26 @@ Mesure sur le banc planaire (Comète à fond, pas de 1/240 s ; valeurs du modèl
 `verify.ps1 -DownloadRobloxTypes` (2026-11-06) : toutes les étapes OK, Lune 477 sur 477, pytest 33 sur 33. La conduite
 en jeu n'est pas vérifiée.
 
+### Premières mesures des enregistrements (2026-11-06)
+
+Le propriétaire a déposé 5 des 6 fichiers. Il manque le n° 5 (pétarades, 797835).
+
+Analyse : raies entre 25 et 700 Hz par trames de 0,2 s, puis régime estimé par un peigne de demi-ordres (V8 à
+vilebrequin croisé), trames de 0,12 s :
+- **n° 1, Maserati, départ** :
+  - **ralenti stable de 0,2 à 7,8 s**, à **850–860 tr/min** (raie d'allumage de 56 Hz = régime / 15), soit le ralenti
+    de la Comète ;
+  - départ vers 8,4 s : montée en 1ʳᵉ jusqu'à environ 5 500 tr/min (mesure incertaine, scores faibles), passage vers
+    9,3 s, puis montée en 2ᵉ de 3 100 à 5 400 tr/min jusqu'à 10,5 s, pendant que la voiture s'éloigne (−8 dB et effet
+    Doppler) ;
+  - une raie parasite fixe à 86 Hz est présente du début à la fin (bruit ambiant).
+- **n° 3, AMG** : ralenti à 59 Hz ; trois coups de gaz à vide de 0,3 à 0,5 s chacun, avec leurs retombées.
+- **n° 4, V8 binaural** : ralenti à 44–46 Hz ; coups de gaz courts.
+
+**Constat** : aucune montée continue et stable **en charge** au-delà de ~5 500 tr/min. Les boucles en charge devront
+être prises sur de courts extraits (départ de la Maserati, passage n° 2), puis transposées. La qualité est à juger à
+l'écoute des démos.
+
 ## 5. Déroulement
 
 Le déroulement est celui d'AUDIO-01 :
