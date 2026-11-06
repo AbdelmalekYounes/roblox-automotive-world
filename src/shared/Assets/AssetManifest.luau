@@ -372,14 +372,27 @@ recordedTire("slide.loose", "glissade sur gravier")
 -- ======================== Audio enregistré (lot AUDIO-04 : collisions) ========================
 -- Chocs, bris d'optique et raclement (CollisionAudioModel), tirés d'enregistrements libres de Freesound (CC0) relevés
 -- au registre docs/audio/SONS_TIERS.md (§ collisions) et transformés par tools/audio/collision_sounds.py. Catégorie
--- « Effets » (préfixe audio.effect.). Aucun identifiant Roblox tant que le propriétaire ne les a pas envoyés.
+-- « Effets » (préfixe audio.effect.). Validés à l'écoute par le propriétaire le 2026-11-06.
 local COLLISION_SOUNDS = "tools/audio/collision_sounds.py"
+-- Identifiants des sons ENVOYÉS SUR ROBLOX PAR LE PROPRIÉTAIRE (importation groupée de Studio, 2026-11-06), relevés
+-- par Lune dans son fichier aw-vm-exchange/audio04_collisions.rbxm (7 objets Sound « collision_<nom> », propriété
+-- AudioContent) ; aucun n'est inventé (contrôle pytest : table exacte).
+local COLLISION_SOUND_IDS: { [string]: number } = {
+    ["hard.light"] = 119936631540140,
+    ["hard.heavy"] = 84821488985222,
+    ["object"] = 107111383496078,
+    ["vehicle.light"] = 73753197716718,
+    ["vehicle.heavy"] = 103306869584523,
+    ["glass"] = 73806268842632,
+    ["scrape"] = 126532496130819,
+}
+AssetManifest.CollisionSoundIds = table.freeze(COLLISION_SOUND_IDS)
 local function recordedCollision(name: string, note: string)
     add({
         Id = "audio.effect.collision." .. name,
         Category = "Audio",
         Version = "1.0.0",
-        Status = "Provisional",
+        Status = "ReadyForReview",
         Variants = { Low = "Identique", Medium = "Identique", High = "Identique" },
         Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
         Provenance = "Tiers : enregistrements CC0 de Freesound, transformés ("
@@ -388,7 +401,7 @@ local function recordedCollision(name: string, note: string)
         Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
         Source = { Kind = "File", Path = COLLISION_SOUNDS },
         Output = "build/audio/collisions/" .. name .. ".wav",
-        RobloxAssetId = nil,
+        RobloxAssetId = COLLISION_SOUND_IDS[name],
     })
 end
 recordedCollision("hard.light", "petit choc contre le décor")
