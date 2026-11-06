@@ -27,6 +27,7 @@ local AssetManifest = require(Shared:WaitForChild("Assets"):WaitForChild("AssetM
 local EngineAudioModel = require(Shared:WaitForChild("Audio"):WaitForChild("EngineAudioModel"))
 local EngineSoundProfiles = require(Shared.Audio:WaitForChild("EngineSoundProfiles"))
 local AmbienceModel = require(Shared.Audio.AmbienceModel)
+local TireAudioModel = require(Shared.Audio:WaitForChild("TireAudioModel"))
 local WeatherModel = require(Shared:WaitForChild("World"):WaitForChild("WeatherModel"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 local VehicleDefinitions = require(Shared.Vehicles.VehicleDefinitions)
@@ -181,9 +182,10 @@ local function playEvents(model: Model, part: BasePart, profile: EngineAudioMode
     end
 end
 
--- Écoute depuis l'habitacle : égaliseur posé sur le groupe « Engine » (tous les moteurs entendus de la cabine).
-local function applyListening(cockpit: boolean)
-    local group = SoundService:FindFirstChild("AWEngine")
+-- Écoute depuis l'habitacle : égaliseur posé sur le groupe « Engine » (tous les moteurs entendus de la cabine) et,
+-- depuis le lot AUDIO-03, sur le groupe « Effects » (pneus, vent : décision Q4 du propriétaire).
+local function equalizeGroup(groupName: string, cockpit: boolean)
+    local group = SoundService:FindFirstChild(groupName)
     if group == nil or not group:IsA("SoundGroup") then
         return
     end
@@ -200,6 +202,47 @@ local function applyListening(cockpit: boolean)
     effect.MidGain = settings.MidGain
     effect.HighGain = settings.HighGain
     effect.Enabled = cockpit
+end
+
+local function applyListening(cockpit: boolean)
+    equalizeGroup("AWEngine", cockpit)
+    equalizeGroup("AWEffects", cockpit)
+end
+
+-- ======================== Lot AUDIO-03 : sons des pneus ========================
+-- Masse du modèle (kg) : un véhicule lourd roule plus fort et plus grave (TireAudioModel.layers).
+local function massOf(model: Model): number
+    local definition = VehicleDefinitions.get(model:GetAttribute(Constants.Attributes.DefinitionId) :: any)
+    return if definition then definition.Chassis.MassKg else TireAudioModel.ReferenceMassKg
+end
+
+-- Humidité de la chaussée due à la météo (même attribut que la physique, VehicleSimulator).
+local function roadWetness(): number
+    local value = Workspace:GetAttribute(Constants.RoadWetnessAttribute)
+    return if type(value) == "number" then math.clamp(value, 0, 1) else 0
+end
+
+-- Véhicule observé : glissement et revêtement publiés par le serveur (déclaration bornée du conducteur), vitesse
+-- répliquée, humidité locale. Sans conducteur : roulement seul, d'après la vitesse (véhicule poussé ou en roue libre).
+local function observedTireLayers(model: Model, part: BasePart, quality: string): { TireAudioModel.Layer }
+    local slip = model:GetAttribute(Constants.Attributes.AudioTireSlip)
+    local surface = model:GetAttribute(Constants.Attributes.AudioTireSurface)
+    local speedMs = part.AssemblyLinearVelocity.Magnitude * Constants.MetersPerStud
+    local summary = TireAudioModel.observed(if type(slip) == "number" then slip else 0, surface, speedMs, roadWetness())
+    return TireAudioModel.layers(summary, massOf(model), quality)
+end
+
+-- Applique les couches des pneus sans créer de son tant qu'une couche est muette : six boucles par véhicule, la
+-- plupart silencieuses (revêtement absent, aucun glissement) ; un son créé reste en place et suit son volume.
+local function applyTireLayers(parent: Instance, layers: { TireAudioModel.Layer }, pitch: number?)
+    local existing = sounds[parent]
+    local audible: { TireAudioModel.Layer } = {}
+    for _, layer in layers do
+        if layer.Volume > 0 or (existing and existing[layer.Id]) then
+            table.insert(audible, layer)
+        end
+    end
+    applyLayers(parent, audible, pitch)
 end
 
 -- Facteur Doppler d'un véhicule observé : vitesse d'approche vers la caméra (m/s).
@@ -288,9 +331,18 @@ local function updateDriven(dt: number)
     end
     local driven: Model? = if data then data.Model else nil
     if driven and driven.PrimaryPart then
-        local layers = vehicleLayers(driven, data, UIState.prefs().Graphics.Quality)
+        local quality = UIState.prefs().Graphics.Quality
+        local layers = vehicleLayers(driven, data, quality)
         if layers then
             applyLayers(driven.PrimaryPart :: Instance, layers)
+        end
+        -- Lot AUDIO-03 : pneus du véhicule conduit, d'après la vraie dynamique (pulsation de l'ABS à chaque image).
+        local tires = data and data.TireAudio
+        if tires then
+            applyTireLayers(
+                driven.PrimaryPart :: Instance,
+                TireAudioModel.layers(tires, massOf(driven), quality, os.clock())
+            )
         end
     end
 end
@@ -318,6 +370,17 @@ local function update()
         return a.Distance < b.Distance
     end)
     for index, entry in nearby do
+        -- Lot AUDIO-03 : pneus des véhicules observés, même limite de nombre et même Doppler que le moteur.
+        local tirePart = entry.Model.PrimaryPart
+        if tirePart then
+            local tireLayers = observedTireLayers(entry.Model, tirePart, quality)
+            if index > (OBSERVED[quality] or 0) then
+                for _, layer in tireLayers do
+                    layer.Volume = 0
+                end
+            end
+            applyTireLayers(tirePart, tireLayers, dopplerFor(tirePart, eye))
+        end
         local layers = vehicleLayers(entry.Model, nil, quality)
         if layers then
             if index > (OBSERVED[quality] or 0) then

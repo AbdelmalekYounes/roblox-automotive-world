@@ -33,6 +33,21 @@ function InputCodec.encode(input: Types.DriverInput, energyUsed: number?, engine
     }
 end
 
+-- ======================== Lot AUDIO-03 : sons des pneus ========================
+-- Pas du glissement sonore transmis (0 à 1) et nombre de familles de revêtement (codes 0 à 3, TireAudioModel).
+InputCodec.TireSlipStep = 0.1
+InputCodec.TireSurfaceCodes = 4
+
+-- Ajoute à une commande encodée le glissement sonore des pneus (7e valeur, 0 à 1, pas de 0,1) et la famille de
+-- revêtement (8e valeur, entier 0 à 3). Simple DÉCLARATION, qui ne sert qu'au son des autres joueurs.
+function InputCodec.appendTire(encoded: { number }, slip: number, surfaceCode: number): { number }
+    -- Division par l'inverse du pas : 0,7 exact (et non 0,7000000000000001), pour comparer les envois successifs.
+    local steps = math.round(1 / InputCodec.TireSlipStep)
+    encoded[7] = math.round(math.clamp(slip, 0, 1) * steps) / steps
+    encoded[8] = math.clamp(math.round(surfaceCode), 0, InputCodec.TireSurfaceCodes - 1)
+    return encoded
+end
+
 local function finiteNumber(value: any, low: number, high: number): number?
     if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge then
         return nil
@@ -40,9 +55,9 @@ local function finiteNumber(value: any, low: number, high: number): number?
     return math.clamp(value, low, high)
 end
 
--- Retourne une commande assainie (puis le cumul d'énergie et le régime déclarés,
--- s'ils sont valides), ou nil si la charge utile est invalide.
-function InputCodec.decode(payload: any): (Types.DriverInput?, number?, number?)
+-- Retourne une commande assainie (puis le cumul d'énergie, le régime, le glissement sonore
+-- des pneus et le code de revêtement déclarés, s'ils sont valides), ou nil si la charge utile est invalide.
+function InputCodec.decode(payload: any): (Types.DriverInput?, number?, number?, number?, number?)
     if type(payload) ~= "table" then
         return nil
     end
@@ -57,6 +72,10 @@ function InputCodec.decode(payload: any): (Types.DriverInput?, number?, number?)
     local energy = finiteNumber(payload[5], 0, 1e6)
     -- Régime facultatif (lot AUDIO-01) : borné ; absent ou invalide → nil (ancien client).
     local rpm = finiteNumber(payload[6], 0, InputCodec.MaxRpm)
+    -- Pneus facultatifs (lot AUDIO-03) : glissement borné à 0–1, code de revêtement entier ; sinon nil.
+    local tireSlip = finiteNumber(payload[7], 0, 1)
+    local surface = finiteNumber(payload[8], 0, InputCodec.TireSurfaceCodes - 1)
+    local tireSurface = if surface then math.round(surface) else nil
     return {
         Throttle = throttle,
         Brake = brake,
@@ -65,7 +84,9 @@ function InputCodec.decode(payload: any): (Types.DriverInput?, number?, number?)
         Clutch = 0,
     },
         energy,
-        rpm
+        rpm,
+        tireSlip,
+        tireSurface
 end
 
 -- Commande neutre utilisée pour un véhicule stationné (frein à main serré).
