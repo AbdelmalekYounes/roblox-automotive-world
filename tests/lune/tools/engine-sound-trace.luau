@@ -34,6 +34,10 @@ end
 
 local snaps = PlanarSim.run(Dynamics, definition, {
     Dt = DT,
+    -- Lot AUDIO-02 : antipatinage actif s'il équipe le modèle, comme au début d'une session en jeu (amendement A-02).
+    Prepare = function(state: any)
+        state.Aids.TractionControl = definition.Aids.TractionControl == true
+    end,
     Duration = 60,
     Input = function(t: number, snapshot: any, state: any)
         local kmh = snapshot.Forward * 3.6

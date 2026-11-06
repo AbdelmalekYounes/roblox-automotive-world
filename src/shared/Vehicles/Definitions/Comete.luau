@@ -158,7 +158,10 @@ local definition: Types.VehicleDefinition = {
                 1.0800000000000001,
                 0.92000000000000004,
             },
-            Kind = "Sequential",
+            -- Lot AUDIO-02 (décision du propriétaire, 2026-11-06 : « il faudrait que la voiture soit en boîte auto pour
+            -- être fidèle à la McLaren 720S ») : boîte à DOUBLE EMBRAYAGE, passages automatiques et reprise possible à
+            -- la main (Maj, Ctrl), comme la 720S ; auparavant séquentielle (revue de la Comète, 2026-11-05).
+            Kind = "DualClutch",
             LaunchRpm = 3002,
             ReverseRatio = 3.2999999999999998,
             ShiftDownRpm = 2856,

@@ -49,6 +49,8 @@ for _, spec in
         require("./specs/Admin01"),
         require("./specs/Veh3d02Brio"),
         require("./specs/Audio01"),
+        -- Lot AUDIO-02 : moteur de la Comète.
+        require("./specs/Audio02"),
         require("./specs/Brio02"),
         -- Lot CAMERA-01 : caméra libre en conduite.
         require("./specs/Camera01FreeLook"),

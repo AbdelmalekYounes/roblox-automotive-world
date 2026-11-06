@@ -26,7 +26,25 @@ local BRIO: EngineAudioModel.Profile = {
     Gain = 0.9,
 }
 
-EngineSoundProfiles.Profiles = table.freeze({ wk_brio = table.freeze(BRIO) }) :: { [string]: EngineAudioModel.Profile }
+-- Comète (lot AUDIO-02, 2026-11-06) : pack « V8 Lotus » de wikusv (Freesound, CC BY 4.0, crédit en jeu), variante
+-- « micro B » choisie à l'écoute par le propriétaire ; démarreur de la 190E, turbo et décharge d'une Supra au banc,
+-- pétarades d'un anti-lag (CC0). Boucles produites par `tools/audio/engine_loops.py comete` (registre
+-- docs/audio/SONS_TIERS.md § 4). V8 biturbo : turbo et pétarades au lever de pied (décision D2) ; rupteur à 8 500
+-- tr/min (décision D3), à portée de la dernière boucle (6 000 × 1,45 = 8 700).
+local COMETE: EngineAudioModel.Profile = {
+    Prefix = "audio.engine.comete.",
+    Points = { 900, 1300, 1850, 2600, 3700, 5000, 6000 },
+    IdleRpm = 850,
+    LimiterRpm = 8500,
+    Turbo = true,
+    Pops = true,
+    Gain = 0.9,
+}
+
+EngineSoundProfiles.Profiles = table.freeze({
+    wk_brio = table.freeze(BRIO),
+    wk_comete = table.freeze(COMETE),
+}) :: { [string]: EngineAudioModel.Profile }
 
 -- Événements ponctuels possibles (ressources `<Prefix><nom en minuscules>`).
 EngineSoundProfiles.EventNames = table.freeze({ "Start", "Stop", "Stall", "Shift", "Limiter", "Pops", "BlowOff" })

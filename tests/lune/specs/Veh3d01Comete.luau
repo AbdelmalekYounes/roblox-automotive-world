@@ -296,11 +296,11 @@ return function(T: any, H: any)
     )
 
     T.test(
-        "10. boîte séquentielle : accélérer au neutre et à l'arrêt engage le 1er (décision du propriétaire)",
+        "10. boîte à double embrayage (décision du propriétaire du 2026-11-06, comme la 720S) : accélérer au neutre engage le 1er, passages automatiques",
         function()
             local Transmission = H.require(SHARED .. "Vehicles.Physics.Transmission")
             local definition = Definitions.get("wk_comete")
-            T.equal(definition.Powertrain.Transmission.Kind, "Sequential", "Comète : boîte séquentielle")
+            T.equal(definition.Powertrain.Transmission.Kind, "DualClutch", "Comète : double embrayage")
             local function state(): any
                 return { Gear = 0, ShiftTimer = 0, ManualHoldTimer = 0, ClutchPedal = 0 }
             end
@@ -311,9 +311,21 @@ return function(T: any, H: any)
             T.equal(s1.Gear, 0, "au repos : reste au neutre")
             Transmission.update(s1, definition.Powertrain, press, 0, 0, 1 / 60)
             T.equal(s1.Gear, 1, "accélérer à l'arrêt : 1er engagé")
+            -- Passage automatique : en 1er, régime côté roues au-delà du passage conseillé (8 100 tr/min) → 2e.
             local s2 = state()
-            Transmission.update(s2, definition.Powertrain, press, 6, 20, 1 / 60)
-            T.equal(s2.Gear, 0, "en roue libre au neutre (6 m/s) : pas d'engagement imposé")
+            s2.Gear = 1
+            local transmission = definition.Powertrain.Transmission
+            local overall = transmission.ForwardRatios[1] * transmission.FinalDrive
+            local omega = 8300 * math.pi / 30 / overall -- roues : 8 300 tr/min au moteur
+            Transmission.update(
+                s2,
+                definition.Powertrain,
+                { Throttle = 1, Brake = 0, Steer = 0, Handbrake = false, Clutch = 0 },
+                20,
+                omega,
+                1 / 60
+            )
+            T.equal(s2.Gear, 2, "montée automatique au-delà du passage conseillé")
             local s3 = state()
             s3.Gear = -1
             Transmission.update(s3, definition.Powertrain, press, 0, 0, 1 / 60)

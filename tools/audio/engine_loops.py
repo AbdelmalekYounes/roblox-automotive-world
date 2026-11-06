@@ -125,12 +125,135 @@ BRIO = {
     "gearbox": {"ratios": [3.4, 2.1, 1.5, 1.15], "shift_up": 6800, "shift_s": 0.25, "launch_rpm": 2550},
 }
 
-PROFILES = {"brio": BRIO}
+# ============================== Comète (lot AUDIO-02) ==============================
+
+# Pack « V8 Lotus » de wikusv (Freesound, CC BY 4.0 : crédit en jeu), un micro par canal ; démarreur de la 190E de la
+# Brio (CC0) ; sifflement et décharge du turbo d'une Supra au banc (editboy23, CC0) ; pétarades d'un anti-lag
+# (modusmogulus, CC0). Régimes mesurés le 2026-11-06 (raie d'allumage d'un V8 = régime / 15, suivie pas à pas à
+# partir d'une crête ; cycle moteur par autocorrélation au ralenti) : docs/lot-audio-02/PLAN_AUDIO_02.md.
+COMETE_POINTS = [900, 1300, 1850, 2600, 3700, 5000, 6000]
+LOTUS_IDLE = "232274__wikusv__idle.wav"
+LOTUS_REVS = "232272__wikusv__idle-and-rev-engine.wav"
+LOTUS_PULL = "232271__wikusv__rev-and-pull.wav"
+STARTER_190E = "../../brio/freesound/162525__chippy569__23_startbig_d6.wav"
+SUPRA = "496171__editboy23__import-car-revs-on-chassis-dyno-with-turbo.wav"
+ANTILAG = "797835__modusmogulus__car-antilag-no-cleanup-32float.wav"
+
+
+def comete_variant(channel: int, label: str) -> dict:
+    return {
+        "label": label,
+        "sources": {
+            # Ralenti stable (fichier « Idle ») : ~960 tr/min (raie de 64 Hz, cycle de 125 ms).
+            "ralenti": {"file": LOTUS_IDLE, "rpm": 960, "span": (0.5, 6.5), "channel": channel},
+            # Retombée continue après un coup de gaz : 3 090 → 1 460 tr/min (9,0–10,2 s), puis 1 420 → 920 tr/min.
+            "descente": {
+                "file": LOTUS_REVS,
+                "channel": channel,
+                "anchors": [(9.0, 3087), (9.2, 2766), (9.4, 2392), (9.6, 2109), (9.8, 1905), (10.0, 1650),
+                            (10.2, 1460)],
+            },
+            "descente_basse": {
+                "file": LOTUS_REVS,
+                "channel": channel,
+                "anchors": [(10.9, 1423), (11.0, 1348), (11.2, 1190), (11.4, 1051), (11.6, 920)],
+            },
+            # Retombée depuis la crête la plus haute : 5 060 → 3 640 tr/min (7,98–8,56 s).
+            "retombee_haute": {
+                "file": LOTUS_REVS,
+                "channel": channel,
+                "anchors": [(7.98, 5060), (8.1, 4827), (8.2, 4543), (8.3, 4277), (8.4, 4029), (8.5, 3777),
+                            (8.56, 3640)],
+            },
+            # Sommet de cette crête (~5 000 tr/min), transposé pour la boucle de 6 000 tr/min en décharge.
+            "sommet": {"file": LOTUS_REVS, "rpm": 5000, "span": (7.96, 8.12), "channel": channel},
+            # Coup de gaz avant le départ : 2 340 → 3 360 tr/min (2,0–2,38 s).
+            "coup_de_gaz": {
+                "file": LOTUS_PULL,
+                "channel": channel,
+                "anchors": [(2.0, 2342), (2.1, 2422), (2.2, 2793), (2.3, 3233), (2.38, 3360)],
+            },
+            # Départ EN CHARGE : montée continue 3 260 → 5 990 tr/min (3,30–4,42 s).
+            "montee": {
+                "file": LOTUS_PULL,
+                "channel": channel,
+                "anchors": [(3.30, 3264), (3.40, 3434), (3.50, 3604), (3.60, 3959), (3.70, 4192), (3.80, 4440),
+                            (3.90, 4658), (4.00, 4868), (4.10, 5191), (4.20, 5472), (4.30, 5815), (4.42, 5990)],
+            },
+            "reprise": {"file": LOTUS_REVS, "channel": channel},
+            "arret": {"file": LOTUS_REVS, "channel": channel},
+            "demarreur": {"file": STARTER_190E},
+            "turbo": {"file": SUPRA},
+            "antilag": {"file": ANTILAG},
+        },
+        "loops": {
+            ("on", 900): {"source": "ralenti"},
+            ("on", 1300): {"source": "ralenti"},
+            # Aucune prise EN CHARGE vers 1 850 tr/min : retombée (décharge) en attendant l'écoute du propriétaire.
+            ("on", 1850): {"source": "descente"},
+            ("on", 2600): {"source": "coup_de_gaz"},
+            **{("on", p): {"source": "montee"} for p in (3700, 5000, 6000)},
+            ("off", 900): {"source": "ralenti"},
+            ("off", 1300): {"source": "descente_basse"},
+            **{("off", p): {"source": "descente"} for p in (1850, 2600)},
+            **{("off", p): {"source": "retombee_haute"} for p in (3700, 5000)},
+            ("off", 6000): {"source": "sommet"},
+        },
+    }
+
+
+COMETE = {
+    "prefix": "audio.engine.comete.",
+    "points": COMETE_POINTS,
+    "idle_rpm": 850,
+    "limiter_rpm": 8500,
+    "divisor": 15.0,
+    "variants": {
+        "micro_a": comete_variant(0, "pack « V8 Lotus », canal 0 (premier micro de chaque prise)"),
+        "micro_b": comete_variant(1, "pack « V8 Lotus », canal 1 (second micro de chaque prise)"),
+    },
+    "events": {
+        # Démarreur de la 190E (0,15–0,98 s, avant que son moteur prenne), enchaîné sur un coup de gaz du V8 Lotus
+        # depuis le ralenti (2,2–3,4 s) : décision Q2 du propriétaire.
+        "Start": {
+            "parts": [
+                {"source": "demarreur", "span": (0.15, 0.98), "rms": -30.0},
+                {"source": "reprise", "span": (2.2, 3.4), "rms": -18.0},
+            ],
+            "fade": (0.01, 0.3),
+        },
+        # Fin du long enregistrement : ralenti puis extinction (32,0–32,5 s).
+        "Stop": {"source": "arret", "span": (31.3, 32.62), "fade": (0.05, 0.1)},
+        "Stall": {"source": "arret", "span": (31.7, 32.62), "fade": (0.03, 0.1)},
+        # Cinq détonations de l'anti-lag (1,58 à 2,19 s).
+        "Pops": {"source": "antilag", "span": (1.45, 2.40), "fade": (0.01, 0.1)},
+        # Décharge du turbo de la Supra : souffle large après l'arrêt du sifflement (25,55–26,1 s).
+        "BlowOff": {"source": "turbo", "span": (25.5, 26.15), "fade": (0.01, 0.25), "band": (1500.0, 14000.0)},
+    },
+    # Couche « turbo » du jeu : sifflement de la Supra (raie stable vers 10,5 kHz, 23,9–25,45 s), bouclé sur l'extrait
+    # naturel (un son presque pur ne se brasse pas par grains, leçon d'AUDIO-03).
+    "extra_loops": {"turbo": {"source": "turbo", "span": (23.9, 25.45), "band": (7000.0, 13500.0), "rms": -24.0}},
+    "level_on": (-14.0, 3.0),
+    "level_off": (-20.0, 2.0),
+    "rms_event": -18.0,
+    # Boîte à double embrayage de la définition (Definitions/Comete.luau, décision du propriétaire du 2026-11-06) :
+    # passage conseillé 8 100 tr/min, couple coupé 0,06 s.
+    "gearbox": {"ratios": [3.2, 2.2, 1.65, 1.3], "shift_up": 8100, "shift_s": 0.06, "launch_rpm": 3000},
+    "turbo": True,
+    "pops": True,
+}
+
+PROFILES = {"brio": BRIO, "comete": COMETE}
 
 # ============================== Lecture, écriture ==============================
 
 
-def read_wav(path: Path) -> tuple[int, np.ndarray]:
+def read_wav(path: Path, channel: int | None = None) -> tuple[int, np.ndarray]:
+    """WAV mono ou multicanal (PCM 16, 24 ou 32 bits, ou flottant 32/64 bits). `channel` : canal gardé (lot AUDIO-02 :
+    le pack « V8 Lotus » porte un micro par canal) ; None = moyenne des canaux."""
+    if channel is not None or _wave_format(path) != 1:
+        # Lecteur RIFF de tools/audio/tire_loops.py (flottant, WAVE_FORMAT_EXTENSIBLE), puis choix du canal.
+        return _read_riff(path, channel)
     with wave.open(str(path), "rb") as w:
         sr, ch, width, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
         raw = w.readframes(n)
@@ -143,6 +266,51 @@ def read_wav(path: Path) -> tuple[int, np.ndarray]:
     else:
         raise ValueError(f"{path.name} : {8 * width} bits non pris en charge")
     return sr, x.reshape(-1, ch).mean(axis=1)
+
+
+def _wave_format(path: Path) -> int:
+    """Code de format du bloc « fmt » (1 = PCM entier, 3 = flottant, 0xFFFE = étendu)."""
+    data = path.read_bytes()[:64]
+    i = data.find(b"fmt ")
+    return int.from_bytes(data[i + 8 : i + 10], "little") if i >= 0 else 1
+
+
+def _read_riff(path: Path, channel: int | None) -> tuple[int, np.ndarray]:
+    import struct
+
+    data = path.read_bytes()
+    fmt, samples, pos = None, None, 12
+    while pos + 8 <= len(data):
+        tag, size = data[pos : pos + 4], struct.unpack("<I", data[pos + 4 : pos + 8])[0]
+        body = data[pos + 8 : pos + 8 + size]
+        if tag == b"fmt ":
+            code, channels, rate = struct.unpack("<HHI", body[:8])
+            bits = struct.unpack("<H", body[14:16])[0]
+            if code == 0xFFFE and len(body) >= 26:
+                code = struct.unpack("<H", body[24:26])[0]
+            fmt = (code, channels, rate, bits)
+        elif tag == b"data":
+            samples = body
+        pos += 8 + size + (size & 1)
+    if fmt is None or samples is None:
+        raise ValueError(f"{path.name} : bloc fmt ou data absent")
+    code, channels, rate, bits = fmt
+    width = bits // 8
+    raw = samples[: len(samples) - len(samples) % (width * channels)]
+    if code == 3:
+        x = np.frombuffer(raw, dtype="<f4" if bits == 32 else "<f8").astype(np.float64)
+    elif bits == 16:
+        x = np.frombuffer(raw, dtype="<i2") / 32768.0
+    elif bits == 24:
+        b = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3).astype(np.int64)
+        v = b[:, 0] | (b[:, 1] << 8) | (b[:, 2] << 16)
+        x = np.where(v & 0x800000, v - 0x1000000, v) / 8388608.0
+    elif bits == 32:
+        x = np.frombuffer(raw, dtype="<i4") / 2147483648.0
+    else:
+        raise ValueError(f"{path.name} : format {code}, {bits} bits non pris en charge")
+    frames = x.reshape(-1, channels)
+    return rate, (frames.mean(axis=1) if channel is None else frames[:, min(channel, channels - 1)])
 
 
 def write_wav(path: Path, signal: np.ndarray, rate: int = OUT_RATE) -> None:
@@ -158,23 +326,28 @@ def write_wav(path: Path, signal: np.ndarray, rate: int = OUT_RATE) -> None:
 # ============================== Mesure du régime ==============================
 
 
-def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None) -> float:
-    """Régime (tr/min) d'un extrait : raie la plus forte entre 25 et 260 Hz (ou à ±12 % du régime attendu), × 30."""
+def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None, divisor: float = 30.0) -> float:
+    """Régime (tr/min) d'un extrait : raie d'allumage la plus forte (régime / `divisor` Hz : 30 pour un 4 cylindres,
+    15 pour un V8, lot AUDIO-02), cherchée sur la plage de 750 à 7 800 tr/min ou à ±12 % du régime attendu."""
     n = len(segment)
     nfft = 1 << int(np.ceil(np.log2(max(n, 2) * 8)))
     mag = np.abs(np.fft.rfft(segment * np.hanning(n), nfft))
     freqs = np.fft.rfftfreq(nfft, 1 / sr)
-    lo, hi = (25.0, 260.0) if expected is None else (expected / 30 * 0.88, expected / 30 * 1.12)
+    lo, hi = (
+        (750.0 / divisor, 7800.0 / divisor)
+        if expected is None
+        else (expected / divisor * 0.88, expected / divisor * 1.12)
+    )
     band = np.where((freqs > lo) & (freqs < hi))[0]
     i = band[np.argmax(mag[band])]
     if 0 < i < len(mag) - 1:
         a, b, c = np.log(mag[i - 1] + 1e-12), np.log(mag[i] + 1e-12), np.log(mag[i + 1] + 1e-12)
         i = i + 0.5 * (a - c) / (a - 2 * b + c + 1e-12)
-    return float(i * sr / nfft * 30)
+    return float(i * sr / nfft * divisor)
 
 
 def sweep_fit(
-    signal: np.ndarray, sr: int, span: tuple[float, float], approx: tuple[float, float]
+    signal: np.ndarray, sr: int, span: tuple[float, float], approx: tuple[float, float], divisor: float = 30.0
 ) -> tuple[float, float]:
     """Régime linéaire r(t) = a + b·t (t depuis le début de l'extrait) : mesures par trames de 0,08 s cherchées à
     ±12 % du régime approché, valeurs à plus de 8 % d'une première droite écartées."""
@@ -185,7 +358,7 @@ def sweep_fit(
         t = (start + win / 2) / sr - t0
         guess = approx[0] + (approx[1] - approx[0]) * (t / (t1 - t0))
         times.append(t)
-        rpms.append(line_rpm(signal[start : start + win], sr, guess))
+        rpms.append(line_rpm(signal[start : start + win], sr, guess, divisor))
     tt, r = np.array(times), np.array(rpms)
     b, a = np.polyfit(tt, r, 1)
     keep = np.abs(r - (a + b * tt)) / (a + b * tt) < 0.08
@@ -419,7 +592,16 @@ def trace_trajectory(path: Path, smoothing: float = 0.06) -> tuple[np.ndarray, n
     return times, rpm, load
 
 
-def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=None) -> np.ndarray:
+def _bandpass(signal: np.ndarray, sr: int, low: float, high: float) -> np.ndarray:
+    spec = np.fft.rfft(signal)
+    f = np.maximum(np.fft.rfftfreq(len(signal), 1 / sr), 1e-3)
+    spec *= 1 / (1 + (low / f) ** 4) / (1 + (f / high) ** 4)
+    return np.fft.irfft(spec, len(signal))
+
+
+def render_demo(
+    profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=None, extras=None, events=None
+) -> np.ndarray:
     """Démo d'écoute : par défaut ralenti 1,5 s, montée en charge jusqu'au rupteur en 6 s, lever de pied et descente
     en 4 s, ralenti 2 s ; ou une trajectoire (temps, régime, charge) fournie. Volumes interpolés linéairement dans
     chaque bloc de 5 ms ; transposition bornée 0,7–1,45 comme le jeu."""
@@ -456,6 +638,42 @@ def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=Non
                 i0 = idx.astype(int)
                 frac = idx - i0
                 out[start : start + n] += a * (loop[i0] * (1 - frac) + loop[(i0 + 1) % len(loop)] * frac)
+    # Lot AUDIO-02 : couche « turbo » (même règle qu'EngineAudioModel.profileLayers : pression selon la charge et le
+    # régime au-delà de 2 500 tr/min ; vitesse 0,8 + 0,5 × pression) et événements « Pops » et « BlowOff » au lever de
+    # pied (charge de ≥ 0,6 à ≤ 0,15 en 0,1 s ; pétarades au-delà de 55 % du rupteur, décharge au-delà de 3 000 tr/min).
+    def smooth(v):
+        t = min(max(v, 0.0), 1.0)
+        return t * t * (3 - 2 * t)
+
+    if extras and "turbo" in extras:
+        loop, phase = extras["turbo"], 0.0
+        for start in range(0, total, block):
+            n = min(block, total - start)
+            rpm, load = state(start / rate)
+            boost = smooth(load) * smooth((rpm - 2500) / 3500)
+            speed = 0.8 + 0.5 * boost
+            pos = phase + speed * np.arange(n)
+            phase = (phase + speed * n) % len(loop)
+            out[start : start + n] += 0.35 * boost * np.interp(pos % len(loop), np.arange(len(loop)), loop)
+    if events:
+        last = {"Pops": -9.0, "BlowOff": -9.0}
+        cooldown = {"Pops": 0.8, "BlowOff": 1.2}
+        t = 0.1
+        while t < total / rate:
+            rpm0, load0 = state(t - 0.1)
+            rpm1, load1 = state(t)
+            if load0 >= 0.6 and load1 <= 0.15:
+                for name_, ok in (
+                    ("Pops", profile.get("pops") and rpm1 >= profile["limiter_rpm"] * 0.55),
+                    ("BlowOff", profile.get("turbo") and rpm1 >= 3000),
+                ):
+                    if ok and name_ in events and t - last[name_] >= cooldown[name_]:
+                        last[name_] = t
+                        clip = events[name_]
+                        i = int(t * rate)
+                        end = min(total, i + len(clip))
+                        out[i:end] += 0.9 * clip[: end - i]
+            t += 0.1
     return out
 
 
@@ -464,15 +682,17 @@ def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=Non
 
 def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path, trace: Path | None = None) -> dict:
     report: dict = {"variante": name, "description": variant["label"], "sources": {}, "boucles": {}, "evenements": {}}
+    # Raie d'allumage : régime / 30 pour un 4 cylindres (Brio), régime / 15 pour un V8 (Comète, lot AUDIO-02).
+    divisor = float(profile.get("divisor", 30.0))
     signals: dict = {}
     for key, spec in variant["sources"].items():
-        sr, x = read_wav(refs / spec["file"])
+        sr, x = read_wav(refs / spec["file"], spec.get("channel"))
         x = highpass(x, sr)
         signals[key] = (sr, x)
         entry = {"fichier": spec["file"], "duree_s": round(len(x) / sr, 3)}
         if "rpm" in spec:
             a, b = spec.get("span", (0.25 * len(x) / sr, 0.75 * len(x) / sr))
-            spec["measured"] = line_rpm(x[int(a * sr) : int(b * sr)], sr, spec["rpm"])
+            spec["measured"] = line_rpm(x[int(a * sr) : int(b * sr)], sr, spec["rpm"], divisor)
             entry["regime_mesure"] = round(spec["measured"])
         report["sources"][key] = entry
 
@@ -482,7 +702,7 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
         sr, x = signals[loop_spec["source"]]
         if "anchors" in src:
             t0, t1, r0, r1 = window_for(src["anchors"], ref)
-            a, b = sweep_fit(x, sr, (t0, t1), (r0, r1))
+            a, b = sweep_fit(x, sr, (t0, t1), (r0, r1), divisor)
             seg = x[int(t0 * sr) : int(t1 * sr)]
             rpm_t = a + b * (np.arange(len(seg)) / sr)
             how = f"balayage {t0:.2f}–{t1:.2f} s ({a:.0f} → {a + b * (t1 - t0):.0f} tr/min), déplié et allongé par grains"
@@ -504,14 +724,33 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
             "fichier": file,
             "methode": how,
             "duree_s": round(len(loop) / OUT_RATE, 3),
-            "regime_verifie": round(line_rpm(loop, OUT_RATE, ref)),
+            "regime_verifie": round(line_rpm(loop, OUT_RATE, ref, divisor)),
             "rms_dbfs": round(db(loop), 1),
         }
 
+    events_audio: dict = {}
+    extras: dict = {}
     for event, spec in profile["events"].items():
-        sr, x = signals[spec["source"]]
-        t0, t1 = spec["span"]
-        seg = to_out_rate(x[int(t0 * sr) : int(t1 * sr)], sr)
+        # Lot AUDIO-02 : un événement peut enchaîner plusieurs parties (démarreur puis reprise du moteur), chacune à son
+        # niveau, avec un fondu de 50 ms ; ou être filtré dans une bande (décharge du turbo).
+        parts = spec.get("parts") or [{"source": spec["source"], "span": spec["span"]}]
+        pieces = []
+        for part in parts:
+            sr, x = signals[part["source"]]
+            t0, t1 = part["span"]
+            piece = to_out_rate(x[int(t0 * sr) : int(t1 * sr)], sr)
+            if "rms" in part:
+                piece = level(piece, part["rms"])
+            pieces.append(piece)
+        seg = pieces[0]
+        xf = int(0.05 * OUT_RATE)
+        for piece in pieces[1:]:
+            ramp_ = np.linspace(0, 1, xf)
+            joined = np.concatenate([seg[:-xf], seg[-xf:] * (1 - ramp_) + piece[:xf] * ramp_, piece[xf:]])
+            seg = joined
+        if "band" in spec:
+            seg = _bandpass(seg, OUT_RATE, *spec["band"])
+        t0, t1 = parts[0]["span"][0], parts[-1]["span"][1]
         fin, fout = (int(f * OUT_RATE) for f in spec["fade"])
         env = np.ones(len(seg))
         env[:fin] = np.linspace(0, 1, fin)
@@ -519,20 +758,47 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
         seg = level(seg * env, profile["rms_event"])
         file = f"{event.lower()}.wav"  # identifiants du manifeste en minuscules
         write_wav(out / file, seg)
-        report["evenements"][event] = {"fichier": file, "extrait": f"{spec['source']} {t0}–{t1} s"}
+        report["evenements"][event] = {
+            "fichier": file,
+            "extrait": " + ".join(f"{p['source']} {p['span'][0]}–{p['span'][1]} s" for p in parts),
+        }
+        events_audio[event] = seg
 
-    demo = level(render_demo(profile, loops), -16.0)
+    # Lot AUDIO-02 : boucles supplémentaires du profil (couche « turbo »), bouclées sur l'extrait naturel.
+    for name_, spec in profile.get("extra_loops", {}).items():
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import tire_loops as tl  # outils communs (boucle d'un extrait naturel)
+
+        sr, x = signals[spec["source"]]
+        t0, t1 = spec["span"]
+        seg = _bandpass(to_out_rate(x[int(t0 * sr) : int(t1 * sr)], sr), OUT_RATE, *spec["band"])
+        seg = tl.flatten(seg, OUT_RATE, seconds=0.2, strength=0.85)
+        loop, corr = tl.natural_loop(seg, OUT_RATE)
+        loop = level(loop, spec["rms"])
+        extras[name_] = loop
+        write_wav(out / f"{name_}.wav", loop)
+        report["boucles"][name_] = {
+            "fichier": f"{name_}.wav",
+            "methode": f"{spec['source']} {t0}–{t1} s, bande {spec['band'][0]:.0f}–{spec['band'][1]:.0f} Hz, extrait naturel bouclé (corrélation {corr:.2f})",
+            "duree_s": round(len(loop) / OUT_RATE, 3),
+            "rms_dbfs": round(db(loop), 1),
+        }
+
+    def full(trajectory=None):
+        return render_demo(profile, loops, trajectory=trajectory, extras=extras, events=events_audio)
+
+    demo = level(full(), -16.0)
     write_wav(out / f"demo_{name}.wav", demo)
     report["demo"] = f"demo_{name}.wav : ralenti, montée en charge 6 s, lever de pied 4 s, ralenti"
     if "gearbox" in profile:
-        shifts = level(render_demo(profile, loops, trajectory=shift_trajectory(profile)), -16.0)
+        shifts = level(full(shift_trajectory(profile)), -16.0)
         write_wav(out / f"demo_passages_{name}.wav", shifts)
         report["demo_passages"] = (
             f"demo_passages_{name}.wav : ralenti, départ pied au plancher, passages 1-2, 2-3, 3-4 à 6 800 tr/min "
             "(couple coupé 0,25 s), lever de pied en 4e, ralenti"
         )
     if trace is not None:
-        drive = level(render_demo(profile, loops, trajectory=trace_trajectory(trace)), -16.0)
+        drive = level(full(trace_trajectory(trace)), -16.0)
         write_wav(out / f"demo_conduite_{name}.wav", drive)
         report["demo_conduite"] = (
             f"demo_conduite_{name}.wav : relevé de la dynamique du jeu ({trace.name}) — départ à fond, montées de "
