@@ -831,6 +831,13 @@ local E: { [string]: Entry } = {
     ["settings.rebindReserved"] = { "Touche réservée à la conduite.", "Key reserved for driving." },
     ["settings.reset"] = { "Réinitialiser", "Reset" },
     ["settings.saved"] = { "Préférences enregistrées.", "Preferences saved." },
+    -- ===================== Lot CAMERA-01 : caméra libre en conduite =====================
+    ["settings.cameraSection"] = { "Caméra en conduite", "Driving camera" },
+    ["settings.cameraSensitivity"] = { "Sensibilité de la caméra : {value}", "Camera sensitivity: {value}" },
+    ["settings.cameraInvertY"] = {
+        "Caméra : axe vertical inversé : {state}",
+        "Camera: invert vertical axis: {state}",
+    },
     ["action.Phone"] = { "Téléphone", "Phone" },
     ["action.Map"] = { "Carte", "Map" },
     ["action.Garage"] = { "Garage", "Garage" },

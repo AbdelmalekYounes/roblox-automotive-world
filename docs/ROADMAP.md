@@ -328,5 +328,16 @@ Rapport : [`lot-brio-02/RAPPORT_BRIO_02.md`](lot-brio-02/RAPPORT_BRIO_02.md).
   (QA-S04).
 - **Assise :** sièges posés sur le vrai coussin, avec une pose « Citadine ». Les têtes restent sous le toit.
 
+## Lot CAMERA-01 — caméra libre en conduite (branche `claude/camera-01-camera-libre-5d3237`)
+
+Lot mené en parallèle de BRIO-02 et d'AUDIO-03, sur exception accordée par le propriétaire le 2026-11-06.
+Rapport : [`lot-camera-01/RAPPORT_CAMERA_01.md`](lot-camera-01/RAPPORT_CAMERA_01.md).
+
+- **Regard libre :** clic droit maintenu à la souris, stick droit à la manette, glisser au doigt en tactile.
+- **Retour au centre :** après 1,5 s à l'arrêt, plus vite en roulant.
+- **Limites :** ±120° dans les vues embarquées, orbite complète dans les vues de poursuite.
+- **Réglages :** sensibilité et inversion verticale.
+- **Interface posée pour la 2ᵉ vague :** visée imposée pour le téléphone en main, bras visibles en vue cockpit.
+
 **Validé en jeu par le propriétaire le 2026-11-06.**
 
