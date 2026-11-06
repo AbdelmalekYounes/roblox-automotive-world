@@ -33,7 +33,7 @@ return function(T: any, H: any)
     end)
 
     T.test(
-        "2. ressources : 20 sons déclarés ; licences CC BY (crédit en jeu) ou CC0 ; sortie « micro B »",
+        "2. ressources : 20 sons jouables ; licences CC BY (crédit en jeu) ou CC0 ; sortie « micro B »",
         function()
             local ids = Profiles.assetIds(profile)
             T.equal(
@@ -42,6 +42,7 @@ return function(T: any, H: any)
                 "7 régimes × charge / décharge + démarrage, arrêt, calage, turbo, décharge, pétarades"
             )
             local cc0 = { turbo = true, blowoff = true, pops = true }
+            local seen = {}
             for _, assetId in ids do
                 local asset = AssetManifest.get(assetId)
                 T.truthy(asset ~= nil and asset.Category == "Audio", assetId .. " : déclaré")
@@ -50,6 +51,15 @@ return function(T: any, H: any)
                     string.match(asset.Output, "^build/audio/engines/comete/micro_b/[a-z0-9.]+%.wav$") ~= nil,
                     assetId .. " : variante « micro B »"
                 )
+                -- Envoyés sur Roblox par le propriétaire le 2026-11-06 (audio02_comete.rbxm) : jouables, distincts.
+                T.equal(
+                    asset.RobloxAssetId,
+                    AssetManifest.CometeEngineSoundIds[name],
+                    assetId .. " : identifiant du propriétaire"
+                )
+                T.truthy(AssetManifest.playable(assetId), assetId .. " : jouable")
+                T.truthy(not seen[asset.RobloxAssetId], assetId .. " : identifiant unique")
+                seen[asset.RobloxAssetId] = true
                 if cc0[name] then
                     T.truthy(string.find(asset.Licence, "CC0", 1, true) ~= nil, assetId .. " : CC0")
                 else

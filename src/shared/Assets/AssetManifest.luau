@@ -359,7 +359,33 @@ recordedEngine("brio", "stall", "calage")
 -- comete. Boucles, démarrage, arrêt et calage : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0 — crédit en jeu
 -- (Shared/Assets/Attributions) et dans docs/CREDITS_ACTIFS.md ; le démarrage commence par le démarreur de la 190E (CC0).
 -- Turbo et décharge (Supra au banc, editboy23) et pétarades (anti-lag, modusmogulus) : CC0. Registre
--- docs/audio/SONS_TIERS.md § 4. Aucun identifiant Roblox tant que le propriétaire ne les a pas envoyés.
+-- docs/audio/SONS_TIERS.md § 4.
+-- Identifiants des sons ENVOYÉS SUR ROBLOX PAR LE PROPRIÉTAIRE (importation groupée de Studio, 2026-11-06), relevés
+-- par Lune dans son fichier aw-vm-exchange/audio02_comete.rbxm (20 objets Sound, propriété AudioContent) ; aucun n'est
+-- inventé (contrôle pytest : table exacte).
+local COMETE_ENGINE_SOUND_IDS: { [string]: number } = {
+    ["on.900"] = 83384498469427,
+    ["on.1300"] = 100553872617727,
+    ["on.1850"] = 85384338510920,
+    ["on.2600"] = 90690244574000,
+    ["on.3700"] = 97894996462848,
+    ["on.5000"] = 97980308427871,
+    ["on.6000"] = 105297364249104,
+    ["off.900"] = 120191647228722,
+    ["off.1300"] = 105331659485512,
+    ["off.1850"] = 131272682000973,
+    ["off.2600"] = 119009401498330,
+    ["off.3700"] = 128027842617189,
+    ["off.5000"] = 140052785677863,
+    ["off.6000"] = 94265877209550,
+    ["start"] = 120993955265076,
+    ["stop"] = 77261071295590,
+    ["stall"] = 81322298159845,
+    ["turbo"] = 103425012740677,
+    ["blowoff"] = 114657971551659,
+    ["pops"] = 108996350554637,
+}
+AssetManifest.CometeEngineSoundIds = table.freeze(COMETE_ENGINE_SOUND_IDS)
 local COMETE_LOTUS = "Tiers : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0, transformé ("
 local COMETE_LICENCE_BY = "CC BY 4.0 — crédit : wikusv (Freesound), modifié"
 local COMETE_LICENCE_CC0 = "CC0 1.0 (domaine public) — aucun crédit exigé"
@@ -368,14 +394,14 @@ local function recordedComete(name: string, provenance: string, licence: string)
         Id = "audio.engine.comete." .. name,
         Category = "Audio",
         Version = "1.0.0",
-        Status = "Provisional",
+        Status = "ReadyForReview",
         Variants = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" },
         Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
         Provenance = provenance .. " ; docs/audio/SONS_TIERS.md",
         Licence = licence,
         Source = { Kind = "File", Path = ENGINE_LOOPS },
         Output = "build/audio/engines/comete/micro_b/" .. name .. ".wav",
-        RobloxAssetId = nil,
+        RobloxAssetId = COMETE_ENGINE_SOUND_IDS[name],
     })
 end
 for _, rpm in { 900, 1300, 1850, 2600, 3700, 5000, 6000 } do

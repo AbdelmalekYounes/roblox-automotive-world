@@ -414,6 +414,8 @@ return function(T: any, H: any)
             if
                 string.sub(asset.Id, 1, 14) == "ui.icon.phone."
                 or string.sub(asset.Id, 1, 18) == "audio.engine.brio."
+                -- Sons du moteur de la Comète (lot AUDIO-02, essai Audio02), envoyés par le propriétaire.
+                or string.sub(asset.Id, 1, 20) == "audio.engine.comete."
                 -- Sons des pneus (lot AUDIO-03, essai Audio03), envoyés par le propriétaire.
                 or string.sub(asset.Id, 1, 18) == "audio.effect.tire."
                 -- Bruits de collision (lot AUDIO-04, essai Audio04), envoyés par le propriétaire.
