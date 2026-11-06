@@ -126,7 +126,7 @@ Non modifiés : audio et `tools/audio` (AUDIO-02), carte et ville (MAP-01), `Pho
 
 | Commande | Résultat |
 | --- | --- |
-| `scriptserify.ps1 -DownloadRobloxTypes` (terminé à 14:33, après toutes les modifications) | Rojo, Selene (0 erreur, 0 avertissement), pilote Studio, StyLua, Lune **482 réussis, 0 échoué** (dont 6 tests ANIM-03), carte, place monde ouvert, pytest 33 réussis, luau-lsp strict 0 erreur (3 avertissements `DeprecatedApi` antérieurs, hors lot) : tout OK. |
+| `scripts\verify.ps1 -DownloadRobloxTypes` (terminé à 14:33, après toutes les modifications) | Rojo, Selene (0 erreur, 0 avertissement), pilote Studio, StyLua, Lune **482 réussis, 0 échoué** (dont 6 tests ANIM-03), carte, place monde ouvert, pytest 33 réussis, luau-lsp strict 0 erreur (3 avertissements `DeprecatedApi` antérieurs, hors lot) : tout OK. |
 | `rojo build default.project.json -o build/AW-ANIM-03.rbxlx` (14:33) | Place de test construite (3,52 Mo). |
 
 Deux passages précédents de `verify.ps1` ont échoué au typage strict, puis ont été corrigés : rôles élargis en
