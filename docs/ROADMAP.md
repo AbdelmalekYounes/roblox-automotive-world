@@ -361,3 +361,18 @@ Comète a été séparé dans le dépôt d'art. Les mains du conducteur suivent 
 Téléphone sorti : seul le bras qui le tient quitte le volant. Rapport : [`lot-anim-01/`](lot-anim-01/RAPPORT_ANIM_01.md).
 **Validé en jeu par le propriétaire le 2026-11-06.**
 
+## Lots PHONE-01, AUDIO-04 et ANIM-02 (vagues 2 et 3, en parallèle)
+
+Les trois lots ont été **validés en jeu par le propriétaire le 2026-11-06**, chacun sur sa place de test :
+- **PHONE-01**, téléphone tenu en main : modèle 3D original, zoom de la caméra, interface sur l'écran du téléphone ;
+  seul le bras qui le tient quitte le volant ([rapport](lot-phone-01/RAPPORT_PHONE_01.md)) ;
+- **AUDIO-04**, bruits de collision : chocs contre le décor et entre véhicules, diffusés par le serveur, tirés
+  d'enregistrements libres ([rapport](lot-audio-04/RAPPORT_AUDIO_04.md)) ;
+- **ANIM-02**, portières : portières séparées dans le dépôt d'art et réimportées par le propriétaire, séquences
+  d'entrée et de sortie ([rapport](lot-anim-02/RAPPORT_ANIM_02.md)).
+
+L'essai combiné des trois lots (téléphone en main au volant avec les portières et les sons) reste à faire après la
+fusion.
+
+Lot suivant en cours : MAP-01, ville de Valcourt (quartier pilote).
+

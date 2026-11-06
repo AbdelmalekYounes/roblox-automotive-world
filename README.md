@@ -153,6 +153,12 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   départ de chaque session de conduite, et un avis s'affiche en cas de patinage ([amendement A-02](docs/AMENDEMENTS_CAHIER_DES_CHARGES.md)).
 - **Animations de conduite** (lot ANIM-01, [rapport](docs/lot-anim-01/RAPPORT_ANIM_01.md)) : volants qui tournent
   avec le braquage (Brio et Comète), mains du conducteur sur le volant, avant-bras visibles en vue cockpit.
+- **Collisions** (lot AUDIO-04, [rapport](docs/lot-audio-04/RAPPORT_AUDIO_04.md)) : bruits de chocs (murs, décor,
+  véhicules) selon la violence de l'impact, tirés d'enregistrements libres, entendus par tous les joueurs proches.
+- **Téléphone en main** (lot PHONE-01, [rapport](docs/lot-phone-01/RAPPORT_PHONE_01.md)) : le personnage tient un
+  téléphone 3D, la caméra zoome dessus et l'interface s'affiche sur son écran.
+- **Portières** (lot ANIM-02, [rapport](docs/lot-anim-02/RAPPORT_ANIM_02.md)) : séquences d'entrée et de sortie avec
+  ouverture et fermeture des portières (Brio et Comète), visibles par tous.
 - **Caméra en conduite** (lot CAMERA-01) : regard libre au clic droit maintenu, au stick droit ou au doigt, retour
   au centre automatique ; sensibilité et inversion dans Téléphone › Paramètres › Commandes.
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute
