@@ -95,3 +95,75 @@ Limites connues :
 - l'octave de `19_500` (variante « échappement ») reste à confirmer à l'écoute ;
 - le ralenti de la variante « échappement » est très faible à l'origine : relevé d'environ 30 dB, son bruit de fond
   aussi.
+
+## 2. Pneus (lot AUDIO-03) : enregistrements séparés de Freesound, tous CC0
+
+Téléchargés un par un par le propriétaire le 2026-11-06 dans `E:\ROBLOX DEV\aw-sound-references\pneus\freesound\`
+(9 fichiers). Un téléchargement isolé ne contient pas de fichier de licence : la licence est celle **relevée sur la page
+de chaque son le 2026-11-06** (« Creative Commons 0 »). Aucun logo ni nom de marque n'est diffusé dans le jeu.
+
+| N° | Fichier | Auteur | Licence | Format lu par l'outil | SHA-256 (début) |
+|---|---|---|---|---|---|
+| 1 | `71736__audible-edge__chrysler-lhs-tire-squeal-01-04-25-2009.wav` | audible-edge | CC0 | 96 kHz, mono, 10,0 s | `5249889e2410fa07` |
+| 2 | `71737__audible-edge__chrysler-lhs-tire-squeal-02-04-25-2009.wav` | audible-edge | CC0 | 96 kHz, mono, 11,1 s | `44a7ee84c44a1286` |
+| 3 | `71738__audible-edge__chrysler-lhs-tire-squeal-03-04-25-2009.wav` | audible-edge | CC0 | 96 kHz, mono, 13,8 s | `6dd839fa59832d4f` |
+| 4 | `71740__audible-edge__nissan-maxima-burnout-04-25-2009.wav` | audible-edge | CC0 | 96 kHz, mono, 8,9 s | `f4af2c030aa58e00` |
+| 5 | `71741__audible-edge__nissan-maxima-handbrake-turn-04-25-2009.wav` | audible-edge | CC0 | 96 kHz, mono, 10,4 s | `083f252ff24f7716` |
+| 6 | `170421__eelke__nissan-leaf.wav` | Eelke | CC0 | 48 kHz, stéréo, 9,4 s | `dbebd8f7ca0ebb07` |
+| 7 | `591079__orlandorizo__car-rolling-on-asphalt.wav` | orlandorizo | CC0 | 48 kHz, stéréo, 88,9 s | `be7dae67649d7d62` |
+| 8 | `462862__breviceps__passing-car-wet-road.wav` | Breviceps | CC0 | 48 kHz, stéréo, 5,8 s | `2a289a0b1a5b14ec` |
+| 9 | `529225__unplugthefridge__car-tires-start-and-stop-on-gravel-shoulder.wav` | UnplugTheFridge | CC0 | 48 kHz, stéréo, 35,6 s | `6dd24d311a1f721a` |
+
+### Analyse (2026-11-06)
+
+Analyse par trames de 0,5 s, avec un spectre lissé (Welch, 2 048 points) : niveau, part de chaque bande et raie
+dominante entre 600 Hz et 6 kHz. Aucun écrêtage n'a été trouvé (0 % d'échantillons au-delà de 0,98).
+
+- **Crissements (n° 1 à 5)** : enregistrés moteur en marche. Les passages qui crissent nettement ont une raie qui
+  dépasse de 25 à 34 dB le reste de la bande ; les graves (< 300 Hz, moteur) y restent de 12 à 26 dB plus bas.
+  - n° 4 : de 3,0 à 5,5 s, le crissement le plus net et le plus régulier (raie à 1,5–1,64 kHz, −6 à −11 dBFS) ;
+  - n° 3 : de 6,0 à 9,0 s, crissement de virage plus grave (raie vers 1 kHz) ;
+  - n° 5 : de 5,0 à 7,0 s, glissade au frein à main (1,3 kHz), plus courte ;
+  - n° 1 et 2 : crissements plus brefs (4,0 et 6,0 s ; 4,0 à 6,5 s), non retenus.
+- **n° 6 (Leaf)** : passage au plus près vers 6 à 7 s (−19 dBFS), bruit large sans raie de moteur thermique.
+- **n° 7** : pris dans l'habitacle, presque tout sous 300 Hz (bruit de caisse) ; non retenu.
+- **n° 8 (mouillé)** : de 1,3 à 3,3 s, chuintement dominant entre 1 et 4 kHz.
+- **n° 9 (gravier)** : deux départs et deux arrêts. Roulement régulier de 4,0 à 8,5 s, passage plus fort de 17,0 à
+  20,5 s. Aucune vraie glissade sur gravier n'est présente.
+
+### Sons produits — version 1 (2026-11-06)
+
+Commande :
+
+```
+python -I tools/audio/tire_loops.py build "E:\ROBLOX DEV\aw-sound-references\pneus\freesound" --trace build/audio/tires/brio_trace.csv
+```
+
+Le relevé est produit par `lune run tests/lune/tools/tire-sound-trace.luau build/AutomotiveWorld.rbxlx wk_brio
+build/audio/tires/brio_trace.csv`. Sortie dans `build/audio/tires/` : six boucles en WAV 48 kHz, 16 bits, mono, plus
+`ecoute_boucles.wav` (chaque boucle jouée trois fois), `demo_pneus.wav` et `rapport.json`.
+
+| Ressource | Source, extrait | Méthode | Raccord (dB) | Plus grand creux (dB, trames de 50 ms) |
+|---|---|---|---|---|
+| `roll.dry` | n° 6, 5,5–7,5 s, 60 Hz–9 kHz | grains, 2,0 s | 0,46 | 1,11 |
+| `roll.loose` | n° 9, 4,0–8,5 s, 80 Hz–12 kHz | grains, 2,0 s | 0,80 | 2,23 |
+| `roll.wet` | n° 8, 1,3–3,3 s, 300 Hz–12 kHz | grains, 2,0 s | 2,60 | 1,36 |
+| `squeal` | n° 3, 6,0–9,0 s, 400 Hz–8 kHz | extrait naturel bouclé, 2,04 s | 0,30 | 4,15 |
+| `scrub` | n° 4, 3,0–5,5 s, 400 Hz–8 kHz | extrait naturel bouclé, 2,22 s | 5,90 | 6,64 |
+| `slide.loose` | n° 9, 17,0–20,5 s, 200 Hz–12 kHz | grains, 2,0 s | 1,23 | 1,87 |
+
+Méthodes :
+- **Bruits (roulement, eau, gravier)** : grains de 160 ms brassés, sans répétition reconnaissable.
+- **Crissements** : extrait naturel bouclé. Des grains d'un son presque pur, superposés avec des phases au hasard,
+  battraient. Le point de boucle est celui qui ressemble le plus au début (corrélation, écart de niveau), avec un
+  fondu de 0,2 s.
+
+Le « raccord » est l'écart de niveau entre la dernière et la première trame de 20 ms. Pour `scrub` (5,9 dB) et
+`roll.wet` (2,6 dB), il se situe dans les variations naturelles du son : 89ᵉ et 95ᵉ centiles des écarts entre trames
+voisines de 20 ms de la même boucle. Il reste à confirmer à l'oreille.
+
+Limites connues :
+- **Glissade sur gravier** : elle est tirée d'un passage plus dense du même enregistrement, pas d'une vraie glissade.
+- **Roulement sec** : il vient d'un passage de voiture à distance, et non d'un micro placé au pneu.
+- **Démo** : elle ne contient que les pneus (pas le moteur). Elle suit une dynamique relevée sur le banc planaire,
+  et non dans Roblox.

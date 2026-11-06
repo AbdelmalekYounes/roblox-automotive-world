@@ -413,14 +413,21 @@ return function(T: any, H: any)
             if
                 string.sub(asset.Id, 1, 14) == "ui.icon.phone."
                 or string.sub(asset.Id, 1, 18) == "audio.engine.brio."
+                -- Sons des pneus (lot AUDIO-03, essai Audio03), envoyés par le propriétaire.
+                or string.sub(asset.Id, 1, 18) == "audio.effect.tire."
             then
                 continue
             end
             T.equal(asset.RobloxAssetId, nil, asset.Id .. " : aucun identifiant Roblox inventé")
             T.equal(AssetManifest.contentId(asset.Id), nil, asset.Id .. " : non jouable")
             T.truthy(not AssetManifest.playable(asset.Id))
-            -- Sons ENREGISTRÉS du lot AUDIO-01 (build/audio/engines/…) : contrôlés par la suite Audio01.
-            if asset.Category == "Audio" and string.sub(asset.Output or "", 1, 20) ~= "build/audio/engines/" then
+            -- Sons ENREGISTRÉS du lot AUDIO-01 (build/audio/engines/…) : contrôlés par la suite Audio01 ; sons des
+            -- pneus du lot AUDIO-03 (build/audio/tires/…) : contrôlés par la suite Audio03.
+            if
+                asset.Category == "Audio"
+                and string.sub(asset.Output or "", 1, 20) ~= "build/audio/engines/"
+                and string.sub(asset.Output or "", 1, 18) ~= "build/audio/tires/"
+            then
                 audio += 1
                 T.truthy(
                     asset.Output ~= nil and string.match(asset.Output :: string, "^build/audio/[a-z_]+%.wav$") ~= nil,

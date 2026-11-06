@@ -466,6 +466,11 @@ local E: { [string]: Entry } = {
         "Dégâts mécaniques : le comportement du véhicule est affecté.",
         "Mechanical damage: vehicle handling is affected.",
     },
+    -- Proposition patinage, option E (2026-11-06) : avis quand une roue motrice patine, antipatinage coupé.
+    TractionSpinAidOff = {
+        "Les roues patinent : l'antipatinage est désactivé (touche 2, ou réglages à la croix sur manette).",
+        "Wheels are spinning: traction control is off (key 2, or D-pad settings on a gamepad).",
+    },
     -- ===================== Interface commune (lot 0.7) =====================
     ["ui.close"] = { "Fermer", "Close" },
     ["ui.back"] = { "Retour", "Back" },
