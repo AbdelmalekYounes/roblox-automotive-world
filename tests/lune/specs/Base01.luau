@@ -4,6 +4,8 @@
 -- tests/lune/fixtures/comete_definition_reference.json par tests/lune/tools/dump-definition.luau.
 -- Lot AUDIO-01 (décision D3 du 2026-11-05) : référence régénérée après la montée du rupteur à 8 500 tr/min (seuls
 -- rupteur, zone rouge, passage conseillé et courbe de couple ont changé).
+-- Lot AUDIO-02 (décision du propriétaire du 2026-11-06) : référence régénérée après le passage à la boîte à double
+-- embrayage, comme la McLaren 720S (seul champ changé : Powertrain.Transmission.Kind, Sequential → DualClutch).
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 

@@ -82,6 +82,31 @@ COLLISION_SOUND_IDS = {
     "scrape": 126532496130819,
 }
 
+# Identifiants des 20 sons du moteur de la Comète envoyés par le propriétaire (lot AUDIO-02, 2026-11-06), relevés dans
+# son fichier audio02_comete.rbxm.
+COMETE_ENGINE_SOUND_IDS = {
+    "on.900": 83384498469427,
+    "on.1300": 100553872617727,
+    "on.1850": 85384338510920,
+    "on.2600": 90690244574000,
+    "on.3700": 97894996462848,
+    "on.5000": 97980308427871,
+    "on.6000": 105297364249104,
+    "off.900": 120191647228722,
+    "off.1300": 105331659485512,
+    "off.1850": 131272682000973,
+    "off.2600": 119009401498330,
+    "off.3700": 128027842617189,
+    "off.5000": 140052785677863,
+    "off.6000": 94265877209550,
+    "start": 120993955265076,
+    "stop": 77261071295590,
+    "stall": 81322298159845,
+    "turbo": 103425012740677,
+    "blowoff": 114657971551659,
+    "pops": 108996350554637,
+}
+
 
 def test_asset_manifest_declares_no_roblox_id():
     """Aucun identifiant Roblox n'est inventé : RobloxAssetId vaut nil, sauf les 12 icônes du téléphone et les 19 sons
@@ -93,6 +118,7 @@ def test_asset_manifest_declares_no_roblox_id():
     others = [value.strip() for value in values if value.strip() != "nil"]
     assert others == [
         "if vehicle == \"brio\" then BRIO_ENGINE_SOUND_IDS[name] else nil",
+        "COMETE_ENGINE_SOUND_IDS[name]",
         "TIRE_SOUND_IDS[name]",
         "COLLISION_SOUND_IDS[name]",
         "PHONE_ICON_IDS[appName]",
@@ -100,6 +126,10 @@ def test_asset_manifest_declares_no_roblox_id():
     sounds = re.search(r"local BRIO_ENGINE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert sounds, "table BRIO_ENGINE_SOUND_IDS absente"
     assert {k: int(v) for k, v in re.findall(r'\["([a-z0-9.]+)"\] = (\d+),', sounds.group(1))} == BRIO_ENGINE_SOUND_IDS
+    comete = re.search(r"local COMETE_ENGINE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
+    assert comete, "table COMETE_ENGINE_SOUND_IDS absente"
+    found = {k: int(v) for k, v in re.findall(r'\["([a-z0-9.]+)"\] = (\d+),', comete.group(1))}
+    assert found == COMETE_ENGINE_SOUND_IDS
     tires = re.search(r"local TIRE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert tires, "table TIRE_SOUND_IDS absente"
     assert {k: int(v) for k, v in re.findall(r'\["([a-z.]+)"\] = (\d+),', tires.group(1))} == TIRE_SOUND_IDS

@@ -113,3 +113,33 @@ def test_trace_adds_a_sound_blip_on_downshifts(tmp_path):
     window = (times > 0.55) & (times < 0.65)
     assert load[window].max() > 0.25
     assert load[times > 0.9].max() < 0.05
+
+
+def v8(rpm_of_t: np.ndarray) -> np.ndarray:
+    """V8 à vilebrequin croisé stylisé (lot AUDIO-02) : raie d'allumage (× 4 par tour) dominante, demi-ordres présents."""
+    phase = 2 * np.pi * np.cumsum(rpm_of_t / 60) / SR
+    return 0.5 * np.sin(4 * phase) + 0.25 * np.sin(phase / 2) + 0.2 * np.sin(2 * phase) + 0.1 * np.sin(8 * phase)
+
+
+def test_line_rpm_reads_a_v8_firing_line():
+    """Lot AUDIO-02 : raie d'allumage d'un V8 = régime / 15 ; de 850 à 7 500 tr/min."""
+    for rpm in (850.0, 3000.0, 7500.0):
+        signal = v8(np.full(SR, rpm))
+        assert abs(el.line_rpm(signal, SR, divisor=15) - rpm) / rpm < 0.01
+        assert abs(el.line_rpm(signal, SR, rpm * 1.05, divisor=15) - rpm) / rpm < 0.01
+
+
+def test_read_wav_float_and_channel(tmp_path):
+    """Lot AUDIO-02 : WAV flottant 32 bits (anti-lag) lu ; canal choisi (pack « V8 Lotus » : un micro par canal)."""
+    import struct
+
+    left = 0.5 * np.sin(2 * np.pi * 300 * np.arange(4800) / SR)
+    right = 0.25 * np.sin(2 * np.pi * 700 * np.arange(4800) / SR)
+    payload = np.column_stack([left, right]).astype("<f4").tobytes()
+    fmt = struct.pack("<HHIIHH", 3, 2, SR, SR * 8, 8, 32)
+    body = b"WAVE" + b"fmt " + struct.pack("<I", len(fmt)) + fmt + b"data" + struct.pack("<I", len(payload)) + payload
+    path = tmp_path / "f32.wav"
+    path.write_bytes(b"RIFF" + struct.pack("<I", len(body)) + body)
+    rate, mixed = el.read_wav(path)
+    assert rate == SR and np.max(np.abs(mixed - (left + right) / 2)) < 1e-6
+    assert np.max(np.abs(el.read_wav(path, 1)[1] - right)) < 1e-6
