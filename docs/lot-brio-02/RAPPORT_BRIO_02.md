@@ -202,3 +202,10 @@ Assise (Brio) — vérifier avec **plusieurs avatars** (le vôtre, un grand, un 
 | `tests/lune/specs/Veh3d02Brio.luau` | Contrôle des places adapté |
 | `docs/lot-brio-02/RAPPORT_BRIO_02.md` | Ce rapport |
 | `docs/lot-brio-02/sonde_habitacle_brio.py`, `sonde_habitacle_brio.json` | Sonde Blender en lecture seule et son relevé |
+
+## Validation du propriétaire (2026-11-06)
+
+Le propriétaire a testé la place `build/AW-BRIO-02.rbxlx` dans Studio et a répondu « Les deux sont bons » (BRIO-02 et
+CAMERA-01). La liste du §5 est validée. Il s'agit d'un essai humain du propriétaire : aucun essai Studio n'a été
+exécuté par l'assistant.
+
