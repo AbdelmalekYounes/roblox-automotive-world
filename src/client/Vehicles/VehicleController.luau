@@ -30,6 +30,7 @@ local PhysicsFolder = VehiclesShared:WaitForChild("Physics")
 local CollisionExchange = require(PhysicsFolder:WaitForChild("CollisionExchange"))
 local DamageModel = require(PhysicsFolder:WaitForChild("DamageModel"))
 local EnergyModel = require(PhysicsFolder:WaitForChild("EnergyModel"))
+local SpinNotice = require(VehiclesShared:WaitForChild("SpinNotice"))
 
 local DriverInput = require(script.Parent.DriverInput)
 local VehicleCamera = require(script.Parent.VehicleCamera)
@@ -121,6 +122,10 @@ type Session = {
     SlowTimer: number,
     DamageText: string,
     LastShift: number,
+    -- Avis « antipatinage désactivé » (docs/PROPOSITION_PATINAGE.md, option E) : minuterie de patinage franc et avis
+    -- déjà montré pendant cette session.
+    SpinTimer: number,
+    SpinNoticeShown: boolean,
 }
 
 type Remotes = {
@@ -469,6 +474,8 @@ local function beginSession(model: Model, seat: Seat)
         SlowTimer = math.huge,
         DamageText = "aucun",
         LastShift = 0,
+        SpinTimer = 0,
+        SpinNoticeShown = false,
     }
     local impacts = model:GetAttribute("DmgImpacts")
     current.LastImpacts = if type(impacts) == "number" then impacts else 0
@@ -769,6 +776,16 @@ local function onPreRender(dt: number)
             )
         end
         reportChanges(current)
+        -- Option E de la proposition patinage : une roue motrice patine franchement, antipatinage équipé mais coupé →
+        -- avis une fois par session (information seulement, aucune commande modifiée).
+        if current.Simulating and not current.SpinNoticeShown then
+            local timer, notify = SpinNotice.step(current.SpinTimer, state, definition, dt)
+            current.SpinTimer = timer
+            if notify then
+                current.SpinNoticeShown = true
+                DevHud.showNotice("TractionSpinAidOff")
+            end
+        end
 
         -- Consommation instantanée lissée (unités par seconde).
         local used = sessionEnergyUsed(current)

@@ -42,6 +42,10 @@ local VehicleConstants = {
 
     -- Aides connues (liste fermée, validée par le serveur).
     AidNames = table.freeze({ "Abs", "TractionControl", "StabilityControl" }),
+    -- Aides ACTIVES au début de chaque session de conduite, si le modèle en est équipé (amendement A-02 du propriétaire,
+    -- 2026-11-06, docs/AMENDEMENTS_CAHIER_DES_CHARGES.md) : l'antipatinage seul. Les autres partent désactivées
+    -- (cahier des charges, ligne 55) ; toutes restent réglables par le joueur.
+    AidsOnAtStart = table.freeze({ TractionControl = true } :: { [string]: boolean }),
 
     Attributes = table.freeze({
         VehicleId = "VehicleId",

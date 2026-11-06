@@ -381,10 +381,11 @@ local function assignDriver(record: VehicleRecord, player: Player): boolean
     end
     record.Driver = player
     recordByDriver[player] = record
-    -- Nouvelle session de conduite : toutes les aides présentes repartent
-    -- DÉSACTIVÉES et la récupération à son niveau par défaut (§1.2).
+    -- Nouvelle session de conduite : les aides présentes repartent DÉSACTIVÉES (§1.2), sauf l'antipatinage, ACTIF
+    -- s'il équipe le modèle (amendement A-02, Constants.AidsOnAtStart) ; la récupération repart à son niveau par défaut.
     for _, aid in Constants.AidNames do
-        record.Model:SetAttribute((Constants.Attributes :: any)["Aid" .. aid], false)
+        local on = Constants.AidsOnAtStart[aid] == true and (record.Definition.Aids :: any)[aid] == true
+        record.Model:SetAttribute((Constants.Attributes :: any)["Aid" .. aid], on)
     end
     record.Model:SetAttribute(Constants.Attributes.RegenLevel, 1)
     EnergyModel.beginDriving(record.Energy)
