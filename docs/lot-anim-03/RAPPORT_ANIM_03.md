@@ -226,5 +226,9 @@ Correction :
 - nouveau test Lune 7 : à 101 instants de chaque séquence, les deux véhicules, toutes les articulations sont posées ;
   jambes au repos devant la porte et en s'éloignant ; câblage du client vérifié.
 
-**NON TESTÉ en jeu** après la correction : à refaire avec les points 1, 3 et 4 du §7. Chevilles non prises en charge
-(l'animation assise du moteur peut encore les incliner légèrement).
+Chevilles non prises en charge (l'animation assise du moteur peut encore les incliner légèrement).
+
+### Essai 2 (2026-11-06, place reconstruite à 16:39)
+
+Retour du propriétaire, après son essai en jeu de la correction : « C'est bon ». **Lot validé par le propriétaire.**
+Le détail des points du §7 parcourus n'a pas été précisé : ce rapport n'affirme rien au-delà de cette validation.
