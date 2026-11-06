@@ -29,6 +29,8 @@ local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local DamageModel = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("DamageModel"))
 local PerfStats = require(VehiclesShared:WaitForChild("PerfStats"))
 local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData")) :: any
+local CollisionAudioModel =
+    require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Audio"):WaitForChild("CollisionAudioModel"))
 
 local METERS_PER_STUD = Constants.MetersPerStud
 local STUDS_PER_METER = 1 / METERS_PER_STUD
@@ -96,6 +98,25 @@ type ServiceFields = {
 
 local DamageService = {}
 DamageService.__index = DamageService
+
+-- ======================== Lot AUDIO-04 : bruits de collision ========================
+-- Diffusion SONORE des chocs observés par le serveur (décision Q3 du propriétaire, 2026-11-06) : appelée dès
+-- l'OUVERTURE du suivi d'un choc (la confirmation arrive 0,4 s plus tard, trop tard pour un son) et à la casse d'une
+-- optique. Arguments : véhicule, famille (« Hard », « Object », « Vehicle » ou « Glass »), intensité (Δv en excès
+-- observé par le serveur, m/s), position. Aucun effet de jeu ; aucune valeur venant d'un client.
+type SoundSink = (Model, string, number, Vector3) -> ()
+local soundSink: SoundSink? = nil
+
+function DamageService.setSoundSink(sink: SoundSink?)
+    soundSink = sink
+end
+
+local function emitSound(model: Model, kind: string, intensity: number, position: Vector3)
+    local sink = soundSink
+    if sink then
+        sink(model, kind, intensity, position)
+    end
+end
 
 export type Service = typeof(setmetatable({} :: ServiceFields, DamageService))
 
@@ -230,6 +251,10 @@ local function breakLight(entry: Entry, name: string)
     local light = bodyPart(entry, name)
     if light == nil then
         return
+    end
+    -- Lot AUDIO-04 : bris de verre, une seule fois par optique (au passage à « cassée »).
+    if light:GetAttribute("AWLightBroken") ~= true then
+        emitSound(entry.Model, "Glass", 0, light.Position)
     end
     -- Lu par VehicleLights (client) : optique éteinte jusqu'au remplacement du véhicule (lot VEH3D-01 ; sans cet
     -- attribut, l'éclairage de nuit rallumait l'optique cassée au passage suivant).
@@ -611,6 +636,17 @@ function DamageService.step(self: Service, now: number, skip: (Model) -> boolean
             self.PairCooldowns[key] = now + PAIR_COOLDOWN_S
             otherBefore = velocityAt(other, worstTime)
         end
+        -- Lot AUDIO-04 : son du choc dès l'ouverture du suivi (un seul par paire de véhicules, comme le suivi).
+        emitSound(
+            entry.Model,
+            CollisionAudioModel.classify(
+                otherModel ~= nil,
+                obstacle.Anchored,
+                obstacle.AssemblyMass * 1000 * METERS_PER_STUD ^ 3
+            ),
+            worstExcess,
+            root.Position + (obstacle.Position - root.Position) * 0.5
+        )
         entry.Event = {
             Start = worstTime,
             Before = velocityAt(entry, worstTime),
