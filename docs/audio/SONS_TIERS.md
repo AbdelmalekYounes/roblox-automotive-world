@@ -226,3 +226,65 @@ Chaque son ponctuel :
 - un raclement de 6 s, de 2 à 15 m/s puis retour.
 
 Limite connue : l'écrêtage d'origine des n° 1 et 2 ne peut pas être corrigé.
+
+## 4. Comète (lot AUDIO-02) : pack « V8 Lotus » (CC BY 4.0) et compléments CC0
+
+Téléchargés par le propriétaire le 2026-11-06 dans `E:\ROBLOX DEV\aw-sound-references\comete\freesound\`. Les licences
+ont été relevées sur la page de chaque son le 2026-11-06. Le pack « V8 Lotus » est en **CC BY 4.0** : il exige un
+**crédit** de l'auteur, wikusv, en jeu (`Shared/Assets/Attributions`) et dans `docs/CREDITS_ACTIFS.md`, avec mention
+des modifications. Aucun nom de marque n'est diffusé dans le jeu.
+
+| Fichier | Auteur | Licence | Format lu | Usage |
+|---|---|---|---|---|
+| `232274__wikusv__idle.wav` | wikusv | **CC BY 4.0** | 48 kHz, 2 micros (un par canal), 6,8 s | ralenti (~960 tr/min) |
+| `232272__wikusv__idle-and-rev-engine.wav` | wikusv | **CC BY 4.0** | 48 kHz, 2 micros, 33,1 s ; canal 1 écrêté à 3,4 % | retombées en décharge, reprise du démarrage, arrêt |
+| `232271__wikusv__rev-and-pull.wav` | wikusv | **CC BY 4.0** | 48 kHz, 2 micros, 8,5 s | coup de gaz et départ **en charge** (3 260 → 5 990 tr/min) |
+| `232276__wikusv__tirespin-1.wav` | wikusv | CC BY 4.0 | écrêté à 6 % sur les deux canaux | **non utilisé** |
+| `232273__wikusv__full-take-car-approach-and-pass-by.wav` | wikusv | CC BY 4.0 | 48 kHz, 18,5 s | **non utilisé** (passage, effet Doppler) |
+| `162525__chippy569__23_startbig_d6.wav` (dossier de la Brio) | Chippy569 | CC0 | 96 kHz, § 1 | démarreur (0,15–0,98 s) |
+| `496171__editboy23__import-car-revs-on-chassis-dyno-with-turbo.wav` | editboy23 | CC0 | 48 kHz 16 bits stéréo, 35,5 s | sifflement du turbo (23,9–25,45 s, raie vers 10,5 kHz) et décharge (25,5–26,15 s) |
+| `797835__modusmogulus__car-antilag-no-cleanup-32float.wav` | modusmogulus | CC0 | 48 kHz flottant 32 bits, 11,3 s | pétarades (cinq détonations de 1,58 à 2,19 s) |
+| `585215`, `585214` (Maserati), `505321` (AMG), `651534` (V8) | myeclecticself, marcelweiss, overmedium | CC0 | WAV | **non utilisés** : extraits trop courts ou effet Doppler (PLAN_AUDIO_02) |
+
+Empreintes SHA-256 (début) : `232271` 5453046c800b665e, `232272` c8e286ab4e64a584, `232274` 9c7938b3a8096381,
+`496171` 887908f052109817, `797835` 5ed08894f0f30102.
+
+### Mesures (2026-11-06)
+
+- **Méthode** : la raie d'allumage d'un V8 vaut régime / 15. Elle est suivie pas à pas (trames de 60 ms, pas de
+  20 ms) à partir d'une crête ou du ralenti, en restant à ±12 % de la valeur précédente. Au ralenti, le cycle moteur
+  est mesuré par autocorrélation.
+- **Ralenti** :
+  - fichier « Idle » : cycle de 125 ms, soit 957 tr/min (raie de 64 Hz) ;
+  - long enregistrement : cycle de 182 ms, soit 660 tr/min (raie de 44 Hz).
+- **Balayages retenus** :
+  - en décharge : 3 087 → 1 460 tr/min (9,0–10,2 s), 1 423 → 920 tr/min (10,9–11,6 s) et 5 060 → 3 640 tr/min
+    (7,98–8,56 s) ;
+  - en charge : 2 342 → 3 360 tr/min (2,0–2,38 s) et 3 264 → 5 990 tr/min (3,30–4,42 s).
+
+### Sons produits — version 1 (2026-11-06)
+
+Commande, deux variantes (une par micro du pack), sortie dans `build/audio/engines/comete/<variante>/` :
+
+```
+python -I tools/audio/engine_loops.py comete "E:\ROBLOX DEV\aw-sound-references\comete\freesound" --trace build/audio/engines/comete_trace.csv
+```
+
+- **Boucles** : 14 boucles (`on.` et `off.` à 900, 1 300, 1 850, 2 600, 3 700, 5 000 et 6 000 tr/min) et la couche
+  `turbo`.
+- **Événements** : `start`, `stop`, `stall`, `pops` et `blowoff`.
+- **Démos** : générique, passages de la boîte à double embrayage, et conduite tirée du relevé de la vraie dynamique
+  (`engine-sound-trace.luau wk_comete`, antipatinage actif comme au départ en jeu).
+
+Contrôles de l'outil (trames de 50 ms) :
+- **régime vérifié de chaque boucle** à ±2 % de sa référence, sauf `on.2600` (2 542 tr/min) ;
+- **plus grand creux** sous la médiane : de 0,5 à 4,8 dB ;
+- **raccord** : de 0,4 à 4,4 dB ;
+- **démos** : saut médian d'une trame de 60 ms à la suivante de 0,7 à 0,8 dB (0,54 dB pour la Brio validée).
+
+Limites connues :
+- **`on.1850`** vient d'une retombée (décharge) : aucune prise en charge n'existe vers 1 850 tr/min.
+- **`on.900` et `on.1300`** viennent du ralenti, comme pour la Brio.
+- **`off.6000`** est le sommet d'une crête (~5 000 tr/min) transposé de × 1,19.
+- **Démarrage** : le démarreur est celui d'un 4 cylindres, enchaîné sur une reprise du V8.
+- **Caractère** : il reste celui d'un V8 Lotus, à vilebrequin plat présumé (non confirmé par l'auteur).
