@@ -148,6 +148,15 @@ Retour attendu : un `.rbxm` des 6 objets Sound, enregistré dans `aw-vm-exchange
 L'assistant y relève les identifiants avec Lune (propriété `AudioContent`), puis les reporte au manifeste. Aucun
 identifiant n'est saisi à la main.
 
+### Sons envoyés, identifiants intégrés (2026-11-06)
+
+Le propriétaire a déposé `aw-vm-exchange/audio03_pneus.rbxm` (SHA-256 `ec5e12f0…`). L'assistant y a relevé avec Lune
+6 identifiants distincts, un par fichier, et les a reportés dans `AssetManifest` (table `TIRE_SOUND_IDS`, statut
+`ReadyForReview`) au commit c56b9c4. `verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK.
+
+La place de test est `build/AW-AUDIO-03.rbxlx`. Le bilan et la liste de vérification en jeu sont dans
+[RAPPORT_AUDIO_03.md](RAPPORT_AUDIO_03.md).
+
 ## 8. Hors périmètre
 
 - Chocs de suspension, bosses, plaques d'égout, crevaison, vent : possibles plus tard, à proposer.
