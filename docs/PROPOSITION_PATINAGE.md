@@ -103,3 +103,34 @@ universelle cachée », interdite par la ligne 55.
 - Le ressenti au **clavier** et à la **manette** : avec la manette, l'accélérateur est proportionnel et le patinage
   peut se doser.
 - Les **autres modèles** du jeu (seules la Brio et la Comète ont été mesurées).
+
+## 6. Décision et réalisation (2026-11-06)
+
+**Décision du propriétaire : « E puis B ».** L'amendement **A-02** est consigné dans
+`docs/AMENDEMENTS_CAHIER_DES_CHARGES.md`.
+
+| Option | Réalisation |
+|---|---|
+| **E — avis** | Module pur `src/shared/Vehicles/SpinNotice.luau`. L'avis apparaît quand une roue motrice dépasse 3 fois le pic d'adhérence pendant 0,3 s, avec l'antipatinage équipé mais coupé. Il est montré **une fois par session**, pour le véhicule simulé par ce joueur (`VehicleController`). Texte par clé `TractionSpinAidOff`, en français et en anglais (`Localization`). Aucune commande n'est modifiée |
+| **B — antipatinage actif au départ** | Table `Constants.AidsOnAtStart = { TractionControl = true }`. `VehicleService.assignDriver` active l'aide seulement si le modèle en est équipé. ABS et ESP restent désactivés au départ, et tout reste réglable par le joueur |
+
+Tests :
+- `tests/lune/specs/Patinage.luau`, 4 tests. Sur le banc planaire, au départ arrêté à fond, la Comète affiche l'avis
+  à 0,59 s sans antipatinage, et aucun avis avec.
+- Le test Studio `Lot02Client` attend désormais l'antipatinage actif au départ (`client.aides_etat_par_defaut`).
+  Ce test n'a **pas** été exécuté : les essais Studio sont faits par le propriétaire.
+- `scripts\verify.ps1 -DownloadRobloxTypes` (2026-11-06, branche `feat/proposition-patinage`) : toutes les étapes
+  OK, Lune 435 réussis sur 435, pytest 23 sur 23.
+
+Place de test : `build/AW-PATINAGE.rbxlx`. Elle est construite depuis cette branche, qui ne contient **pas** les sons de
+pneus d'AUDIO-03.
+
+### Liste de vérification en jeu (propriétaire)
+
+1. Monter dans la **Comète** : le HUD indique l'antipatinage **activé**, l'ABS et l'ESP désactivés.
+2. Accélérer à fond à l'arrêt, puis en braquant à fond vers 30 km/h : peu de patinage, pas de tête-à-queue.
+3. Couper l'antipatinage (touche **2**), puis accélérer à fond à l'arrêt. Le message « Les roues patinent :
+   l'antipatinage est désactivé (touche 2, ou réglages à la croix sur manette). » apparaît une fois. Il ne réapparaît
+   pas pendant cette session de conduite.
+4. Sortir puis remonter : l'antipatinage est de nouveau **activé**.
+5. **Brio** : antipatinage activé au départ. En virage serré à fond, la roue intérieure patine peu.

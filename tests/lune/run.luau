@@ -52,6 +52,8 @@ for _, spec in
         require("./specs/Brio02"),
         -- Lot CAMERA-01 : caméra libre en conduite.
         require("./specs/Camera01FreeLook"),
+        -- Proposition patinage (2026-11-06) : avis (E) et antipatinage actif au départ (B, amendement A-02).
+        require("./specs/Patinage"),
     }
 do
     spec(TestKit, Harness)
