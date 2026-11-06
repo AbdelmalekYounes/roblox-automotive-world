@@ -60,6 +60,8 @@ for _, spec in
         require("./specs/Patinage"),
         -- Lot ANIM-01 : volants qui tournent, mains du conducteur sur le volant.
         require("./specs/Anim01"),
+        -- Lot PHONE-01 : téléphone tenu en main.
+        require("./specs/Phone01"),
     }
 do
     spec(TestKit, Harness)

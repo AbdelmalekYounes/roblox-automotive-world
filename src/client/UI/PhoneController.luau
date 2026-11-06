@@ -15,6 +15,11 @@
       réglages rapides, alertes en lecture), sans sélection manette ; l'écran
       complet revient à l'arrêt avec son contenu. Jamais de freinage ni de
       pause.
+    - Lot PHONE-01 : affichage « en main » (réglage Auto / En main / Classique) :
+      la caméra zoome sur le téléphone 3D tenu par le personnage et la même
+      interface est dessinée exactement sur son écran (PhoneHoldController) ;
+      « + » rapproche l'écran. Affichage classique (coin de l'écran) en repli :
+      réglage, disposition compacte en Auto, modèle du serveur absent.
 ]]
 
 local Players = game:GetService("Players")
@@ -45,6 +50,10 @@ local OnboardingController = require(script.Parent.OnboardingController)
 local PhotoMode = require(script.Parent.PhotoMode)
 local BodyChoice = require(script.Parent.BodyChoice)
 local RadioController = require(script.Parent.Parent:WaitForChild("Audio"):WaitForChild("RadioController"))
+-- Lot PHONE-01 : téléphone tenu en main (bras, zoom, rectangle de l'écran 3D).
+local PhoneHold = require(Shared:WaitForChild("UI"):WaitForChild("PhoneHold"))
+local Preferences = require(Shared:WaitForChild("UI"):WaitForChild("Preferences"))
+local PhoneHoldController = require(script.Parent.PhoneHoldController)
 
 local PhoneController = {}
 
@@ -79,6 +88,12 @@ local cache: { [string]: any } = {}
 local settingsPage = "Interface"
 local rebinding: string? = nil
 local isOpen = false
+-- Lot PHONE-01 : affichage de l'ouverture en cours (en main = interface sur l'écran du téléphone 3D).
+local handMode = false
+local handParts: { GuiObject } = {} -- coque, bord et touches dessinés (masqués en main : le modèle 3D les montre)
+local screenFrame: Frame
+local screenCorner: UICorner
+local openCount = 0
 
 local function remote(folder: string): RemoteFunction?
     local f = ReplicatedStorage:FindFirstChild(folder)
@@ -1018,6 +1033,17 @@ local function renderSettings()
         set(Localization.t("settings.devHud", { state = onoff(prefs.Hud.DevHud) }), function(p)
             p.Hud.DevHud = not p.Hud.DevHud
         end)
+        -- Lot PHONE-01 : téléphone en main (zoom sur l'écran tenu) ou classique (coin de l'écran).
+        set(
+            Localization.t(
+                "settings.phoneDisplay",
+                { value = Localization.t("settings.phoneDisplay." .. prefs.Phone.Display) }
+            ),
+            function(p)
+                p.Phone.Display = cycle(Preferences.PhoneDisplays :: any, p.Phone.Display)
+            end
+        )
+        note(Localization.t("settings.phoneDisplay.note"))
         -- Silhouette (avatars humains) : état tenu par le serveur, pas une préférence.
         local worn = BodyChoice.current()
         pairButton(
@@ -1260,7 +1286,49 @@ local function load()
     end)
 end
 
+-- Lot PHONE-01 : affichage voulu pour l'ouverture en cours.
+local function wantsHand(): boolean
+    return PhoneHold.display(UIState.prefs().Phone.Display, UIState.layout().Compact) == "InHand"
+        and not PhoneHoldController.failed()
+end
+
+-- En main : seule la dalle est dessinée (360 × 760 px logiques, rapport de l'écran 3D), centrée sur le point
+-- donné à chaque image ; la coque, le bord et les touches sont ceux du modèle 3D.
+local function handLayout()
+    local deviceScale = device:FindFirstChildOfClass("UIScale") or UITheme.make("UIScale", {}, device)
+    gui.ScreenInsets = Enum.ScreenInsets.None
+    gui.IgnoreGuiInset = true
+    device.BackgroundTransparency = 1
+    for _, item in handParts do
+        item.Visible = false
+    end
+    screenFrame.Position = UDim2.fromOffset(0, 0)
+    screenFrame.Size = UDim2.fromScale(1, 1)
+    screenCorner.CornerRadius = UDim.new(0, 40)
+    device.AnchorPoint = Vector2.new(0.5, 0.5)
+    device.Size = UDim2.fromOffset(PhoneHold.ScreenPixels.X, PhoneHold.ScreenPixels.Y)
+    -- Visibilité et position : placeOverlay, à chaque image (masqué tant que le zoom n'est pas arrivé).
+    deviceScale.Scale = 1
+    gui:SetAttribute("AWPhoneSize", nil)
+    gui:SetAttribute("AWPhoneDisplay", "InHand")
+end
+
 local function layout()
+    if handMode then
+        handLayout()
+        return
+    end
+    gui.ScreenInsets = Enum.ScreenInsets.CoreUISafeInsets
+    gui.IgnoreGuiInset = false
+    device.BackgroundTransparency = 0
+    device.Visible = true
+    for _, item in handParts do
+        item.Visible = true
+    end
+    screenFrame.Position = UDim2.fromOffset(10, 10)
+    screenFrame.Size = UDim2.new(1, -20, 1, -20)
+    screenCorner.CornerRadius = UDim.new(0, 44)
+    gui:SetAttribute("AWPhoneDisplay", "Classic")
     local camera = workspace.CurrentCamera :: Camera
     local view = UIState.layout()
     local compact = view.Compact
@@ -1317,6 +1385,7 @@ local function build()
             BorderSizePixel = 0,
         }, device)
         UITheme.make("UICorner", { CornerRadius = UDim.new(0, 2) }, key)
+        table.insert(handParts, key)
     end
     -- Bord noir intérieur puis écran.
     local bezel = UITheme.make("Frame", {
@@ -1327,6 +1396,7 @@ local function build()
         Size = UDim2.new(1, -8, 1, -8),
     }, device)
     UITheme.make("UICorner", { CornerRadius = UDim.new(0, 50) }, bezel)
+    table.insert(handParts, bezel)
     local screen = UITheme.make("Frame", {
         Name = "Ecran",
         BackgroundColor3 = Color3.new(1, 1, 1),
@@ -1335,7 +1405,8 @@ local function build()
         Size = UDim2.new(1, -20, 1, -20),
         ClipsDescendants = true,
     }, device)
-    UITheme.make("UICorner", { CornerRadius = UDim.new(0, 44) }, screen)
+    screenCorner = UITheme.make("UICorner", { CornerRadius = UDim.new(0, 44) }, screen) :: UICorner
+    screenFrame = screen :: Frame
     -- Fond d'écran : dégradé bleu nuit vers noir, lueur ambre discrète en bas.
     UITheme.make("UIGradient", {
         Color = ColorSequence.new({
@@ -1521,6 +1592,8 @@ local function build()
         screen,
         function()
             enlarged = not enlarged
+            -- En main : « + » rapproche l'écran dans la vue (zoom), au lieu d'agrandir la coque dessinée.
+            PhoneHoldController.setCloser(enlarged)
             layout()
         end
     )
@@ -1644,82 +1717,91 @@ local function captureRebind(input: InputObject)
     render()
 end
 
--- ======================== Bras levé (squelette à contraintes) ========================
+-- ======================== Téléphone tenu en main (lot PHONE-01) ========================
 
--- Lot 0.9.2 (QA-A10) : sur le squelette R15 à contraintes d'animation, l'épaule n'a plus de
--- Motor6D (C0 en lecture seule, attaches à ne pas modifier). Le serveur publie l'attribut
--- `AWPhoneRaised` du personnage (InterfaceService) ; chaque client multiplie la rotation de
--- l'épaule dans Transform après l'animation (PreSimulation), méthode indiquée par Roblox :
--- les animations de marche continuent de s'appliquer. Même angle que le Motor6D (60°).
-local PHONE_RAISED_ATTRIBUTE = "AWPhoneRaised"
-local RAISE_DEG = 60
-local RAISE_DURATION_S = 0.25
--- Par épaule : avancement du geste (0 à 1), dernier Transform écrit et décalage appliqué.
-type RaisedArm = { Alpha: number, Written: CFrame, Offset: CFrame }
-local raised: { [AnimationConstraint]: RaisedArm } = {}
+-- Bras levé et zoom : PhoneHoldController (l'ancien réglage de l'épaule du lot 0.9.2 y est repris pour
+-- l'épaule ET le coude). Ici : choix de l'affichage et placement de l'interface sur l'écran 3D.
 
-local function sameFrame(a: CFrame, b: CFrame): boolean
-    return (a.Position - b.Position).Magnitude < 1e-5
-        and a.LookVector:Dot(b.LookVector) > 1 - 1e-7
-        and a.UpVector:Dot(b.UpVector) > 1 - 1e-7
+local function server(out: boolean)
+    local r = remote("AWInterface")
+    if r == nil then
+        return
+    end
+    task.spawn(function()
+        pcall(function()
+            (r :: RemoteFunction):InvokeServer("Phone", { Out = out })
+        end)
+    end)
 end
 
-local function updateRaisedArms(dt: number)
-    for _, other in Players:GetPlayers() do
-        local character = other.Character
-        local upper = character and character:FindFirstChild("RightUpperArm")
-        local joint = upper and upper:FindFirstChild("RightShoulder")
-        if joint == nil or not joint:IsA("AnimationConstraint") then
-            continue
-        end
-        local shoulder = joint :: AnimationConstraint
-        local wanted = (character :: Model):GetAttribute(PHONE_RAISED_ATTRIBUTE) == true
-        local entry = raised[shoulder]
-        if entry == nil and not wanted then
-            continue
-        end
-        local current: RaisedArm = entry or { Alpha = 0, Written = shoulder.Transform, Offset = CFrame.identity }
-        -- Animation non réévaluée ce pas-ci (Transform inchangé depuis notre écriture) :
-        -- retirer l'ancien décalage avant d'appliquer le nouveau, sans cumul.
-        local base = shoulder.Transform
-        if entry and sameFrame(base, entry.Written) then
-            base = entry.Offset:Inverse() * base
-        end
-        current.Alpha = math.clamp(current.Alpha + (if wanted then dt else -dt) / RAISE_DURATION_S, 0, 1)
-        current.Offset = CFrame.Angles(math.rad(RAISE_DEG * current.Alpha), 0, 0)
-        current.Written = current.Offset * base
-        shoulder.Transform = current.Written
-        if current.Alpha > 0 or wanted then
-            raised[shoulder] = current
-        else
-            raised[shoulder] = nil
-        end
+-- Réglage ou disposition changés pendant l'usage : bascule en main / classique sans ranger le téléphone.
+local function refreshDisplay()
+    if not isOpen then
+        return
     end
-    for shoulder in raised do
-        if shoulder.Parent == nil then
-            raised[shoulder] = nil
+    local wanted = wantsHand()
+    if wanted ~= handMode then
+        handMode = wanted
+        PhoneHoldController.setInHand(wanted)
+        layout()
+        render()
+    end
+end
+
+-- À chaque image, après la caméra : l'interface recouvre exactement l'écran du téléphone 3D (rectangle centré
+-- donné par PhoneHoldController quand le zoom est arrivé) ; masquée pendant le zoom aller et retour.
+local function placeOverlay()
+    if not (isOpen and handMode) then
+        return
+    end
+    if PhoneHoldController.failed() then
+        -- Modèle du serveur jamais arrivé : affichage classique pour cette ouverture.
+        refreshDisplay()
+        return
+    end
+    local center, size = PhoneHoldController.overlay()
+    if center == nil or size == nil then
+        device.Visible = false
+        return
+    end
+    local deviceScale = device:FindFirstChildOfClass("UIScale")
+    if deviceScale then
+        deviceScale.Scale = size.Y / PhoneHold.ScreenPixels.Y
+    end
+    device.Position = UDim2.fromOffset(math.floor(center.X + 0.5), math.floor(center.Y + 0.5))
+    if not device.Visible then
+        device.Visible = true
+        -- Manette : focus posé à l'apparition (l'ouverture l'avait demandé pendant le zoom, interface masquée).
+        local GuiService = game:GetService("GuiService")
+        local lastInput = game:GetService("UserInputService"):GetLastInputType().Name
+        if
+            string.sub(lastInput, 1, 7) == "Gamepad"
+            and UIState.mode() ~= "Moving"
+            and (GuiService.SelectedObject == nil or not GuiService.SelectedObject:IsDescendantOf(device))
+        then
+            GuiService.SelectedObject = body:FindFirstChildWhichIsA("GuiButton", true)
         end
     end
 end
 
 function PhoneController.start()
     build()
-    RunService.PreSimulation:Connect(updateRaisedArms)
+    PhoneHoldController.start()
+    RunService:BindToRenderStep("AWPhoneOverlay", Enum.RenderPriority.Camera.Value + 2, placeOverlay)
     UIManager.register({
         Name = "Phone",
         Kind = "Modal",
         Full = true,
         Open = function()
             isOpen = true
+            openCount += 1
+            -- Réglage et disposition seulement (un échec de l'ouverture précédente ne compte plus).
+            handMode = PhoneHold.display(UIState.prefs().Phone.Display, UIState.layout().Compact) == "InHand"
+            PhoneHoldController.open(handMode)
+            PhoneHoldController.setCloser(enlarged)
+            layout()
             gui.Enabled = true
-            local r = remote("AWInterface")
-            if r then
-                task.spawn(function()
-                    pcall(function()
-                        (r :: RemoteFunction):InvokeServer("Phone", { Out = true })
-                    end)
-                end)
-            end
+            server(true)
             load()
             render()
         end,
@@ -1727,14 +1809,15 @@ function PhoneController.start()
             isOpen = false
             gui.Enabled = false
             rebinding = nil
-            local r = remote("AWInterface")
-            if r then
-                task.spawn(function()
-                    pcall(function()
-                        (r :: RemoteFunction):InvokeServer("Phone", { Out = false })
-                    end)
-                end)
-            end
+            PhoneHoldController.close()
+            -- Rangement fluide : le téléphone reste en main le temps du retour de la caméra, puis le serveur le
+            -- range (sauf réouverture entre-temps).
+            local count = openCount
+            task.delay(if handMode then PhoneHoldController.returnS() else 0, function()
+                if not isOpen and count == openCount then
+                    server(false)
+                end
+            end)
         end,
         Quick = function(on: boolean)
             quick = on
@@ -1747,8 +1830,10 @@ function PhoneController.start()
         end,
     })
     UIState.onPrefs(function()
+        refreshDisplay()
         render()
     end)
+    UIState.onViewport(refreshDisplay)
     Localization.changed(function()
         render()
     end)

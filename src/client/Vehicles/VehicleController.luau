@@ -1163,6 +1163,12 @@ function VehicleController.getCamera(): VehicleCamera.VehicleCamera
     return camera
 end
 
+-- Lot PHONE-01 : vrai pendant une session de conduite (la caméra du véhicule est alors active ; le zoom du
+-- téléphone passe par sa visée imposée, sinon par la caméra par défaut).
+function VehicleController.isDriving(): boolean
+    return session ~= nil
+end
+
 -- Bascule de caméra par le même code que la touche V (tests Studio uniquement).
 function VehicleController.toggleCameraForTest(): string
     assert(RunService:IsStudio(), "Réservé aux tests automatisés dans Studio")
