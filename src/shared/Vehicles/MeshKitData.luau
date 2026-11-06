@@ -131,20 +131,34 @@ local COMETE: Kit = {
 
 -- Brio (lot VEH3D-02), modèle tiers « Milano '95 » (Daniel Zhabotinsky, CC BY 4.0). Mesures du 2026-11-05 (dépôt
 -- d'art : `vehicles/wk_brio/renders_milano95/finition.json`, export `vehicles/wk_brio/export/wk_brio_milano95_lod0.json`).
--- Dessus d'assise y 0,618 (conducteur) et 0,607 (passager) → centre du Seat 0,2 st plus bas.
+-- Places corrigées au lot BRIO-02 (coupes par rayons du 2026-11-06, Blender sans interface, en lecture seule, sur
+-- `wk_brio_milano95.blend`) : le siège du modèle n'a pas de coussin plat distinct ; le relevé du 2026-11-05 en
+-- (x ∓1,2 ; z 1,55) tombait sur le DOSSIER incliné (y 0,62), ~0,95 st au-dessus du vrai coussin. Le personnage s'y
+-- asseyait trop haut et trop en arrière : têtes et cheveux à travers le pavillon (capture du propriétaire).
+-- Habitacle mesuré (place conducteur, x −1,2 ; passager symétrique à 0,015 st près) :
+-- - coussin : y −0,26 (bord avant, z −0,2) à −0,41 (pied du dossier, z 1,21), largeur x −2,1 à −0,4 ;
+-- - dossier : pied en (y −0,41 ; z 1,21), haut y 1,96 vers z 2,05, incliné de 20 à 28° vers l'arrière ;
+-- - plancher des pieds y −0,88 à −0,90 entre z −0,3 et −2,1 ; tablier et pédalier vers z −2,2 à −2,4 ;
+-- - dessous de la planche de bord : y 0,80 (z −0,5) à 0,15 (z −2,0) ; volant x −1,80 à −0,53, y 0,59 à 1,80,
+--   z −0,42 à 0,12 ;
+-- - dessous du pavillon : 3,06 (z 0,8) à 3,15 (z 1,8) ; il redescend à 2,84 au bandeau avant (z 0,6).
+-- Siège du jeu placé sur le coussin à z 0,75, à 0,48 st du dossier (Comète : 0,59 ; dossier plus incliné
+-- ici) : dessus d'assise y −0,353 (conducteur) et −0,368 (passager) → centre du Seat 0,2 st plus bas.
 local BRIO: Kit = {
     Template = "Brio",
     ManifestId = "veh.wk_brio.meshmilano95",
     Reference = "BRIO_Caisse_Peinture",
     ReferenceCenter = Vector3.new(0.005, 1.201, 2.776),
-    SeatDriver = Vector3.new(-1.2, 0.418, 1.55),
-    SeatPassenger = Vector3.new(1.2, 0.407, 1.55),
-    -- Assise de citadine (coussin à 0,9 st du plancher) : pose standard, non vérifiée en jeu.
-    SeatPoses = { Driver = "Conduite", Passenger = "Passager" },
-    -- Plancher sous le pédalier mesuré par rayons (Blender, 2026-11-05) : y −0,29 à −0,35 entre z −0,25 et 1,25.
-    Footwell = { FloorY = -0.29, FrontZ = -0.25, RearZ = 1.25 },
-    -- Dessous du pavillon au droit de la place conducteur : 3,10 st (2,48 st au-dessus de l'assise).
+    SeatDriver = Vector3.new(-1.2, -0.553, 0.75),
+    SeatPassenger = Vector3.new(1.2, -0.568, 0.75),
+    -- Pose « Citadine » (SeatPose, lot BRIO-02) : coussin 0,53 st au-dessus du plancher des pieds.
+    SeatPoses = { Driver = "Citadine", Passenger = "CitadinePassager" },
+    -- Plancher des pieds sous la planche de bord (relevé du 2026-11-06 ; celui du 2026-11-05 mesurait le coussin).
+    Footwell = { FloorY = -0.88, FrontZ = -2.1, RearZ = -0.3 },
+    -- Dessous du pavillon au droit de la place conducteur (z 1,2) : 3,10 st, soit 3,45 st au-dessus de l'assise ;
+    -- 3,15 au droit des têtes (z ~1,8, buste incliné).
     RoofUnderside = 3.10,
+    -- Vue cockpit inchangée (décision du propriétaire du 2026-11-06) : relevée au lot VEH3D-02 sur l'ancienne assise.
     CameraCockpit = Vector3.new(-1.2, 2.501, 1.2),
     CameraHood = Vector3.new(0, 2.356, -2.751),
     CameraBumper = Vector3.new(0, -0.286, -6.721),

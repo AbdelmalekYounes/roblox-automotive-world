@@ -7,8 +7,8 @@
     chaque client compose ces décalages avec la pose assise du moteur, sur `Transform` des
     articulations (Motor6D ou AnimationConstraint), comme le bras du téléphone (QA-A10).
 
-    ACTIVABLE : seuls les sièges portant l'attribut `AWSeatPose` (« Conduite » ou
-    « Passager ») reçoivent la pose ; aucun siège des carrosseries provisoires ne le porte,
+    ACTIVABLE : seuls les sièges portant l'attribut `AWSeatPose` (nom d'une pose de
+    `SeatPose.Poses`, ex. « Conduite » ou « Passager ») reçoivent la pose ; aucun siège des carrosseries provisoires ne le porte,
     le comportement actuel est donc inchangé. Les futurs modèles 3D (habitacles aux cotes de
     la pose) le porteront.
 
@@ -66,11 +66,30 @@ local LOW_LEGS: Pose = {
     RightKnee = { Pitch = 56 },
 }
 
+-- Citadine (Brio, lot BRIO-02, décision du propriétaire du 2026-11-06) : dérivée de LOW_LEGS, dont les têtes et les
+-- pieds ont été MESURÉS en VM (tâche 20261105-023349, buste 31° : haut de la tête au plus 3,30 st au-dessus de
+-- l'assise, morphologie M3 ; dessous des pieds 0,10 à 0,21 st sous l'assise). Habitacle de la Brio mesuré dans
+-- Blender (2026-11-06) : coussin 0,53 st au-dessus du plancher des pieds (Comète : 0,28), dessous du pavillon 3,41 à
+-- 3,50 st au-dessus de l'assise au droit des têtes (Comète : 3,34). Il faut donc des pieds plus bas, la tête au
+-- moins aussi basse :
+-- - bassin enfoncé de 0,10 st de plus (0,28) : tête et pieds 0,10 plus bas (translation pure) ;
+-- - genoux 50° au lieu de 56° : jambes un peu moins tendues, pieds encore ~0,15 à 0,25 st plus bas (sensibilité
+--   relevée entre les essais VM de la Comète : 0,02 à 0,04 st par degré) ;
+-- - buste 31°, cou −20°, cuisses 4° : inchangés (valeurs mesurées).
+-- Estimation, NON VÉRIFIÉE EN JEU : haut de la tête au plus ~3,20 st au-dessus de l'assise (M3), ~0,3 st sous le
+-- pavillon ; dessous des pieds 0,1 à 0,2 st au-dessus du plancher. Le propriétaire vérifie avec plusieurs avatars.
+local CITY_LEGS: Pose = table.clone(LOW_LEGS)
+CITY_LEGS.Root = { Pitch = 0, Down = 0.28 }
+CITY_LEGS.LeftKnee = { Pitch = 50 }
+CITY_LEGS.RightKnee = { Pitch = 50 }
+
 SeatPose.Poses = table.freeze({
     Conduite = table.freeze(withArms(LEGS)),
     Passager = table.freeze(table.clone(LEGS)),
     Sportive = table.freeze(withArms(LOW_LEGS)),
     SportivePassager = table.freeze(table.clone(LOW_LEGS)),
+    Citadine = table.freeze(withArms(CITY_LEGS)),
+    CitadinePassager = table.freeze(table.clone(CITY_LEGS)),
 } :: { [string]: Pose })
 
 -- Articulations des bras : jamais modifiées quand le téléphone est sorti (bras levé, QA-A10).
