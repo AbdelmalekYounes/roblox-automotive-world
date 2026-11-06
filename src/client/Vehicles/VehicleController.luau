@@ -35,6 +35,8 @@ local SpinNotice = require(VehiclesShared:WaitForChild("SpinNotice"))
 local DriverInput = require(script.Parent.DriverInput)
 local VehicleCamera = require(script.Parent.VehicleCamera)
 local WheelVisuals = require(script.Parent.WheelVisuals)
+-- Lot ANIM-01 : volant du véhicule piloté (rotation et mains appliquées par SeatPoseController).
+local SteeringWheelVisuals = require(script.Parent.SteeringWheelVisuals)
 local DevHud = require(script.Parent.Parent.UI.DevHud)
 local TireAudioModel = require(ReplicatedStorage.Shared:WaitForChild("Audio"):WaitForChild("TireAudioModel"))
 
@@ -899,6 +901,11 @@ local function onPreRender(dt: number)
             Model = current.Model,
         })
     end
+    -- Lot ANIM-01 : état de simulation du véhicule piloté, relu par le volant affiché (référence vivante).
+    SteeringWheelVisuals.setLocal(
+        if current then current.Model else nil,
+        if current then current.Simulator.State else nil
+    )
     if cam then
         WheelVisuals.update(
             dt,

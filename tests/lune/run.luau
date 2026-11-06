@@ -56,6 +56,8 @@ for _, spec in
         require("./specs/Audio03"),
         -- Proposition patinage (2026-11-06) : avis (E) et antipatinage actif au départ (B, amendement A-02).
         require("./specs/Patinage"),
+        -- Lot ANIM-01 : volants qui tournent, mains du conducteur sur le volant.
+        require("./specs/Anim01"),
     }
 do
     spec(TestKit, Harness)

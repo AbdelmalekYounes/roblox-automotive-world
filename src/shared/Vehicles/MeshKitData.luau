@@ -10,6 +10,8 @@
 
 local MeshKitData = {}
 
+local SteeringWheel = require(script.Parent.SteeringWheel)
+
 export type Box = { Center: Vector3, Size: Vector3 }
 export type Kit = {
     Template: string, -- nom du modèle du dossier des gabarits (côté serveur, AutomotiveWorldMeshKits)
@@ -57,6 +59,10 @@ export type Kit = {
         SideY: number,
         Side: { number },
     },
+    -- Volant qui tourne et prises des mains (lot ANIM-01) : pièce du gabarit, centre et axe de la jante MESURÉS sur
+    -- les sommets du volant (export glTF, lecture seule, 2026-11-06), rapport de direction. La pièce n'est articulée
+    -- que si elle est présente dans le gabarit ; les mains se posent sur la jante dans tous les cas.
+    SteeringWheel: SteeringWheel.Spec?,
 }
 
 -- Mesures du 2026-11-04 (MODELES_TIERS.md §3 et §4). Dessus d'assise y −0,643 → centre du Seat −0,843.
@@ -118,6 +124,18 @@ local COMETE: Kit = {
     DetailPattern = { "COMETE_Habitacle", "COMETE_Freins", "COMETE_EssuieGlaces", "COMETE_Retroviseurs_mirror" },
     Paint = { Pattern = "_body", NeutralColorMap = nil },
     LightMeshes = { COMETE_Feu_Av = "Head", COMETE_Feu_Ar = "Tail" },
+    -- Volant (lot ANIM-01) : séparé de `COMETE_Habitacle_interior` dans le dépôt d'art (`comete_volant_separe.py`,
+    -- 2026-11-06), pièce `COMETE_Volant` importée et envoyée sur Roblox par le propriétaire le 2026-11-06, intégrée au
+    -- gabarit (`tests/lune/tools/anim01-volant-comete.luau`). Jante ajustée sur 98 sommets : centre
+    -- (−1,157 ; 0,960 ; −2,951), plan incliné de 12° sur la verticale, rayon 0,593 st (0,533 à 0,648 : boudin).
+    -- Rapport 12:1 (sportive, plus directe) : ±360° de volant à fond en manœuvre (30°), ±108° à 140 km/h (9°).
+    SteeringWheel = {
+        Part = "COMETE_Volant",
+        Hub = Vector3.new(-1.157, 0.96, -2.951),
+        Axis = Vector3.new(0, 0.2096, 0.9778).Unit,
+        GripRadius = 0.593,
+        Ratio = 12,
+    },
     -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT hors vitrage, wk_comete_720s.blend).
     DamageMarks = {
         FrontY = -0.264,
@@ -212,6 +230,17 @@ local BRIO: Kit = {
         BRIO_VerreOptiqueAv = "Head",
         BRIO_Feu_Ar = "Tail",
         BRIO_VerreFeuAr = "Tail",
+    },
+    -- Volant (lot ANIM-01) : pièce séparée `BRIO_Volant` du gabarit (VEH3D-02). Jante ajustée sur 91 sommets (export
+    -- LOD0, 2026-11-06) : centre (−1,166 ; 1,197 ; −0,156), à 0,005 st du centre de la boîte de la pièce ; plan incliné
+    -- de 20° sur la verticale ; rayon 0,591 st (0,543 à 0,646). Composante latérale de l'axe (0,002) négligée.
+    -- Rapport 14:1 (citadine) : ±490° de volant à fond en manœuvre (35°), ±126° à 140 km/h (9°).
+    SteeringWheel = {
+        Part = "BRIO_Volant",
+        Hub = Vector3.new(-1.166, 1.197, -0.156),
+        Axis = Vector3.new(0, 0.3459, 0.9383).Unit,
+        GripRadius = 0.591,
+        Ratio = 14,
     },
     -- Matériaux de `milano95_prepare.py` : AW_Phare, AW_VerreOptique, AW_Feu, AW_VerreFeu, AW_Clignotant, AW_Recul.
     Colors = {

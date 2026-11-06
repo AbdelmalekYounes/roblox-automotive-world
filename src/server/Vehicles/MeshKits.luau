@@ -26,6 +26,8 @@ local MeshKits = {}
 
 local MeshKitData =
     require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("MeshKitData"))
+local SteeringWheel =
+    require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("SteeringWheel"))
 
 export type Kit = MeshKitData.Kit
 MeshKits.Kits = MeshKitData.Kits
@@ -78,6 +80,19 @@ local function weld(root: BasePart, part: BasePart)
     w.Part0 = root
     w.Part1 = part
     w.Parent = part
+end
+
+-- Volant (lot ANIM-01) : articulé au châssis par un Motor6D dont le repère suit l'axe de la colonne ; chaque client
+-- le fait tourner par `Transform` (non répliqué, sans effet physique : pièce sans masse ni collision), comme les roues.
+local function articulateSteeringWheel(root: BasePart, part: BasePart, spec: SteeringWheel.Spec)
+    local frame = SteeringWheel.jointFrame(spec)
+    local joint = Instance.new("Motor6D")
+    joint.Name = SteeringWheel.JointName
+    joint.Part0 = root
+    joint.Part1 = part
+    joint.C0 = frame
+    joint.C1 = part.CFrame:ToObjectSpace(root.CFrame * frame)
+    joint.Parent = part
 end
 
 local function visualOnly(part: BasePart)
@@ -171,7 +186,11 @@ function MeshKits.build(
                 table.insert(wheels[wheel], item)
                 item.Parent = nil
             else
-                weld(root, item)
+                if kit.SteeringWheel and item.Name == kit.SteeringWheel.Part then
+                    articulateSteeringWheel(root, item, kit.SteeringWheel)
+                else
+                    weld(root, item)
+                end
                 item.Parent = if matches(item.Name, kit.DetailPattern) then details else body
             end
         end
