@@ -49,6 +49,7 @@ type Active = {
 
 type Figure = {
     Parts: { BasePart },
+    Measured: { [string]: Vector3 }?, -- articulations mesurées (gabarit 3D), sinon squelette de base
     Joints: { string }, -- articulation de chaque pièce (même ordre)
     Rest: { CFrame }, -- repère de repos de chaque pièce (repère piéton, m)
     Scale: number,
@@ -136,8 +137,33 @@ function Pedestrians.start()
     local templates: { [string]: Model } = {}
     for _, morph in PnjKits.Morphologies do
         local template = pedestrianTemplate(morph)
-        if template then
+        if template and morph.Rest and morph.PelvisCenter then
             templates[morph.Id] = template
+        end
+    end
+    -- Palettes (variantes de couleurs) : textures des plaques du gabarit porteur, autorisées par le manifeste.
+    local palettes: { string } = {}
+    do
+        local kits = ReplicatedStorage:FindFirstChild(PnjKits.FolderName)
+        local carrier = kits and kits:FindFirstChild(PnjKits.PaletteTemplate)
+        local entry = AssetManifest.get(PnjKits.PedestrianManifestId)
+        local allowed: { [number]: boolean } = {}
+        if entry and entry.RobloxTextureIds then
+            for _, id in entry.RobloxTextureIds do
+                allowed[id] = true
+            end
+        end
+        if carrier then
+            for index = 0, PnjKits.PaletteCount - 1 do
+                local plate = carrier:FindFirstChild(string.format("Palette_%02d", index), true)
+                local texture = if plate and plate:IsA("MeshPart") then plate.TextureID else ""
+                local id = assetNumber(texture)
+                if id == nil or not allowed[id] then
+                    table.clear(palettes)
+                    break
+                end
+                table.insert(palettes, texture)
+            end
         end
     end
 
@@ -154,9 +180,17 @@ function Pedestrians.start()
             Morphology = morph.Id,
             Yaw = nil,
             LastAnimated = 0,
+            Measured = nil,
         }
         local template = templates[morph.Id]
-        local pivot = if template then template:GetPivot() else CFrame.identity
+        local pivot = CFrame.identity
+        if template then
+            -- Origine du piéton (au sol entre les pieds) retrouvée depuis le centre mesuré du bassin : le pivot d'un
+            -- modèle importé n'est pas fiable. Axes du jeu conservés à l'import (règle d'étalonnage).
+            local pelvis = template:FindFirstChild("Bassin", true) :: BasePart
+            pivot = CFrame.new(pelvis.Position - (morph.PelvisCenter :: Vector3) * S)
+            figure.Measured = morph.Rest
+        end
         for _, segment in PnjKits.Segments do
             local part: BasePart
             local rest: CFrame
@@ -186,7 +220,16 @@ function Pedestrians.start()
 
     local function dress(figure: Figure, look: PnjKits.Look)
         if templates[figure.Morphology] then
-            return -- gabarit 3D : textures d'origine conservées
+            -- Gabarit 3D : variante de palette du piéton (sinon palette d'origine du gabarit).
+            local texture = palettes[look.Palette + 1]
+            if texture then
+                for _, part in figure.Parts do
+                    if part:IsA("MeshPart") and part.TextureID ~= texture then
+                        part.TextureID = texture
+                    end
+                end
+            end
+            return
         end
         for index, segment in PnjKits.Segments do
             local part = figure.Parts[index]
@@ -325,11 +368,16 @@ function Pedestrians.start()
             local kind: PedestrianGait.Kind = PedestrianGait.kindFor(walker.Speed)
             local stride = PedestrianGait.strideLength(walker.Speed, kind, figure.Scale)
             local pose = PedestrianGait.pose(kind, walker.Travel / stride, walker.Speed, now, PnjKits.hash(key))
-            local joints = PedestrianGait.jointFrames(pose, figure.Scale)
+            local joints = PedestrianGait.jointFrames(pose, figure.Scale, figure.Measured)
             local base = CFrame.new(p.X * S, p.Y * S, p.Z * S) * CFrame.Angles(0, yaw, 0)
             for index, part in figure.Parts do
-                local local_ =
-                    PedestrianGait.segmentFrame(joints, figure.Joints[index], figure.Rest[index], figure.Scale)
+                local local_ = PedestrianGait.segmentFrame(
+                    joints,
+                    figure.Joints[index],
+                    figure.Rest[index],
+                    figure.Scale,
+                    figure.Measured
+                )
                 table.insert(parts, part)
                 -- Repère piéton en mètres → studs (translation seulement).
                 table.insert(frames, base * (local_.Rotation + local_.Position * S))

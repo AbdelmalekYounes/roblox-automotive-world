@@ -129,14 +129,46 @@ return function(T: any, H: any)
         for k = 1, 200 do
             local look = PnjKits.look("Q:centre:r" .. k .. "|-1|" .. k)
             tops[tostring(look.Top)] = true
-            morphs[look.Morphology.Id] = true
+            morphs[string.match(look.Morphology.Id, "_([HF])") or "?"] = true
         end
         local distinct = 0
         for _ in tops do
             distinct += 1
         end
         T.truthy(distinct >= 6, distinct .. " couleurs de haut sur 200 piétons")
-        T.truthy(morphs.H and morphs.F, "deux morphologies")
+        T.truthy(morphs.H and morphs.F, "hommes et femmes")
+        T.equal(#PnjKits.Morphologies, 18, "18 personnages")
+        local palettes: { [number]: boolean } = {}
+        for k = 1, 300 do
+            palettes[PnjKits.look("cle" .. k).Palette] = true
+        end
+        local count = 0
+        for index in palettes do
+            T.truthy(index >= 0 and index < PnjKits.PaletteCount, "palette dans la plage")
+            count += 1
+        end
+        T.equal(count, PnjKits.PaletteCount, "toutes les palettes utilisées")
+        local bodies: { [string]: boolean } = {}
+        local distinctBodies = 0
+        for k = 1, 500 do
+            local id = PnjKits.look("Q:centre:r" .. k .. "|1|" .. (k % 7)).Morphology.Id
+            if not bodies[id] then
+                bodies[id] = true
+                distinctBodies += 1
+            end
+        end
+        T.equal(distinctBodies, #PnjKits.Morphologies, "tous les personnages apparaissent")
+        for _, morph in PnjKits.Morphologies do
+            -- Articulations mesurées : toutes présentes, gauche en −X, genou sous la hanche, cou au-dessus de la taille.
+            local rest = morph.Rest :: any
+            for _, joint in PnjKits.Joints do
+                T.truthy(rest[joint.Name] ~= nil, morph.Id .. "." .. joint.Name)
+            end
+            T.truthy(rest.HancheG.X < 0 and rest.EpauleG.X < 0, morph.Id .. " : gauche en −X")
+            T.truthy(rest.GenouG.Y < rest.HancheG.Y and rest.Cou.Y > rest.Taille.Y, morph.Id .. " : squelette debout")
+            local frames = Gait.jointFrames({ Root = CFrame.identity, Rotations = {} }, morph.Scale, rest)
+            T.truthy((frames.CoudeD.Position - rest.CoudeD).Magnitude < 1e-4, morph.Id .. " : repos exact")
+        end
         local missing = PnjKits.missingPedestrianParts({ Tete = true, Buste = true })
         T.equal(#missing, 9, "pièces manquantes signalées")
         T.equal(#PnjKits.missingCarParts({ Roue_AVG = true, Roue_AVD = true, Roue_ARG = true }), 1, "roue manquante")

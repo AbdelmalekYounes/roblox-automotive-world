@@ -412,7 +412,11 @@ export type Segment = {
 export type Morphology = {
     Id: string,
     Template: string,
-    Scale: number, -- facteur appliqué au squelette de base (taille 1,75 m)
+    Scale: number, -- facteur appliqué au squelette de base (taille 1,75 m) : repli en pièces simples
+    -- Articulations MESURÉES sur le modèle 3D (m, repère piéton) : utilisées avec le gabarit 3D seulement.
+    Rest: { [string]: Vector3 }?,
+    -- Centre de la boîte de la pièce « Bassin » du gabarit (m, repère piéton) : retrouve l'origine du modèle importé.
+    PelvisCenter: Vector3?,
 }
 
 -- Squelette de base (taille 1,75 m). Les modèles 3D seront découpés sur ces articulations (dépôt d'art).
@@ -515,9 +519,354 @@ for _, item in segments do
 end
 PnjKits.Segments = table.freeze(segments)
 
+--[[
+    18 personnages du pack « Low Poly People » de David Jalbert (CC BY 4.0, crédit obligatoire) : corpulences
+    normale, forte, ronde × homme / femme × 3 tenues. Articulations relevées sur les modèles préparés (dépôt d'art,
+    `vehicles/pnj/pietons/pietons.json`, 2026-11-06).
+]]
 local morphologies: { Morphology } = {
-    { Id = "H", Template = "PNJ_Pieton_H", Scale = 1.0 },
-    { Id = "F", Template = "PNJ_Pieton_F", Scale = 0.94 },
+    {
+        Id = "Normal_HA",
+        Template = "PNJ_Pieton_Normal_HA",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.6889, -0.0067),
+            Taille = Vector3.new(0.0, 0.9673, -0.0067),
+            Cou = Vector3.new(0.0, 1.2753, -0.0067),
+            EpauleG = Vector3.new(-0.1999, 1.1518, -0.0067),
+            CoudeG = Vector3.new(-0.2381, 0.8799, -0.0067),
+            EpauleD = Vector3.new(0.1999, 1.1518, -0.0067),
+            CoudeD = Vector3.new(0.2381, 0.8799, -0.0067),
+            HancheG = Vector3.new(-0.1341, 0.662, -0.0),
+            GenouG = Vector3.new(-0.1413, 0.3693, -0.0134),
+            HancheD = Vector3.new(0.1341, 0.662, 0.0),
+            GenouD = Vector3.new(0.1413, 0.3693, -0.0134),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.8448, -0.0146),
+    },
+    {
+        Id = "Normal_HB",
+        Template = "PNJ_Pieton_Normal_HB",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.682, -0.0067),
+            Taille = Vector3.new(0.0, 0.9577, -0.0067),
+            Cou = Vector3.new(0.0, 1.2626, -0.0067),
+            EpauleG = Vector3.new(-0.1979, 1.1404, -0.0067),
+            CoudeG = Vector3.new(-0.2357, 0.8711, -0.0067),
+            EpauleD = Vector3.new(0.1979, 1.1404, -0.0067),
+            CoudeD = Vector3.new(0.2357, 0.8711, -0.0067),
+            HancheG = Vector3.new(-0.1327, 0.6555, -0.0),
+            GenouG = Vector3.new(-0.1399, 0.3656, -0.0132),
+            HancheD = Vector3.new(0.1327, 0.6555, 0.0),
+            GenouD = Vector3.new(0.1399, 0.3656, -0.0132),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.8345, -0.023),
+    },
+    {
+        Id = "Normal_HC",
+        Template = "PNJ_Pieton_Normal_HC",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.6889, -0.0067),
+            Taille = Vector3.new(0.0, 0.9673, -0.0067),
+            Cou = Vector3.new(0.0, 1.2753, -0.0067),
+            EpauleG = Vector3.new(-0.1999, 1.1519, -0.0067),
+            CoudeG = Vector3.new(-0.2381, 0.8799, -0.0067),
+            EpauleD = Vector3.new(0.1999, 1.1519, -0.0067),
+            CoudeD = Vector3.new(0.2381, 0.8799, -0.0067),
+            HancheG = Vector3.new(-0.1341, 0.6621, -0.0),
+            GenouG = Vector3.new(-0.1413, 0.3693, -0.0134),
+            HancheD = Vector3.new(0.1341, 0.6621, 0.0),
+            GenouD = Vector3.new(0.1413, 0.3693, -0.0134),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.8429, -0.0233),
+    },
+    {
+        Id = "Normal_FA",
+        Template = "PNJ_Pieton_Normal_FA",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.6366, -0.0062),
+            Taille = Vector3.new(0.0, 0.8939, -0.0062),
+            Cou = Vector3.new(0.0, 1.1785, -0.0062),
+            EpauleG = Vector3.new(-0.1847, 1.0644, -0.0062),
+            CoudeG = Vector3.new(-0.22, 0.8131, -0.0062),
+            EpauleD = Vector3.new(0.1847, 1.0644, -0.0062),
+            CoudeD = Vector3.new(0.22, 0.8131, -0.0062),
+            HancheG = Vector3.new(-0.1239, 0.6118, -0.0),
+            GenouG = Vector3.new(-0.1306, 0.3413, -0.0123),
+            HancheD = Vector3.new(0.1239, 0.6118, 0.0),
+            GenouD = Vector3.new(0.1306, 0.3413, -0.0123),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.779, -0.0204),
+    },
+    {
+        Id = "Normal_FB",
+        Template = "PNJ_Pieton_Normal_FB",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.6285, -0.0061),
+            Taille = Vector3.new(0.0, 0.8826, -0.0061),
+            Cou = Vector3.new(0.0, 1.1636, -0.0061),
+            EpauleG = Vector3.new(-0.1824, 1.0509, -0.0061),
+            CoudeG = Vector3.new(-0.2172, 0.8028, -0.0061),
+            EpauleD = Vector3.new(0.1824, 1.0509, -0.0061),
+            CoudeD = Vector3.new(0.2172, 0.8028, -0.0061),
+            HancheG = Vector3.new(-0.1223, 0.604, -0.0),
+            GenouG = Vector3.new(-0.129, 0.337, -0.0122),
+            HancheD = Vector3.new(0.1223, 0.604, 0.0),
+            GenouD = Vector3.new(0.129, 0.337, -0.0122),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.7694, -0.0202),
+    },
+    {
+        Id = "Normal_FC",
+        Template = "PNJ_Pieton_Normal_FC",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(0.0, 0.6302, -0.0062),
+            Taille = Vector3.new(0.0, 0.8849, -0.0062),
+            Cou = Vector3.new(0.0, 1.1667, -0.0062),
+            EpauleG = Vector3.new(-0.1829, 1.0537, -0.0062),
+            CoudeG = Vector3.new(-0.2178, 0.8049, -0.0062),
+            EpauleD = Vector3.new(0.1829, 1.0537, -0.0062),
+            CoudeD = Vector3.new(0.2178, 0.8049, -0.0062),
+            HancheG = Vector3.new(-0.1226, 0.6057, -0.0),
+            GenouG = Vector3.new(-0.1293, 0.3379, -0.0122),
+            HancheD = Vector3.new(0.1226, 0.6057, 0.0),
+            GenouD = Vector3.new(0.1293, 0.3379, -0.0122),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.7429, -0.0213),
+    },
+    {
+        Id = "Fort_HA",
+        Template = "PNJ_Pieton_Fort_HA",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6715, 0.0182),
+            Taille = Vector3.new(-0.0, 0.9571, 0.0182),
+            Cou = Vector3.new(-0.0, 1.2685, 0.0182),
+            EpauleG = Vector3.new(-0.2435, 1.1435, 0.0182),
+            CoudeG = Vector3.new(-0.2828, 0.864, 0.0182),
+            EpauleD = Vector3.new(0.2435, 1.1435, 0.0182),
+            CoudeD = Vector3.new(0.2828, 0.864, 0.0182),
+            HancheG = Vector3.new(-0.1134, 0.6429, -0.0),
+            GenouG = Vector3.new(-0.1387, 0.3784, -0.0025),
+            HancheD = Vector3.new(0.1134, 0.6415, 0.0),
+            GenouD = Vector3.new(0.1387, 0.377, -0.0025),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.8391, -0.0126),
+    },
+    {
+        Id = "Fort_HB",
+        Template = "PNJ_Pieton_Fort_HB",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6782, 0.0184),
+            Taille = Vector3.new(-0.0, 0.9667, 0.0184),
+            Cou = Vector3.new(-0.0, 1.2811, 0.0184),
+            EpauleG = Vector3.new(-0.2459, 1.155, 0.0184),
+            CoudeG = Vector3.new(-0.2856, 0.8727, 0.0184),
+            EpauleD = Vector3.new(0.2459, 1.155, 0.0184),
+            CoudeD = Vector3.new(0.2856, 0.8727, 0.0184),
+            HancheG = Vector3.new(-0.1146, 0.6494, -0.0),
+            GenouG = Vector3.new(-0.1401, 0.3822, -0.0025),
+            HancheD = Vector3.new(0.1146, 0.6479, 0.0),
+            GenouD = Vector3.new(0.1401, 0.3807, -0.0025),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.8475, -0.0127),
+    },
+    {
+        Id = "Fort_HC",
+        Template = "PNJ_Pieton_Fort_HC",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6942, 0.0189),
+            Taille = Vector3.new(-0.0, 0.9895, 0.0189),
+            Cou = Vector3.new(-0.0, 1.3113, 0.0189),
+            EpauleG = Vector3.new(-0.2517, 1.1822, 0.0189),
+            CoudeG = Vector3.new(-0.2923, 0.8932, 0.0189),
+            EpauleD = Vector3.new(0.2517, 1.1822, 0.0189),
+            CoudeD = Vector3.new(0.2923, 0.8932, 0.0189),
+            HancheG = Vector3.new(-0.1173, 0.6647, -0.0),
+            GenouG = Vector3.new(-0.1434, 0.3912, -0.0026),
+            HancheD = Vector3.new(0.1173, 0.6632, 0.0),
+            GenouD = Vector3.new(0.1434, 0.3897, -0.0026),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.8699, -0.0037),
+    },
+    {
+        Id = "Fort_FA",
+        Template = "PNJ_Pieton_Fort_FA",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6221, 0.0169),
+            Taille = Vector3.new(-0.0, 0.8867, 0.0169),
+            Cou = Vector3.new(-0.0, 1.1751, 0.0169),
+            EpauleG = Vector3.new(-0.2256, 1.0594, 0.0169),
+            CoudeG = Vector3.new(-0.262, 0.8005, 0.0169),
+            EpauleD = Vector3.new(0.2256, 1.0594, 0.0169),
+            CoudeD = Vector3.new(0.262, 0.8005, 0.0169),
+            HancheG = Vector3.new(-0.1051, 0.5956, -0.0),
+            GenouG = Vector3.new(-0.1285, 0.3506, -0.0023),
+            HancheD = Vector3.new(0.1051, 0.5943, 0.0),
+            GenouD = Vector3.new(0.1285, 0.3492, -0.0023),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.6472, 0.0129),
+    },
+    {
+        Id = "Fort_FB",
+        Template = "PNJ_Pieton_Fort_FB",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6326, 0.0172),
+            Taille = Vector3.new(-0.0, 0.9018, 0.0172),
+            Cou = Vector3.new(-0.0, 1.1951, 0.0172),
+            EpauleG = Vector3.new(-0.2294, 1.0774, 0.0172),
+            CoudeG = Vector3.new(-0.2664, 0.8141, 0.0172),
+            EpauleD = Vector3.new(0.2294, 1.0774, 0.0172),
+            CoudeD = Vector3.new(0.2664, 0.8141, 0.0172),
+            HancheG = Vector3.new(-0.1069, 0.6057, -0.0),
+            GenouG = Vector3.new(-0.1307, 0.3565, -0.0023),
+            HancheD = Vector3.new(0.1069, 0.6044, 0.0),
+            GenouD = Vector3.new(0.1307, 0.3551, -0.0023),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.6682, 0.0131),
+    },
+    {
+        Id = "Fort_FC",
+        Template = "PNJ_Pieton_Fort_FC",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6299, 0.0171),
+            Taille = Vector3.new(-0.0, 0.8978, 0.0171),
+            Cou = Vector3.new(-0.0, 1.1898, 0.0171),
+            EpauleG = Vector3.new(-0.2284, 1.0726, 0.0171),
+            CoudeG = Vector3.new(-0.2653, 0.8105, 0.0171),
+            EpauleD = Vector3.new(0.2284, 1.0726, 0.0171),
+            CoudeD = Vector3.new(0.2653, 0.8105, 0.0171),
+            HancheG = Vector3.new(-0.1064, 0.6031, -0.0),
+            GenouG = Vector3.new(-0.1301, 0.3549, -0.0023),
+            HancheD = Vector3.new(0.1064, 0.6017, 0.0),
+            GenouD = Vector3.new(0.1301, 0.3536, -0.0023),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.6896, 0.0202),
+    },
+    {
+        Id = "Rond_HA",
+        Template = "PNJ_Pieton_Rond_HA",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.7034, -0.0068),
+            Taille = Vector3.new(-0.0, 0.9065, -0.0068),
+            Cou = Vector3.new(-0.0, 1.2508, -0.0068),
+            EpauleG = Vector3.new(-0.2483, 1.1255, -0.0068),
+            CoudeG = Vector3.new(-0.285, 0.8645, -0.0068),
+            EpauleD = Vector3.new(0.2483, 1.1255, -0.0068),
+            CoudeD = Vector3.new(0.285, 0.8645, -0.0068),
+            HancheG = Vector3.new(-0.1685, 0.6328, -0.0),
+            GenouG = Vector3.new(-0.1651, 0.3791, -0.0135),
+            HancheD = Vector3.new(0.1685, 0.6328, 0.0),
+            GenouD = Vector3.new(0.1651, 0.3791, -0.0135),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.7681, -0.1003),
+    },
+    {
+        Id = "Rond_HB",
+        Template = "PNJ_Pieton_Rond_HB",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.714, -0.0069),
+            Taille = Vector3.new(-0.0, 0.9201, -0.0069),
+            Cou = Vector3.new(-0.0, 1.2696, -0.0069),
+            EpauleG = Vector3.new(-0.2521, 1.1424, -0.0069),
+            CoudeG = Vector3.new(-0.2893, 0.8775, -0.0069),
+            EpauleD = Vector3.new(0.2521, 1.1424, -0.0069),
+            CoudeD = Vector3.new(0.2893, 0.8775, -0.0069),
+            HancheG = Vector3.new(-0.1711, 0.6423, -0.0),
+            GenouG = Vector3.new(-0.1676, 0.3848, -0.0138),
+            HancheD = Vector3.new(0.1711, 0.6423, 0.0),
+            GenouD = Vector3.new(0.1676, 0.3848, -0.0138),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.7674, -0.1104),
+    },
+    {
+        Id = "Rond_HC",
+        Template = "PNJ_Pieton_Rond_HC",
+        Scale = 1.006,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.7424, -0.0072),
+            Taille = Vector3.new(-0.0, 0.9567, -0.0072),
+            Cou = Vector3.new(-0.0, 1.3201, -0.0072),
+            EpauleG = Vector3.new(-0.2621, 1.1879, -0.0072),
+            CoudeG = Vector3.new(-0.3008, 0.9124, -0.0072),
+            EpauleD = Vector3.new(0.2621, 1.1879, -0.0072),
+            CoudeD = Vector3.new(0.3008, 0.9124, -0.0072),
+            HancheG = Vector3.new(-0.1779, 0.6679, -0.0),
+            GenouG = Vector3.new(-0.1743, 0.4001, -0.0143),
+            HancheD = Vector3.new(0.1779, 0.6679, 0.0),
+            GenouD = Vector3.new(0.1743, 0.4001, -0.0143),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.8164, -0.1148),
+    },
+    {
+        Id = "Rond_FA",
+        Template = "PNJ_Pieton_Rond_FA",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6544, -0.0064),
+            Taille = Vector3.new(-0.0, 0.8434, -0.0064),
+            Cou = Vector3.new(-0.0, 1.1637, -0.0064),
+            EpauleG = Vector3.new(-0.2311, 1.0472, -0.0064),
+            CoudeG = Vector3.new(-0.2652, 0.8044, -0.0064),
+            EpauleD = Vector3.new(0.2311, 1.0472, -0.0064),
+            CoudeD = Vector3.new(0.2652, 0.8044, -0.0064),
+            HancheG = Vector3.new(-0.1568, 0.5888, -0.0),
+            GenouG = Vector3.new(-0.1536, 0.3527, -0.0126),
+            HancheD = Vector3.new(0.1568, 0.5888, 0.0),
+            GenouD = Vector3.new(0.1536, 0.3527, -0.0126),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.6563, -0.0901),
+    },
+    {
+        Id = "Rond_FB",
+        Template = "PNJ_Pieton_Rond_FB",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.6628, -0.0064),
+            Taille = Vector3.new(-0.0, 0.8542, -0.0064),
+            Cou = Vector3.new(-0.0, 1.1787, -0.0064),
+            EpauleG = Vector3.new(-0.234, 1.0606, -0.0064),
+            CoudeG = Vector3.new(-0.2686, 0.8147, -0.0064),
+            EpauleD = Vector3.new(0.234, 1.0606, -0.0064),
+            CoudeD = Vector3.new(0.2686, 0.8147, -0.0064),
+            HancheG = Vector3.new(-0.1588, 0.5963, -0.0),
+            GenouG = Vector3.new(-0.1556, 0.3572, -0.0128),
+            HancheD = Vector3.new(0.1588, 0.5963, 0.0),
+            GenouD = Vector3.new(0.1556, 0.3572, -0.0128),
+        },
+        PelvisCenter = Vector3.new(-0.0, 0.6781, -0.0913),
+    },
+    {
+        Id = "Rond_FC",
+        Template = "PNJ_Pieton_Rond_FC",
+        Scale = 0.943,
+        Rest = {
+            Bassin = Vector3.new(-0.0, 0.614, -0.006),
+            Taille = Vector3.new(-0.0, 0.7913, -0.006),
+            Cou = Vector3.new(-0.0, 1.0918, -0.006),
+            EpauleG = Vector3.new(-0.2168, 0.9825, -0.006),
+            CoudeG = Vector3.new(-0.2488, 0.7547, -0.006),
+            EpauleD = Vector3.new(0.2168, 0.9825, -0.006),
+            CoudeD = Vector3.new(0.2488, 0.7547, -0.006),
+            HancheG = Vector3.new(-0.1471, 0.5524, -0.0),
+            GenouG = Vector3.new(-0.1441, 0.3309, -0.0118),
+            HancheD = Vector3.new(0.1471, 0.5524, 0.0),
+            GenouD = Vector3.new(0.1441, 0.3309, -0.0118),
+        },
+        PelvisCenter = Vector3.new(0.0, 0.6093, -0.0851),
+    },
 }
 for _, item in morphologies do
     table.freeze(item)
@@ -569,19 +918,27 @@ function PnjKits.hash(text: string): number
     return h
 end
 
-export type Look = { Morphology: Morphology, Top: Color3, Bottom: Color3, Skin: Color3 }
+-- Palettes des piétons 3D (variantes de couleurs, texture des pièces) : gabarit porteur `PNJ_Pietons_Palettes`, pièces
+-- `Palette_00` à `Palette_11` dont la texture est la palette.
+PnjKits.PaletteTemplate = "PNJ_Pietons_Palettes"
+PnjKits.PaletteCount = 12
+
+export type Look = { Morphology: Morphology, Top: Color3, Bottom: Color3, Skin: Color3, Palette: number }
 
 -- Apparence stable d'un piéton d'après sa clé (même personne pour tous les joueurs, à chaque passage).
 function PnjKits.look(key: string): Look
     local h = PnjKits.hash(key)
-    local morph = PnjKits.Morphologies[h % #PnjKits.Morphologies + 1]
+    local morph = PnjKits.Morphologies[math.floor(PnjKits.hash(key .. "#corps") / 65536) % #PnjKits.Morphologies + 1]
     h = math.floor(h / #PnjKits.Morphologies)
     local top = PnjKits.Tops[h % #PnjKits.Tops + 1]
     h = math.floor(h / #PnjKits.Tops)
     local bottom = PnjKits.Bottoms[h % #PnjKits.Bottoms + 1]
     h = math.floor(h / #PnjKits.Bottoms)
     local skin = PnjKits.Skins[h % #PnjKits.Skins + 1]
-    return { Morphology = morph, Top = top, Bottom = bottom, Skin = skin }
+    -- Palette tirée sur un hachage séparé (indépendante de la morphologie).
+    -- Bits de poids fort : les bits faibles de FNV-1a varient peu quand seule la fin de la clé change.
+    local palette = math.floor(PnjKits.hash(key .. "#palette") / 65536) % PnjKits.PaletteCount
+    return { Morphology = morph, Top = top, Bottom = bottom, Skin = skin, Palette = palette }
 end
 
 --[[

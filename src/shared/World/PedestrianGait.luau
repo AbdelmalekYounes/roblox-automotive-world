@@ -121,13 +121,16 @@ function PedestrianGait.pose(kind: Kind, phase: number, speed: number, time: num
 end
 
 --[[
-    Repères (m, repère piéton) de chaque articulation pour une pose, à l'échelle `scale`. Le repère d'une
-    articulation au repos vaut CFrame.new(Rest × scale).
+    Repères (m, repère piéton) de chaque articulation pour une pose, à l'échelle `scale` (squelette de base) ou aux
+    positions MESURÉES `measured` (modèle 3D). Le repère d'une articulation au repos vaut CFrame.new(position de repos).
 ]]
-function PedestrianGait.jointFrames(pose: Pose, scale: number): { [string]: CFrame }
+function PedestrianGait.jointFrames(pose: Pose, scale: number, measured: { [string]: Vector3 }?): { [string]: CFrame }
     local frames: { [string]: CFrame } = {}
+    local function restOf(joint: PnjKits.Joint): Vector3
+        return if measured and measured[joint.Name] then measured[joint.Name] else joint.Rest * scale
+    end
     for _, joint in PnjKits.Joints do
-        local rest = joint.Rest * scale
+        local rest = restOf(joint)
         local rotation = pose.Rotations[joint.Name] or CFrame.identity
         local parentName = joint.Parent
         if parentName == nil then
@@ -135,7 +138,7 @@ function PedestrianGait.jointFrames(pose: Pose, scale: number): { [string]: CFra
         else
             local parentJoint = PnjKits.joint(parentName) :: PnjKits.Joint
             local parentFrame = frames[parentName]
-            frames[joint.Name] = parentFrame * CFrame.new(rest - parentJoint.Rest * scale) * rotation
+            frames[joint.Name] = parentFrame * CFrame.new(rest - restOf(parentJoint)) * rotation
         end
     end
     return frames
@@ -149,10 +152,12 @@ function PedestrianGait.segmentFrame(
     frames: { [string]: CFrame },
     jointName: string,
     rest: CFrame,
-    scale: number
+    scale: number,
+    measured: { [string]: Vector3 }?
 ): CFrame
     local joint = PnjKits.joint(jointName) :: PnjKits.Joint
-    return frames[jointName] * CFrame.new(-joint.Rest * scale) * rest
+    local position = if measured and measured[jointName] then measured[jointName] else joint.Rest * scale
+    return frames[jointName] * CFrame.new(-position) * rest
 end
 
 return table.freeze(PedestrianGait)
