@@ -148,6 +148,8 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   La Comète reste muette pour l'instant. Les 30 sons synthétiques du lot 0.8 (`tools/audio/synth.py`) ne sont pas
   téléversés : les ambiances et la radio restent indisponibles
   ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).
+- **Caméra en conduite** (lot CAMERA-01) : regard libre au clic droit maintenu, au stick droit ou au doigt, retour
+  au centre automatique ; sensibilité et inversion dans Téléphone › Paramètres › Commandes.
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute
   ([direction artistique](docs/lot-0.8/DIRECTION_ARTISTIQUE.md)).
 - **Parcours d'arrivée** : s'ouvre à la première connexion, passable ; consultable ensuite (application Guide).

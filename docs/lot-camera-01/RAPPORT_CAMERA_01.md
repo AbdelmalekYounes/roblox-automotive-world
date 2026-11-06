@@ -170,3 +170,10 @@ Ouvrir `build\AW-CAMERA-01.rbxlx` dans Studio, lancer « Play », monter au vola
 
 - Regard libre pour les **passagers** (seul le conducteur a une caméra de véhicule aujourd'hui).
 - Touche « regarder derrière » instantanée, et commandes de conduite tactiles.
+
+## Validation du propriétaire (2026-11-06)
+
+Le propriétaire a testé la place `build/AW-CAMERA-01.rbxlx` dans Studio et a répondu « Les deux sont bons »
+(BRIO-02 et CAMERA-01). La liste du §7 est validée. Il s'agit d'un essai humain du propriétaire : aucun essai Studio
+n'a été exécuté par l'assistant.
+
