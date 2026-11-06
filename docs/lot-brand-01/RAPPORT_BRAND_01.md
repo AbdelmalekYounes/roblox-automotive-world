@@ -7,8 +7,9 @@
   Rien n'a été poussé ; ni pull request ni fusion (session de coordination). Aucune publication Roblox.
 - **Date** : 2026-11-06.
 - **État** : nom et logo choisis par le propriétaire ; code et tests hors Studio terminés ; logo **envoyé sur Roblox
-  par le propriétaire** le 2026-11-06 (image 100100722438691, §3.2) et reporté dans le code ; **rien n'a été essayé
-  dans Studio** (§7).
+  par le propriétaire** le 2026-11-06 (image 100100722438691, §3.2) et reporté dans le code. **Lot validé par le
+  propriétaire le 2026-11-06** (« valide le »), après ouverture de `build\AW-BRAND-01.rbxlx` (17:55). Il n'a pas
+  précisé quels points du §8 il a essayés : ceux-ci restent à confirmer par lui (§7).
 
 ## 1. Décisions du propriétaire (2026-11-06)
 
@@ -175,7 +176,8 @@ ReplicatedFirst dans les deux projets, nom technique inchangé.
 
 ## 7. NON TESTÉ
 
-Rien n'a été lancé dans Roblox Studio (le propriétaire teste lui-même) :
+Aucun essai Studio n'a été fait par l'assistant (le propriétaire teste lui-même). Le propriétaire a validé le lot le
+2026-11-06 sans détailler ses essais ; les points ci-dessous ne sont donc pas confirmés un par un :
 
 - rendu réel de l'écran (logo de repli, police, dégradé, tirets), fondu de sortie, ordre d'affichage au-dessus du
   parcours d'arrivée et du téléphone ;
