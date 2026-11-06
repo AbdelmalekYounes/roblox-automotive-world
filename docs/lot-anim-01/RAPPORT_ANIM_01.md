@@ -4,6 +4,9 @@
 - Branche : `claude/anim-01-volants-mains-f84390`, créée depuis `main` `d295473`. Rien n'est poussé.
 - Lot mené en parallèle de PHONE-01 (exception du propriétaire du 2026-11-06 : fichiers disjoints).
 - Demande du propriétaire : « les volants des véhicules qui tournent, mains sur le volant en FPV ».
+- **État : validé en jeu par le propriétaire le 2026-11-06** (« c'est bon », après l'intégration du volant de la Comète
+  et les corrections §6 bis et §6 ter). Essai mené par le propriétaire lui-même ; le détail des points du §7 qu'il a
+  parcourus n'a pas été précisé. Aucun test VM ni test automatisé en jeu.
 - Dépôt d'art : branche locale `anim-01-volant-comete`, commit `c9e0add`, créée depuis `origin/main` `f009761`, non
   poussée (worktree `E:\ROBLOX DEV\aw-art-anim01`).
 
@@ -303,6 +306,13 @@ Intégration :
 
 **Non vérifié en jeu** (§7 D, point 13) : volant de la Comète qui tourne, absence de trou dans la planche de bord,
 commodos fixes.
+
+## 6 quinquies. Validation du propriétaire (2026-11-06)
+
+Après le premier essai (§6 bis), la règle du téléphone (§6 ter) et l'intégration du volant de la Comète (§6 quater),
+le propriétaire a répondu : « c'est bon ». Le lot est donc **validé en jeu par le propriétaire**. Le relevé des points
+de la liste du §7 n'a pas été détaillé. Le passage du téléphone au volant, avec le lot PHONE-01, reste à revoir une
+fois les deux lots fusionnés.
 
 ## 7. Liste de vérification en jeu (propriétaire)
 
