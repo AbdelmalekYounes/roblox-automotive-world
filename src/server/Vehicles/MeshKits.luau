@@ -28,6 +28,7 @@ local MeshKitData =
     require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("MeshKitData"))
 local SteeringWheel =
     require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("SteeringWheel"))
+local Doors = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Vehicles"):WaitForChild("Doors"))
 
 export type Kit = MeshKitData.Kit
 MeshKits.Kits = MeshKitData.Kits
@@ -95,6 +96,61 @@ local function articulateSteeringWheel(root: BasePart, part: BasePart, spec: Ste
     joint.Parent = part
 end
 
+-- Portières (lot ANIM-02) : une pièce de charnière invisible, articulée au châssis par un Motor6D dont l'axe Z est
+-- celui de la charnière ; les pièces de la porte lui sont soudées. Chaque client ouvre la porte par `Transform` (non
+-- répliqué, sans effet physique : pièces sans masse ni collision), d'après l'état répliqué (`DoorVisuals`).
+local function makeHinge(root: BasePart, body: Instance, role: Doors.Role, spec: Doors.Spec): BasePart
+    local frame = Doors.jointFrame(spec)
+    local hinge = Instance.new("Part")
+    hinge.Name = Doors.HingeName[role]
+    hinge.Size = Vector3.new(0.2, 0.2, 0.2)
+    hinge.Transparency = 1
+    hinge.CastShadow = false
+    hinge.CFrame = root.CFrame * frame
+    hinge.Anchored = false
+    hinge.Massless = true
+    hinge.CanCollide = false
+    hinge.CanQuery = false
+    hinge.CanTouch = false
+    local joint = Instance.new("Motor6D")
+    joint.Name = Doors.JointName
+    joint.Part0 = root
+    joint.Part1 = hinge
+    joint.C0 = frame
+    joint.C1 = CFrame.identity
+    joint.Parent = hinge
+    hinge.Parent = body
+    return hinge
+end
+
+-- Porte → rôle, pour les portes dont TOUTES les pièces sont dans le gabarit (sinon pas de porte articulée : une vitre
+-- seule tournerait avant l'import des maillages séparés).
+local function doorRoles(kit: Kit, template: Model): { [string]: Doors.Role }
+    local roles: { [string]: Doors.Role } = {}
+    local doors = kit.Doors
+    if doors == nil then
+        return roles
+    end
+    for _, item in Doors.Roles do
+        -- Rôle relu en type singleton (le gel générique du module l'élargit en `string`).
+        local role: Doors.Role = if item == "Driver" then "Driver" else "Passenger"
+        local spec = doors[role]
+        local complete = true
+        for _, name in spec.Parts do
+            if template:FindFirstChild(name, true) == nil then
+                complete = false
+                break
+            end
+        end
+        if complete then
+            for _, name in spec.Parts do
+                roles[name] = role
+            end
+        end
+    end
+    return roles
+end
+
 local function visualOnly(part: BasePart)
     part.Anchored = false
     part.Massless = true
@@ -138,6 +194,9 @@ function MeshKits.build(
     local details = Instance.new("Folder")
     details.Name = "Details"
     details.Parent = body
+    -- Lot ANIM-02 : pièces de portes (rôle) et charnières créées à la première pièce rencontrée.
+    local doorOf = doorRoles(kit, template)
+    local hinges: { [string]: BasePart } = {}
     -- Peinture : « Teinte » (couleur du garage) seulement sur la carte de couleur neutre, sinon « Texture ».
     local painted, paintable = 0, 0
     for _, item in copy:GetDescendants() do
@@ -186,7 +245,14 @@ function MeshKits.build(
                 table.insert(wheels[wheel], item)
                 item.Parent = nil
             else
-                if kit.SteeringWheel and item.Name == kit.SteeringWheel.Part then
+                local doorRole: Doors.Role? = doorOf[item.Name]
+                local doors = kit.Doors
+                if doorRole and doors then
+                    local spec = if doorRole == "Driver" then doors.Driver else doors.Passenger
+                    local hinge = hinges[doorRole] or makeHinge(root, body, doorRole, spec)
+                    hinges[doorRole] = hinge
+                    weld(hinge, item)
+                elseif kit.SteeringWheel and item.Name == kit.SteeringWheel.Part then
                     articulateSteeringWheel(root, item, kit.SteeringWheel)
                 else
                     weld(root, item)

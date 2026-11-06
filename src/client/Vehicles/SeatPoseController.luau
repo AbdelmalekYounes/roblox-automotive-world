@@ -20,6 +20,11 @@
     sorti : seul le bras droit est laissé au lot PHONE-01 (`SeatPose.PhoneArmJoints`, décision du
     propriétaire du 2026-11-06) ; la main gauche reste sur le volant.
     Vue cockpit du joueur local : avant-bras et mains gardés visibles (décision du propriétaire).
+
+    Lot ANIM-02 (portières) : les portes s'ouvrent d'abord (`DoorVisuals`, même pas) ; pendant une entrée ou une sortie,
+    le corps d'un personnage assis est décalé de la porte au siège (ou l'inverse) par l'articulation `Root`, en plus
+    de la pose (`DoorVisuals.glideOffset`). Le décalage fait partie de l'écriture suivie (`Offset`) : il est retiré
+    comme le reste quand l'animation ne réécrit pas l'articulation.
 ]]
 
 local Players = game:GetService("Players")
@@ -33,6 +38,7 @@ local SteeringWheel = require(VehiclesShared:WaitForChild("SteeringWheel"))
 local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local SteeringWheelVisuals = require(script.Parent.SteeringWheelVisuals)
+local DoorVisuals = require(script.Parent.DoorVisuals)
 local VehicleController = require(script.Parent.VehicleController)
 
 local SeatPoseController = {}
@@ -220,6 +226,7 @@ end
 
 local function update(dt: number)
     SteeringWheelVisuals.update(dt)
+    DoorVisuals.update(dt)
     local localPlayer = Players.LocalPlayer
     for _, player in Players:GetPlayers() do
         local character = player.Character
@@ -234,6 +241,9 @@ local function update(dt: number)
         local pose = if seat then SeatPose.poseFor(seat:GetAttribute(SeatPose.Attribute)) else nil
         local phoneUp = character:GetAttribute(PHONE_RAISED_ATTRIBUTE) == true
         local ik = if seat and pose then handsOnWheel(character, seat, pose) else nil
+        -- Lot ANIM-02 : glissé d'entrée ou de sortie (décalage du corps, repère du monde).
+        local glide = if seat and pose then DoorVisuals.glideOffset(character, seat) else nil
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
         if player == localPlayer then
             updateCockpitForearms(character, ik ~= nil, phoneUp)
         end
@@ -279,6 +289,15 @@ local function update(dt: number)
                 end
                 current.Offset = CFrame.new(0, -down, 0) * CFrame.Angles(pitch, yaw, 0)
                 current.Written = current.Offset * base
+            end
+            if name == "Root" and glide and rootPart and rootPart:IsA("BasePart") then
+                -- Translation du corps exprimée dans le repère C0 de l'articulation (HumanoidRootPart * C0).
+                local c0 = frames(joint :: any)
+                if c0 then
+                    local frame = rootPart.CFrame * c0
+                    current.Written = CFrame.new(frame:VectorToObjectSpace(glide)) * current.Written
+                    current.Offset = current.Written * base:Inverse()
+                end
             end
             joint.Transform = current.Written
             if current.Alpha > 0 or active then

@@ -58,6 +58,8 @@ for _, spec in
         require("./specs/Patinage"),
         -- Lot ANIM-01 : volants qui tournent, mains du conducteur sur le volant.
         require("./specs/Anim01"),
+        -- Lot ANIM-02 : portières, animations d’entrée et de sortie.
+        require("./specs/Anim02"),
     }
 do
     spec(TestKit, Harness)
