@@ -77,6 +77,31 @@ sans convertisseur. C'est le type de boîte de la 720S (7 rapports, double embra
 référence d'égalité et des tests sont concernés. Sa place (dans ce lot ou dans un lot séparé) est demandée au
 propriétaire.
 
+### Boîte à double embrayage (décision du propriétaire, 2026-11-06 : « Oui, dans ce lot »)
+
+Fait le 2026-11-06 :
+- **Définition** : `Definitions/Comete.luau`, `Transmission.Kind` passe de `Sequential` à **`DualClutch`**. Les
+  passages sont automatiques (régime conseillé de 8 100 tr/min, modulé par l'accélérateur) et le conducteur peut
+  reprendre la main avec Maj et Ctrl. Coupure de 0,06 s inchangée.
+- **Référence d'égalité régénérée** (`tests/lune/tools/dump-definition.luau`) : le seul champ changé est
+  `Powertrain.Transmission.Kind`.
+- **Tests adaptés** :
+  - `Veh3d01Comete` n° 10 : accélérer au neutre engage la 1ʳᵉ, et la boîte monte en 2ᵉ au-delà du passage conseillé ;
+  - `Lot08Content` n° 2 ;
+  - `Base01` : commentaire de la référence.
+  - Le test Studio `Lot08Client` traite déjà le double embrayage comme une boîte automatique ; il n'a pas été exécuté.
+
+Mesure sur le banc planaire (Comète à fond, pas de 1/240 s ; valeurs du modèle, pas des mesures en jeu) :
+
+| Boîte | Antipatinage | 0–100 km/h | 0–200 km/h | Passages (rapport à la vitesse) |
+|---|---|---|---|---|
+| Double embrayage | actif (état de départ, A-02) | 4,13 s | 9,12 s | 2ᵉ à 94 km/h, 3ᵉ à 149, 4ᵉ à 202 (vers 8 100 tr/min) |
+| Double embrayage | coupé | 4,46 s | 9,60 s | 2ᵉ à 20 km/h, 3ᵉ à 50 km/h : les roues patinent, le régime côté roues atteint le seuil de passage |
+| Séquentielle (ancienne) | actif | 4,09 s | — | aucun passage sans le conducteur : reste en 1ʳᵉ au rupteur (8 513 tr/min) |
+
+`verify.ps1 -DownloadRobloxTypes` (2026-11-06) : toutes les étapes OK, Lune 477 sur 477, pytest 33 sur 33. La conduite
+en jeu n'est pas vérifiée.
+
 ## 5. Déroulement
 
 Le déroulement est celui d'AUDIO-01 :

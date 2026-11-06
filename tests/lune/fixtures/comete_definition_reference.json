@@ -137,7 +137,7 @@
         1.08,
         0.92
       ],
-      "Kind": "Sequential",
+      "Kind": "DualClutch",
       "LaunchRpm": 3002,
       "ReverseRatio": 3.3,
       "ShiftDownRpm": 2856,

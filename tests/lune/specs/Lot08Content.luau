@@ -72,7 +72,8 @@ return function(T: any, H: any)
         local ok, errors = Definitions.validate(definition)
         T.truthy(ok, table.concat(errors, " ; "))
         T.equal(definition.Powertrain.Energy.Kind, "Petrol")
-        T.equal(definition.Powertrain.Transmission.Kind, "Sequential")
+        -- Lot AUDIO-02 (décision du propriétaire, 2026-11-06) : double embrayage, comme la McLaren 720S.
+        T.equal(definition.Powertrain.Transmission.Kind, "DualClutch")
         T.truthy(Definitions.gearLimitedTopSpeedKmh(definition) >= 320 * 0.99, "démultiplication suffisante")
     end)
 
