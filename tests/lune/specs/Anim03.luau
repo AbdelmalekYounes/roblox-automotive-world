@@ -271,4 +271,36 @@ return function(T: any, H: any)
             T.truthy(has(service, "exitPivotOverride[character] = pivot"), "dépôt au point où le corps est arrivé")
         end
     )
+
+    -- Retour du propriétaire (2026-11-06) : à l'entrée, le personnage paraissait assis par terre devant la porte, puis
+    -- debout, puis de nouveau assis. Cause : les poses clés sans jambes laissaient hanches et genoux à l'animation
+    -- « assis » du moteur. Chaque articulation doit recevoir une pose à chaque image.
+    T.test("7. aucune articulation laissée à l'animation assise du moteur pendant les gestes", function()
+        for name, kit in KITS do
+            for _, kind in { "In", "Out" } do
+                local keys = Motion.poseKeys(kind :: any, kit.Doors.Driver.Duck)
+                local total = Motion.total(kind :: any)
+                for step = 0, 100 do
+                    local pose = Motion.poseAt(keys, total * step / 100)
+                    for _, generic in Motion.PoseJoints do
+                        T.truthy(pose[generic] ~= nil, name .. " " .. kind .. " : " .. generic .. " posé")
+                    end
+                end
+            end
+            -- Debout dehors : jambes au repos au début de l'entrée et à la fin de la sortie (pas de pose assise).
+            local early = Motion.poseAt(Motion.poseKeys("In", kit.Doors.Driver.Duck), Motion.Entry.Reach)
+            T.near(early.FirstHip.Magnitude + early.SecondHip.Magnitude, 0, 1e-9, name .. " : debout devant la porte")
+            local late = Motion.poseAt(Motion.poseKeys("Out", kit.Doors.Driver.Duck), Motion.Exit.Stand + 0.2)
+            T.truthy(late.FirstHip.Magnitude < math.rad(5), name .. " : debout en s'éloignant")
+        end
+        local animator = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.BoardingAnimator")
+        T.truthy(
+            has(animator, "for _, name in BoardingAnimator.Joints do")
+                and has(animator, "joints[name] = CFrame.identity"),
+            "toutes les articulations partent du repos"
+        )
+        for _, joint in { "LeftHip", "RightHip", "LeftKnee", "RightKnee", "Waist", "Neck", "LeftWrist", "RightWrist" } do
+            T.truthy(has(animator, '"' .. joint .. '",'), "articulation prise en charge : " .. joint)
+        end
+    end)
 end

@@ -40,6 +40,8 @@ BoardingAnimator.Joints = table.freeze({
     "RightShoulder",
     "LeftElbow",
     "RightElbow",
+    "LeftWrist",
+    "RightWrist",
 })
 
 -- Accès aux articulations, fournis par `SeatPoseController` (mêmes règles : Motor6D ou AnimationConstraint).
@@ -123,8 +125,13 @@ function BoardingAnimator.compute(character: Model, seat: BasePart, helpers: Hel
 
     local joints: { [string]: CFrame } = {}
     joints.Root = rootC0:Inverse() * (hrp.CFrame:Inverse() * wanted) * rootC0
-    for _, name in { "LeftShoulder", "RightShoulder", "LeftElbow", "RightElbow" } do
-        joints[name] = CFrame.identity -- bras au repos (l'animation assise du moteur est remplacée)
+    -- Toutes les articulations prises en charge partent du repos (debout) : l'animation « assis » du moteur, qui joue
+    -- dès que le personnage est sur le siège, ne doit transparaître sur aucune d'elles (retour du propriétaire
+    -- 2026-11-06 : personnage assis par terre devant la porte, puis debout, puis de nouveau assis).
+    for _, name in BoardingAnimator.Joints do
+        if name ~= "Root" then
+            joints[name] = CFrame.identity
+        end
     end
     for generic, angles in BoardingMotion.poseAt(BoardingMotion.poseKeys(sequence.Kind, spec.Duck), t) do
         local name = BoardingMotion.jointName(generic, sequence.Kind, spec.Side)

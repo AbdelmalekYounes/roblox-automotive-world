@@ -482,8 +482,12 @@ function BoardingMotion.poseKeys(kind: Kind, duck: number): { PoseKey }
     }
 end
 
+-- Noms génériques toujours renvoyés par `poseAt` : une articulation que la chorégraphie ne pose pas serait laissée à
+-- l'animation « assis » du moteur (personnage assis par terre hors du véhicule, retour du propriétaire 2026-11-06).
+BoardingMotion.PoseJoints = table.freeze({ "Waist", "Neck", "FirstHip", "SecondHip", "FirstKnee", "SecondKnee" })
+
 -- Pose (radians, par nom générique) à `t` secondes : interpolation adoucie entre les deux poses clés voisines (une
--- articulation absente d'une pose est au repos).
+-- articulation absente d'une pose est au repos, debout ; toutes sont renvoyées).
 function BoardingMotion.poseAt(keys: { PoseKey }, t: number): { [string]: Vector3 }
     local n = #keys
     local i = 1
@@ -498,6 +502,9 @@ function BoardingMotion.poseAt(keys: { PoseKey }, t: number): { [string]: Vector
     end
     local result: { [string]: Vector3 } = {}
     local names: { [string]: boolean } = {}
+    for _, name in BoardingMotion.PoseJoints do
+        names[name] = true
+    end
     for name in a.Pose do
         names[name] = true
     end

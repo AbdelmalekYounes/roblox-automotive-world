@@ -128,6 +128,8 @@ Non modifiés : audio et `tools/audio` (AUDIO-02), carte et ville (MAP-01), `Pho
 | --- | --- |
 | `scripts\verify.ps1 -DownloadRobloxTypes` (terminé à 14:33, après toutes les modifications) | Rojo, Selene (0 erreur, 0 avertissement), pilote Studio, StyLua, Lune **482 réussis, 0 échoué** (dont 6 tests ANIM-03), carte, place monde ouvert, pytest 33 réussis, luau-lsp strict 0 erreur (3 avertissements `DeprecatedApi` antérieurs, hors lot) : tout OK. |
 | `rojo build default.project.json -o build/AW-ANIM-03.rbxlx` (14:33) | Place de test construite (3,52 Mo). |
+| `scripts\verify.ps1 -DownloadRobloxTypes` (16:39, après la correction du §8) | Premier passage (16:38) : seul StyLua en échec (mise en forme du nouveau test), corrigé par `stylua`. Second passage : tout OK, Lune **483 réussis, 0 échoué** (dont le test 7 ANIM-03), pytest 33, luau-lsp strict 0 erreur. |
+| `rojo build default.project.json -o build/AW-ANIM-03.rbxlx` (16:39) | Place de test reconstruite (3,52 Mo). |
 
 Deux passages précédents de `verify.ps1` ont échoué au typage strict, puis ont été corrigés : rôles élargis en
 `string` au décodage, table indexée par une valeur facultative, comparaison `CFrame ~= nil`. Un défaut relevé à la
@@ -200,3 +202,29 @@ Place : `build\AW-ANIM-03.rbxlx`, 2 joueurs (Test › Serveur local). Faire chaq
 7. Téléphone sorti avant de monter : il est rangé au début du geste.
 8. Interruption : supprimer le véhicule (menu d'administration) ou quitter la partie pendant un geste ; aucune porte
    ne reste ouverte et le personnage n'est pas bloqué.
+
+## 8. Retours de l'essai du propriétaire et corrections
+
+### Essai 1 (2026-11-06, Brio, entrée passager)
+
+Retour : « il fait l'anim assis après il reste debout et se remet assis pour entrer ». Capture : personnage assis par
+terre devant la porte passager, jambes vers l'avant, main vers la poignée.
+
+Cause : le personnage est sur le siège dès le début de la séquence, donc l'animation « assis » du moteur joue sur
+toutes ses articulations. La chorégraphie ne remplaçait que les articulations citées dans les poses clés voisines : de
+0 à 0,8 s (main à la poignée, ouverture), aucune pose clé ne citait les hanches, et plusieurs ne citaient pas les
+genoux. Ces articulations restaient donc à l'animation assise : le personnage paraissait assis dehors, puis debout dès
+1,3 s (demi-tour), puis assis au siège. Le même défaut touchait la fin de la sortie (1,7 à 2,2 s, en s'éloignant).
+Le test 4 ne le voyait pas : il vérifiait seulement que les articulations renvoyées étaient au repos, et aucune ne
+l'était.
+
+Correction :
+- `BoardingMotion.poseAt` renvoie toujours les six articulations génériques (`BoardingMotion.PoseJoints`), au repos si
+  la pose ne les cite pas ;
+- `BoardingAnimator.compute` part du repos pour toutes les articulations prises en charge, poignets compris (ajoutés à
+  la liste) ;
+- nouveau test Lune 7 : à 101 instants de chaque séquence, les deux véhicules, toutes les articulations sont posées ;
+  jambes au repos devant la porte et en s'éloignant ; câblage du client vérifié.
+
+**NON TESTÉ en jeu** après la correction : à refaire avec les points 1, 3 et 4 du §7. Chevilles non prises en charge
+(l'animation assise du moteur peut encore les incliner légèrement).
