@@ -103,6 +103,8 @@ Non touchés : `SeatPose.luau`, `SeatPoseController.luau` (ANIM-01), `src/client
 - **Bras gauche au volant** : quand le téléphone est sorti, `SeatPoseController` laisse les **deux** bras ; le bras
   gauche reprend la pose assise du moteur (pas sur le volant). À traiter par ANIM-01 s'il le souhaite (par exemple
   garder `LeftShoulder` / `LeftElbow` sur le volant quand seul le bras droit tient le téléphone) ; non modifié ici.
+  **Décision du propriétaire (2026-11-06)** : « oui il faut que ça libere qu'un seul bras » ; transmise à la session
+  ANIM-01 (propriétaire de `SeatPoseController`), qui doit ne libérer que le bras droit.
 - **Visibilité en cockpit** : ce lot n'utilise pas `setCharacterVisibilityFilter` (réservé à ANIM-01) ; il écrit
   directement `LocalTransparencyModifier` du bras droit et du téléphone pendant le zoom, puis rétablit les valeurs
   d'origine. Si la vue est changée (touche V) pendant l'usage, l'état d'affichage du personnage peut rester celui
