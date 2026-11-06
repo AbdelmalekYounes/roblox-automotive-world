@@ -48,10 +48,12 @@ Les six sons :
 | 2026-11-06 | Banc planaire (Brio, 80 → 0 km/h, pas de 1/240 s ; test Audio03 n° 7) | Sans ABS : crissement moyen 1,00. Avec ABS : 0,35 (plancher sonore). Roue libre : 0 |
 | 2026-11-06 | Mesure des boucles par l'outil (`rapport.json`) | Raccords de 0,30 à 5,9 dB, creux maximaux de 1,1 à 6,6 dB (détail dans SONS_TIERS § 2) |
 | 2026-11-06 | Relevé des identifiants : Lune, propriété `AudioContent` de `aw-vm-exchange/audio03_pneus.rbxm` (SHA-256 `ec5e12f0…`) | 6 objets Sound, 6 identifiants distincts, noms conformes (`tire_<nom>`) |
+| 2026-11-06 | Fusion de `origin/main` d295473 (BRIO-02 et CAMERA-01) au commit fba478c, puis `verify.ps1 -DownloadRobloxTypes` | Un seul conflit, `tests/lune/run.luau` (toutes les suites gardées). Toutes les étapes OK ; Lune **438 réussis sur 438** ; pytest 29 sur 29 ; luau-lsp strict sans erreur ; test Audio03 n° 7 inchangé |
 | 2026-11-06 | **Essai humain d'écoute** par le propriétaire de `ecoute_boucles.wav` et `demo_pneus.wav` | « C'est bon ». C'est une écoute de fichiers, pas un essai en jeu |
 
-Place de test : `build/AW-AUDIO-03.rbxlx`, construite par `rojo build default.project.json -o build/AW-AUDIO-03.rbxlx`
-au commit c56b9c4. Son nom distinct évite qu'elle soit écrasée par `verify.ps1`.
+Place de test : `build/AW-AUDIO-03.rbxlx`, reconstruite par `rojo build default.project.json -o build/AW-AUDIO-03.rbxlx`
+après la fusion de main (commit fba478c). Elle contient donc aussi BRIO-02 et CAMERA-01. Son nom distinct évite
+qu'elle soit écrasée par `verify.ps1`.
 
 ## 4. Non vérifié
 
