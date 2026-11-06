@@ -1,4 +1,4 @@
-# Lot PNJ-01 — piétons et voitures PNJ : rapport (étape 1, « partie modèles »)
+# Lot PNJ-01 — piétons et voitures PNJ : rapport (étape 1, « partie modèles » : modèles 3D intégrés)
 
 - Date : 2026-11-06. Branche `claude/pnj-01-pietons-trafic-f6c937`, partie de `main` 1037a9a. Rien n'est poussé.
 - Périmètre de cette étape (décision du propriétaire) : la **partie modèles**, sans toucher à la carte. Le
@@ -61,7 +61,7 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   - taille de base 1,75 m, 11 articulations : bassin, taille, cou, épaules, coudes, hanches, genoux ;
   - 11 pièces rigides : `Bassin`, `Buste`, `Tete`, `BrasG_Haut`, `BrasG_Bas`, `BrasD_Haut`, `BrasD_Bas`,
     `JambeG_Haut`, `JambeG_Bas`, `JambeD_Haut`, `JambeD_Bas` ;
-  - 2 morphologies : `PNJ_Pieton_H` (échelle 1,0) et `PNJ_Pieton_F` (échelle 0,94) ;
+  - 18 personnages `PNJ_Pieton_<Id>` (§6.2), aux articulations mesurées ;
   - **origine** : au sol entre les pieds, regard vers −Z, debout, bras le long du corps.
 - **Apparence stable** : morphologie, couleurs du haut, du bas et de la peau tirées d'un hachage de la clé du
   piéton. Tous les joueurs voient la même personne.
@@ -201,31 +201,63 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   - `.gitignore` : `!assets/pnjkits/*.rbxm` ;
   - `AssetManifest` : entrée `world.pnj.cars` avec les identifiants des maillages.
 
-### 6.2 Piétons : source à télécharger
+### 6.1 bis Voitures : importées et intégrées le 2026-11-06
 
-- Les « Universal Base Characters » de Quaternius, en version gratuite (CC0), ne contiennent que 2 corps
-  « Superhero » : bodybuilders en sous-vêtements, environ 12 500 triangles. **Écartés** par le propriétaire.
-- Proposition retenue : chercher d'autres modèles. Piste : « Ultimate Animated Character Pack » de Quaternius (CC0,
-  plus de 50 personnages avec squelette, couleurs unies). À télécharger par le propriétaire en FBX dans
-  `E:\ROBLOX DEVw-vehicle-references\pnj\pietons\quaternius_uacp\`, avec contrôle des tenues civiles à
-  réception.
-- Préparation prévue :
-  - pose debout, bras le long du corps ;
-  - **découpage par os dominant** en 11 pièces ;
-  - environ 1 200 triangles ;
-  - export selon la règle d'étalonnage.
+- **Import** : fait par le propriétaire (`aw-vm-exchange/pnj01_kits.rbxm`), puis contrôlé : 1 dossier, 10 modèles,
+  205 MeshParts, **aucun script**.
+- **Mise au format** : l'outil `tests/lune/tools/pnj01-kits.luau` nomme chaque voiture `PNJ_<Id>` et retire les
+  modèles intermédiaires créés par Studio. Le résultat est `assets/pnjkits/AutomotiveWorldPnjKits.rbxm`, servi dans
+  `ReplicatedStorage.AutomotiveWorldPnjKits`.
+- **Manifeste** : entrée `world.pnj.cars` avec les 205 identifiants.
+- **Attribution** : Comrade1280 (CC BY 4.0) dans l'écran « Crédits et licences ».
+- **Test Lune** : sur les 10 voitures importées, empattement et voie conformes aux mesures à 5 cm près, roue gauche
+  bien à gauche, et liste du manifeste identique aux maillages du gabarit.
+
+### 6.2 Piétons : préparés, importés et intégrés le 2026-11-06
+
+- **Pack Quaternius UACP (CC0) écarté** par le propriétaire : style « chibi », trop cartoon.
+- **Source retenue** : « Low Poly People » de **David Jalbert**, **CC BY 4.0** (crédit obligatoire), page
+  <https://davidjalbert.itch.io/low-poly-people>.
+  - Téléchargé par le propriétaire dans `aw-vehicle-references/pnj/pietons/jalbert/`.
+  - Le pack ne contient **aucun fichier de licence** : la licence est celle annoncée par la page.
+  - **Capture de la page de licence à fournir par le propriétaire.**
+- **Préparation** dans le dépôt d'art (commits 9f1361f puis cb8bd94, script `tools/blender/pnj01_pietons_jalbert.py`) :
+  - les 18 personnages : corpulences normale, forte et ronde × homme / femme × 3 tenues ;
+  - environ 1 150 triangles, sans réduction ;
+  - bras abaissés ;
+  - découpage par os dominant en 11 pièces ;
+  - articulations et centre du bassin relevés (`vehicles/pnj/pietons/pietons.json`) ;
+  - palette d'origine du pack conservée (64 px, cases de couleur, aucune photo) et **11 variantes de couleurs**
+    (peau, cheveux, haut, bas, chaussures) ;
+  - un GLB porteur des 12 palettes, pour que Studio envoie les images en un seul import.
+- **Import par le propriétaire** (`aw-vm-exchange/pnj_pietons.rbxm`) : 19 modèles, 210 maillages, 30 textures,
+  **aucun script**. Fusionné dans le même gabarit par l'outil.
+- **Jeu** :
+  - `PnjKits.Morphologies` contient les 18 personnages, avec leurs articulations mesurées et le centre du bassin.
+    L'origine du modèle importé est retrouvée par le bassin.
+  - `PedestrianGait` accepte ces articulations mesurées.
+  - Chaque piéton reçoit une palette tirée par hachage (`TextureID` de ses pièces) : même aspect pour tous les
+    joueurs, 18 × 12 combinaisons.
+  - Manifeste `world.pnj.pedestrians` : 210 maillages et 30 textures.
+  - Attribution de David Jalbert dans l'écran des crédits.
+- **Test Lune** : 18 personnages complets, pieds au sol à 3 cm près depuis l'origine retrouvée, jambe gauche en −X,
+  genou mesuré à moins de 12 cm du haut de la jambe basse, 12 palettes autorisées, manifeste identique au gabarit.
+- **Crédits à ajouter à `docs/CREDITS_ACTIFS.md`** par la coordination : Comrade1280 et David Jalbert.
 
 ## 7. Liste de vérification en jeu (propriétaire) — **NON TESTÉ**
 
-Ouvrir `build/AW-PNJ-01-monde.rbxl` (monde ouvert), lancer Play, aller en ville (Métropole). Ce que l'on voit est
-le **repli** (pièces simples) aux cotes des 10 modèles. Les modèles 3D viendront à l'intégration (§6).
+Ouvrir `build/AW-PNJ-01-monde.rbxl` (monde ouvert), lancer Play et aller en ville (Métropole). Les voitures et
+piétons sont les **modèles 3D** (§6). La place `build/AW-PNJ-01.rbxlx` sert à voir le contenu du dossier
+`ReplicatedStorage.AutomotiveWorldPnjKits`.
 
 1. **Voitures PNJ, aspect** :
-   - plusieurs tailles de voitures circulent : petites compactes, berlines et breaks, SUV et monospaces plus hauts,
-     quelques pick-up longs, rarement un coupé ou une sportive basse ;
-   - chacune a 4 roues noires avec un enjoliveur clair, un habitacle sombre vitré et un toit de la couleur de la
-     caisse.
-2. **Roues** : derrière ou à côté d'une voiture PNJ en mouvement, l'enjoliveur tourne dans le bon sens. Dans un
+   - les 10 modèles 3D circulent : surtout berlines, citadines à hayon, SUV, compactes, breaks et monospaces, quelques
+     pick-up et tout-terrain, rarement un coupé ou une sportive ;
+   - chaque voiture a une teinte de carrosserie tirée au hasard, des garnitures sombres, des chromes clairs, des
+     vitres sombres, des pneus noirs et des jantes grises ;
+   - aucune pièce grise « par défaut », aucune pièce décalée ou flottante, et la voiture est posée sur ses roues :
+     ni enfoncée dans la route, ni en l'air.
+2. **Roues** : derrière ou à côté d'une voiture PNJ en mouvement, la jante tourne dans le bon sens. Dans un
    virage, les roues **avant** braquent du côté du virage ; à l'arrêt, roues immobiles.
 3. **Feux stop** : à l'approche d'un feu rouge ou d'une file, les deux feux arrière passent au **rouge vif** pendant
    le freinage et restent allumés à l'arrêt ; ils s'éteignent au redémarrage.
@@ -234,15 +266,19 @@ le **repli** (pièces simples) aux cotes des 10 modèles. Les modèles 3D viendr
 5. **Phares** : avec le menu admin (F2), régler l'heure de nuit (par exemple 22 h). Les phares avant des voitures PNJ
    proches s'allument en blanc ; de jour, ils sont éteints.
 6. **Collision** :
-   - percuter une voiture PNJ avec la Comète ou la Brio : contact sur la **forme de la caisse**, ni traversée ni
-     contact dans le vide au-dessus du toit ;
+   - percuter une voiture PNJ avec la Comète ou la Brio : contact sur la **forme de la caisse** (boîte invisible aux
+     cotes du modèle), ni traversée ni contact franchement dans le vide ;
    - le PNJ s'arrête puis repart ;
    - les dégâts et bruits de choc sont les mêmes qu'avant ;
    - les roues et feux du PNJ ne bloquent rien.
 7. **Piétons, aspect** :
-   - sur les trottoirs du centre, des silhouettes humaines en 11 pièces : tête couleur peau, buste et bras du haut
-     de la couleur du haut, avant-bras couleur peau, bassin et jambes de la couleur du bas ;
-   - deux tailles (hommes et femmes un peu plus petites), des tenues variées.
+   - sur les trottoirs du centre, des personnages 3D low-poly (pack Jalbert) : corpulences variées, hommes et femmes ;
+   - les couleurs de peau, cheveux, haut, pantalon et chaussures varient d'un piéton à l'autre, sans fond vert
+     généralisé ;
+   - aucune fente visible entre les pièces à l'arrêt ;
+   - en marchant, de légers écarts aux épaules, coudes, hanches ou genoux sont possibles (pièces rigides) : à
+     signaler s'ils sont gênants ;
+   - personne ne marche en pose T ni penché sur le côté.
 8. **Piétons, marche** :
    - de près (moins de 50 m), les jambes alternent, les bras se balancent à l'opposé et le corps monte et descend
      légèrement ;
@@ -276,11 +312,26 @@ Places de test construites à 17 h 21 :
 - `build/AW-PNJ-01.rbxlx`, avec `rojo build default.project.json -o build/AW-PNJ-01.rbxlx` ;
 - `build/AW-PNJ-01-monde.rbxl`, copie de la place monde ouvert produite par verify.ps1.
 
+**Dernière exécution** : 2026-11-06, terminée vers 18 h 30, après l'intégration des voitures et des piétons 3D :
+`scriptserify.ps1 -DownloadRobloxTypes` est **entièrement vert**.
+- Rojo, Selene, Pilote Studio, StyLua, carte du monde ouvert et pytest (33 réussis) : OK.
+- luau-lsp : 0 erreur.
+- Lune : **491 réussis, 0 échoué**.
+
+Les places de test ont été reconstruites à 18 h 30 :
+- `build/AW-PNJ-01.rbxlx` ;
+- `build/AW-PNJ-01-monde.rbxl`.
+
 ## 9. Non testé / limites connues
 
 - **Aucun essai en jeu** (§7 à faire par le propriétaire). Ni le rendu, ni le coût, ni la synchronisation des feux
   n'ont été vus dans Studio.
-- Les **modèles 3D ne sont pas intégrés** : le §6 attend les téléchargements du propriétaire.
+- Les modèles 3D sont intégrés mais **jamais vus dans le moteur** :
+  - origine retrouvée depuis les roues (voitures) et le bassin (piétons) ;
+  - couleurs réappliquées par nom de pièce ;
+  - `TextureID` changé à l'exécution sur les piétons.
+  Ces points sont contrôlés sur les données du gabarit par Lune, pas à l'affichage.
+- Pièces rigides des piétons : fentes possibles aux articulations en mouvement (aucune déformation de peau).
 - Le **comportement** est inchangé (étape suivante, après MAP-01) :
   - virages pris trop vite, raccord droit au carrefour ;
   - pas de changement de voie ni de klaxon ;

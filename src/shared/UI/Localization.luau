@@ -807,6 +807,11 @@ local E: { [string]: Entry } = {
         "textures remplacées par des matériaux unis, simplifiées, pièces renommées",
         "textures replaced by plain materials, simplified, parts renamed",
     },
+    ["credits.usage.pnj_pedestrians"] = { "Modèles 3D des piétons", "Pedestrian 3D models" },
+    ["credits.changes.pnj_pedestrians"] = {
+        "pose modifiée, découpés en pièces animées, variantes de couleurs",
+        "pose changed, split into animated parts, colour variants",
+    },
     ["settings.language"] = { "Langue : {language}", "Language: {language}" },
     ["settings.language.fr"] = { "Français", "Français" },
     ["settings.language.en"] = { "English", "English" },

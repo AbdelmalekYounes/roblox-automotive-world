@@ -113,6 +113,59 @@ return function(T: any, H: any)
         T.equal(found, #entry.RobloxAssetIds, "manifeste = exactement les maillages du gabarit")
     end)
 
+    T.test("gabarit des piétons importé : 18 personnages complets, origine au sol, palettes autorisées", function()
+        local AssetManifest = H.require(SHARED .. "Assets.AssetManifest")
+        local folder = game.ReplicatedStorage:FindFirstChild(PnjKits.FolderName)
+        local entry = AssetManifest.get(PnjKits.PedestrianManifestId)
+        local meshes: { [number]: boolean } = {}
+        for _, id in entry.RobloxAssetIds do
+            meshes[id] = true
+        end
+        local textures: { [number]: boolean } = {}
+        for _, id in entry.RobloxTextureIds do
+            textures[id] = true
+        end
+        local function asset(content: any): number?
+            return tonumber(string.match(tostring(content), "rbxassetid://(%d+)"))
+        end
+        local found = 0
+        for _, morph in PnjKits.Morphologies do
+            local model = folder:FindFirstChild(morph.Template)
+            T.truthy(model ~= nil, morph.Template)
+            local names: { [string]: boolean } = {}
+            for _, part in model:GetChildren() do
+                names[part.Name] = true
+                T.truthy(meshes[asset(part.MeshContent) :: number], morph.Id .. "." .. part.Name .. " au manifeste")
+                found += 1
+            end
+            T.equal(#PnjKits.missingPedestrianParts(names), 0, morph.Id .. " : 11 pièces")
+            -- Origine retrouvée par le bassin : pieds au sol (± 3 cm), jambe gauche en −X, genou mesuré dans la jambe.
+            local pelvis = (model:FindFirstChild("Bassin") :: any).CFrame.Position
+            local origin = pelvis - (morph.PelvisCenter :: any) / 0.28
+            local lowest = math.huge
+            for _, part in model:GetChildren() do
+                lowest = math.min(lowest, part.CFrame.Position.Y - part.Size.Y / 2)
+            end
+            T.near((lowest - origin.Y) * 0.28, 0, 0.03, morph.Id .. " : pieds au sol")
+            local legG = (model:FindFirstChild("JambeG_Haut") :: any).CFrame.Position
+            T.truthy(legG.X < origin.X, morph.Id .. " : jambe gauche en −X")
+            local knee = origin + (morph.Rest :: any).GenouG / 0.28
+            local lower = model:FindFirstChild("JambeG_Bas") :: any
+            T.truthy(
+                math.abs(knee.Y - (lower.CFrame.Position.Y + lower.Size.Y / 2)) * 0.28 < 0.12,
+                morph.Id .. " : genou"
+            )
+        end
+        local carrier = folder:FindFirstChild(PnjKits.PaletteTemplate)
+        T.truthy(carrier ~= nil, PnjKits.PaletteTemplate)
+        for index = 0, PnjKits.PaletteCount - 1 do
+            local plate = carrier:FindFirstChild(string.format("Palette_%02d", index))
+            T.truthy(plate ~= nil and textures[asset(plate.TextureContent) :: number], "palette " .. index)
+            found += 1
+        end
+        T.equal(found, #entry.RobloxAssetIds, "manifeste = exactement les maillages du gabarit")
+    end)
+
     T.test("piétons : squelette complet, apparence stable et variée, contrôle des gabarits", function()
         for _, segment in PnjKits.Segments do
             T.truthy(PnjKits.joint(segment.Joint) ~= nil, segment.Name .. " → " .. segment.Joint)

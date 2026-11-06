@@ -70,6 +70,20 @@ Attributions.List = table.freeze({
         ShowTitle = false,
         ShowUrl = false,
     } :: Attribution),
+    -- Lot PNJ-01 : piétons (page itch.io du pack, licence CC BY 4.0, 2026-11-06).
+    table.freeze({
+        ManifestId = "world.pnj.pedestrians",
+        UsageKey = "credits.usage.pnj_pedestrians",
+        ChangesKey = "credits.changes.pnj_pedestrians",
+        Creator = "David Jalbert",
+        Source = "itch.io",
+        Licence = "CC BY 4.0",
+        LicenceUrl = "creativecommons.org/licenses/by/4.0",
+        Title = "Low Poly People",
+        Url = "https://davidjalbert.itch.io/low-poly-people",
+        ShowTitle = false,
+        ShowUrl = false,
+    } :: Attribution),
 } :: { Attribution })
 
 -- Attribution d'une entrée du manifeste, ou nil.
