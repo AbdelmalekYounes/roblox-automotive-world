@@ -161,6 +161,34 @@ démarreur (190E), le turbo (Supra) et les pétarades (anti-lag) restent comme d
 - Les sources CC0 déjà reçues restent disponibles : le ralenti de la Maserati est à 850 tr/min, la Supra sert au
   turbo et l'anti-lag aux pétarades.
 
+### Sons version 1, choix de la variante et intégration (2026-11-06)
+
+Sons produits à partir du pack « V8 Lotus » et des compléments CC0 : `docs/audio/SONS_TIERS.md` § 4 (commit f6edd8e).
+Deux variantes ont été faites, une par micro.
+
+Le propriétaire a écouté les deux démos de conduite et a répondu **« Micro B »**. C'est un essai humain d'écoute sur
+fichiers, pas un essai en jeu.
+
+Intégration au jeu :
+- **Profil** `wk_comete` dans `EngineSoundProfiles` : 7 régimes de référence (900 à 6 000 tr/min), ralenti à 850,
+  rupteur à 8 500, turbo et pétarades.
+- **Manifeste** : 20 ressources `audio.engine.comete.*`, sorties `micro_b`, sans identifiant pour l'instant.
+  - Licences : CC BY 4.0 pour les boucles, le démarrage, l'arrêt et le calage ; CC0 pour le turbo, la décharge et les
+    pétarades.
+- **Crédit en jeu** :
+  - entrée `Attributions` pour wikusv (titre et lien masqués, comme les crédits précédents) ;
+  - champ facultatif `ManifestPrefix`, qui couvre toutes les ressources du préfixe ;
+  - textes `credits.usage.comete_moteur` et `credits.changes.comete_moteur` (FR, EN).
+- **Tests** : `tests/lune/specs/Audio02.luau` (4 tests) et `tests/test_audio02.py` (3 tests).
+- **Vérification** : `verify.ps1 -DownloadRobloxTypes` (2026-11-06), toutes les étapes OK ; Lune 481 sur 481, pytest
+  38 sur 38.
+
+**Sons à envoyer** sur Roblox par le propriétaire : `build/audio/engines/comete/a_envoyer/`. Le dossier contient 20 WAV
+(48 kHz, mono, 3,8 Mo au total). Chaque nom `comete_<nom>` correspond à la ressource `audio.engine.comete.<nom>`, avec
+`_` à la place de `.`.
+
+**Retour attendu** : un `.rbxm` des 20 objets Sound dans `aw-vm-exchange`, sous un nom préfixé `audio02_`.
+
 ## 5. Déroulement
 
 Le déroulement est celui d'AUDIO-01 :

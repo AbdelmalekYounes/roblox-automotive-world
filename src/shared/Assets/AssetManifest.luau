@@ -354,6 +354,57 @@ recordedEngine("brio", "start", "démarrage")
 recordedEngine("brio", "stop", "arrêt")
 recordedEngine("brio", "stall", "calage")
 
+-- ======================== Audio enregistré (lot AUDIO-02 : moteur de la Comète) ========================
+-- Variante « micro B » (choisie à l'écoute par le propriétaire le 2026-11-06), produite par tools/audio/engine_loops.py
+-- comete. Boucles, démarrage, arrêt et calage : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0 — crédit en jeu
+-- (Shared/Assets/Attributions) et dans docs/CREDITS_ACTIFS.md ; le démarrage commence par le démarreur de la 190E (CC0).
+-- Turbo et décharge (Supra au banc, editboy23) et pétarades (anti-lag, modusmogulus) : CC0. Registre
+-- docs/audio/SONS_TIERS.md § 4. Aucun identifiant Roblox tant que le propriétaire ne les a pas envoyés.
+local COMETE_LOTUS = "Tiers : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0, transformé ("
+local COMETE_LICENCE_BY = "CC BY 4.0 — crédit : wikusv (Freesound), modifié"
+local COMETE_LICENCE_CC0 = "CC0 1.0 (domaine public) — aucun crédit exigé"
+local function recordedComete(name: string, provenance: string, licence: string)
+    add({
+        Id = "audio.engine.comete." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "Provisional",
+        Variants = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = provenance .. " ; docs/audio/SONS_TIERS.md",
+        Licence = licence,
+        Source = { Kind = "File", Path = ENGINE_LOOPS },
+        Output = "build/audio/engines/comete/micro_b/" .. name .. ".wav",
+        RobloxAssetId = nil,
+    })
+end
+for _, rpm in { 900, 1300, 1850, 2600, 3700, 5000, 6000 } do
+    recordedComete("on." .. rpm, COMETE_LOTUS .. "boucle en charge à " .. rpm .. " tr/min)", COMETE_LICENCE_BY)
+    recordedComete("off." .. rpm, COMETE_LOTUS .. "boucle en décharge à " .. rpm .. " tr/min)", COMETE_LICENCE_BY)
+end
+recordedComete(
+    "start",
+    COMETE_LOTUS .. "démarrage : démarreur de la 190E de Chippy569, CC0, puis reprise du V8)",
+    COMETE_LICENCE_BY
+)
+recordedComete("stop", COMETE_LOTUS .. "arrêt)", COMETE_LICENCE_BY)
+recordedComete("stall", COMETE_LOTUS .. "calage)", COMETE_LICENCE_BY)
+recordedComete(
+    "turbo",
+    "Tiers : « Import car revs on Chassis Dyno with Turbo » d'editboy23 (Freesound), CC0, transformé (sifflement isolé)",
+    COMETE_LICENCE_CC0
+)
+recordedComete(
+    "blowoff",
+    "Tiers : « Import car revs on Chassis Dyno with Turbo » d'editboy23 (Freesound), CC0, transformé (décharge)",
+    COMETE_LICENCE_CC0
+)
+recordedComete(
+    "pops",
+    "Tiers : « Car Antilag » de modusmogulus (Freesound), CC0, transformé (détonations)",
+    COMETE_LICENCE_CC0
+)
+
 -- ======================== Audio enregistré (lot AUDIO-03 : pneus) ========================
 -- Boucles des pneus (TireAudioModel), tirées d'enregistrements libres de Freesound (CC0) relevés au registre
 -- docs/audio/SONS_TIERS.md (§ pneus) et transformées par tools/audio/tire_loops.py. Catégorie « Effets » (préfixe

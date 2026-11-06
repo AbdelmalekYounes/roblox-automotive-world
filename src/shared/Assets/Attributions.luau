@@ -24,6 +24,9 @@ export type Attribution = {
     Url: string, -- page de l'œuvre
     ShowTitle: boolean,
     ShowUrl: boolean,
+    -- Lot AUDIO-02 : préfixe des entrées du manifeste couvertes par cette attribution (une œuvre, plusieurs sons :
+    -- boucles du moteur de la Comète). `ManifestId` reste une entrée réelle du préfixe.
+    ManifestPrefix: string?,
 }
 
 local Attributions = {}
@@ -56,12 +59,32 @@ Attributions.List = table.freeze({
         ShowTitle = false,
         ShowUrl = false,
     } :: Attribution),
+    -- Lot AUDIO-02 : moteur de la Comète, pack « V8 Lotus » (Freesound, CC BY 4.0, licence relevée sur la page de chaque
+    -- son le 2026-11-06). Le titre contient un nom de marque : masqué comme les précédents (décision reportée).
+    table.freeze({
+        ManifestId = "audio.engine.comete.on.900",
+        ManifestPrefix = "audio.engine.comete.",
+        UsageKey = "credits.usage.comete_moteur",
+        ChangesKey = "credits.changes.comete_moteur",
+        Creator = "wikusv",
+        Source = "Freesound",
+        Licence = "CC BY 4.0",
+        LicenceUrl = "creativecommons.org/licenses/by/4.0",
+        Title = "V8 Lotus (Idle, Idle and Rev - Engine, Rev and Pull)",
+        Url = "https://freesound.org/people/wikusv/sounds/232272/",
+        ShowTitle = false,
+        ShowUrl = false,
+    } :: Attribution),
 } :: { Attribution })
 
 -- Attribution d'une entrée du manifeste, ou nil.
 function Attributions.forManifest(manifestId: string): Attribution?
     for _, entry in Attributions.List do
         if entry.ManifestId == manifestId then
+            return entry
+        end
+        local prefix = entry.ManifestPrefix
+        if prefix and string.sub(manifestId, 1, #prefix) == prefix then
             return entry
         end
     end
