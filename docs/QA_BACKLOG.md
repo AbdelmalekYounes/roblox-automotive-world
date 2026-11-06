@@ -345,7 +345,8 @@ Liste détaillée : `docs/lot-audio-01/PLAN_AUDIO_01.md` §13.
 | QA-S01 | P1 | Sons de la Brio en jeu : démarrage, ralenti, montée sans découpage, passages et rétrogradages, cockpit, réglage du volume | **Validé en jeu par le propriétaire le 2026-11-06** (liste du plan §13, place `build/AW-Audio-Brio.rbxlx`) |
 | QA-S02 | P2 | Son des autres joueurs : régime transmis, Doppler, véhicule garé silencieux (2 joueurs) | **Validé par le propriétaire le 2026-11-06** (point 9 de la liste) |
 | QA-S03 | P2 | Comète à 8 500 tr/min (décision D3) : conduite, compte-tours | **Validé par le propriétaire le 2026-11-06** (point 10 de la liste) |
-| QA-S04 | P2 | Brio pied au plancher : moteur au rupteur jusqu'à 1,5 s en 1ʳᵉ et 2ᵉ avant le passage (relevé de la dynamique) | **OUVERT**, réglage de boîte à arbitrer par le propriétaire |
+| QA-S04 | P2 | Brio pied au plancher : moteur au rupteur jusqu'à 1,5 s en 1ʳᵉ et 2ᵉ avant le passage (relevé de la dynamique) | **Corrigé (lot BRIO-02)** : montée décidée aussi sur le régime moteur ; **validé en jeu par le propriétaire le 2026-11-06** |
+| QA-C05 | P2 | Brio : cheveux du personnage au travers du toit (conducteur, passager) | **Corrigé (lot BRIO-02)** : assise sur le vrai coussin, pose « Citadine » ; **validé en jeu par le propriétaire le 2026-11-06** |
 
 ## 4. Charge, performance et stabilité
 
