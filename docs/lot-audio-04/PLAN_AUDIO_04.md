@@ -113,6 +113,13 @@ Chaque nom `collision_<nom>` correspond à la ressource `audio.effect.collision.
 Retour attendu : un `.rbxm` des 7 objets Sound, enregistré dans `aw-vm-exchange` sous un nom préfixé `audio04_`.
 L'assistant y relève les identifiants avec Lune, puis les reporte au manifeste.
 
+### Sons envoyés, identifiants intégrés (2026-11-06)
+
+Le propriétaire a déposé `aw-vm-exchange/audio04_collisions.rbxm` (SHA-256 `0026b85c…`). Sept identifiants distincts y
+ont été relevés et reportés dans `AssetManifest` (table `COLLISION_SOUND_IDS`, statut `ReadyForReview`), au commit
+a40e365. La place de test est `build/AW-AUDIO-04.rbxlx` ; le bilan et la liste de vérification en jeu sont dans
+[RAPPORT_AUDIO_04.md](RAPPORT_AUDIO_04.md).
+
 ## 7. Hors périmètre
 
 - Changement de la détection des dégâts ou de leurs seuils : seule une diffusion sonore est ajoutée au serveur.
