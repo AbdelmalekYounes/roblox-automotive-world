@@ -95,8 +95,7 @@ SeatPose.Poses = table.freeze({
     CitadinePassager = table.freeze(table.clone(CITY_LEGS)),
 } :: { [string]: Pose })
 
--- Articulations des bras : jamais modifiées quand le téléphone est sorti (bras levé, QA-A10).
--- Poignets ajoutés au lot ANIM-01 (mains orientées sur le volant) : même règle.
+-- Articulations des bras (poignets ajoutés au lot ANIM-01, mains orientées sur le volant) ; jamais posées au passager.
 SeatPose.ArmJoints = table.freeze({
     LeftShoulder = true,
     RightShoulder = true,
@@ -105,6 +104,11 @@ SeatPose.ArmJoints = table.freeze({
     LeftWrist = true,
     RightWrist = true,
 })
+
+-- Articulations laissées au lot PHONE-01 quand le téléphone est sorti (`AWPhoneRaised`, bras levé, QA-A10) : le bras
+-- DROIT seulement. Décision du propriétaire du 2026-11-06, transmise par PHONE-01 : « il faut que ça libere qu'un
+-- seul bras » ; la main gauche reste sur le volant. PHONE-01 pilote l'épaule et le coude droits.
+SeatPose.PhoneArmJoints = table.freeze({ RightShoulder = true, RightElbow = true, RightWrist = true })
 
 -- Pose demandée par la valeur de l'attribut d'un siège (nil : pose standard du moteur).
 function SeatPose.poseFor(value: any): Pose?

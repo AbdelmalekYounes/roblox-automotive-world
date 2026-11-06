@@ -8,7 +8,7 @@
     articulation est multiplié dans `Transform` (Motor6D ou AnimationConstraint du nouveau
     squelette R15) ; si l'animation n'a pas réécrit `Transform` depuis notre dernière
     écriture, l'ancien décalage est retiré d'abord (pas de cumul), comme pour le bras du
-    téléphone (QA-A10). Les bras ne sont pas modifiés quand le téléphone est sorti.
+    téléphone (QA-A10). Le bras droit n'est pas modifié quand le téléphone est sorti.
 
     Lot ANIM-01 (volants et mains) : à chaque pas, les volants tournent d'abord
     (`SteeringWheelVisuals`), puis, pour le CONDUCTEUR d'un véhicule dont le volant est connu
@@ -17,7 +17,8 @@
     rotation jusqu'à ±100° puis glissent ; chaque main est orientée sur la jante par le poignet
     (paume vers le moyeu, pouce le long de la jante). Ces rotations remplacent l'animation des bras (fondu
     `SeatPose.BlendS`). Passager, sièges sans volant connu : pose statique inchangée. Téléphone
-    sorti : bras rendus à l'animation (règle QA-A10 ; le lot PHONE-01 gère le bras du téléphone).
+    sorti : seul le bras droit est laissé au lot PHONE-01 (`SeatPose.PhoneArmJoints`, décision du
+    propriétaire du 2026-11-06) ; la main gauche reste sur le volant.
     Vue cockpit du joueur local : avant-bras et mains gardés visibles (décision du propriétaire).
 ]]
 
@@ -185,6 +186,9 @@ local function handsOnWheel(character: Model, seat: BasePart, pose: SeatPose.Pos
     return result
 end
 
+-- Pièces du bras droit en cockpit : téléphone sorti, PHONE-01 écrit lui-même leur transparence locale.
+local RIGHT_FOREARM: { [string]: boolean } = { RightLowerArm = true, RightHand = true }
+
 -- Vue cockpit du joueur local : avant-bras et mains visibles tant que ses mains sont sur le volant.
 local function updateCockpitForearms(character: Model?, active: boolean, phoneUp: boolean)
     local camera = VehicleController.getCamera()
@@ -199,6 +203,9 @@ local function updateCockpitForearms(character: Model?, active: boolean, phoneUp
         -- (contrôleur de transparence du PlayerModule ; RAPPORT_CAMERA_01 §4).
         if camera:isCockpit() then
             for name in FOREARMS do
+                if phoneUp and RIGHT_FOREARM[name] then
+                    continue -- bras du téléphone : transparence réglée par PHONE-01
+                end
                 local part = character:FindFirstChild(name)
                 if part and part:IsA("BasePart") then
                     part.LocalTransparencyModifier = 0
@@ -207,10 +214,7 @@ local function updateCockpitForearms(character: Model?, active: boolean, phoneUp
         end
     elseif forearmsShown then
         forearmsShown = false
-        -- Téléphone sorti : la visibilité en cockpit revient au lot PHONE-01 (filtre laissé tel quel).
-        if not phoneUp then
-            camera:setCharacterVisibilityFilter(nil)
-        end
+        camera:setCharacterVisibilityFilter(nil)
     end
 end
 
@@ -229,7 +233,7 @@ local function update(dt: number)
         local seat = humanoid.SeatPart
         local pose = if seat then SeatPose.poseFor(seat:GetAttribute(SeatPose.Attribute)) else nil
         local phoneUp = character:GetAttribute(PHONE_RAISED_ATTRIBUTE) == true
-        local ik = if seat and pose and not phoneUp then handsOnWheel(character, seat, pose) else nil
+        local ik = if seat and pose then handsOnWheel(character, seat, pose) else nil
         if player == localPlayer then
             updateCockpitForearms(character, ik ~= nil, phoneUp)
         end
@@ -239,8 +243,10 @@ local function update(dt: number)
                 continue
             end
             local entry = entries[joint]
-            local ikWanted = if ik then ik[name] else nil
-            local wanted = if pose and not (phoneUp and SeatPose.ArmJoints[name]) then pose[name] else nil
+            -- Téléphone sorti : bras droit laissé à PHONE-01 (ni pose ni IK), bras gauche toujours au volant.
+            local free = phoneUp and SeatPose.PhoneArmJoints[name] == true
+            local ikWanted = if ik and not free then ik[name] else nil
+            local wanted = if pose and not free then pose[name] else nil
             if entry == nil and wanted == nil and not ikWanted then
                 continue
             end

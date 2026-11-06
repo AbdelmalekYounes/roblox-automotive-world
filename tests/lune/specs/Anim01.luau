@@ -235,8 +235,9 @@ return function(T: any, H: any)
         local controller = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.VehicleController")
         T.truthy(has(controller, "SteeringWheelVisuals.setLocal("), "état local transmis")
         local pose = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles.SeatPoseController")
-        T.truthy(has(pose, "not (phoneUp and SeatPose.ArmJoints[name])"), "pose : bras libres téléphone sorti")
-        T.truthy(has(pose, "if seat and pose and not phoneUp then handsOnWheel"), "mains : rien téléphone sorti")
+        T.truthy(has(pose, "phoneUp and SeatPose.PhoneArmJoints[name]"), "téléphone : bras droit laissé à PHONE-01")
+        T.truthy(has(pose, "if ik and not free then ik[name]"), "mains : IK coupée sur le bras droit seulement")
+        T.truthy(has(pose, "if pose and not free then pose[name]"), "pose : idem")
         T.truthy(has(pose, "SteeringWheelVisuals.update(dt)"), "volant puis mains, même pas")
         T.truthy(has(pose, "setCharacterVisibilityFilter"), "avant-bras visibles en cockpit")
         -- Les bras restent ceux de la règle QA-A10 (aucun ajout).
@@ -245,7 +246,14 @@ return function(T: any, H: any)
             count += 1
         end
         T.equal(count, 6, "épaules, coudes et poignets")
-        T.truthy(SeatPose.ArmJoints.LeftWrist and SeatPose.ArmJoints.RightWrist, "poignets libres téléphone sorti")
+        T.truthy(SeatPose.ArmJoints.LeftWrist and SeatPose.ArmJoints.RightWrist, "poignets parmi les bras")
+        -- Décision du propriétaire (2026-11-06, via PHONE-01) : le téléphone ne libère que le bras droit.
+        local phone = {}
+        for name in SeatPose.PhoneArmJoints do
+            table.insert(phone, name)
+        end
+        table.sort(phone)
+        T.equal(table.concat(phone, ","), "RightElbow,RightShoulder,RightWrist", "bras droit seulement")
     end)
 
     -- Retour du propriétaire (2026-11-06, capture Brio) : mains dans l'axe de l'avant-bras, doigts tendus à côté de la

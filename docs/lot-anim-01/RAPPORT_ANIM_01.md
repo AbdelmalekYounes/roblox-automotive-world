@@ -61,9 +61,11 @@
     comme au retour.
 - **Pour tous** : chaque client calcule les bras de tous les conducteurs avec le même angle de volant. Les autres
   joueurs voient donc les mains suivre le volant, sans réplication par image.
-- **Téléphone sorti** (`AWPhoneRaised`) : la règle existante QA-A10 est gardée. Aucune articulation des bras
-  (`SeatPose.ArmJoints`) n'est touchée : les deux bras reviennent à l'animation en 0,3 s et PHONE-01 lève le bras du
-  téléphone. Au rangement du téléphone, les mains reviennent sur le volant.
+- **Téléphone sorti** (`AWPhoneRaised`) : **seul le bras droit est libéré** (`SeatPose.PhoneArmJoints` : épaule,
+  coude et poignet droits). La main gauche reste sur le volant. Décision du propriétaire du 2026-11-06, transmise par
+  PHONE-01 : « il faut que ça libere qu'un seul bras ». La version initiale de ce lot libérait les deux bras.
+  - Le bras droit quitte le volant en 0,3 s, et PHONE-01 le pilote (épaule et coude, pose absolue).
+  - Au rangement du téléphone, la main droite revient sur le volant.
 
 ### 2.3 Vue cockpit (joueur local)
 
@@ -73,9 +75,10 @@
 - En cockpit, `LocalTransparencyModifier = 0` est réappliqué à ces 4 pièces à chaque pas. C'est une protection contre
   le contrôleur de transparence du `PlayerModule` signalé au §4 du rapport CAMERA-01.
 - Fin de conduite : le filtre est retiré.
-- **Téléphone sorti : le filtre est laissé tel quel.** La visibilité en cockpit revient à PHONE-01. Au rangement du
-  téléphone, le filtre des avant-bras est reposé. Note de coordination : `ANIM-01.md` dans le dossier des notes
-  partagées.
+- **Téléphone sorti :** le filtre reste posé. L'avant-bras et la main gauches restent visibles, avec leur
+  transparence réécrite à chaque pas. Celle du bras droit n'est plus réécrite : PHONE-01 n'utilise pas le filtre ; il
+  écrit lui-même la transparence locale du bras droit, de la main droite et du téléphone pendant le zoom, puis
+  rétablit les valeurs d'origine. Note de coordination : `ANIM-01.md` dans le dossier des notes partagées.
 
 ### 2.4 Comète : volant séparé (en attente de l'import du propriétaire)
 
@@ -213,8 +216,9 @@ Le test 5 utilise une chaîne R15 de synthèse : les repères réels des avatars
 - Autres joueurs : le volant suit `VisualSteer`, qui est la consigne et non la crémaillère, lissée côté client. Un
   léger écart avec le volant vu par le conducteur est attendu.
 - Comète : volant fixe jusqu'à l'import du propriétaire (§2.4). L'outil d'intégration n'a été essayé qu'à blanc.
-- Coordination PHONE-01 : une seule visibilité en cockpit à la fois (`setCharacterVisibilityFilter`). Ce lot ne la
-  touche pas quand le téléphone est sorti ; PHONE-01 doit poser la sienne à ce moment-là s'il le souhaite.
+- Coordination PHONE-01 : pendant les 0,3 s où le bras droit quitte le volant (ou y revient), les deux lots
+  écrivent son épaule et son coude, chacun avec son fondu. Une brève transition mêlée est possible ; elle n'est pas
+  vérifiée.
 
 À reporter par la coordination dans `docs/QA_BACKLOG.md` : la liste du §7, NON TESTÉ en jeu.
 
@@ -258,6 +262,18 @@ Correction (commit suivant `692cb2f`) :
 
 **Toujours non vérifié en jeu.** La liste du §7 reste à refaire, en particulier les points 2, 5, 8 et 18.
 
+## 6 ter. Téléphone : un seul bras libéré (2026-11-06)
+
+Demande du propriétaire, transmise par la session PHONE-01, citée : « oui il faut que ça libere qu'un seul bras ».
+
+Ce qui change :
+- `SeatPose.PhoneArmJoints` (`RightShoulder`, `RightElbow`, `RightWrist`) remplace `SeatPose.ArmJoints` pour la règle
+  du téléphone. `ArmJoints` reste la liste des articulations des bras, jamais posées au passager.
+- Le calcul des mains n'est plus coupé quand le téléphone est sorti ; seules les articulations droites sont sautées.
+
+Vérifications : `verify.ps1 -DownloadRobloxTypes` (terminé à 02:18) tout OK, Lune 441/441, test 8 mis à jour (bras
+droit seulement). La place est reconstruite. **Non vérifié en jeu** (§7, points 14 à 16).
+
 ## 7. Liste de vérification en jeu (propriétaire)
 
 Place : `build\AW-ANIM-01.rbxlx`. Véhicules par le menu d'administration (F2) ou la concession (Dev). Prévoir au
@@ -294,10 +310,12 @@ Rthro si possible.
     140 km/h ; commodos et bloc d'instruments fixes ; aucun trou dans la planche de bord à l'emplacement du volant.
 
 **E. Téléphone sorti en conduisant**
-14. Sortir le téléphone en roulant : les deux bras quittent le volant, en 0,3 s, et le bras du téléphone se lève
-    (PHONE-01). Le volant continue de tourner.
-15. Ranger le téléphone : les mains reviennent sur le volant. En cockpit, les avant-bras sont de nouveau visibles.
-16. En cockpit, téléphone sorti : comportement réglé par PHONE-01, à noter s'il y a conflit (§6).
+14. Sortir le téléphone en roulant : seul le bras droit quitte le volant, en 0,3 s, et tient le téléphone (PHONE-01).
+    La main gauche reste sur la jante et suit le volant, qui continue de tourner.
+15. Ranger le téléphone : la main droite revient sur le volant, sans saut. En cockpit, les deux avant-bras sont de
+    nouveau visibles.
+16. En cockpit, téléphone sorti : l'avant-bras et la main gauches restent visibles sur le volant. Le bras droit et le
+    téléphone sont réglés par PHONE-01. Noter tout clignotement ou conflit (§6).
 
 **F. Divers**
 17. Descendre du véhicule : bras rendus à l'animation normale. Plus aucun avant-bras forcé visible à pied ou dans un
