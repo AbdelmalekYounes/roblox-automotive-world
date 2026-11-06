@@ -185,6 +185,8 @@ if openWorld then
     require(WorldClient:WaitForChild("Environment")).start()
     require(WorldClient:WaitForChild("TrafficLights")).start()
     require(WorldClient:WaitForChild("StreamAhead")).start()
+    -- Lot PNJ-01 : roues, feux stop, clignotants et phares des voitures PNJ (animation locale).
+    require(WorldClient:WaitForChild("TrafficVisuals")).start()
     -- L'index des trottoirs se calcule une fois, sans retarder la conduite.
     task.defer(function()
         require(WorldClient:WaitForChild("Pedestrians")).start()

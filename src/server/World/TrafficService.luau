@@ -28,6 +28,10 @@ local WorldShared = Shared:WaitForChild("World")
 local RoadGraph = require(WorldShared:WaitForChild("RoadGraph"))
 local TrafficModel = require(WorldShared:WaitForChild("TrafficModel"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
+-- Lot PNJ-01 : silhouettes, modèles 3D (ou repli), feux stop et clignotants.
+local PnjKits = require(WorldShared:WaitForChild("PnjKits"))
+local TrafficCues = require(WorldShared:WaitForChild("TrafficCues"))
+local TrafficBodies = require(script.Parent:WaitForChild("TrafficBodies"))
 
 local TrafficService = {}
 
@@ -45,11 +49,6 @@ local INCIDENT_M = 3
 local RESET_M = 25
 local INCIDENT_HOLD_S = 4
 
-local BODY_SIZE_M = Vector3.new(1.9, 1.05, 4.6)
-local CABIN_SIZE_M = Vector3.new(1.7, 0.6, 2.3)
-local CLEARANCE_M = 0.3
--- Densité de la caisse : masse du même ordre que celle des prototypes.
-local BODY_DENSITY = 8
 local PALETTE = {
     Color3.fromRGB(200, 200, 205),
     Color3.fromRGB(40, 42, 48),
@@ -60,12 +59,7 @@ local PALETTE = {
     Color3.fromRGB(120, 120, 128),
 }
 
-type Body = {
-    Model: Model,
-    Root: BasePart,
-    Align: AlignPosition,
-    Orient: AlignOrientation,
-}
+type Body = TrafficBodies.Body
 
 local started = false
 local random = Random.new()
@@ -74,6 +68,9 @@ local choices: { TrafficModel.SpawnChoice } = {}
 local choicesTotal = 0
 local bodies: { [number]: Body } = {}
 local stuckSince: { [number]: number } = {}
+-- Lot PNJ-01 : silhouette et teinte de chaque agent, tirées une fois (le même PNJ garde son aspect).
+local looks: { [number]: { Car: PnjKits.CarSilhouette, Color: Color3 } } = {}
+local lastSpeed: { [number]: number } = {}
 local folder: Folder
 local rayParams = RaycastParams.new()
 
@@ -160,85 +157,17 @@ local function spawnHidden(positions: { Vector3 }): boolean
     return false
 end
 
-local function makePart(model: Model, name: string, size: Vector3, color: Color3, material: Enum.Material): BasePart
-    local part = Instance.new("Part")
-    part.Name = name
-    part.Size = size
-    part.Color = color
-    part.Material = material
-    part.TopSurface = Enum.SurfaceType.Smooth
-    part.BottomSurface = Enum.SurfaceType.Smooth
-    part.Parent = model
-    return part
-end
-
-local function createBody(agentId: number, frame: CFrame): Body
-    local model = Instance.new("Model")
-    model.Name = "PNJ_" .. agentId
-    model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
-    local color = PALETTE[random:NextInteger(1, #PALETTE)]
-    local root = makePart(model, "Caisse", BODY_SIZE_M * S, color, Enum.Material.SmoothPlastic)
-    root.CustomPhysicalProperties = PhysicalProperties.new(BODY_DENSITY, 0.4, 0.1, 1, 1)
-    root.CFrame = frame
-    local cabin = makePart(model, "Habitacle", CABIN_SIZE_M * S, Color3.fromRGB(30, 35, 45), Enum.Material.Glass)
-    cabin.Transparency = 0.2
-    cabin.Massless = true
-    cabin.CFrame = frame * CFrame.new(0, (BODY_SIZE_M.Y + CABIN_SIZE_M.Y) / 2 * S, 0.2 * S)
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = root
-    weld.Part1 = cabin
-    weld.Parent = root
-    -- Feux arrière (repère visuel du sens de marche).
-    for _, side in { -1, 1 } do
-        local light = makePart(
-            model,
-            "FeuArriere",
-            Vector3.new(0.3, 0.15, 0.05) * S,
-            Color3.fromRGB(200, 20, 20),
-            Enum.Material.Neon
-        )
-        light.Massless = true
-        light.CanCollide = false
-        light.CanQuery = false
-        light.CFrame = frame * CFrame.new(side * 0.7 * S, 0.2 * S, (BODY_SIZE_M.Z / 2 + 0.01) * S)
-        local lightWeld = Instance.new("WeldConstraint")
-        lightWeld.Part0 = root
-        lightWeld.Part1 = light
-        lightWeld.Parent = root
+local function lookOf(agentId: number): { Car: PnjKits.CarSilhouette, Color: Color3 }
+    local look = looks[agentId]
+    if look == nil then
+        look = { Car = PnjKits.pickCar(roll()), Color = PALETTE[random:NextInteger(1, #PALETTE)] }
+        looks[agentId] = look
     end
-    model.PrimaryPart = root
-
-    local attachment = Instance.new("Attachment")
-    attachment.Name = "Guidage"
-    attachment.Parent = root
-    local align = Instance.new("AlignPosition")
-    align.Mode = Enum.PositionAlignmentMode.OneAttachment
-    align.Attachment0 = attachment
-    align.ApplyAtCenterOfMass = true
-    align.Responsiveness = 35
-    align.Position = frame.Position
-    align.Parent = root
-    local orient = Instance.new("AlignOrientation")
-    orient.Mode = Enum.OrientationAlignmentMode.OneAttachment
-    orient.Attachment0 = attachment
-    orient.Responsiveness = 25
-    orient.CFrame = frame.Rotation
-    orient.Parent = root
-
-    model:SetAttribute("AgentId", agentId)
-    model:AddTag("AWTrafficVehicle")
-    model.Parent = folder
-    -- Masse de l'assemblage connue une fois dans Workspace (soudures résolues).
-    -- Force limitée : suffisante pour porter et guider la caisse, pas pour
-    -- résister à un choc (le PNJ cède, puis reprend sa trajectoire).
-    align.MaxForce = root.AssemblyMass * Workspace.Gravity * 3
-    orient.MaxTorque = root.AssemblyMass * 4000
-    root:SetNetworkOwner(nil)
-    return { Model = model, Root = root, Align = align, Orient = orient }
+    return look
 end
 
 -- Repère cible d'un agent : sur la chaussée (lancer vertical), dans le sens de marche.
-local function targetFrame(agent: TrafficModel.Agent, lead: number): CFrame
+local function targetFrame(agent: TrafficModel.Agent, lead: number, car: PnjKits.CarSilhouette): CFrame
     local here = TrafficModel.sample(agent.Path, agent.S + lead)
     local ahead = TrafficModel.sample(agent.Path, agent.S + lead + 3)
     local position = studs(here)
@@ -246,7 +175,7 @@ local function targetFrame(agent: TrafficModel.Agent, lead: number): CFrame
     -- doit pas toucher le tablier supérieur.
     local hit = Workspace:Raycast(position + Vector3.new(0, 8, 0), Vector3.new(0, -24, 0), rayParams)
     local groundY = if hit then hit.Position.Y else position.Y
-    local center = Vector3.new(position.X, groundY + (BODY_SIZE_M.Y / 2 + CLEARANCE_M) * S, position.Z)
+    local center = Vector3.new(position.X, groundY + PnjKits.boxCenter(car).Y * S, position.Z)
     local forward = studs(ahead) - position
     if forward.Magnitude < 1e-3 then
         forward = Vector3.new(0, 0, -1)
@@ -254,11 +183,15 @@ local function targetFrame(agent: TrafficModel.Agent, lead: number): CFrame
     return CFrame.lookAt(center, center + forward.Unit)
 end
 
-local function overlapsPlayer(frame: CFrame): boolean
+local function overlapsPlayer(frame: CFrame, car: PnjKits.CarSilhouette): boolean
     local params = OverlapParams.new()
     params.FilterType = Enum.RaycastFilterType.Exclude
     params.FilterDescendantsInstances = { folder, Workspace:FindFirstChild("OpenWorld") :: Instance }
-    local parts = Workspace:GetPartBoundsInBox(frame, BODY_SIZE_M * S + Vector3.new(2, 2, 2), params)
+    local parts = Workspace:GetPartBoundsInBox(
+        frame,
+        Vector3.new(car.WidthM, car.HeightM, car.LengthM) * S + Vector3.new(2, 2, 2),
+        params
+    )
     return #parts > 0
 end
 
@@ -290,13 +223,22 @@ local function stepSimulation(now: number)
         local wantBody = index <= PHYSICAL_MAX and entry.Distance <= PHYSICAL_RADIUS_M
         local body = bodies[agent.Id]
         if wantBody and body == nil then
-            local frame = targetFrame(agent, 0)
-            if not overlapsPlayer(frame) then
-                bodies[agent.Id] = createBody(agent.Id, frame)
+            local look = lookOf(agent.Id)
+            local frame = targetFrame(agent, 0, look.Car)
+            if not overlapsPlayer(frame, look.Car) then
+                bodies[agent.Id] = TrafficBodies.build(agent.Id, look.Car, frame, look.Color, folder)
             end
         elseif not wantBody and body then
             removeBody(agent.Id)
+        elseif body then
+            -- Lot PNJ-01 : feux stop et clignotants publiés au changement seulement.
+            TrafficBodies.publish(
+                body,
+                TrafficCues.braking(agent.Speed, lastSpeed[agent.Id] or agent.Speed, STEP_S),
+                TrafficCues.indicator(agent)
+            )
         end
+        lastSpeed[agent.Id] = agent.Speed
         -- Agent immobile depuis longtemps, loin des joueurs : replacé.
         if agent.Speed < 0.2 then
             stuckSince[agent.Id] = stuckSince[agent.Id] or now
@@ -310,6 +252,8 @@ local function stepSimulation(now: number)
     for _, agent in relocate do
         removeBody(agent.Id)
         stuckSince[agent.Id] = nil
+        looks[agent.Id] = nil
+        lastSpeed[agent.Id] = nil
         TrafficModel.remove(world, agent)
         spawnHidden(positions)
     end
@@ -328,7 +272,7 @@ local function steerBodies(sinceStep: number)
         if body == nil then
             continue
         end
-        local frame = targetFrame(agent, agent.Speed * sinceStep)
+        local frame = targetFrame(agent, agent.Speed * sinceStep, body.Car)
         body.Align.Position = frame.Position
         body.Orient.CFrame = frame.Rotation
         local deviation = (body.Root.Position - frame.Position).Magnitude / S
