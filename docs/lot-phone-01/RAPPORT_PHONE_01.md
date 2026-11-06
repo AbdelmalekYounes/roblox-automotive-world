@@ -7,8 +7,9 @@
 - **Contexte** : 2e vague en parallèle d'ANIM-01 (exception du propriétaire du 2026-11-06, fichiers disjoints). Rien
   n'a été poussé ; ni pull request ni fusion (session de coordination). Aucune publication Roblox.
 - **Date** : 2026-11-06.
-- **État** : code et tests hors Studio terminés. Premier essai du propriétaire (§7) : défaut corrigé, à revérifier ;
-  le reste du §6 est NON TESTÉ.
+- **État** : code et tests hors Studio terminés. Essais du propriétaire (§7) : un défaut corrigé, puis lot **validé
+  en jeu par le propriétaire le 2026-11-06** (« c'est bon c'est parfait »). Le détail des points du §6 essayés n'a pas
+  été précisé : les points non mentionnés restent à confirmer par lui.
 
 ## 1. Décisions
 
@@ -210,3 +211,8 @@ Sauf mention, la touche est T (manette : X).
 - Tests ajoutés : pose exacte assis / debout, ancien défaut reproduit (l'ajout levait le bras), garde-fou.
 - **À revérifier en jeu** : points 1 et 11 à 16 du §6. Si la caméra ne zoome toujours pas, noter la ligne
   `[PHONE-01] …` de la sortie (distance mesurée) et, au bout de 2 s, l'affichage classique attendu.
+
+### 7.2 Essai du 2026-11-06 après le correctif (`c3c63f8`)
+
+- Réponse du propriétaire après avoir réessayé : « c'est bon c'est parfait ». Lot validé par lui en jeu ; scénarios
+  exacts non détaillés (aucun essai automatique ni VM de mon côté).
