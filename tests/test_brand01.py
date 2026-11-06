@@ -8,9 +8,9 @@ ROOT = Path(__file__).resolve().parents[1]
 BRAND = ROOT / "src/first/Brand.luau"
 MANIFEST = ROOT / "src/shared/Assets/AssetManifest.luau"
 
-# Identifiants d'image envoyés par le propriétaire (aucun pour l'instant : le logo n'est pas encore envoyé sur
-# Roblox). À remplir avec la valeur RÉELLE qu'il communique, en même temps que Brand.luau et le manifeste.
-BRAND_IMAGE_IDS: dict[str, int] = {}
+# Identifiant d'image du logo envoyé par le propriétaire (2026-11-06, Gestionnaire des contenus de Studio, type Image),
+# relevé sur sa capture d'écran : le seul déclaré.
+BRAND_IMAGE_IDS: dict[str, int] = {"logo": 100100722438691}
 
 
 def test_brand_image_ids_are_exactly_those_provided():

@@ -611,7 +611,7 @@ end
 -- ======================== Logo du jeu « Amberline » (lot BRAND-01) ========================
 -- L'écran de chargement lit l'identifiant dans ReplicatedFirst (`AutomotiveWorldFirst.Brand`), seul module disponible
 -- avant la réplication ; la valeur ci-dessous doit lui rester ÉGALE (test Lune Brand01, table exacte : pytest
--- tests/test_brand01.py). nil tant que le propriétaire n'a pas envoyé l'image : l'écran affiche alors le titre en texte.
+-- tests/test_brand01.py). Image envoyée par le propriétaire le 2026-11-06 ; si elle ne charge pas, l'écran garde le titre en texte.
 add({
     Id = "ui.brand.logo",
     Category = "Interface",
@@ -626,7 +626,7 @@ add({
     Licence = LICENCE,
     Source = { Kind = "File", Path = "src/first/Brand.luau" },
     Output = nil,
-    RobloxAssetId = nil,
+    RobloxAssetId = 100100722438691,
 })
 
 AssetManifest.Assets = table.freeze(list)

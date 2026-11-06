@@ -6,8 +6,9 @@
   `brand-01-amberline` (depuis `origin/main` e6608e9), commit `dcf2aca`, dossier `E:\ROBLOX DEV\aw-art-brand01`.
   Rien n'a été poussé ; ni pull request ni fusion (session de coordination). Aucune publication Roblox.
 - **Date** : 2026-11-06.
-- **État** : nom et logo choisis par le propriétaire ; code et tests hors Studio terminés ; **logo pas encore envoyé
-  sur Roblox** (l'écran affiche donc le titre en texte, repli prévu) ; **rien n'a été essayé dans Studio** (§7).
+- **État** : nom et logo choisis par le propriétaire ; code et tests hors Studio terminés ; logo **envoyé sur Roblox
+  par le propriétaire** le 2026-11-06 (image 100100722438691, §3.2) et reporté dans le code ; **rien n'a été essayé
+  dans Studio** (§7).
 
 ## 1. Décisions du propriétaire (2026-11-06)
 
@@ -74,10 +75,20 @@ Sous le **même créateur que l'expérience** (compte ou groupe).
 3. **Nom de l'expérience** : même page, *Informations de base* > nom « Amberline ». C'est au propriétaire de le faire
    (aucune publication par l'assistant).
 
-À réception de l'identifiant du logo, il sera relevé à trois endroits, contrôlés par les tests : `src/first/Brand.luau`
-(table `BRAND_IMAGE_IDS`), entrée `ui.brand.logo` du manifeste, table exacte de `tests/test_brand01.py`. Le contrôle
-existant `tests/test_lot08.py::test_asset_manifest_declares_no_roblox_id` (liste exacte des valeurs non nulles de
-`RobloxAssetId`) devra alors recevoir une ligne de plus.
+### 3.2 Logo envoyé (2026-11-06)
+
+Le propriétaire a importé le logo par le Gestionnaire des contenus de Studio et envoyé une capture d'écran (17:52) :
+ligne `brand01_amberl…`, identifiant **100100722438691**, type **Image**, inventaire **Akroniik** (même créateur que
+les sons des lots AUDIO), modifié le 6 nov. 2026 17:38 ; la même valeur apparaît dans `ColorMapContent` du Decal créé
+dans Workspace par l'import. L'état de modération n'est pas lisible sur la capture.
+
+Relevé à quatre endroits, contrôlés par les tests : `src/first/Brand.luau` (table `BRAND_IMAGE_IDS`), entrée
+`ui.brand.logo` du manifeste, table exacte de `tests/test_brand01.py`, liste exacte de
+`tests/test_lot08.py::test_asset_manifest_declares_no_roblox_id` ; exception ajoutée au test Lune Lot 0.8 n° 16
+(entrées autorisées à porter un identifiant), comme pour les sons.
+
+Le Decal `brand01_amberline_logo_1024x256` ajouté dans Workspace par l'import n'est pas utilisé par le jeu : à
+supprimer de la place ouverte, sans l'enregistrer.
 
 ## 4. Écran de chargement
 
@@ -137,7 +148,8 @@ La barre n'avance que sur des attentes observées, avec un poids chacune (somme 
 - **Communs, par ajouts** : `default.project.json` et `openworld.project.json` (bloc `ReplicatedFirst`, 6 lignes
   chacun) ; `src/shared/Assets/AssetManifest.luau` (entrée `ui.brand.logo` avant `AssetManifest.Assets`) ;
   `tests/lune/run.luau` (`require("./specs/Brand01")` en fin de liste) ; `tests/test_scaffold.py` (exception
-  `rbxassetid://` étendue à `Brand.luau`, écart E3).
+  `rbxassetid://` étendue à `Brand.luau`, écart E3) ; `tests/test_lot08.py` (valeur du logo dans la liste exacte) ;
+  `tests/lune/specs/Lot08Content.luau` (exception `ui.brand.logo` dans le test n° 16).
 - **Non touchés** : fichiers de MAP-01 (`src/server/World`…) et de COMMANDES-01 (véhicule, HUD de conduite, feux) ;
   `Localization.luau` ; README, ROADMAP, QA_BACKLOG, CREDITS_ACTIFS (§9).
 
@@ -148,7 +160,10 @@ La barre n'avance que sur des attentes observées, avec un poids chacune (somme 
 | 2026-11-06 | `lune run tests/lune/run.luau build/AW-BRAND-01.rbxlx` (après `rojo build`) | 499 réussis, 0 échoué (dont 13 tests BRAND-01) |
 | 2026-11-06 17:28 | `scripts\verify.ps1 -DownloadRobloxTypes` (1er passage) | ÉCHEC : pytest (`rbxassetid://` interdit hors du manifeste) et luau-lsp (types de `src/first`) ; corrigés |
 | 2026-11-06 17:30–17:31 | `scripts\verify.ps1 -DownloadRobloxTypes` (2e passage) | tout OK : Rojo, Selene, pilote Studio, StyLua, Lune 499/0, carte du monde ouvert, place monde ouvert, pytest 42 réussis, luau-lsp strict sans erreur |
-| 2026-11-06 17:32 | `rojo build -o build\AW-BRAND-01.rbxlx` | place de test reconstruite (code final) |
+| 2026-11-06 17:32 | `rojo build -o build\AW-BRAND-01.rbxlx` | place de test reconstruite (avant l'envoi du logo) |
+| 2026-11-06 | après report de l'identifiant : `lune run tests/lune/run.luau build/AW-BRAND-01.rbxlx` | 1er passage : 498/1 (test Lot 0.8 n° 16, liste des entrées autorisées) ; après ajout de l'exception : 499/0 |
+| 2026-11-06 17:54 | `scripts\verify.ps1 -DownloadRobloxTypes` (3e passage, avec l'identifiant) | tout OK : Lune 499/0, pytest 42 réussis, luau-lsp strict sans erreur, autres étapes OK |
+| 2026-11-06 17:55 | `rojo build -o build\AW-BRAND-01.rbxlx` | place de test reconstruite avec l'identifiant du logo |
 
 Tests BRAND-01 (Lune) : place (LocalScript dans ReplicatedFirst, modules purs, retrait de l'écran par défaut, file de
 ContentProvider, filet de sécurité) ; signaux encore présents dans le code ; poids = 1 et **aucune avance sans signal** ;
@@ -167,7 +182,8 @@ Rien n'a été lancé dans Roblox Studio (le propriétaire teste lui-même) :
 - comportement des signaux en jeu (durée réelle, ordre des étapes, valeur de la file de ContentProvider) dans la zone
   d'essai et dans le monde ouvert (streaming) ;
 - tailles d'écran (téléphone, tablette, ultralarge), manette, tactile, « réduire les animations » ;
-- logo en image (pas encore envoyé sur Roblox) ; icône de l'expérience ;
+- affichage du logo en image (envoyé, identifiant reporté, mais ni modération ni chargement vérifiés) ; icône et nom de
+  l'expérience ;
 - délai maximal et filet de sécurité en conditions réelles (testés seulement en logique pure).
 
 ## 8. Liste de vérification en jeu (propriétaire)
@@ -183,7 +199,8 @@ produite par `verify.ps1`.
 3. Monde ouvert : même chose, chargement plus long ; l'écran se retire au plus tard après 30 s.
 4. Émulateur d'appareils de Studio (téléphone, tablette, 4K) : rien de coupé, textes lisibles, logo centré.
 5. Compte en anglais (ou émulation de langue) : textes en anglais.
-6. Après l'envoi du logo (§3.1) et son report dans le code : le logo « Virage » remplace le titre en texte.
+6. Le logo « Virage » (image) s'affiche à la place du titre en texte, net et centré. S'il manque, la sortie doit
+   montrer le titre en texte sans erreur bloquante (repli) : signaler alors l'état de modération de l'image.
 
 ## 9. Écarts et points à arbitrer
 
@@ -202,8 +219,8 @@ produite par `verify.ps1`.
 
 - **README** : nom du jeu « Amberline » (le nom technique reste « Automotive World ») ; écran de chargement (une
   ligne, renvoi vers ce rapport).
-- **ROADMAP** : lot BRAND-01 (nom, logo, écran de chargement), état « à essayer par le propriétaire » ; envoi du logo
-  en attente.
+- **ROADMAP** : lot BRAND-01 (nom, logo, écran de chargement), état « à essayer par le propriétaire » ; logo envoyé
+  (image 100100722438691).
 - **QA_BACKLOG** : les 6 points du §8, **NON TESTÉ**.
 - **CREDITS_ACTIFS** : aucun actif tiers ; mention possible « logo : mot en Titillium Web (SIL OFL 1.1), converti en
   tracés ».

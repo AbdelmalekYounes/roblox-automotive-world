@@ -22,7 +22,11 @@ Brand.Name = "Amberline"
 
 -- Identifiants d'image RÉELS envoyés par le propriétaire (aucun n'est inventé). Table exacte contrôlée par pytest
 -- (tests/test_brand01.py) et égale à l'entrée `ui.brand.logo` du manifeste (test Lune).
-local BRAND_IMAGE_IDS: { [string]: number } = {}
+local BRAND_IMAGE_IDS: { [string]: number } = {
+    -- Logo « Virage » 1024 × 256, envoyé par le propriétaire le 2026-11-06 (Gestionnaire des contenus de Studio,
+    -- type Image, créateur Akroniik), relevé sur sa capture d'écran.
+    logo = 100100722438691,
+}
 
 -- Proportions du logo exporté (1024 × 256 px) : largeur / hauteur.
 Brand.LogoAspect = 4

@@ -122,6 +122,8 @@ def test_asset_manifest_declares_no_roblox_id():
         "TIRE_SOUND_IDS[name]",
         "COLLISION_SOUND_IDS[name]",
         "PHONE_ICON_IDS[appName]",
+        # Lot BRAND-01 : logo du jeu (valeur égale à Brand.luau, table exacte dans tests/test_brand01.py).
+        "100100722438691",
     ], others
     sounds = re.search(r"local BRIO_ENGINE_SOUND_IDS[^{]*\{(.*?)\n\}", source, re.S)
     assert sounds, "table BRIO_ENGINE_SOUND_IDS absente"
