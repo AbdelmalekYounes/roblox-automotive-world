@@ -101,13 +101,23 @@ export type Summary = {
     Abs: boolean, -- ABS en action (grondement pulsé)
 }
 
--- Réglages de conception (provisoires, à ajuster à l'écoute du propriétaire).
--- Le crissement commence un peu AVANT le pic d'adhérence (pneu « à la limite ») et sature bien au-delà.
-TireAudioModel.SquealOnsetFraction = 0.7 -- fraction du pic où le crissement commence
-TireAudioModel.SquealFullAngleFactor = 2.5 -- dérive (× pic) où le crissement latéral est plein
-TireAudioModel.SquealFullRatioFactor = 4 -- glissement longitudinal (× pic) où le crissement est plein
-TireAudioModel.SlipSpeedGate = 0.4 -- m/s : en dessous, la gomme ne glisse pas assez vite pour crisser
-TireAudioModel.SlipSpeedFull = 2.5 -- m/s : vitesse de glissement donnant le plein crissement
+-- Réglages de conception (à ajuster à l'écoute du propriétaire).
+-- Version 2 (retour du propriétaire en jeu, 2026-11-06 : « le bruit des crissements se fait à peine les roues
+-- tournées, il faut que ça soit le cas uniquement lorsque le véhicule perd l'adhérence ») : le crissement ne commence
+-- plus AVANT le pic d'adhérence (0,7 × pic en version 1) mais nettement AU-DELÀ, quand le pneu glisse vraiment.
+-- Utilisation d'un pneu : glissement combiné rapporté au pic, √((κ/κpic)² + (α/αpic)²) ; 1 = pic d'adhérence.
+TireAudioModel.SquealOnsetUsage = 1.25 -- utilisation où le crissement commence (au-delà du pic)
+TireAudioModel.SquealFullUsage = 4 -- utilisation donnant le plein crissement
+-- Braquage à basse vitesse : au clavier, le braquage est tout ou rien ; l'avant dépasse alors son pic de dérive sans
+-- que la voiture glisse vraiment (banc planaire, Brio, 20 km/h roues braquées à fond : dérive avant 9,7°, pic 7°).
+-- La part latérale est donc ignorée sous 15 km/h et pleine au-dessus de 25 km/h ; le blocage et le patinage restent
+-- audibles à toute vitesse.
+TireAudioModel.LateralMinSpeed = 4.2 -- m/s (15 km/h)
+TireAudioModel.LateralFullSpeed = 7 -- m/s (25 km/h)
+TireAudioModel.SlipSpeedGate = 1 -- m/s : en dessous, la gomme ne glisse pas assez vite pour crisser
+TireAudioModel.SlipSpeedFull = 4 -- m/s : vitesse de glissement donnant le plein crissement
+-- Volume du crissement = intensité ^ 1,5 : un début de glisse reste discret, une vraie glissade est franche.
+TireAudioModel.SquealCurve = 1.5
 TireAudioModel.RollReferenceSpeed = 33 -- m/s (~120 km/h) : roulement plein
 TireAudioModel.RollFadeInSpeed = 1 -- m/s : roulement inaudible en dessous
 TireAudioModel.ReferenceMassKg = 1200
@@ -141,10 +151,6 @@ function TireAudioModel.summarize(
 ): Summary
     local grounded, speedSum, wetSum, squealPower, scrubPower, slipSpeedMax = 0, 0, 0, 0, 0, 0
     local counts: { [string]: number } = { Hard = 0, Loose = 0, Soft = 0, Ice = 0 }
-    local onsetAngle = peakSlipAngleRad * TireAudioModel.SquealOnsetFraction
-    local fullAngle = peakSlipAngleRad * TireAudioModel.SquealFullAngleFactor
-    local onsetRatio = peakSlipRatio * TireAudioModel.SquealOnsetFraction
-    local fullRatio = peakSlipRatio * TireAudioModel.SquealFullRatioFactor
     for _, wheel in wheels do
         if not wheel.Grounded then
             continue
@@ -158,12 +164,16 @@ function TireAudioModel.summarize(
         local slipSpeed = math.sqrt(dx * dx + wheel.ContactVy * wheel.ContactVy)
         slipSpeedMax = math.max(slipSpeedMax, slipSpeed)
         local gate = ramp(slipSpeed, TireAudioModel.SlipSpeedGate, TireAudioModel.SlipSpeedFull)
-        local lateral = ramp(math.abs(wheel.SlipAngle), onsetAngle, fullAngle)
-        local longitudinal = ramp(math.abs(wheel.SlipRatio), onsetRatio, fullRatio)
-        local squeal = math.max(lateral, longitudinal) * gate
+        local lateralWeight =
+            ramp(math.abs(wheel.ContactVx), TireAudioModel.LateralMinSpeed, TireAudioModel.LateralFullSpeed)
+        local lateral = math.abs(wheel.SlipAngle) / peakSlipAngleRad * lateralWeight
+        local longitudinal = math.abs(wheel.SlipRatio) / peakSlipRatio
+        local usage = math.sqrt(lateral * lateral + longitudinal * longitudinal)
+        local level = ramp(usage, TireAudioModel.SquealOnsetUsage, TireAudioModel.SquealFullUsage)
+        local squeal = level * gate
         squealPower += squeal * squeal
-        -- Glissade franche : au-delà de la moitié de la plage de crissement (roue bloquée, large dérapage).
-        local scrub = ramp(math.max(lateral, longitudinal), 0.5, 1) * gate
+        -- Glissade franche : seconde moitié de la plage de crissement (roue bloquée, large dérapage).
+        local scrub = ramp(level, 0.5, 1) * gate
         scrubPower += scrub * scrub
     end
     local surface: Surface = "Hard"
@@ -250,7 +260,7 @@ function TireAudioModel.layers(summary: Summary, massKg: number, quality: string
     local wetRoll = if surface == "Hard" or surface == "Ice" then roll * wet else 0
 
     -- Glissement : crissement sur le dur, glissade de gravier sur le meuble, presque rien sur la glace.
-    local squeal = summary.Squeal * summary.Grounded
+    local squeal = (summary.Squeal ^ TireAudioModel.SquealCurve) * summary.Grounded
     if summary.Abs and time then
         -- ABS : la roue ne bloque pas ; grondement pulsé plutôt qu'un crissement continu.
         squeal *= 0.55 + 0.45 * math.max(0, math.sin(2 * math.pi * TireAudioModel.AbsPulseHz * time))

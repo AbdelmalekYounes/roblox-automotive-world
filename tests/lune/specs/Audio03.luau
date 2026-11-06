@@ -82,13 +82,19 @@ return function(T: any, H: any)
         -- Virage normal (3°, sous le seuil de 0,7 × pic) : muet.
         local gentle = wheel(20, { SlipAngle = math.rad(3), ContactVy = 20 * math.tan(math.rad(3)) })
         T.equal(Model.summarize(four(gentle), PEAK_RATIO, PEAK_ANGLE).Squeal, 0, "virage normal muet")
-        -- Virage à la limite et au-delà : crissement, croissant avec la dérive.
+        -- Version 2 (retour du propriétaire en jeu) : rien au pic d'adhérence ; crissement seulement au-delà, quand le
+        -- pneu glisse vraiment, croissant avec la dérive.
         local function corner(deg: number): number
             local w = wheel(20, { SlipAngle = math.rad(deg), ContactVy = 20 * math.tan(math.rad(deg)) })
             return Model.summarize(four(w), PEAK_RATIO, PEAK_ANGLE).Squeal
         end
-        T.truthy(corner(7) > 0 and corner(12) > corner(7), "crissement croissant avec la dérive")
-        T.equal(corner(25), 1, "dérapage large : plein crissement")
+        T.equal(corner(7), 0, "au pic d'adhérence (7°) : muet")
+        T.equal(corner(8.5), 0, "juste au-delà du pic : encore muet")
+        T.truthy(corner(12) > 0 and corner(20) > corner(12), "glisse : crissement croissant avec la dérive")
+        T.equal(corner(30), 1, "dérapage large : plein crissement")
+        -- Braquage à fond à 20 km/h (au clavier) : avant au-delà de son pic sans vraie glissade → muet.
+        local slowTurn = wheel(5.6, { SlipAngle = math.rad(10), ContactVy = 5.6 * math.tan(math.rad(10)) })
+        T.equal(Model.summarize(four(slowTurn), PEAK_RATIO, PEAK_ANGLE).Squeal, 0, "braquage à basse vitesse muet")
         -- Roues bloquées à 20 m/s : crissement et glissade franche.
         local locked = Model.summarize(four(wheel(20, { SlipRatio = -1, RollingSpeed = 0 })), PEAK_RATIO, PEAK_ANGLE)
         T.equal(locked.Squeal, 1, "blocage : plein crissement")
@@ -304,4 +310,55 @@ return function(T: any, H: any)
         T.truthy(absMean >= Model.AbsSquealFloor * 0.8, "avec ABS : grondement audible (plancher sonore)")
         T.equal(cruiseMean, 0, "roue libre en ligne droite : aucun crissement")
     end)
+
+    T.test(
+        "8. vraie dynamique (banc planaire, Brio) : braquer ne crisse pas, seule la perte d'adhérence crisse",
+        function()
+            local Dynamics = H.require(SHARED .. "Vehicles.Physics.VehicleDynamics")
+            local definition = H.require(SHARED .. "Vehicles.VehicleDefinitions").get("wk_brio")
+            local tires = definition.Tires
+            -- Vitesse tenue, braquage amené en 0,5 s puis tenu 2,5 s ; crissement maximal après 0,1 s.
+            local function corner(kmh: number, steer: number): number
+                local peak = 0
+                PlanarSim.run(Dynamics, definition, {
+                    Dt = 1 / 240,
+                    Duration = 3,
+                    InitialForward = kmh / 3.6,
+                    Input = function(t: number, snapshot: any, state: any)
+                        local samples = {}
+                        for _, w in state.Wheels do
+                            table.insert(samples, {
+                                Grounded = true,
+                                SlipRatio = w.SlipRatio,
+                                SlipAngle = w.SlipAngle,
+                                ContactVx = snapshot.Forward,
+                                ContactVy = snapshot.Lateral,
+                                RollingSpeed = w.AngularVelocity * tires.RadiusM,
+                                Surface = "Hard",
+                                Wetness = 0,
+                            })
+                        end
+                        if t >= 0.1 then
+                            local s = Model.summarize(samples, tires.PeakSlipRatio, math.rad(tires.PeakSlipAngleDeg))
+                            peak = math.max(peak, s.Squeal)
+                        end
+                        return {
+                            Throttle = math.clamp((kmh / 3.6 - snapshot.Forward) * 0.5 + 0.2, 0, 1),
+                            Brake = 0,
+                            Steer = steer * math.clamp(t / 0.5, 0, 1),
+                            Handbrake = false,
+                            Clutch = 0,
+                        }
+                    end,
+                })
+                return peak
+            end
+            for _, case in { { 10, 1 }, { 20, 1 }, { 40, 0.5 }, { 60, 0.25 }, { 60, 0.5 } } do
+                T.equal(corner(case[1], case[2]), 0, string.format("%d km/h, braquage %.2f : muet", case[1], case[2]))
+            end
+            local hard = corner(80, 1)
+            print(string.format("      80 km/h roues braquées à fond : crissement max %.2f", hard))
+            T.truthy(hard > 0.3, "80 km/h roues braquées à fond : l'avant glisse, crissement net")
+        end
+    )
 end

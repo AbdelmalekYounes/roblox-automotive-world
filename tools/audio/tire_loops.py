@@ -354,7 +354,7 @@ def model_layers(summary: dict, mass: float, c: dict[str, float], time: float | 
     dry = roll * (1 - 0.4 * wet) if surface == "Hard" else (roll * 0.4 if surface == "Ice" else 0.0)
     loose = roll if surface == "Loose" else (roll * 0.6 if surface == "Soft" else 0.0)
     wet_roll = roll * wet if surface in ("Hard", "Ice") else 0.0
-    squeal = summary["Squeal"] * summary["Grounded"]
+    squeal = (summary["Squeal"] ** c["SquealCurve"]) * summary["Grounded"]
     if summary.get("Abs") and time is not None:
         squeal *= 0.55 + 0.45 * max(0.0, np.sin(2 * np.pi * c["AbsPulseHz"] * time))
     hard = (1 - (1 - c["WetSquealFactor"]) * wet) if surface == "Hard" else (0.1 if surface == "Ice" else 0.0)

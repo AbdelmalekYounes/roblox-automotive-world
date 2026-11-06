@@ -72,9 +72,9 @@ d'administration (F2) ou par la concession, puis montez à bord. Réglez le volu
 2. **Roulement** :
    - le bruit de roulement apparaît dès quelques km/h ;
    - il monte avec la vitesse, sans coupure ni « tic » répété toutes les 2 s.
-3. **Virage serré** :
-   - vers 50–60 km/h, braquer à fond ;
-   - un crissement apparaît à la limite d'adhérence, et disparaît en ligne droite.
+3. **Virage** (version 2, voir § 6) :
+   - en virage normal, même roues braquées à fond à basse vitesse : **aucun crissement** ;
+   - vers 70–80 km/h, braquer à fond : la voiture glisse, et un crissement apparaît, puis disparaît en ligne droite.
 4. **Freinage fort avec ABS** (ABS actif, touche **1** pour l'activer ou le couper) :
    - vers 80 km/h, freiner à fond (**S**) ;
    - on entend un grondement saccadé, pas un crissement continu.
@@ -101,7 +101,38 @@ d'administration (F2) ou par la concession, puis montez à bord. Réglez le volu
 13. **Comète** : ses pneus s'entendent, un peu plus forts et plus graves (masse 1 450 kg). Son moteur reste muet
     (décision « la Brio d'abord » d'AUDIO-01).
 
-## 6. Écarts et limites
+## 6. Correction après le premier essai en jeu (2026-11-06)
+
+Retour du propriétaire sur la place de test : « le bruit des crissements se fait à peine les roues tournées ; il faut
+que ça soit le cas uniquement lorsque le véhicule perd l'adhérence ».
+
+**Cause, mesurée sur le banc planaire (Brio, vitesse tenue, braquage amené en 0,5 s).** En version 1, le crissement
+commençait à 0,7 fois le pic d'adhérence, donc avant que le pneu glisse. Or, au clavier, le braquage est tout ou rien,
+et l'avant dépasse vite son pic de dérive :
+- à 20 km/h roues braquées à fond : dérive avant de 9,7° (pic 7°) et crissement de 0,12 ;
+- ce niveau est presque aussi fort que le roulement à cette vitesse, donc il s'entend dans chaque virage serré.
+
+**Correction (version 2 du modèle, `TireAudioModel`)** :
+- utilisation du pneu = glissement combiné rapporté au pic ; le crissement commence à **1,25 fois le pic** et il est
+  plein à 4 fois ;
+- part latérale ignorée sous 15 km/h, pleine au-dessus de 25 km/h ; le blocage et le patinage restent audibles à
+  toute vitesse ;
+- vitesse de glissement minimale relevée de 0,4 à 1 m/s ;
+- volume du crissement proportionnel à l'intensité puissance 1,5 : un début de glisse reste discret.
+
+Les sons envoyés sur Roblox ne changent pas.
+
+**Mesure après correction (banc planaire, test Audio03 n° 8) :**
+- aucun crissement à 10 et 20 km/h roues braquées à fond, ni à 40 km/h à mi-braquage, ni à 60 km/h jusqu'à
+  mi-braquage ;
+- roues braquées à fond à 80 km/h, l'avant glisse : crissement de 0,45 ;
+- freinage roues bloquées et ABS inchangés (test n° 7).
+
+`verify.ps1 -DownloadRobloxTypes` (2026-11-06) : toutes les étapes OK, Lune 439 sur 439. La place
+`build/AW-AUDIO-03.rbxlx` a été reconstruite. Le point 3 de la liste du § 5 est à revérifier en jeu : en virage
+normal, aucun crissement ; il n'apparaît qu'en glissade (braquage brutal à vitesse élevée, frein à main, blocage).
+
+## 7. Écarts et limites
 
 - **Glissade sur gravier** : aucune vraie glissade sur gravier n'a été trouvée dans les enregistrements lisibles. Le
   n° 10 (FLAC) ne peut pas être décodé sans dépendance hors numpy. Le son vient d'un passage plus dense du gravier.
