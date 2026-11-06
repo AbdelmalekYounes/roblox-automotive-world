@@ -300,6 +300,9 @@ export type WheelContact = {
     -- Humidité de chaussée due à la météo (0 = sèche, 1 = détrempée). Combinée
     -- à `Wet` par maximum : la réduction d'adhérence n'est appliquée qu'une fois.
     Wetness: number?,
+    -- Nom du matériau Roblox sous la roue (lot AUDIO-03) : sert seulement à choisir le son du roulement
+    -- (TireAudioModel.surfaceOf) ; l'adhérence reste portée par SurfaceFriction. nil hors contact.
+    Material: string?,
 }
 
 -- Mouvement du châssis vu par la dynamique (repère véhicule).

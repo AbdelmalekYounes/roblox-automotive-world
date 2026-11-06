@@ -415,6 +415,9 @@ local function releaseDriver(record: VehicleRecord)
     -- Plus de conducteur : plus de son de moteur publié (le véhicule garé est silencieux chez les autres).
     record.Model:SetAttribute(Constants.Attributes.AudioRpm, nil)
     record.Model:SetAttribute(Constants.Attributes.AudioLoad, nil)
+    -- Lot AUDIO-03 : plus de glissement publié (le roulement reste déduit de la vitesse).
+    record.Model:SetAttribute(Constants.Attributes.AudioTireSlip, nil)
+    record.Model:SetAttribute(Constants.Attributes.AudioTireSurface, nil)
     record.Prompt.Enabled = true
     setOwner(record, nil)
 end
@@ -980,7 +983,7 @@ local function onInput(player: Player, payload: any)
     if record == nil then
         return
     end
-    local input, energy, rpm = InputCodec.decode(payload)
+    local input, energy, rpm, tireSlip, tireSurface = InputCodec.decode(payload)
     if input == nil then
         return
     end
@@ -1014,6 +1017,23 @@ local function onInput(player: Player, payload: any)
     local load = math.round(input.Throttle * 10) / 10
     if load ~= record.Model:GetAttribute(Constants.Attributes.AudioLoad) then
         record.Model:SetAttribute(Constants.Attributes.AudioLoad, load)
+    end
+    -- Sons des pneus chez les autres joueurs (lot AUDIO-03) : glissement déclaré, borné à 0–1 par pas de 0,1, et
+    -- famille de revêtement. Contrôle de contexte : un véhicule à l'arrêt (vitesse vue par le serveur) sans
+    -- accélérateur ne peut pas crisser (pas de patinage sans couple, pas de glissade sans vitesse). Purement sonore.
+    if tireSlip then
+        local root = record.Model.PrimaryPart
+        local speedMs = if root then root.AssemblyLinearVelocity.Magnitude * Constants.MetersPerStud else 0
+        local slip = math.round(tireSlip * 10) / 10
+        if speedMs < 1 and input.Throttle < 0.1 then
+            slip = 0
+        end
+        if slip ~= record.Model:GetAttribute(Constants.Attributes.AudioTireSlip) then
+            record.Model:SetAttribute(Constants.Attributes.AudioTireSlip, slip)
+        end
+    end
+    if tireSurface and tireSurface ~= record.Model:GetAttribute(Constants.Attributes.AudioTireSurface) then
+        record.Model:SetAttribute(Constants.Attributes.AudioTireSurface, tireSurface)
     end
 end
 

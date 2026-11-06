@@ -52,6 +52,8 @@ for _, spec in
         require("./specs/Brio02"),
         -- Lot CAMERA-01 : caméra libre en conduite.
         require("./specs/Camera01FreeLook"),
+        -- Lot AUDIO-03 : sons des pneus.
+        require("./specs/Audio03"),
         -- Proposition patinage (2026-11-06) : avis (E) et antipatinage actif au départ (B, amendement A-02).
         require("./specs/Patinage"),
     }
