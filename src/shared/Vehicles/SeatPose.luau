@@ -96,7 +96,15 @@ SeatPose.Poses = table.freeze({
 } :: { [string]: Pose })
 
 -- Articulations des bras : jamais modifiées quand le téléphone est sorti (bras levé, QA-A10).
-SeatPose.ArmJoints = table.freeze({ LeftShoulder = true, RightShoulder = true, LeftElbow = true, RightElbow = true })
+-- Poignets ajoutés au lot ANIM-01 (mains orientées sur le volant) : même règle.
+SeatPose.ArmJoints = table.freeze({
+    LeftShoulder = true,
+    RightShoulder = true,
+    LeftElbow = true,
+    RightElbow = true,
+    LeftWrist = true,
+    RightWrist = true,
+})
 
 -- Pose demandée par la valeur de l'attribut d'un siège (nil : pose standard du moteur).
 function SeatPose.poseFor(value: any): Pose?

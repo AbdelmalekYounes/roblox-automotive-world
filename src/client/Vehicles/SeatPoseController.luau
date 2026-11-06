@@ -14,7 +14,8 @@
     (`SteeringWheelVisuals`), puis, pour le CONDUCTEUR d'un véhicule dont le volant est connu
     (`MeshKitData.SteeringWheel`), les épaules et les coudes sont calculés par cinématique
     inverse (`Shared.Vehicles.ArmIk`) pour poser les mains sur la jante à 9 h 15, qui suivent sa
-    rotation jusqu'à ±100° puis glissent. Ces rotations remplacent l'animation des bras (fondu
+    rotation jusqu'à ±100° puis glissent ; chaque main est orientée sur la jante par le poignet
+    (paume vers le moyeu, pouce le long de la jante). Ces rotations remplacent l'animation des bras (fondu
     `SeatPose.BlendS`). Passager, sièges sans volant connu : pose statique inchangée. Téléphone
     sorti : bras rendus à l'animation (règle QA-A10 ; le lot PHONE-01 gère le bras du téléphone).
     Vue cockpit du joueur local : avant-bras et mains gardés visibles (décision du propriétaire).
@@ -50,6 +51,9 @@ local JOINT_PARTS: { [string]: string } = {
     RightKnee = "RightLowerLeg",
     LeftHip = "LeftUpperLeg",
     RightHip = "RightUpperLeg",
+    -- Lot ANIM-01 : poignets, orientés seulement par les mains sur le volant (aucune pose statique).
+    LeftWrist = "LeftHand",
+    RightWrist = "RightHand",
 }
 
 -- Lot ANIM-01 : pièces gardées visibles en vue cockpit (décision du propriétaire : avant-bras et mains ; les bras
@@ -121,8 +125,7 @@ local function armChain(character: Model, side: string): ArmIk.Chain?
     if s0 == nil or s1 == nil or e0 == nil or e1 == nil or w0 == nil or w1 == nil then
         return nil
     end
-    local gripAttachment = (hand :: Instance):FindFirstChild(side .. "GripAttachment")
-    local grip = if gripAttachment and gripAttachment:IsA("Attachment") then gripAttachment.Position else Vector3.zero
+    -- Point visé : le pivot du poignet (la main est ensuite orientée sur la jante par le poignet).
     return {
         ShoulderC0 = s0,
         ShoulderC1 = s1,
@@ -130,7 +133,7 @@ local function armChain(character: Model, side: string): ArmIk.Chain?
         ElbowC1 = e1,
         WristC0 = w0,
         WristC1 = w1,
-        Grip = grip,
+        Grip = w1.Position,
     }
 end
 
@@ -163,19 +166,21 @@ local function handsOnWheel(character: Model, seat: BasePart, pose: SeatPose.Pos
     if model == nil or spec == nil or root == nil or torso == nil or not torso:IsA("BasePart") then
         return nil
     end
-    local left, right = SteeringWheel.grips(spec, SteeringWheelVisuals.angleFor(model))
+    local angle = SteeringWheelVisuals.angleFor(model)
     local result: { [string]: CFrame } = {}
     for _, side in { "Left", "Right" } do
         local chain = armChain(character, side)
         if chain == nil then
             return nil
         end
-        local world = root.CFrame * (if side == "Left" then left else right)
-        local target = torso.CFrame:PointToObjectSpace(world)
-        local out = if side == "Left" then -POLE_OUT else POLE_OUT
-        local shoulder, elbow = ArmIk.solve(chain, target, Vector3.new(out, POLE_DOWN, POLE_BACK))
+        -- Main voulue sur la jante (dans le buste), poignet visé, puis main orientée par le poignet.
+        local sign = if side == "Left" then -1 else 1
+        local hand = torso.CFrame:ToObjectSpace(root.CFrame * SteeringWheel.handFrame(spec, angle, sign))
+        local target = hand * chain.WristC1.Position
+        local shoulder, elbow = ArmIk.solve(chain, target, Vector3.new(sign * POLE_OUT, POLE_DOWN, POLE_BACK))
         result[side .. "Shoulder"] = shoulder
         result[side .. "Elbow"] = elbow
+        result[side .. "Wrist"] = ArmIk.wrist(chain, shoulder, elbow, hand)
     end
     return result
 end

@@ -28,6 +28,12 @@ export type Spec = {
     Ratio: number, -- rapport de direction : degrés de volant par degré de roue
 }
 
+-- Main posée sur la jante (retour du propriétaire du 2026-11-06 : mains dans l'axe de l'avant-bras, doigts tendus à
+-- côté de la jante, « les mains n'attrapent pas le volant ») : centre de la main décalé vers l'extérieur de la jante
+-- (demi-épaisseur de la main et boudin, en studs) ; doigts vers l'avant et vers le moyeu, autour de la jante.
+SteeringWheel.GripOut = 0.12
+SteeringWheel.FingerInward = 0.5
+
 -- Nom du Motor6D du volant (enfant de la pièce du volant), posé par le serveur, animé par chaque client.
 SteeringWheel.JointName = "AWVolant"
 
@@ -79,6 +85,28 @@ function SteeringWheel.grips(spec: Spec, angle: number): (Vector3, Vector3)
     side = side.Unit * spec.GripRadius
     local turn = SteeringWheel.rotation(spec, SteeringWheel.handAngle(angle))
     return spec.Hub - turn:VectorToWorldSpace(side), spec.Hub + turn:VectorToWorldSpace(side)
+end
+
+--[[
+    Repère voulu de la main (`side` : −1 gauche, +1 droite) dans le châssis, pour un angle de volant. Convention des
+    mains R15 au repos : axe Y de la main vers le poignet, pouce vers −Z, paume vers l'intérieur (−X pour la main
+    droite, +X pour la gauche). Main posée :
+    - pouce le long de la jante, vers le haut à 9 h 15 (la jante traverse le poing) ;
+    - paume tournée vers le moyeu ; doigts vers l'avant (−axe) et vers le moyeu, autour de la jante ;
+    - centre de la main à `GripOut` à l'extérieur de la jante.
+    Le repère tourne avec les prises (suivi jusqu'à ±HandFollowLimit, puis glissement).
+]]
+function SteeringWheel.handFrame(spec: Spec, angle: number, side: number): CFrame
+    local axis = spec.Axis.Unit
+    local right = Vector3.new(1, 0, 0)
+    local horizontal = (right - axis * right:Dot(axis)).Unit
+    local turn = SteeringWheel.rotation(spec, SteeringWheel.handAngle(angle))
+    local radial = turn:VectorToWorldSpace(horizontal * (if side < 0 then -1 else 1))
+    local thumb = if side < 0 then radial:Cross(axis) else axis:Cross(radial)
+    local y = (axis + radial * SteeringWheel.FingerInward).Unit
+    local z = -thumb.Unit
+    local x = y:Cross(z)
+    return CFrame.fromMatrix(spec.Hub + radial * (spec.GripRadius + SteeringWheel.GripOut), x, y, z)
 end
 
 return table.freeze(SteeringWheel)

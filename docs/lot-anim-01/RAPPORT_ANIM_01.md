@@ -204,7 +204,8 @@ Le test 5 utilise une chaîne R15 de synthèse : les repères réels des avatars
 - **Vitesse de rotation en manœuvre.** La crémaillère du jeu atteint la butée en 0,32 s (110°/s pour 35°). Avec le
   rapport réaliste, le volant de la Brio peut tourner à environ 1 500°/s à l'arrêt, au clavier : il peut paraître
   « flou ». Un plafond de vitesse du volant seul serait un nouveau réglage, à décider.
-- Poignets non orientés : main dans l'axe de l'avant-bras. Elle peut traverser légèrement la jante, selon l'avatar.
+- Mains R15 d'un seul bloc : les doigts ne se referment pas. La main est orientée sur la jante (§6 bis), mais sur
+  certains avatars elle peut la traverser légèrement ou rester un peu à côté (`GripOut` = 0,12 st, réglable).
 - Vue cockpit : seules les 4 pièces (avant-bras et mains) sont gardées. Les accessoires portés aux poignets (montres,
   manches en accessoire) restent masqués. Le comportement réel du contrôleur de transparence du `PlayerModule`
   n'est pas vérifié.
@@ -216,6 +217,46 @@ Le test 5 utilise une chaîne R15 de synthèse : les repères réels des avatars
   touche pas quand le téléphone est sorti ; PHONE-01 doit poser la sienne à ce moment-là s'il le souhaite.
 
 À reporter par la coordination dans `docs/QA_BACKLOG.md` : la liste du §7, NON TESTÉ en jeu.
+
+## 6 bis. Premier essai du propriétaire (2026-11-06) et correction
+
+Retour du propriétaire, avec une capture en vue cockpit de la Brio :
+- « comete le volant bouge pas » ;
+- « brio le volant et les mains bougent mais les mains n'attrapent pas le volant quand on tourne ».
+
+Constats :
+- **Comète** : le volant ne tourne pas, comme attendu. La pièce `COMETE_Volant` n'est pas encore dans le gabarit ;
+  l'import par le propriétaire est en attente (§2.4).
+- **Brio**, d'après la capture (braquage à droite, au-delà de 100°) :
+  - la main gauche est montée vers 12 h et la droite descendue vers 6 h : cela correspond au calcul (prises tournées
+    de 100°, puis glissement) ;
+  - mais le poignet n'était pas orienté : la main restait dans l'axe de l'avant-bras, doigts tendus au-dessus de la
+    jante ;
+  - le point visé (centre de la paume) était sur l'axe du boudin. La main passait donc à côté de la jante, au lieu de
+    l'entourer.
+
+Correction (commit suivant `692cb2f`) :
+- **Main orientée sur la jante** (`SteeringWheel.handFrame`) :
+  - pouce le long de la jante, vers le haut à 9 h 15 ;
+  - paume tournée vers le moyeu ;
+  - doigts vers l'avant et vers le moyeu, autour de la jante ;
+  - centre de la main à 0,12 st à l'extérieur du boudin (`GripOut`).
+
+  Le repère tourne avec la prise : suivi jusqu'à ±100°, puis glissement, comme décidé.
+- **Visée au poignet** : l'IK amène le pivot du poignet à sa place, puis le poignet tourne la main dans l'orientation
+  voulue. Cette rotation est bornée à 80° (`ArmIk.wrist`). Viser le poignet raccourcit aussi l'allonge demandée
+  d'environ une longueur de main, ce qui aide pour la Comète (§6).
+- Les poignets rejoignent `SeatPose.ArmJoints` : ils ne sont jamais touchés quand le téléphone est sorti (QA-A10).
+- La convention des mains R15 au repos est prise comme suit : pouce vers l'avant, paume vers le corps, axe Y vers le
+  poignet. **Elle n'est pas vérifiée en jeu** : si les paumes apparaissent tournées vers l'extérieur ou les pouces
+  vers le bas, c'est cette convention qu'il faut inverser.
+- Tests ajoutés :
+  - Lune 9 : orientation de la main, suivi et glissement ;
+  - Lune 10 : main remise exactement à l'orientation voulue, et poignet borné.
+- `verify.ps1 -DownloadRobloxTypes` (terminé à 02:16) : tout OK. Lune **441 réussis, 0 échoué**, pytest 23, luau-lsp
+  0 erreur. La place `build\AW-ANIM-01.rbxlx` est reconstruite.
+
+**Toujours non vérifié en jeu.** La liste du §7 reste à refaire, en particulier les points 2, 5, 8 et 18.
 
 ## 7. Liste de vérification en jeu (propriétaire)
 
@@ -231,7 +272,8 @@ Rthro si possible.
 4. Sur route (80 à 140 km/h), petits braquages : le volant tourne peu (±1/3 de tour au maximum), mains toujours sur la
    jante.
 5. Coudes vers le bas et l'extérieur, aucun bras à travers le corps, le siège ou la planche de bord. Mains au contact de
-   la jante, ni dans le vide ni enfoncées.
+   la jante, ni dans le vide ni enfoncées. Paume tournée vers le moyeu, pouce le long de la jante, doigts autour de la
+   jante (§6 bis), y compris en braquant.
 6. Le volant tourne autour de sa colonne, sans se décaler ni « voler ». La vitesse de rotation en manœuvre est-elle
    acceptable (§6) ?
 

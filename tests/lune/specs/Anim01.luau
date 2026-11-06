@@ -244,6 +244,73 @@ return function(T: any, H: any)
         for _ in SeatPose.ArmJoints do
             count += 1
         end
-        T.equal(count, 4, "4 articulations des bras")
+        T.equal(count, 6, "épaules, coudes et poignets")
+        T.truthy(SeatPose.ArmJoints.LeftWrist and SeatPose.ArmJoints.RightWrist, "poignets libres téléphone sorti")
+    end)
+
+    -- Retour du propriétaire (2026-11-06, capture Brio) : mains dans l'axe de l'avant-bras, doigts tendus à côté de la
+    -- jante. Les mains sont désormais orientées sur la jante par le poignet.
+    T.test("9. main posée : pouce le long de la jante, paume vers le moyeu, doigts vers l'avant", function()
+        for _, spec in { BRIO, COMETE } do
+            local vertical = Vector3.new(0, 1, 0)
+            local up = (vertical - spec.Axis * vertical:Dot(spec.Axis)).Unit
+            for _, side in { -1, 1 } do
+                local frame = SteeringWheel.handFrame(spec, 0, side)
+                local toHub = (spec.Hub - frame.Position).Unit
+                local thumb = -frame.ZVector
+                local palm = if side < 0 then frame.XVector else -frame.XVector
+                local fingers = -frame.YVector
+                T.truthy(thumb:Dot(up) > 0.99, "pouce vers le haut à 9 h 15")
+                T.truthy(palm:Dot(toHub) > 0.85, "paume vers le moyeu")
+                T.truthy(fingers:Dot(spec.Axis) < -0.8, "doigts vers l'avant")
+                T.truthy(fingers:Dot(toHub) > 0.3, "doigts autour de la jante (vers le moyeu)")
+                local offset = frame.Position - spec.Hub
+                T.near(
+                    offset.Magnitude,
+                    spec.GripRadius + SteeringWheel.GripOut,
+                    EPS,
+                    "juste à l'extérieur de la jante"
+                )
+                T.near(offset:Dot(spec.Axis), 0, EPS, "dans le plan de la jante")
+                -- La main tourne avec la jante (suivi), puis s'arrête à 100° (glissement).
+                local turned = SteeringWheel.handFrame(spec, math.rad(40), side)
+                local expected = SteeringWheel.rotation(spec, math.rad(40)) * CFrame.new(-spec.Hub) * frame
+                T.near((turned.Position - (expected.Position + spec.Hub)).Magnitude, 0, EPS, "suit la rotation")
+                T.truthy(turned.ZVector:Dot(expected.ZVector) > 1 - EPS, "orientation suivie")
+                local a, b = SteeringWheel.handFrame(spec, math.rad(100), side), SteeringWheel.handFrame(spec, 4, side)
+                T.near((a.Position - b.Position).Magnitude, 0, EPS, "glissement au-delà de 100°")
+            end
+        end
+    end)
+
+    T.test("10. poignet : la main prend l'orientation voulue ; rotation bornée à 80°", function()
+        local c = chain(1)
+        c.Grip = c.WristC1.Position -- point visé : pivot du poignet
+        local pole = Vector3.new(0.6, -1, 0.2)
+        local pivot = c.ShoulderC0.Position
+        local _, maxReach = ArmIk.reach(c)
+        for _, bend in { 20, 45, 70 } do
+            -- Main voulue : repère de l'avant-bras d'une première solution, tourné de `bend` degrés au poignet.
+            local s0, e0 = ArmIk.solve(c, pivot + Vector3.new(-0.2, -0.4, -1).Unit * maxReach * 0.8, pole)
+            local wanted = ArmIk.lowerArm(c, s0, e0)
+                * c.WristC0
+                * CFrame.fromAxisAngle(Vector3.new(0.3, 0, 1).Unit, math.rad(bend))
+                * c.WristC1:Inverse()
+            local target = wanted * c.WristC1.Position
+            local s, e, reached = ArmIk.solve(c, target, pole)
+            T.truthy(reached, "poignet à portée")
+            local w = ArmIk.wrist(c, s, e, wanted)
+            local got = ArmIk.hand(c, s, e, w)
+            T.near((got.Position - wanted.Position).Magnitude, 0, 1e-3, "main à sa place")
+            T.truthy(got.YVector:Dot(wanted.YVector) > 0.999 and got.ZVector:Dot(wanted.ZVector) > 0.999, "orientée")
+        end
+        -- Demande excessive : poignet borné.
+        local s, e = ArmIk.solve(c, pivot + Vector3.new(0, -0.3, -1).Unit * maxReach * 0.8, pole)
+        local excessive = ArmIk.lowerArm(c, s, e)
+            * c.WristC0
+            * CFrame.fromAxisAngle(Vector3.new(1, 0, 0), math.rad(130))
+            * c.WristC1:Inverse()
+        local _, angle = ArmIk.wrist(c, s, e, excessive):ToAxisAngle()
+        T.near(math.abs(angle), ArmIk.MaxWrist, 1e-4, "poignet borné à 80°")
     end)
 end

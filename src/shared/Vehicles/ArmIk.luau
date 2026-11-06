@@ -33,6 +33,8 @@ ArmIk.MaxElbow = math.rad(150)
 -- direction de la cible, par la translation de `Transform` de l'épaule. Ordre de grandeur d'un conducteur qui tend les
 -- bras ; au-delà, le bras reste tendu vers la cible (`reached` faux).
 ArmIk.MaxShoulderShift = 0.3
+-- Poignet : rotation bornée à 80° (lot ANIM-01, main orientée sur la jante).
+ArmIk.MaxWrist = math.rad(80)
 local EPSILON = 1e-4
 
 -- Rotation minimale qui porte le vecteur unitaire `from` sur le vecteur unitaire `to`.
@@ -147,6 +149,31 @@ function ArmIk.solve(chain: Chain, target: Vector3, pole: Vector3, maxShift: num
         twist = CFrame.fromAxisAngle(direction, angle)
     end
     return CFrame.new(offset) * twist * swing, elbow, reached
+end
+
+-- Repère de l'avant-bras dans le buste pour des rotations d'épaule et de coude données.
+function ArmIk.lowerArm(chain: Chain, shoulder: CFrame, elbow: CFrame): CFrame
+    return chain.ShoulderC0 * shoulder * chain.ShoulderC1:Inverse() * chain.ElbowC0 * elbow * chain.ElbowC1:Inverse()
+end
+
+-- Repère de la main dans le buste pour des rotations d'épaule, de coude et de poignet données.
+function ArmIk.hand(chain: Chain, shoulder: CFrame, elbow: CFrame, wrist: CFrame): CFrame
+    return ArmIk.lowerArm(chain, shoulder, elbow) * chain.WristC0 * wrist * chain.WristC1:Inverse()
+end
+
+--[[
+    Rotation du poignet (à écrire dans `Transform`) qui donne à la main l'orientation de `hand` (repère voulu dans le
+    buste), bornée à MaxWrist. Le pivot du poignet ne bouge pas : viser d'abord le poignet (`solve` avec
+    `Grip = WristC1.Position`), au point `hand * WristC1.Position`, pour que la main tombe sur `hand`.
+]]
+function ArmIk.wrist(chain: Chain, shoulder: CFrame, elbow: CFrame, hand: CFrame): CFrame
+    local parent = ArmIk.lowerArm(chain, shoulder, elbow) * chain.WristC0
+    local rotation = (parent:Inverse() * hand * chain.WristC1).Rotation
+    local axis, angle = rotation:ToAxisAngle()
+    if math.abs(angle) > ArmIk.MaxWrist then
+        return CFrame.fromAxisAngle(axis, math.sign(angle) * ArmIk.MaxWrist)
+    end
+    return rotation
 end
 
 return table.freeze(ArmIk)
