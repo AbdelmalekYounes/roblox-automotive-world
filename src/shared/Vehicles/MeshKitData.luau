@@ -170,6 +170,13 @@ local COMETE: Kit = {
         Hinge = Vector3.new(-2.85, 1.38, -3.80),
         Axis = -Vector3.new(1.6, 1.12, 1.40),
         OpenAngle = 75,
+        -- Lot ANIM-03 : la Comète n'a pas de poignée visible ; la main prend la porte à l'arrière, au-dessus de la
+        -- prise d'air (peau du flanc, relevé ANIM-02) ; poignée intérieure sur le panneau. La porte monte : presque
+        -- aucun recul. Pavillon bas (2,70 st au-dessus du centre de gravité) et seuil large : buste très penché.
+        Handle = Vector3.new(-3.25, 1.05, -0.45),
+        InnerHandle = Vector3.new(-2.45, 1.05, -1.3),
+        StepBack = 0.1,
+        Duck = 40,
     }),
     -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT hors vitrage, wk_comete_720s.blend).
     DamageMarks = {
@@ -298,6 +305,14 @@ local BRIO: Kit = {
         Hinge = Vector3.new(-2.80, 0.30, -1.88),
         Axis = Vector3.new(0, -1, 0),
         OpenAngle = 65,
+        -- Lot ANIM-03 : poignée extérieure mesurée (partie détachée de `BRIO_Caisse_Peinture` centrée en
+        -- (−2,764 ; 1,032 ; 2,086), relevé ANIM-02), un peu en dehors de la peau ; poignée intérieure sur le panneau
+        -- (accoudoir, x −2,37). Porte qui s'ouvre vers le personnage : recul de 0,35 st. Pavillon de citadine : buste
+        -- penché de 28°.
+        Handle = Vector3.new(-2.80, 1.03, 2.09),
+        InnerHandle = Vector3.new(-2.35, 0.95, 0.3),
+        StepBack = 0.35,
+        Duck = 28,
     }),
     -- Matériaux de `milano95_prepare.py` : AW_Phare, AW_VerreOptique, AW_Feu, AW_VerreFeu, AW_Clignotant, AW_Recul.
     Colors = {

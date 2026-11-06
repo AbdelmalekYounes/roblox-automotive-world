@@ -101,12 +101,12 @@ return function(T: any, H: any)
 
     T.test("3. état répliqué : fraction, inversion en cours de course, codage texte (temps du serveur)", function()
         local t0 = 1762400000.25
-        local opening = Doors.transition(nil, t0, 1, Doors.OpenS)
+        local opening = Doors.transition(nil, t0, 1, 0.35)
         T.near(Doors.fraction(opening, t0), 0, 1e-5, "part fermée")
-        T.near(Doors.fraction(opening, t0 + Doors.OpenS / 2), 0.5, 1e-5)
+        T.near(Doors.fraction(opening, t0 + 0.35 / 2), 0.5, 1e-5)
         T.near(Doors.fraction(opening, t0 + 10), 1, 1e-5, "reste ouverte")
         -- Refermée à mi-course : repart de 0,5, en la moitié de la durée de fermeture.
-        local closing = Doors.transition(opening, t0 + Doors.OpenS / 2, 0, Doors.CloseS)
+        local closing = Doors.transition(opening, t0 + 0.35 / 2, 0, Doors.CloseS)
         T.near(closing.From, 0.5, 1e-5)
         T.near(closing.Duration, Doors.CloseS / 2, 1e-5)
         T.near(Doors.fraction(closing, closing.T + closing.Duration), 0, 1e-5)
@@ -123,79 +123,52 @@ return function(T: any, H: any)
         T.near(Doors.eased(2), 1, 1e-5)
     end)
 
-    T.test("4. glissé : codage, poids d'entrée et de sortie, décalage du corps, garde-fou", function()
-        local t0 = 1762400000
-        local glide = { Kind = "In", Role = "Passenger", T = t0, Point = Vector3.new(4.5, 1.2, 0.75) }
-        local back = Doors.decodeGlide(Doors.encodeGlide(glide))
-        T.truthy(back ~= nil and back.Kind == "In" and back.Role == "Passenger", "décodage")
-        T.near((back.Point - glide.Point).Magnitude, 0, 1e-3)
-        T.equal(Doors.decodeGlide("Jump;Driver;1;2;3;4"), nil, "genre inconnu refusé")
-        T.equal(Doors.decodeGlide("In;Pilote;1;2;3;4"), nil, "rôle inconnu refusé")
-        T.near(Doors.glideWeight(glide, t0), 1, 1e-5, "entrée : corps à la porte au départ")
-        T.near(Doors.glideWeight(glide, t0 + Doors.GlideInS), 0, 1e-5, "puis au siège")
-        local out = { Kind = "Out", Role = "Driver", T = t0, Point = Vector3.new(-5, 1, 0.75) }
-        T.near(Doors.glideWeight(out, t0), 0, 1e-5, "sortie : corps au siège au départ")
-        T.near(Doors.glideWeight(out, t0 + Doors.GlideOutS), 1, 1e-5, "puis au point de dépôt")
-        T.near(Doors.glideWeight(out, t0 + 5), 1, 1e-5, "maintenu jusqu'à la libération")
-        local chassis = CFrame.new(10, 2, 3)
-        local seated = chassis:PointToWorldSpace(Vector3.new(-1.2, 0.5, 0.75))
-        local offset = Doors.glideOffset(out, t0 + Doors.GlideOutS, chassis, seated)
-        T.near((seated + offset - chassis:PointToWorldSpace(out.Point)).Magnitude, 0, 1e-4, "corps au point")
-        T.equal(Doors.glideOffset(glide, t0 + 1, chassis, seated), nil, "glissé fini : aucun décalage")
-        local far = { Kind = "In", Role = "Driver", T = t0, Point = Vector3.new(-40, 0, 0) }
-        T.equal(Doors.glideOffset(far, t0, chassis, seated), nil, "point aberrant : aucun glissé")
-    end)
-
-    T.test("5. calendrier (≈ 1 s / 0,8 s), interruption, porte de sortie, point d'arrivée", function()
-        T.near(Doors.OpenS + Doors.GlideInS, 0.85, 1e-5, "entrée sans marche : assis puis glissé en 0,85 s")
-        local quick = Doors.entryPlan(0.1)
-        T.near(quick.SitAt, Doors.OpenS, 1e-5, "assis quand la porte est ouverte")
-        T.near(quick.CloseAt, Doors.OpenS + Doors.GlideInS, 1e-5, "fermeture à la fin du glissé")
-        T.near(Doors.entryPlan(0.8).SitAt, 0.8, 1e-5, "après la marche")
-        T.near(Doors.entryPlan(9).SitAt, Doors.WalkMaxS, 1e-5, "marche bornée à 1 s")
-        local exit = Doors.exitPlan()
-        T.near(exit.ReleaseAt, 0.8, 1e-5, "sortie : libéré à 0,8 s")
-        T.near(exit.DoneAt, 0.8 + Doors.CloseS, 1e-5)
-        T.truthy(not Doors.shouldInterrupt(0.5, 3, 3), "à l'arrêt, sans choc")
-        T.truthy(Doors.shouldInterrupt(Doors.InterruptSpeed + 0.1, 3, 3), "véhicule qui part")
-        T.truthy(Doors.shouldInterrupt(0, 3, 4), "nouveau choc")
-        T.truthy(not Doors.shouldInterrupt(0, nil, 4), "compteur absent au départ : pas de faux choc")
+    -- Lot ANIM-03 : le glissé et le calendrier d'ANIM-02 sont remplacés par `BoardingMotion` (tests Anim03).
+    T.test("5. porte de sortie : côté du point de dépôt ; au-dessus, sans animation", function()
         local half = KITS.Brio.SideHalf
         T.equal(Doors.roleForExit(Vector3.new(-(half + 3), 1.5, 0), half), "Driver")
         T.equal(Doors.roleForExit(Vector3.new(half + 3, 1.5, 0), half), "Passenger", "autre porte si côté bloqué")
         T.equal(Doors.roleForExit(Vector3.new(0, 8, 0), half), nil, "au-dessus : sans animation")
-        local stand = Doors.standPoint(-1, half, KITS.Brio.SeatDriver)
-        T.near(stand.X, -(half + Doors.StandOut), 1e-5, "à l'extérieur de la caisse")
-        T.near(stand.Z, KITS.Brio.SeatDriver.Z, 1e-5, "au droit du siège")
     end)
 
-    T.test("6. câblage : charnières serveur, séquences, rotation et glissé clients, saut du passager", function()
-        local meshKits = source("ServerScriptService.AutomotiveWorldServer.Vehicles.MeshKits")
-        T.truthy(has(meshKits, "Doors.jointFrame(spec)") and has(meshKits, "Doors.JointName"), "Motor6D de charnière")
-        T.truthy(has(meshKits, "weld(hinge, item)"), "pièces soudées à la charnière")
-        T.truthy(has(meshKits, "complete = false"), "porte articulée seulement si toutes ses pièces sont là")
-        local service = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleService")
-        T.truthy(has(service, 'boardOrSit(record, "Driver"'), "conducteur : séquence")
-        T.truthy(has(service, 'boardOrSit(record, "Passenger"'), "passager : séquence")
-        T.truthy(has(service, 'alightOrRelease(record, "Driver"'), "sortie conducteur")
-        T.truthy(has(service, 'alightOrRelease(record, "Passenger"'), "sortie passager")
-        T.truthy(has(service, "DoorService.reserved(record.Model"), "place réservée pendant la marche")
-        T.truthy(has(service, "DoorService.start(remotesFolder)"), "demande de sortie des passagers")
-        local doorService = source("ServerScriptService.AutomotiveWorldServer.Vehicles.DoorService")
-        T.truthy(has(doorService, "args.Valid()"), "règles revalidées pendant la marche")
-        T.truthy(has(doorService, "interrupted(root, model, impactsAtStart)"), "interruption")
-        T.truthy(has(doorService, "args.MayRelease()"), "sortie interrompue : libérée ou annulée selon la vitesse")
-        local damage = source("ServerScriptService.AutomotiveWorldServer.Vehicles.DamageService")
-        T.truthy(not has(damage, "Doors"), "DamageService non modifié")
-        local client = "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles."
-        local visuals = source(client .. "DoorVisuals")
-        T.truthy(has(visuals, "Workspace:GetServerTimeNow()"), "temps du serveur : même image pour tous")
-        T.truthy(has(visuals, "Enum.KeyCode.Space") and has(visuals, "Enum.ContextActionResult.Sink"), "saut capté")
-        T.truthy(has(visuals, "humanoid:MoveTo(approach)"), "marche jusqu'à la porte")
-        local pose = source(client .. "SeatPoseController")
-        T.truthy(has(pose, "DoorVisuals.update(dt)"), "portes à chaque pas")
-        T.truthy(has(pose, 'name == "Root" and glide'), "glissé par l'articulation Root")
-    end)
+    T.test(
+        "6. câblage : charnières serveur, séquences, rotation des portes et gestes clients, saut du passager",
+        function()
+            local meshKits = source("ServerScriptService.AutomotiveWorldServer.Vehicles.MeshKits")
+            T.truthy(
+                has(meshKits, "Doors.jointFrame(spec)") and has(meshKits, "Doors.JointName"),
+                "Motor6D de charnière"
+            )
+            T.truthy(has(meshKits, "weld(hinge, item)"), "pièces soudées à la charnière")
+            T.truthy(has(meshKits, "complete = false"), "porte articulée seulement si toutes ses pièces sont là")
+            local service = source("ServerScriptService.AutomotiveWorldServer.Vehicles.VehicleService")
+            T.truthy(has(service, 'boardOrSit(record, "Driver"'), "conducteur : séquence")
+            T.truthy(has(service, 'boardOrSit(record, "Passenger"'), "passager : séquence")
+            T.truthy(has(service, 'alightOrRelease(record, "Driver"'), "sortie conducteur")
+            T.truthy(has(service, 'alightOrRelease(record, "Passenger"'), "sortie passager")
+            T.truthy(has(service, "DoorService.reserved(record.Model"), "place réservée pendant la marche")
+            T.truthy(has(service, "DoorService.start(remotesFolder)"), "demande de sortie des passagers")
+            local doorService = source("ServerScriptService.AutomotiveWorldServer.Vehicles.DoorService")
+            T.truthy(has(doorService, "args.Valid()"), "règles revalidées pendant la marche")
+            T.truthy(
+                has(doorService, "alive(model, character, humanoid)"),
+                "interruption : véhicule détruit, joueur parti"
+            )
+            local damage = source("ServerScriptService.AutomotiveWorldServer.Vehicles.DamageService")
+            T.truthy(not has(damage, "Doors"), "DamageService non modifié")
+            local client = "StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.Vehicles."
+            local visuals = source(client .. "DoorVisuals")
+            T.truthy(has(visuals, "Workspace:GetServerTimeNow()"), "temps du serveur : même image pour tous")
+            T.truthy(
+                has(visuals, "Enum.KeyCode.Space") and has(visuals, "Enum.ContextActionResult.Sink"),
+                "saut capté"
+            )
+            T.truthy(has(visuals, "humanoid:MoveTo(approach)"), "marche jusqu'à la porte")
+            local pose = source(client .. "SeatPoseController")
+            T.truthy(has(pose, "DoorVisuals.update(dt)"), "portes à chaque pas")
+            T.truthy(has(pose, "BoardingAnimator.compute(character, seat"), "gestes d'entrée et de sortie (ANIM-03)")
+        end
+    )
 
     -- Pièces des portes dans les gabarits (importées et envoyées par le propriétaire le 2026-11-06) : présentes, centrées comme dans
     -- l'export réduit du dépôt d'art, une seule fois.

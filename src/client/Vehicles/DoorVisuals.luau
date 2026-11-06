@@ -1,22 +1,23 @@
 --!strict
 --[[
-    Portières et glissé d'entrée / de sortie (lot ANIM-02), côté client. Purement visuel : `Motor6D.Transform` n'est pas
-    répliqué et les portes n'ont ni masse ni collision.
+    Portières et gestes du joueur local pendant l'entrée et la sortie (lots ANIM-02 et ANIM-03), côté client. Purement
+    visuel : `Motor6D.Transform` n'est pas répliqué et les portes n'ont ni masse ni collision.
 
-    Pour TOUS les véhicules visibles par ce client : angle de chaque porte articulée déduit de l'état répliqué par le
-    serveur (attribut texte du modèle, temps du serveur), adouci (`Shared.Vehicles.Doors`). Tous les joueurs voient donc
-    la même porte au même moment, sans réplication par image.
-
-    Glissé des personnages : `SeatPoseController` demande à chaque pas le décalage du corps d'un personnage assis
-    (`glideOffset`) et l'applique à son articulation `Root` (le HumanoidRootPart reste soudé au siège).
+    Pour TOUS les véhicules visibles par ce client : angle de chaque porte articulée. Pendant une séquence d'entrée ou de
+    sortie (attribut `AWEmbarquement` d'un personnage assis dans ce véhicule), l'angle vient de la séquence elle-même
+    (`Shared.Vehicles.BoardingMotion`, même horloge que la main sur la poignée : la porte suit la main) ; sinon, de
+    l'état répliqué par le serveur (attribut texte du modèle, temps du serveur). Tout le monde voit la même porte.
 
     Joueur local :
     - marche jusqu'à la porte quand le serveur la demande (attribut `ApproachAttribute` de son personnage) ;
     - passager d'un véhicule à portières : la touche de saut (Espace, bouton A) est interceptée et devient une demande de
-      sortie au serveur, qui joue la séquence (le saut du moteur libérait le siège sur-le-champ, sans porte) ; le bouton
-      de saut tactile n'est pas intercepté (sortie immédiate, porte entrouverte par le serveur) ;
-    - fin de sortie : dès que le siège est libéré, le personnage est posé au point de dépôt (celui où son corps a
-      glissé), sans attendre le placement du serveur, qui vérifie ensuite le même point.
+      sortie au serveur, qui joue la séquence ; elle est aussi interceptée pendant toute séquence du joueur (aucun saut
+      au milieu d'un geste). Le bouton de saut tactile n'est pas intercepté (sortie immédiate, porte entrouverte) ;
+    - téléphone rangé au début d'une séquence (lot PHONE-01, par `UIManager`) ;
+    - caméra à la 3e personne (décision du propriétaire) : pendant la séquence, la caméra par défaut suit la TÊTE (le
+      corps visible), pas le HumanoidRootPart resté soudé au siège ;
+    - fin de sortie : dès que le siège est libéré, le personnage est posé au point de dépôt (là où son corps est
+      arrivé), sans attendre le placement du serveur, qui vérifie ensuite le même point.
 
     Appelé par `SeatPoseController` au début de chaque pas (PreSimulation).
 ]]
@@ -31,12 +32,14 @@ local VehiclesShared = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ve
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData"))
 local Doors = require(VehiclesShared:WaitForChild("Doors"))
+local BoardingMotion = require(VehiclesShared:WaitForChild("BoardingMotion"))
+local UIManager = require(script.Parent.Parent.UI.UIManager)
 
 local DoorVisuals = {}
 
 local EXIT_ACTION = "AWPortiereSortie"
--- Fin de sortie : poids du glissé à partir duquel le corps est considéré au point de dépôt.
-local OUT_DONE_WEIGHT = 0.95
+-- Fin de sortie : le corps est au point de dépôt dans les derniers instants de la séquence.
+local OUT_DONE_MARGIN_S = 0.3
 
 -- Raw/State : dernier état lu (texte) et son décodage, relu seulement quand le texte change.
 type DoorCache = { Spec: Doors.Spec, Joint: Motor6D?, Raw: string?, State: Doors.State? }
@@ -46,7 +49,9 @@ local caches: { [Model]: { [string]: DoorCache } } = setmetatable({}, { __mode =
 
 local exitBound = false
 local lastSeat: BasePart? = nil
+local lastSequence: BoardingMotion.Sequence? = nil
 local approachTarget: Vector3? = nil
+local subjectHeld = false
 
 local function serverNow(): number
     return Workspace:GetServerTimeNow()
@@ -97,7 +102,28 @@ local function findJoint(model: Model, role: Doors.Role, cache: DoorCache): Moto
     return cache.Joint
 end
 
+-- Séquences en cours, par véhicule et par porte (personnages assis dans ce véhicule).
+local function sequencesByDoor(): { [Model]: { [string]: BoardingMotion.Sequence } }
+    local result: { [Model]: { [string]: BoardingMotion.Sequence } } = {}
+    for _, player in Players:GetPlayers() do
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local seat = humanoid and humanoid.SeatPart
+        local sequence = if character
+            then BoardingMotion.decode(character:GetAttribute(BoardingMotion.Attribute))
+            else nil
+        local model = if seat and sequence then vehicleOf(seat) else nil
+        if model and sequence then
+            local byDoor = result[model] or {}
+            byDoor[sequence.Door] = sequence
+            result[model] = byDoor
+        end
+    end
+    return result
+end
+
 local function updateDoors(now: number)
+    local active = sequencesByDoor()
     for _, instance in CollectionService:GetTagged(Constants.VehicleTag) do
         if not instance:IsA("Model") then
             continue
@@ -121,25 +147,15 @@ local function updateDoors(now: number)
                 cache.Raw = text
                 cache.State = Doors.decode(text)
             end
+            local byDoor = active[model]
+            local sequence = byDoor and byDoor[role]
+            local fraction = if sequence
+                then BoardingMotion.doorFraction(sequence.Kind, now - sequence.T)
+                else Doors.fraction(cache.State, now)
             -- Réécrit à chaque pas, comme les roues et les volants.
-            joint.Transform = Doors.jointTransform(Doors.angle(cache.Spec, Doors.fraction(cache.State, now)))
+            joint.Transform = Doors.jointTransform(Doors.angle(cache.Spec, fraction))
         end
     end
-end
-
--- Décalage (monde) du corps d'un personnage assis sur `seat`, ou nil : glissé d'entrée ou de sortie en cours.
-function DoorVisuals.glideOffset(character: Model, seat: BasePart): Vector3?
-    local glide = Doors.decodeGlide(character:GetAttribute(Doors.GlideAttribute))
-    if glide == nil then
-        return nil
-    end
-    local model = vehicleOf(seat)
-    local root = model and model.PrimaryPart
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if root == nil or hrp == nil or not hrp:IsA("BasePart") then
-        return nil
-    end
-    return Doors.glideOffset(glide, serverNow(), root.CFrame, hrp.Position)
 end
 
 local function exitRemote(): RemoteEvent?
@@ -188,15 +204,38 @@ local function hasAnyDoor(model: Model): boolean
     return false
 end
 
+-- Caméra par défaut sur la tête (corps visible) pendant une séquence ; rendue au personnage ensuite.
+local function holdSubject(character: Model, humanoid: Humanoid, wanted: boolean)
+    local camera = Workspace.CurrentCamera
+    if camera == nil then
+        return
+    end
+    if wanted then
+        local head = character:FindFirstChild("Head")
+        if head and head:IsA("BasePart") and camera.CameraType == Enum.CameraType.Custom then
+            camera.CameraSubject = head
+            subjectHeld = true
+        end
+    elseif subjectHeld then
+        subjectHeld = false
+        if camera.CameraType == Enum.CameraType.Custom then
+            camera.CameraSubject = humanoid
+        end
+    end
+end
+
 local function updateLocal()
     local character = Players.LocalPlayer.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     if character == nil or humanoid == nil then
         setExitBinding(false)
         lastSeat = nil
+        lastSequence = nil
         approachTarget = nil
+        subjectHeld = false
         return
     end
+    local now = serverNow()
     -- Marche jusqu'à la porte demandée par le serveur (une fois par demande).
     local approach = character:GetAttribute(Doors.ApproachAttribute)
     if typeof(approach) == "Vector3" then
@@ -207,25 +246,29 @@ local function updateLocal()
     else
         approachTarget = nil
     end
+    local sequence = BoardingMotion.decode(character:GetAttribute(BoardingMotion.Attribute))
+    -- Nouvelle séquence : téléphone rangé (lot PHONE-01).
+    if sequence and (lastSequence == nil or lastSequence.T ~= sequence.T) and UIManager.isOpen("Phone") then
+        UIManager.close("Phone")
+    end
     local seat = humanoid.SeatPart
-    -- Siège libéré pendant un glissé de sortie : posé au point de dépôt (pas de retour d'une image dans le siège).
-    if seat == nil and lastSeat ~= nil then
-        local glide = Doors.decodeGlide(character:GetAttribute(Doors.GlideAttribute))
+    -- Siège libéré à la fin d'une sortie : posé au point de dépôt (pas de retour d'une image dans le siège).
+    local ending = sequence or lastSequence
+    if seat == nil and lastSeat ~= nil and ending and ending.Kind == "Out" then
         local model = vehicleOf(lastSeat)
         local root = model and model.PrimaryPart
-        if glide and glide.Kind == "Out" and root and Doors.glideWeight(glide, serverNow()) >= OUT_DONE_WEIGHT then
-            local point = root.CFrame:PointToWorldSpace(glide.Point)
-            local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
-            if look.Magnitude < 0.1 then
-                look = Vector3.new(0, 0, -1)
-            end
-            character:PivotTo(CFrame.lookAt(point, point + look.Unit))
+        if root and now >= ending.T + BoardingMotion.Exit.Total - OUT_DONE_MARGIN_S then
+            character:PivotTo(root.CFrame * CFrame.new(ending.Point) * CFrame.Angles(0, ending.Yaw, 0))
         end
     end
+    holdSubject(character, humanoid, sequence ~= nil and seat ~= nil and BoardingMotion.cameraHeld(sequence, now))
     lastSeat = seat
-    -- Passager d'un véhicule à portières : la touche de saut devient une demande de sortie.
+    lastSequence = sequence
+    -- Passager d'un véhicule à portières, ou séquence en cours : la touche de saut devient une demande de sortie (le
+    -- serveur l'ignore pendant une séquence).
     local model = if seat then vehicleOf(seat) else nil
-    setExitBinding(seat ~= nil and seat.Name == "PassengerSeat" and model ~= nil and hasAnyDoor(model))
+    local passenger = seat ~= nil and seat.Name == "PassengerSeat" and model ~= nil and hasAnyDoor(model)
+    setExitBinding(passenger or (sequence ~= nil and seat ~= nil))
 end
 
 function DoorVisuals.update(_dt: number)
