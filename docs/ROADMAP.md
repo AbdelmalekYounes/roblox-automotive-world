@@ -374,5 +374,15 @@ Les trois lots ont été **validés en jeu par le propriétaire le 2026-11-06**,
 L'essai combiné des trois lots (téléphone en main au volant avec les portières et les sons) reste à faire après la
 fusion.
 
-Lot suivant en cours : MAP-01, ville de Valcourt (quartier pilote).
+## Lots AUDIO-02 et ANIM-03 (vague 4, en parallèle)
+
+Les deux lots ont été **validés en jeu par le propriétaire le 2026-11-06**, chacun sur sa place de test :
+- **AUDIO-02**, moteur de la Comète : pack « V8 Lotus » de wikusv (CC BY 4.0, crédit en jeu) et compléments CC0
+  (démarreur, turbo, pétarades), 20 sons envoyés par le propriétaire ; Comète en boîte à double embrayage (décision Q4)
+  ([rapport](lot-audio-02/RAPPORT_AUDIO_02.md)) ;
+- **ANIM-03**, gestes d'entrée et de sortie : déplacement continu, main à la poignée, porte synchronisée, côté
+  conducteur et passager, départ bloqué pendant la séquence du passager ([rapport](lot-anim-03/RAPPORT_ANIM_03.md)).
+
+Lots en cours : MAP-01, ville de Valcourt (quartier pilote) ; COMMANDES-01, commandes du véhicule (moteur, feux,
+clignotants, warning). PNJ-01 en pause jusqu'à la fin de MAP-01.
 
