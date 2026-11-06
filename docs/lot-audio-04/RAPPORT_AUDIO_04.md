@@ -50,9 +50,15 @@ Place de test : `build/AW-AUDIO-04.rbxlx`, construite par `rojo build default.pr
 au commit a40e365. Elle contient aussi les sons de pneus (AUDIO-03) et l'antipatinage actif au départ (A-02), déjà
 dans `main`.
 
-## 4. Non vérifié
+## 4. Validation en jeu et points non vérifiés
 
-- **Tout le rendu en jeu** : l'assistant n'a lancé aucun essai Studio. La vérification revient au propriétaire (§ 5).
+**Validation en jeu par le propriétaire (2026-11-06).** Il a joué `build/AW-AUDIO-04.rbxlx` (commit a40e365) dans
+Studio et a répondu **« Tout est bon »**. C'est un essai humain du propriétaire ; l'assistant n'a exécuté aucun essai
+Studio. La réponse porte sur l'ensemble de la liste du § 5, sans détail point par point.
+
+Non vérifié :
+- **Points du § 5 dépendant de la carte ou de la configuration** : l'objet léger (selon les objets présents) et
+  l'essai à deux joueurs. Ils ne sont pas détaillés dans la réponse.
 - **Coût des recherches de contact** : une requête toutes les 0,05 s pour le véhicule conduit, toutes les 0,1 s pour
   au plus 6 véhicules observés.
 - **Charge réseau de la diffusion** : un message par choc et par optique cassée, sur un canal non fiable.
