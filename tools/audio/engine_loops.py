@@ -130,7 +130,12 @@ PROFILES = {"brio": BRIO}
 # ============================== Lecture, écriture ==============================
 
 
-def read_wav(path: Path) -> tuple[int, np.ndarray]:
+def read_wav(path: Path, channel: int | None = None) -> tuple[int, np.ndarray]:
+    """WAV mono ou multicanal (PCM 16, 24 ou 32 bits, ou flottant 32/64 bits). `channel` : canal gardé (lot AUDIO-02 :
+    le pack « V8 Lotus » porte un micro par canal) ; None = moyenne des canaux."""
+    if channel is not None or _wave_format(path) != 1:
+        # Lecteur RIFF de tools/audio/tire_loops.py (flottant, WAVE_FORMAT_EXTENSIBLE), puis choix du canal.
+        return _read_riff(path, channel)
     with wave.open(str(path), "rb") as w:
         sr, ch, width, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
         raw = w.readframes(n)
@@ -143,6 +148,51 @@ def read_wav(path: Path) -> tuple[int, np.ndarray]:
     else:
         raise ValueError(f"{path.name} : {8 * width} bits non pris en charge")
     return sr, x.reshape(-1, ch).mean(axis=1)
+
+
+def _wave_format(path: Path) -> int:
+    """Code de format du bloc « fmt » (1 = PCM entier, 3 = flottant, 0xFFFE = étendu)."""
+    data = path.read_bytes()[:64]
+    i = data.find(b"fmt ")
+    return int.from_bytes(data[i + 8 : i + 10], "little") if i >= 0 else 1
+
+
+def _read_riff(path: Path, channel: int | None) -> tuple[int, np.ndarray]:
+    import struct
+
+    data = path.read_bytes()
+    fmt, samples, pos = None, None, 12
+    while pos + 8 <= len(data):
+        tag, size = data[pos : pos + 4], struct.unpack("<I", data[pos + 4 : pos + 8])[0]
+        body = data[pos + 8 : pos + 8 + size]
+        if tag == b"fmt ":
+            code, channels, rate = struct.unpack("<HHI", body[:8])
+            bits = struct.unpack("<H", body[14:16])[0]
+            if code == 0xFFFE and len(body) >= 26:
+                code = struct.unpack("<H", body[24:26])[0]
+            fmt = (code, channels, rate, bits)
+        elif tag == b"data":
+            samples = body
+        pos += 8 + size + (size & 1)
+    if fmt is None or samples is None:
+        raise ValueError(f"{path.name} : bloc fmt ou data absent")
+    code, channels, rate, bits = fmt
+    width = bits // 8
+    raw = samples[: len(samples) - len(samples) % (width * channels)]
+    if code == 3:
+        x = np.frombuffer(raw, dtype="<f4" if bits == 32 else "<f8").astype(np.float64)
+    elif bits == 16:
+        x = np.frombuffer(raw, dtype="<i2") / 32768.0
+    elif bits == 24:
+        b = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3).astype(np.int64)
+        v = b[:, 0] | (b[:, 1] << 8) | (b[:, 2] << 16)
+        x = np.where(v & 0x800000, v - 0x1000000, v) / 8388608.0
+    elif bits == 32:
+        x = np.frombuffer(raw, dtype="<i4") / 2147483648.0
+    else:
+        raise ValueError(f"{path.name} : format {code}, {bits} bits non pris en charge")
+    frames = x.reshape(-1, channels)
+    return rate, (frames.mean(axis=1) if channel is None else frames[:, min(channel, channels - 1)])
 
 
 def write_wav(path: Path, signal: np.ndarray, rate: int = OUT_RATE) -> None:
@@ -158,23 +208,28 @@ def write_wav(path: Path, signal: np.ndarray, rate: int = OUT_RATE) -> None:
 # ============================== Mesure du régime ==============================
 
 
-def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None) -> float:
-    """Régime (tr/min) d'un extrait : raie la plus forte entre 25 et 260 Hz (ou à ±12 % du régime attendu), × 30."""
+def line_rpm(segment: np.ndarray, sr: int, expected: float | None = None, divisor: float = 30.0) -> float:
+    """Régime (tr/min) d'un extrait : raie d'allumage la plus forte (régime / `divisor` Hz : 30 pour un 4 cylindres,
+    15 pour un V8, lot AUDIO-02), cherchée sur la plage de 750 à 7 800 tr/min ou à ±12 % du régime attendu."""
     n = len(segment)
     nfft = 1 << int(np.ceil(np.log2(max(n, 2) * 8)))
     mag = np.abs(np.fft.rfft(segment * np.hanning(n), nfft))
     freqs = np.fft.rfftfreq(nfft, 1 / sr)
-    lo, hi = (25.0, 260.0) if expected is None else (expected / 30 * 0.88, expected / 30 * 1.12)
+    lo, hi = (
+        (750.0 / divisor, 7800.0 / divisor)
+        if expected is None
+        else (expected / divisor * 0.88, expected / divisor * 1.12)
+    )
     band = np.where((freqs > lo) & (freqs < hi))[0]
     i = band[np.argmax(mag[band])]
     if 0 < i < len(mag) - 1:
         a, b, c = np.log(mag[i - 1] + 1e-12), np.log(mag[i] + 1e-12), np.log(mag[i + 1] + 1e-12)
         i = i + 0.5 * (a - c) / (a - 2 * b + c + 1e-12)
-    return float(i * sr / nfft * 30)
+    return float(i * sr / nfft * divisor)
 
 
 def sweep_fit(
-    signal: np.ndarray, sr: int, span: tuple[float, float], approx: tuple[float, float]
+    signal: np.ndarray, sr: int, span: tuple[float, float], approx: tuple[float, float], divisor: float = 30.0
 ) -> tuple[float, float]:
     """Régime linéaire r(t) = a + b·t (t depuis le début de l'extrait) : mesures par trames de 0,08 s cherchées à
     ±12 % du régime approché, valeurs à plus de 8 % d'une première droite écartées."""
@@ -185,7 +240,7 @@ def sweep_fit(
         t = (start + win / 2) / sr - t0
         guess = approx[0] + (approx[1] - approx[0]) * (t / (t1 - t0))
         times.append(t)
-        rpms.append(line_rpm(signal[start : start + win], sr, guess))
+        rpms.append(line_rpm(signal[start : start + win], sr, guess, divisor))
     tt, r = np.array(times), np.array(rpms)
     b, a = np.polyfit(tt, r, 1)
     keep = np.abs(r - (a + b * tt)) / (a + b * tt) < 0.08
@@ -464,15 +519,17 @@ def render_demo(profile: dict, loops: dict, rate: int = OUT_RATE, trajectory=Non
 
 def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path, trace: Path | None = None) -> dict:
     report: dict = {"variante": name, "description": variant["label"], "sources": {}, "boucles": {}, "evenements": {}}
+    # Raie d'allumage : régime / 30 pour un 4 cylindres (Brio), régime / 15 pour un V8 (Comète, lot AUDIO-02).
+    divisor = float(profile.get("divisor", 30.0))
     signals: dict = {}
     for key, spec in variant["sources"].items():
-        sr, x = read_wav(refs / spec["file"])
+        sr, x = read_wav(refs / spec["file"], spec.get("channel"))
         x = highpass(x, sr)
         signals[key] = (sr, x)
         entry = {"fichier": spec["file"], "duree_s": round(len(x) / sr, 3)}
         if "rpm" in spec:
             a, b = spec.get("span", (0.25 * len(x) / sr, 0.75 * len(x) / sr))
-            spec["measured"] = line_rpm(x[int(a * sr) : int(b * sr)], sr, spec["rpm"])
+            spec["measured"] = line_rpm(x[int(a * sr) : int(b * sr)], sr, spec["rpm"], divisor)
             entry["regime_mesure"] = round(spec["measured"])
         report["sources"][key] = entry
 
@@ -482,7 +539,7 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
         sr, x = signals[loop_spec["source"]]
         if "anchors" in src:
             t0, t1, r0, r1 = window_for(src["anchors"], ref)
-            a, b = sweep_fit(x, sr, (t0, t1), (r0, r1))
+            a, b = sweep_fit(x, sr, (t0, t1), (r0, r1), divisor)
             seg = x[int(t0 * sr) : int(t1 * sr)]
             rpm_t = a + b * (np.arange(len(seg)) / sr)
             how = f"balayage {t0:.2f}–{t1:.2f} s ({a:.0f} → {a + b * (t1 - t0):.0f} tr/min), déplié et allongé par grains"
@@ -504,7 +561,7 @@ def build_variant(profile: dict, name: str, variant: dict, refs: Path, out: Path
             "fichier": file,
             "methode": how,
             "duree_s": round(len(loop) / OUT_RATE, 3),
-            "regime_verifie": round(line_rpm(loop, OUT_RATE, ref)),
+            "regime_verifie": round(line_rpm(loop, OUT_RATE, ref, divisor)),
             "rms_dbfs": round(db(loop), 1),
         }
 
