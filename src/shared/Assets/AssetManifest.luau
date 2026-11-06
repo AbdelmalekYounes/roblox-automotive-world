@@ -369,6 +369,36 @@ recordedTire("squeal", "crissement de glissement")
 recordedTire("scrub", "frottement de glissade franche")
 recordedTire("slide.loose", "glissade sur gravier")
 
+-- ======================== Audio enregistré (lot AUDIO-04 : collisions) ========================
+-- Chocs, bris d'optique et raclement (CollisionAudioModel), tirés d'enregistrements libres de Freesound (CC0) relevés
+-- au registre docs/audio/SONS_TIERS.md (§ collisions) et transformés par tools/audio/collision_sounds.py. Catégorie
+-- « Effets » (préfixe audio.effect.). Aucun identifiant Roblox tant que le propriétaire ne les a pas envoyés.
+local COLLISION_SOUNDS = "tools/audio/collision_sounds.py"
+local function recordedCollision(name: string, note: string)
+    add({
+        Id = "audio.effect.collision." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "Provisional",
+        Variants = { Low = "Identique", Medium = "Identique", High = "Identique" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = "Tiers : enregistrements CC0 de Freesound, transformés ("
+            .. note
+            .. ") ; docs/audio/SONS_TIERS.md",
+        Licence = "CC0 1.0 (domaine public) — aucun crédit exigé",
+        Source = { Kind = "File", Path = COLLISION_SOUNDS },
+        Output = "build/audio/collisions/" .. name .. ".wav",
+        RobloxAssetId = nil,
+    })
+end
+recordedCollision("hard.light", "petit choc contre le décor")
+recordedCollision("hard.heavy", "choc violent contre le décor")
+recordedCollision("object", "choc contre un objet léger")
+recordedCollision("vehicle.light", "petit choc entre véhicules")
+recordedCollision("vehicle.heavy", "choc violent entre véhicules")
+recordedCollision("glass", "bris d'optique")
+recordedCollision("scrape", "raclement de carrosserie, boucle")
+
 local LAYERS = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" }
 for _, layer in { "idle", "low", "mid", "high" } do
     sound("engine.petrol." .. layer, "engine_petrol_" .. layer .. ".wav", "moteur essence, couche " .. layer, LAYERS)

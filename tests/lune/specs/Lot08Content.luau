@@ -427,6 +427,8 @@ return function(T: any, H: any)
                 asset.Category == "Audio"
                 and string.sub(asset.Output or "", 1, 20) ~= "build/audio/engines/"
                 and string.sub(asset.Output or "", 1, 18) ~= "build/audio/tires/"
+                -- Bruits de collision du lot AUDIO-04 (build/audio/collisions/…) : contrôlés par la suite Audio04.
+                and string.sub(asset.Output or "", 1, 23) ~= "build/audio/collisions/"
             then
                 audio += 1
                 T.truthy(

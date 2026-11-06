@@ -126,6 +126,7 @@ type Remotes = {
     Input: UnreliableRemoteEvent,
     Notice: RemoteEvent,
     Impulse: RemoteEvent,
+    ImpactSound: UnreliableRemoteEvent,
 }
 
 local VehicleService = {}
@@ -971,8 +972,12 @@ local function createRemotes(): Remotes
     local impulse = Instance.new("RemoteEvent")
     impulse.Name = Constants.Remotes.Impulse
     impulse.Parent = folder
+    -- Lot AUDIO-04 : bruits de collision diffusés par le serveur (aucun écouteur côté serveur).
+    local impactSound = Instance.new("UnreliableRemoteEvent")
+    impactSound.Name = Constants.Remotes.ImpactSound
+    impactSound.Parent = folder
     folder.Parent = ReplicatedStorage
-    return { Action = action, Input = input, Notice = notice, Impulse = impulse }
+    return { Action = action, Input = input, Notice = notice, Impulse = impulse, ImpactSound = impactSound }
 end
 
 local function onInput(player: Player, payload: any)
@@ -1186,6 +1191,11 @@ function VehicleService.start(zone: SpawnSet)
     remotes = createdRemotes
     createdRemotes.Input.OnServerEvent:Connect(onInput)
     createdRemotes.Action.OnServerEvent:Connect(onAction)
+    -- Lot AUDIO-04 : chocs et bris d'optique observés par le serveur, diffusés à tous les joueurs pour le son (chaque
+    -- client filtre par distance). Intensité arrondie au dixième de m/s.
+    DamageService.setSoundSink(function(model: Model, kind: string, intensity: number, position: Vector3)
+        createdRemotes.ImpactSound:FireAllClients(model, kind, math.round(intensity * 10) / 10, position)
+    end)
 
     local folder = Instance.new("Folder")
     folder.Name = "VehiculesEssai"

@@ -77,7 +77,29 @@ Les quatre questions ont été posées en une fois ; le propriétaire a retenu c
 | Q3 | Chocs des autres joueurs | **diffusés par le serveur** dès la détection ; raclement détecté localement |
 | Q4 | Réglage de volume | **« Effets »**, étouffé en vue cockpit |
 
-## 5. Hors périmètre
+## 5. Avancement (2026-11-06)
+
+Travail fait pendant le téléchargement : il ne dépend pas des enregistrements. Contrôle par
+`scriptserify.ps1 -DownloadRobloxTypes` le 2026-11-06 : toutes les étapes OK, Lune 460 sur 460 (dont 7 tests
+`Audio04`), pytest 33 sur 33 (dont 4 tests `test_audio04.py`).
+
+| Travail | Fichiers | Détail |
+|---|---|---|
+| Modèle pur | `Shared/Audio/CollisionAudioModel` | Familles d'obstacles, Δv en excès sur les pneus, sept sons (choc léger et lourd contre le décor, objet, choc léger et lourd entre véhicules, verre, raclement), volume et hauteur |
+| Diffusion serveur | `DamageService`, `VehicleService`, `VehicleConstants` | Canal `VehicleImpactSound` (UnreliableRemoteEvent, serveur → clients ; le serveur n'y écoute rien). Le choc est émis dès l'**ouverture** du suivi, avec l'intensité observée par le serveur ; le bris d'optique est émis une fois, au passage à « cassée ». La détection des dégâts est inchangée |
+| Client | `AudioController` | Véhicule conduit : choc détecté localement à chaque image (vitesse simulée, obstacle au contact), raclement toutes les 0,05 s. Véhicules observés : chocs diffusés par le serveur, raclement local pour les plus proches. Arguments reçus vérifiés ; le choc du conducteur n'est pas rejoué ; un choc entre deux véhicules n'est entendu qu'une fois |
+| Manifeste | `AssetManifest` (section AUDIO-04) | Sept ressources `audio.effect.collision.*`, CC0, sans identifiant ; exception de comptage dans `Lot08Content` |
+| Outil | `tools/audio/collision_sounds.py` | Sons ponctuels pris à l'attaque, filtrés, fondus, crête normalisée ; boucle de raclement par grains ; démo (chocs de 2 à 14 m/s par famille, verre, raclement) |
+
+Non vérifié :
+- tout le rendu en jeu ;
+- le coût des recherches de contact (une requête toutes les 0,05 s pour le véhicule conduit, toutes les 0,1 s pour
+  au plus 6 véhicules observés) ;
+- la charge réseau de la diffusion (un message par choc confirmé à l'ouverture et par optique cassée).
+
+En attente : le téléchargement des enregistrements du § 3 par le propriétaire.
+
+## 6. Hors périmètre
 
 - Changement de la détection des dégâts ou de leurs seuils : seule une diffusion sonore est ajoutée au serveur.
 - Sons de klaxon, de portes, d'alarme.
