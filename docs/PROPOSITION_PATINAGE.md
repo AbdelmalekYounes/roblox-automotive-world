@@ -134,3 +134,16 @@ pneus d'AUDIO-03.
    pas pendant cette session de conduite.
 4. Sortir puis remonter : l'antipatinage est de nouveau **activé**.
 5. **Brio** : antipatinage activé au départ. En virage serré à fond, la roue intérieure patine peu.
+
+### Validation en jeu (2026-11-06)
+
+Le propriétaire a d'abord essayé `build/AW-PATINAGE.rbxlx` et a signalé : « quand je dérape j'ai pas le bruit ». La cause
+est que cette place, construite depuis cette branche, ne contient pas les sons de pneus d'AUDIO-03. Une place commune
+a donc été construite :
+- branche locale d'essai `test/audio03-patinage`, commit b5a791c, qui fusionne AUDIO-03 et cette branche ;
+- `verify.ps1 -DownloadRobloxTypes` : toutes les étapes OK, Lune 443 sur 443 ;
+- place `build/AW-AUDIO-03-PATINAGE.rbxlx`.
+
+Réponse du propriétaire sur cette place : **« Oui, c'est bon »**. C'est un essai humain du propriétaire ;
+l'assistant n'a exécuté aucun essai Studio. La validation porte sur l'ensemble (antipatinage au départ, avis, sons en
+glissade), sans détail point par point de la liste ci-dessus.
