@@ -56,6 +56,20 @@ Attributions.List = table.freeze({
         ShowTitle = false,
         ShowUrl = false,
     } :: Attribution),
+    -- Lot PNJ-01 : voitures PNJ (licence.txt du pack, 2026-11-06).
+    table.freeze({
+        ManifestId = "world.pnj.cars",
+        UsageKey = "credits.usage.pnj_cars",
+        ChangesKey = "credits.changes.pnj_cars",
+        Creator = "Comrade1280",
+        Source = "Sketchfab",
+        Licence = "CC BY 4.0",
+        LicenceUrl = "creativecommons.org/licenses/by/4.0",
+        Title = "Generic passenger car pack",
+        Url = "https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5",
+        ShowTitle = false,
+        ShowUrl = false,
+    } :: Attribution),
 } :: { Attribution })
 
 -- Attribution d'une entrée du manifeste, ou nil.

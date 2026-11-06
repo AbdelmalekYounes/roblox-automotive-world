@@ -73,6 +73,46 @@ return function(T: any, H: any)
         T.equal(PnjKits.partStyle("Peinture_Caisse"), nil, "peinture tirée à part")
     end)
 
+    T.test("gabarit des voitures importé : 10 modèles complets, maillages au manifeste, cotes conformes", function()
+        local AssetManifest = H.require(SHARED .. "Assets.AssetManifest")
+        local folder = game.ReplicatedStorage:FindFirstChild(PnjKits.FolderName)
+        T.truthy(folder ~= nil, "ReplicatedStorage." .. PnjKits.FolderName)
+        local entry = AssetManifest.get(PnjKits.CarManifestId)
+        local allowed: { [number]: boolean } = {}
+        for _, id in entry.RobloxAssetIds do
+            allowed[id] = true
+        end
+        local found = 0
+        for _, car in PnjKits.Cars do
+            local model = folder:FindFirstChild(car.Template)
+            T.truthy(model ~= nil, car.Template)
+            local names: { [string]: boolean } = {}
+            for _, part in model:GetChildren() do
+                T.equal(part.ClassName, "MeshPart", part.Name)
+                names[part.Name] = true
+                local id = tonumber(string.match(tostring(part.MeshContent), "rbxassetid://(%d+)"))
+                T.truthy(id ~= nil and allowed[id], car.Id .. "." .. part.Name .. " au manifeste")
+                found += 1
+            end
+            T.equal(#PnjKits.missingCarParts(names), 0, car.Id .. " : 4 roues")
+            -- Cotes : empattement et voie mesurés entre les roues importées (studs → m).
+            local function center(name: string): any
+                return (model:FindFirstChild(name) :: any).CFrame.Position
+            end
+            local front = (center("Roue_AVG") + center("Roue_AVD")) / 2
+            local rear = (center("Roue_ARG") + center("Roue_ARD")) / 2
+            local wheelbase = (front - rear).Magnitude * 0.28
+            local track = (center("Roue_AVG") - center("Roue_AVD")).Magnitude * 0.28
+            T.near(wheelbase, car.WheelbaseM, 0.05, car.Id .. " empattement")
+            T.near(track, car.TrackM, 0.05, car.Id .. " voie")
+            -- Gauche (G) à gauche du sens de marche : (avant − arrière) × (G − D) vertical positif.
+            local forward = front - rear
+            local left = center("Roue_AVG") - center("Roue_AVD")
+            T.truthy(forward:Cross(left).Y > 0, car.Id .. " roue gauche à gauche")
+        end
+        T.equal(found, #entry.RobloxAssetIds, "manifeste = exactement les maillages du gabarit")
+    end)
+
     T.test("piétons : squelette complet, apparence stable et variée, contrôle des gabarits", function()
         for _, segment in PnjKits.Segments do
             T.truthy(PnjKits.joint(segment.Joint) ~= nil, segment.Name .. " → " .. segment.Joint)

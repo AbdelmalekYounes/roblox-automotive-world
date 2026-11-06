@@ -6,6 +6,8 @@ build/
 *.rbxmx
 # Exception (lot VEH3D-01) : gabarits de kits de maillages fournis par le propriétaire, versionnés.
 !assets/meshkits/*.rbxm
+# Exception (lot PNJ-01) : gabarits des voitures et piétons PNJ, fournis par le propriétaire, versionnés.
+!assets/pnjkits/*.rbxm
 sourcemap.json
 .DS_Store
 .idea/
