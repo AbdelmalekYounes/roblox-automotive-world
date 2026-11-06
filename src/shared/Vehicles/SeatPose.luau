@@ -36,6 +36,9 @@ local LEGS: Pose = {
     RightKnee = { Pitch = 40 },
 }
 
+-- Lot ANIM-01 : pour le conducteur d'un véhicule dont le volant est connu (`MeshKitData.SteeringWheel`), ces décalages
+-- statiques des bras sont remplacés en jeu par la cinématique inverse des mains sur la jante (`ArmIk`,
+-- `SeatPoseController`) ; ils restent la pose des bras sur les sièges sans volant connu.
 local function withArms(base: Pose): Pose
     -- Bras vers le volant, rentrés vers l'axe du siège. Mesure VM du 2026-11-04 (tâche
     -- 20261104-134156) : avec 55° d'épaule et 25° de coude, les mains montaient à hauteur de
