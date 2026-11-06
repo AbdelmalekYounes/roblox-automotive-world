@@ -62,6 +62,8 @@ for _, spec in
         require("./specs/Anim01"),
         -- Lot PHONE-01 : téléphone tenu en main.
         require("./specs/Phone01"),
+        -- Lot ANIM-02 : portières, animations d’entrée et de sortie.
+        require("./specs/Anim02"),
     }
 do
     spec(TestKit, Harness)

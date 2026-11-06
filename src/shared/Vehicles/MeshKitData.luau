@@ -11,6 +11,8 @@
 local MeshKitData = {}
 
 local SteeringWheel = require(script.Parent.SteeringWheel)
+-- Lot ANIM-02 : portières articulées.
+local Doors = require(script.Parent.Doors)
 
 export type Box = { Center: Vector3, Size: Vector3 }
 export type Kit = {
@@ -63,6 +65,10 @@ export type Kit = {
     -- les sommets du volant (export glTF, lecture seule, 2026-11-06), rapport de direction. La pièce n'est articulée
     -- que si elle est présente dans le gabarit ; les mains se posent sur la jante dans tous les cas.
     SteeringWheel: SteeringWheel.Spec?,
+    -- Portières articulées (lot ANIM-02) : pièces séparées dans le dépôt d'art (`tools/blender/portieres_separe.py`,
+    -- 2026-11-06), charnière et angle choisis sur les rendus d'aperçu (`portieres_apercu.py`). Une porte n'est articulée
+    -- que si TOUTES ses pièces sont dans le gabarit ; sinon le véhicule garde l'entrée sans porte.
+    Doors: Doors.Pair?,
 }
 
 -- Mesures du 2026-11-04 (MODELES_TIERS.md §3 et §4). Dessus d'assise y −0,643 → centre du Seat −0,843.
@@ -136,6 +142,35 @@ local COMETE: Kit = {
         GripRadius = 0.593,
         Ratio = 12,
     },
+    -- Portes en élytre (lot ANIM-02, décision « Élytre fidèle ») : peau du flanc (|x| > 2,3) de z −4,22 à 0,05 sous
+    -- la ceinture, vitre et partie du toit jusqu'à |x| 0,95 ; panneau intérieur et ciel de toit ; rétroviseur monté
+    -- sur la porte. Charnière au pied du montant de pare-brise, axe incliné (1,6 ; 1,12 ; 1,40) retenu sur 3 essais
+    -- d'aperçu : la porte monte et s'écarte ; 75°.
+    Doors = Doors.pair({
+        Parts = {
+            "COMETE_PorteG_body",
+            "COMETE_PorteG_carbon_fibre",
+            "COMETE_PorteG_black_metallic",
+            "COMETE_PorteG_interior",
+            "COMETE_PorteG_glass",
+            "COMETE_PorteG_Retro_body",
+            "COMETE_PorteG_Retro_carbon_fibre",
+            "COMETE_PorteG_Retro_mirror",
+        },
+        PassengerParts = {
+            "COMETE_PorteD_body",
+            "COMETE_PorteD_carbon_fibre",
+            "COMETE_PorteD_black_metallic",
+            "COMETE_PorteD_interior",
+            "COMETE_PorteD_glass",
+            "COMETE_PorteD_Retro_body",
+            "COMETE_PorteD_Retro_carbon_fibre",
+            "COMETE_PorteD_Retro_mirror",
+        },
+        Hinge = Vector3.new(-2.85, 1.38, -3.80),
+        Axis = -Vector3.new(1.6, 1.12, 1.40),
+        OpenAngle = 75,
+    }),
     -- Mesure du 2026-11-05 (Blender, rayons sur la collection EXT hors vitrage, wk_comete_720s.blend).
     DamageMarks = {
         FrontY = -0.264,
@@ -166,7 +201,9 @@ local BRIO: Kit = {
     Template = "Brio",
     ManifestId = "veh.wk_brio.meshmilano95",
     Reference = "BRIO_Caisse_Peinture",
-    ReferenceCenter = Vector3.new(0.005, 1.201, 2.776),
+    -- Lot ANIM-02 : portes retirées de la caisse, centre de sa boîte (0,005 ; 1,201 ; 2,776) devenu (0,006 ; 1,364 ;
+    -- 2,813) (export `wk_brio_milano95_portes_anim02.json`).
+    ReferenceCenter = Vector3.new(0.006, 1.364, 2.813),
     SeatDriver = Vector3.new(-1.2, -0.553, 0.75),
     SeatPassenger = Vector3.new(1.2, -0.568, 0.75),
     -- Pose « Citadine » (SeatPose, lot BRIO-02) : coussin 0,53 st au-dessus du plancher des pieds.
@@ -242,6 +279,26 @@ local BRIO: Kit = {
         GripRadius = 0.591,
         Ratio = 14,
     },
+    -- Portes classiques (lot ANIM-02) : peau de z −1,95 à 2,715 sous la ceinture (y 1,52), panneau intérieur au-delà de
+    -- |x| 2,36, rétroviseur et baguettes (parties entières), vitre de porte (pièce déjà séparée) ; porte sans cadre de
+    -- vitre (montant et pavillon fixes). Charnière verticale au bord avant de la peau ; 65°.
+    Doors = Doors.pair({
+        Parts = {
+            "BRIO_PorteG_Peinture",
+            "BRIO_PorteG_Habitacle",
+            "BRIO_PorteG_Soubassement",
+            "BRIO_Vitrage_Conducteur",
+        },
+        PassengerParts = {
+            "BRIO_PorteD_Peinture",
+            "BRIO_PorteD_Habitacle",
+            "BRIO_PorteD_Soubassement",
+            "BRIO_Vitrage_Passager",
+        },
+        Hinge = Vector3.new(-2.80, 0.30, -1.88),
+        Axis = Vector3.new(0, -1, 0),
+        OpenAngle = 65,
+    }),
     -- Matériaux de `milano95_prepare.py` : AW_Phare, AW_VerreOptique, AW_Feu, AW_VerreFeu, AW_Clignotant, AW_Recul.
     Colors = {
         BRIO_Feu_Av = Color3.fromRGB(246, 246, 243),

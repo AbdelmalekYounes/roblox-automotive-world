@@ -34,6 +34,10 @@ local VehicleFactory = require(script.Parent.VehicleFactory)
 local NetworkOwnership = require(script.Parent.NetworkOwnership)
 local CollisionMediator = require(script.Parent.CollisionMediator)
 local DamageService = require(script.Parent.DamageService)
+-- Lot ANIM-02 : portières et séquences d'entrée et de sortie.
+local DoorService = require(script.Parent.DoorService)
+local Doors = require(VehiclesShared:WaitForChild("Doors"))
+local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData"))
 local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 local MovementRules = require(script.Parent.Parent.Security.MovementRules)
 local RateLimiter = require(script.Parent.Parent.Security.RateLimiter)
@@ -458,8 +462,11 @@ local function onOccupantChanged(record: VehicleRecord)
     end
 end
 
+-- Lot ANIM-02 : défini plus bas (section des portières).
+local boardOrSit: (record: VehicleRecord, role: Doors.Role, player: Player, valid: () -> boolean, sit: () -> ()) -> ()
+
 local function onPromptTriggered(record: VehicleRecord, player: Player)
-    if record.Driver ~= nil or record.Seat.Occupant ~= nil then
+    if record.Driver ~= nil or record.Seat.Occupant ~= nil or DoorService.reserved(record.Model, "Driver") then
         notify(player, "VehicleBusy")
         return
     end
@@ -487,7 +494,18 @@ local function onPromptTriggered(record: VehicleRecord, player: Player)
     if (rootPart.Position - record.Root.Position).Magnitude > BOARDING_DISTANCE_STUDS then
         return
     end
-    record.Seat:Sit(humanoid)
+    -- Lot ANIM-02 : séquence de portière (marche, porte, glissé) ; toutes les règles revalidées au moment de s'asseoir.
+    boardOrSit(record, "Driver", player, function(): boolean
+        return record.Driver == nil
+            and record.Seat.Occupant == nil
+            and recordByDriver[player] == nil
+            and humanoid.Health > 0
+            and humanoid.SeatPart == nil
+            and (record.Personal == nil or record.Personal.MayDrive(player))
+            and (rootPart.Position - record.Root.Position).Magnitude <= BOARDING_DISTANCE_STUDS
+    end, function()
+        record.Seat:Sit(humanoid)
+    end)
 end
 
 -- Groupes (lot 0.7) : branchés au démarrage, sans dépendance de ce module vers Social.
@@ -506,7 +524,7 @@ end
 -- Place passager : mêmes revalidations que pour conduire, règle PassengerRules.
 local function onPassengerPrompt(record: VehicleRecord, player: Player)
     local passenger = record.Passenger
-    if passenger == nil or passenger.Occupant ~= nil then
+    if passenger == nil or passenger.Occupant ~= nil or DoorService.reserved(record.Model, "Passenger") then
         notify(player, "VehicleBusy")
         return
     end
@@ -527,7 +545,18 @@ local function onPassengerPrompt(record: VehicleRecord, player: Player)
     if (rootPart.Position - record.Root.Position).Magnitude > BOARDING_DISTANCE_STUDS then
         return
     end
-    passenger:Sit(humanoid)
+    -- Lot ANIM-02 : séquence de portière ; règle passager et distance revalidées au moment de s'asseoir.
+    local seat = passenger
+    boardOrSit(record, "Passenger", player, function(): boolean
+        return seat.Occupant == nil
+            and recordByDriver[player] == nil
+            and humanoid.Health > 0
+            and humanoid.SeatPart == nil
+            and PassengerRules.mayRide(passengerContext(record, player), sameGroup)
+            and (rootPart.Position - record.Root.Position).Magnitude <= BOARDING_DISTANCE_STUDS
+    end, function()
+        seat:Sit(humanoid)
+    end)
 end
 
 -- Occupation passager non validée (siège pris autrement) : libérée aussitôt.
@@ -545,6 +574,10 @@ local function onPassengerChanged(record: VehicleRecord)
         record.PassengerHumanoid = nil
         local character = previous and previous.Parent
         if previous and character and character:IsA("Model") then
+            -- Lot ANIM-02 : sortie sans séquence (saut du moteur, écran tactile) : la porte s'entrouvre et se referme.
+            if not DoorService.busy(character) then
+                DoorService.flash(record.Model, "Passenger")
+            end
             placeBeside(record, previous, character, 1)
         end
         return
@@ -595,6 +628,13 @@ local function findExitPivot(record: VehicleRecord, character: Model, side: numb
 end
 
 local releaseCharacter: (record: VehicleRecord, humanoid: Humanoid) -> ()
+-- Lot ANIM-02 : défini plus bas (section des portières).
+local alightOrRelease: (record: VehicleRecord, seatRole: Doors.Role, humanoid: Humanoid, release: () -> ()) -> ()
+
+local function exitSpeedAllowed(record: VehicleRecord): boolean
+    local speedKmh = record.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD * 3.6
+    return speedKmh <= record.Definition.Limits.ExitMaxSpeedKmh
+end
 
 local function handleExit(record: VehicleRecord, player: Player)
     local seat = record.Seat
@@ -602,13 +642,14 @@ local function handleExit(record: VehicleRecord, player: Player)
     if humanoid == nil or playerFromHumanoid(humanoid) ~= player then
         return
     end
-    local speedKmh = record.Root.AssemblyLinearVelocity.Magnitude * METERS_PER_STUD * 3.6
-    local limit = record.Definition.Limits.ExitMaxSpeedKmh
-    if speedKmh > limit then
-        notify(player, "ExitTooFast", limit)
+    if not exitSpeedAllowed(record) then
+        notify(player, "ExitTooFast", record.Definition.Limits.ExitMaxSpeedKmh)
         return
     end
-    releaseCharacter(record, humanoid)
+    -- Lot ANIM-02 : porte, glissé vers l'extérieur, puis libération et dépôt (sans portière : comme avant).
+    alightOrRelease(record, "Driver", humanoid, function()
+        releaseCharacter(record, humanoid)
+    end)
 end
 
 -- Dépose le personnage libéré à côté du véhicule (côté `side` : −1 gauche, 1 droite), vérifié, puis lui rend son
@@ -672,6 +713,103 @@ function ejectOccupant(record: VehicleRecord, humanoid: Humanoid)
             task.wait(EJECT_CHECK_S)
         end
     end)
+end
+
+-- ======================== Lot ANIM-02 : portières, entrée et sortie ========================
+-- Véhicule à kit de maillages dont la porte de ce rôle est articulée : séquence de DoorService ; sinon, montée et
+-- descente immédiates (comportement antérieur).
+
+local function kitOf(record: VehicleRecord): MeshKitData.Kit?
+    return MeshKitData.Kits[record.Definition.Id]
+end
+
+local function seatOf(kit: MeshKitData.Kit, role: Doors.Role): Vector3
+    return if role == "Driver" then kit.SeatDriver else kit.SeatPassenger
+end
+
+function boardOrSit(record: VehicleRecord, role: Doors.Role, player: Player, valid: () -> boolean, sit: () -> ())
+    local kit = kitOf(record)
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if kit == nil or character == nil or humanoid == nil or not DoorService.hasDoor(record.Model, role) then
+        sit()
+        return
+    end
+    if DoorService.busy(character) then
+        return
+    end
+    local side = if role == "Driver" then -1 else 1
+    DoorService.board({
+        Model = record.Model,
+        Root = record.Root,
+        Role = role,
+        Character = character,
+        Humanoid = humanoid,
+        Stand = Doors.standPoint(side, kit.SideHalf, seatOf(kit, role)),
+        Valid = valid,
+        Sit = sit,
+    })
+end
+
+-- Sortie : point de dépôt choisi comme le placement (côté de la place, sinon l'autre, sinon au-dessus) ; la porte est
+-- celle du côté de ce point (« autre porte si côté bloqué », décision du propriétaire). Au-dessus : sans animation.
+function alightOrRelease(record: VehicleRecord, seatRole: Doors.Role, humanoid: Humanoid, release: () -> ())
+    local character = humanoid.Parent
+    local kit = kitOf(record)
+    if character == nil or not character:IsA("Model") or kit == nil then
+        release()
+        return
+    end
+    if DoorService.busy(character) then
+        return
+    end
+    local pivot = findExitPivot(record, character, if seatRole == "Driver" then -1 else 1)
+    local destination = if pivot then record.Root.CFrame:PointToObjectSpace(pivot.Position) else nil
+    local doorRole: Doors.Role? = if destination then Doors.roleForExit(destination, kit.SideHalf) else nil
+    if destination == nil or doorRole == nil or not DoorService.hasDoor(record.Model, doorRole) then
+        release()
+        return
+    end
+    local seat: Seat? = if seatRole == "Driver" then record.Seat else record.Passenger
+    DoorService.alight({
+        Model = record.Model,
+        Root = record.Root,
+        SeatRole = seatRole,
+        DoorRole = doorRole,
+        Character = character,
+        Humanoid = humanoid,
+        Destination = destination,
+        StillSeated = function(): boolean
+            return seat ~= nil and seat.Occupant == humanoid
+        end,
+        MayRelease = function(): boolean
+            return exitSpeedAllowed(record)
+        end,
+        Release = release,
+    })
+end
+
+-- Demande de sortie d'un passager (son client intercepte la touche de saut quand sa porte est articulée).
+local function onPassengerExitRequest(player: Player)
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid == nil then
+        return
+    end
+    for _, record in records do
+        local passenger = record.Passenger
+        if passenger and passenger.Occupant == humanoid then
+            if not exitSpeedAllowed(record) then
+                notify(player, "ExitTooFast", record.Definition.Limits.ExitMaxSpeedKmh)
+                return
+            end
+            alightOrRelease(record, "Passenger", humanoid, function()
+                -- Libération : `onPassengerChanged` dépose le personnage côté passager (puis l'autre côté si bloqué).
+                unseatHumanoid(humanoid, passenger)
+            end)
+            return
+        end
+    end
 end
 
 local function handleUnflip(record: VehicleRecord, player: Player)
@@ -1196,6 +1334,12 @@ function VehicleService.start(zone: SpawnSet)
     DamageService.setSoundSink(function(model: Model, kind: string, intensity: number, position: Vector3)
         createdRemotes.ImpactSound:FireAllClients(model, kind, math.round(intensity * 10) / 10, position)
     end)
+    -- Lot ANIM-02 : demandes de sortie des passagers (portières).
+    local remotesFolder = createdRemotes.Action.Parent
+    if remotesFolder then
+        DoorService.start(remotesFolder)
+    end
+    DoorService.setExitHandler(onPassengerExitRequest)
 
     local folder = Instance.new("Folder")
     folder.Name = "VehiculesEssai"
