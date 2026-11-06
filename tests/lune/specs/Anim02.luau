@@ -197,7 +197,7 @@ return function(T: any, H: any)
         T.truthy(has(pose, 'name == "Root" and glide'), "glissé par l'articulation Root")
     end)
 
-    -- Pièces des portes dans les gabarits (après import et envoi par le propriétaire) : présentes, centrées comme dans
+    -- Pièces des portes dans les gabarits (importées et envoyées par le propriétaire le 2026-11-06) : présentes, centrées comme dans
     -- l'export réduit du dépôt d'art, une seule fois.
     T.test("7. gabarits : pièces des portes présentes et placées comme l'export", function()
         local expected = {
@@ -247,12 +247,9 @@ return function(T: any, H: any)
             local kit = KITS[name]
             local template = roblox.deserializeModel(fs.readFile(case.File))[1]
             local first = template:FindFirstChild(kit.Doors.Driver.Parts[1], true)
-            if first == nil then
-                T.note(name .. " : portes pas encore importées (gabarit inchangé, entrée sans porte)")
-                continue
-            end
+            T.truthy(first ~= nil, name .. " : pièces des portes intégrées au gabarit (import du 2026-11-06)")
             local reference = template:FindFirstChild(case.Reference, true)
-            local shift = reference.Position - kit.ReferenceCenter
+            local shift = reference.CFrame.Position - kit.ReferenceCenter -- (Lune : Position non sérialisée)
             for part, center in case.Centers do
                 local found = {}
                 for _, item in template:GetDescendants() do
@@ -262,7 +259,12 @@ return function(T: any, H: any)
                 end
                 T.equal(#found, 1, name .. " : " .. part .. " une fois")
                 if found[1] then
-                    T.near((found[1].Position - shift - v(center)).Magnitude, 0, 0.01, part .. " au centre de l'export")
+                    T.near(
+                        (found[1].CFrame.Position - shift - v(center)).Magnitude,
+                        0,
+                        0.01,
+                        part .. " au centre de l'export"
+                    )
                 end
             end
             for _, role in Doors.Roles do

@@ -201,7 +201,9 @@ local BRIO: Kit = {
     Template = "Brio",
     ManifestId = "veh.wk_brio.meshmilano95",
     Reference = "BRIO_Caisse_Peinture",
-    ReferenceCenter = Vector3.new(0.005, 1.201, 2.776),
+    -- Lot ANIM-02 : portes retirées de la caisse, centre de sa boîte (0,005 ; 1,201 ; 2,776) devenu (0,006 ; 1,364 ;
+    -- 2,813) (export `wk_brio_milano95_portes_anim02.json`).
+    ReferenceCenter = Vector3.new(0.006, 1.364, 2.813),
     SeatDriver = Vector3.new(-1.2, -0.553, 0.75),
     SeatPassenger = Vector3.new(1.2, -0.568, 0.75),
     -- Pose « Citadine » (SeatPose, lot BRIO-02) : coussin 0,53 st au-dessus du plancher des pieds.

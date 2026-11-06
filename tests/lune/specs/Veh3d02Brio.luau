@@ -119,7 +119,8 @@ return function(T: any, H: any)
         BRIO_BouclierArriere_Peinture = { 0.005, -0.286, 6.794 },
         BRIO_BouclierAvantInterieur = { 0.005, -0.321, -4.89 },
         BRIO_BouclierAvant_Peinture = { 0.005, -0.321, -4.908 },
-        BRIO_Caisse_Peinture = { 0.005, 1.201, 2.776 },
+        -- Lot ANIM-02 : portes retirées de la caisse et du soubassement (export `..._portes_anim02.json`).
+        BRIO_Caisse_Peinture = { 0.006, 1.364, 2.813 },
         BRIO_Capot_Peinture = { 0.012, 0.979, -4.15 },
         BRIO_Clignotants = { 0.006, 1.071, 0.758 },
         BRIO_Feu_Ar = { 0.016, 2.37, 6.018 },
@@ -132,7 +133,14 @@ return function(T: any, H: any)
         BRIO_Roue_ArG = { -2.514, -0.771, 5.359 },
         BRIO_Roue_AvD = { 2.514, -0.801, -3.284 },
         BRIO_Roue_AvG = { -2.514, -0.771, -3.284 },
-        BRIO_Soubassement = { 0.014, 0.84, 0.76 },
+        BRIO_Soubassement = { 0.006, 0.84, 0.76 },
+        -- Lot ANIM-02 : pièces des portières.
+        BRIO_PorteG_Peinture = { -2.671, 0.31, 0.432 },
+        BRIO_PorteD_Peinture = { 2.684, 0.293, 0.432 },
+        BRIO_PorteG_Habitacle = { -2.468, 0.36, 0.408 },
+        BRIO_PorteD_Habitacle = { 2.48, 0.36, 0.404 },
+        BRIO_PorteG_Soubassement = { -2.934, 0.706, 0.507 },
+        BRIO_PorteD_Soubassement = { 2.962, 0.67, 0.507 },
         BRIO_Suspension = { -0.001, -0.248, 0.968 },
         BRIO_VerreFeuAr = { 0.014, 2.125, 6.147 },
         BRIO_VerreOptiqueAv = { 0.006, 0.469, -5.168 },
@@ -192,7 +200,8 @@ return function(T: any, H: any)
                 scripts += 1
             end
         end
-        T.equal(count, 27, "maillages du gabarit")
+        -- 33 depuis le lot ANIM-02 (6 pièces de portes).
+        T.equal(count, 33, "maillages du gabarit")
         T.equal(scripts, 0, "aucun code dans un modèle importé")
         T.truthy(sameList(meshes, entry.RobloxAssetIds), "maillages du manifeste = maillages du gabarit")
         T.truthy(sameList(textures, entry.RobloxTextureIds), "textures du manifeste = textures du gabarit")
@@ -233,7 +242,7 @@ return function(T: any, H: any)
                     end
                 end
             end
-            T.equal(seen, 27, "toutes les pièces de l'export")
+            T.equal(seen, 33, "toutes les pièces de l'export (27 + 6 pièces de portes, lot ANIM-02)")
             for wheel, parts in kit.Wheels do
                 T.truthy(template:FindFirstChild(parts[1], true) ~= nil, wheel .. " : " .. parts[1])
             end

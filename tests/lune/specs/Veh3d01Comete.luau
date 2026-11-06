@@ -71,8 +71,9 @@ return function(T: any, H: any)
                 scripts += 1
             end
         end
-        -- 29 depuis le lot ANIM-01 (volant séparé de l'habitacle, COMETE_Volant).
-        T.equal(meshes, 29, "maillages du gabarit")
+        -- 29 depuis le lot ANIM-01 (volant séparé de l'habitacle, COMETE_Volant) ; 42 depuis le lot ANIM-02 (16 pièces
+        -- de portes, 3 anciens rétroviseurs retirés).
+        T.equal(meshes, 42, "maillages du gabarit")
         T.equal(scripts, 0, "aucun code dans un modèle importé")
     end)
 

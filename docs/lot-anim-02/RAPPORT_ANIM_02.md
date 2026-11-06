@@ -6,9 +6,10 @@
 - Demande du propriétaire : « ajouter les animations d'entrée et de sortie du véhicule avec les portières ».
 - Dépôt d'art : branche locale `anim-02-portieres`, commit `c1ce4ac`, créée depuis `origin/main` `e678ac2`, non
   poussée (worktree `E:\ROBLOX DEV\aw-art-anim02`).
-- **État : code terminé et vérifié hors Studio ; EN ATTENTE de l'import Studio des maillages par le propriétaire
-  (§5).** Rien n'a été essayé en jeu. Tant que les gabarits n'ont pas les pièces des portes, les véhicules gardent
-  l'entrée et la sortie actuelles (sans porte, sans glissé) : aucune porte n'est articulée si une de ses pièces manque.
+- **État : terminé côté assistant, À ESSAYER EN JEU par le propriétaire (§8).** Maillages importés et envoyés sur
+  Roblox par le propriétaire le 2026-11-06, intégrés aux gabarits (§5 bis) ; `verify.ps1` vert ; place de test
+  `build\AW-ANIM-02.rbxlx` construite. Rien n'a été essayé en jeu. Garde-fou conservé : une porte n'est articulée que
+  si toutes ses pièces sont dans le gabarit (sinon entrée et sortie sans porte, comme avant).
 
 ## 1. Décisions du propriétaire (2026-11-06, toutes posées en une fois au début du lot)
 
@@ -134,7 +135,7 @@ Non modifiés : `README.md`, `docs/ROADMAP.md`, `docs/QA_BACKLOG.md`, `docs/CRED
 `src/shared/World/*`, `Localization.luau` (aucun nouveau texte joueur : « véhicule occupé » et « sortie trop rapide »
 réutilisent les clés existantes).
 
-## 5. Import Studio par le propriétaire (en attente)
+## 5. Import Studio par le propriétaire (fait le 2026-11-06)
 
 1. Dans une place locale vierge, **Importer 3D**, deux fois :
    - `E:\ROBLOX DEV\aw-art-anim02\vehicles\wk_brio\export\wk_brio_milano95_portes_anim02.glb` ;
@@ -156,6 +157,30 @@ L'outil a été essayé **à blanc** sur des imports fictifs (pièces clonées d
 dépôt : Brio 33 maillages, Comète 42, centres de l'export reproduits, textures d'origine reprises. Le vrai fichier n'a
 pas été essayé.
 
+## 5 bis. Intégration des imports (2026-11-06)
+
+Fichiers déposés par le propriétaire (03:12), relevés en lecture seule (Lune) :
+- `aw-vm-exchangenim02_brio_portes.rbxm` (SHA-256 `d2c4648f…`) : 9 MeshParts, 10 modèles, 6 SurfaceAppearance,
+  **aucun script** ; tailles identiques à l'export ;
+- `aw-vm-exchangenim02_comete_portes.rbxm` (SHA-256 `b049f59e…`) : 21 MeshParts, 22 modèles, 8 SurfaceAppearance,
+  **aucun script** ; tailles identiques à l'export.
+
+`lune run tests/lune/tools/anim02-portieres.luau <brio|comete> <import.rbxm> <export.json>` :
+- `assets/meshkits/Brio.rbxm` : 27 → **33** maillages (SHA-256 `c693c8c7…` avant, `7d3a5393…` après) ; anciens
+  maillages retirés : `77052823926801` (caisse), `134931851726367` (habitacle), `80144700231925` (soubassement) ;
+- `assets/meshkits/Comete720s.rbxm` : 29 → **42** maillages (SHA-256 `e2872b58…` avant, `e3b3d35f…` après) ;
+  retirés : `135006162692878`, `102224824061605`, `118695232875609` (caisse), `77774849215644` (habitacle),
+  `81797127978233` (vitrage), `102573121267361`, `134599392040709`, `117440140283283` (anciens rétroviseurs) ;
+- chaque pièce placée au centre de l'export (écart ≤ 0,001 st affiché par l'outil) ; textures d'origine reprises
+  (`TextureContent` et `SurfaceAppearance` de la pièce source) : aucune nouvelle texture au manifeste.
+
+Mises à jour :
+- manifeste `veh.wk_brio.meshmilano95` (33 identifiants) et `veh.wk_comete.mesh720s` (42), relevés dans les gabarits ;
+  textures inchangées ; nombre de triangles du LOD0 dans les variantes ;
+- `MeshKitData` : centre de référence de la Brio (0,006 ; 1,364 ; 2,813) (portes retirées de `BRIO_Caisse_Peinture`) ;
+- tests VEH3D-01 (29 → 42 maillages) et VEH3D-02 (27 → 33 ; centres de la caisse, du soubassement et des 6 pièces de
+  portes) ; test ANIM-02 7 rendu strict (échoue si les pièces des portes manquent).
+
 ## 6. Vérifications exécutées (2026-11-06)
 
 | Commande | Résultat |
@@ -164,6 +189,9 @@ pas été essayé.
 | Blender 4.5.9 sans interface, `--factory-startup --disable-autoexec` : `portieres_separe.py` (Brio, Comète), puis `export_roblox_glb.py` (exports réduits et LOD0) | Brio 6 pièces de portes, Comète 16 ; exports du §2. |
 | `portieres_apercu.py` | Rendus fermés et ouverts (§2) ; centre de la porte gauche de la Brio (−2,729 ; 0,84 ; 0,253) → (−4,703 ; 0,84 ; −0,914) ; Comète (−2,617 ; 1,271 ; −2,024) → (−3,089 ; 2,757 ; −2,673). |
 | Essai à blanc de `anim02-portieres.luau` (§5) | Gabarits de sortie à 33 et 42 maillages, écrits hors du dépôt. |
+| `anim02-portieres.luau` sur les vrais imports (§5 bis) | Gabarits à 33 et 42 maillages. |
+| `scriptserify.ps1 -DownloadRobloxTypes` après intégration (terminé à 03:14) | Tout OK : Selene 0/0, Lune **460 réussis, 0 échoué**, pytest 29, luau-lsp 0 erreur. |
+| `rojo build default.project.json -o build/AW-ANIM-02.rbxlx` (03:14) | Place de test construite (3,43 Mo). |
 
 Tests ANIM-02 (Lune) :
 1. deux portes par véhicule, porte droite miroir de la gauche ;
@@ -173,8 +201,7 @@ Tests ANIM-02 (Lune) :
 4. glissé : codage, poids d'entrée et de sortie, décalage, garde-fou ;
 5. calendrier, interruption, porte de sortie, point d'arrivée ;
 6. câblage serveur et client, `DamageService` non modifié ;
-7. gabarits : pièces des portes présentes et aux centres de l'export (signalé « en attente » tant que l'import n'est
-   pas intégré).
+7. gabarits réels : pièces des portes présentes, une fois, aux centres de l'export (±0,01 st).
 
 ## 7. NON TESTÉ, limites et risques
 
