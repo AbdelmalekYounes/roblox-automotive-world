@@ -52,6 +52,8 @@ for _, spec in
         require("./specs/Brio02"),
         -- Lot CAMERA-01 : caméra libre en conduite.
         require("./specs/Camera01FreeLook"),
+        -- Lot PHONE-01 : téléphone tenu en main.
+        require("./specs/Phone01"),
     }
 do
     spec(TestKit, Harness)

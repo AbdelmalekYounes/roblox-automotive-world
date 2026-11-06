@@ -134,15 +134,19 @@ return function(T: any, H: any)
             end
             return node.Source
         end
+        -- Lot PHONE-01 : le bras (épaule et coude) est posé par PhoneHoldController pour les deux types
+        -- d'articulation ; le serveur ne règle plus le C0 du Motor6D et publie l'attribut (PhoneHold.Attribute).
         local server = source("ServerScriptService.AutomotiveWorldServer.Social.InterfaceService")
-        T.truthy(string.find(server, 'IsA("Motor6D")', 1, true) ~= nil, "chemin Motor6D conservé (R6, R15 classique)")
-        T.truthy(string.find(server, '"AWPhoneRaised"', 1, true) ~= nil, "attribut du bras levé publié")
+        local PhoneHold = H.require("ReplicatedStorage.Shared.UI.PhoneHold")
+        T.equal(PhoneHold.Attribute, "AWPhoneRaised", "attribut du bras levé inchangé (lu par SeatPoseController)")
+        T.truthy(string.find(server, "SetAttribute(PhoneHold.Attribute, true)", 1, true) ~= nil, "attribut publié")
         T.truthy(string.find(server, "Attachment0", 1, true) == nil, "attaches du squelette non modifiées")
-        local client = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneController")
-        T.truthy(string.find(client, '"AWPhoneRaised"', 1, true) ~= nil, "attribut lu par le client")
+        local client = source("StarterPlayer.StarterPlayerScripts.AutomotiveWorldClient.UI.PhoneHoldController")
+        T.truthy(string.find(client, "PhoneHold.Attribute", 1, true) ~= nil, "attribut lu par le client")
+        T.truthy(string.find(client, 'IsA("Motor6D")', 1, true) ~= nil, "chemin Motor6D conservé (R15 classique)")
         T.truthy(string.find(client, 'IsA("AnimationConstraint")', 1, true) ~= nil, "épaule à contrainte reconnue")
         T.truthy(string.find(client, "PreSimulation", 1, true) ~= nil, "appliqué après l'animation")
-        T.truthy(string.find(client, "shoulder.Transform =", 1, true) ~= nil, "rotation multipliée dans Transform")
+        T.truthy(string.find(client, "joint.Transform =", 1, true) ~= nil, "rotation multipliée dans Transform")
     end)
 
     T.test("QA-A08 : borne du convertisseur inactive en conduite normale (physique inchangée)", function()

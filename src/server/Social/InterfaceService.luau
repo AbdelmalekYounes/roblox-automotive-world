@@ -11,18 +11,16 @@
     - Annuaire : points publics issus des registres existants (lieux,
       parcours, carte) et points PERSONNELS du demandeur seulement (ses
       propriétés, l'objectif de sa mission). Jamais ceux d'un autre joueur.
-    - Téléphone : modèle provisoire original (pièces simples) dans la main du
-      personnage, bras levé par un réglage de l'épaule (aucune animation
-      externe) : décalage C0 du Motor6D (R6, R15 classique) ; sur le nouveau
-      squelette R15 à contraintes d'animation (lot 0.9.2, QA-A10), attribut
-      `AWPhoneRaised` du personnage, appliqué par chaque client
-      (PhoneController) comme Roblox le recommande pour ces articulations ; l'écran visible des autres reste GÉNÉRIQUE (heure) : le
-      contenu des applications n'est affiché que chez son utilisateur.
+    - Téléphone (lot PHONE-01) : modèle original en pièces simples soudé à la
+      main droite (prise en main de Shared/UI/PhoneHold), attribut
+      `AWPhoneRaised` du personnage : chaque client lève le bras (épaule et
+      coude, PhoneHoldController) sans animation externe. L'écran visible des
+      autres reste GÉNÉRIQUE (fond et heure) : le contenu des applications
+      n'est affiché que chez son utilisateur, sur l'écran tenu en main.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Preferences = require(Shared:WaitForChild("UI"):WaitForChild("Preferences"))
@@ -30,6 +28,7 @@ local InputMap = require(Shared.UI.InputMap)
 local WorldLayout = require(Shared:WaitForChild("World"):WaitForChild("WorldLayout"))
 local Constants = require(Shared:WaitForChild("Vehicles"):WaitForChild("VehicleConstants"))
 local PropertyCatalog = require(Shared:WaitForChild("Garage"):WaitForChild("PropertyCatalog"))
+local PhoneHold = require(Shared:WaitForChild("UI"):WaitForChild("PhoneHold"))
 
 local Persistence = script.Parent.Parent.Persistence
 local ProfileService = require(Persistence.ProfileService)
@@ -49,12 +48,8 @@ local push: RemoteEvent
 local limiters: { [Player]: RateLimiter.Bucket } = {}
 local lastSave: { [Player]: number } = {}
 local publicPoints: { PointsOfInterest.Point } = {}
--- Épaule levée (Motor6D) : instance réglée, propriété et valeur de repos rétablie au rangement.
--- Angle et attribut partagés avec le client (PhoneController, squelette à contraintes).
-local PHONE_RAISE_DEG = 60
-local PHONE_RAISED_ATTRIBUTE = "AWPhoneRaised"
-type RaisedShoulder = { Target: Instance, Property: string, Rest: CFrame }
-local phones: { [Player]: { Model: Model, Shoulder: RaisedShoulder? } } = {}
+-- Téléphone sorti par joueur (lot PHONE-01 : modèle et prise en main de Shared/UI/PhoneHold).
+local phones: { [Player]: Model } = {}
 
 local function rejected(key: string): any
     return { Status = "Rejected", Error = key }
@@ -116,68 +111,187 @@ end
 
 -- ======================== Téléphone ========================
 
-local function makePhone(): Model
-    local model = Instance.new("Model")
-    model.Name = "TelephoneAW"
-    local body = Instance.new("Part")
-    body.Name = "Boitier"
-    body.Size = Vector3.new(0.26, 0.52, 0.04) -- ≈ 7 × 15 cm (studs : 0,28 m)
-    body.Color = Color3.fromRGB(28, 30, 36)
-    body.Material = Enum.Material.SmoothPlastic
-    body.CanCollide = false
-    body.CanQuery = false
-    body.CanTouch = false
-    body.Massless = true
-    body.Parent = model
-    local screen = Instance.new("Part")
-    screen.Name = "Ecran"
-    screen.Size = Vector3.new(0.23, 0.46, 0.005)
-    screen.Color = Color3.fromRGB(40, 80, 140)
-    screen.Material = Enum.Material.Neon
-    screen.CanCollide = false
-    screen.CanQuery = false
-    screen.CanTouch = false
-    screen.Massless = true
-    screen.CFrame = body.CFrame * CFrame.new(0, 0, -0.023)
-    screen.Parent = model
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = body
-    weld.Part1 = screen
-    weld.Parent = body
-    -- Écran générique (heure seulement) : le contenu reste privé.
+-- Lot PHONE-01 : modèle original en pièces simples (aucun actif importé, aucune marque) aux cotes de
+-- Shared/UI/PhoneHold : boîtier aux coins arrondis (deux pavés et quatre cylindres), vitre noire, dalle
+-- avec un écran GÉNÉRIQUE (fond et heure, le contenu des applications n'est jamais affiché ici), bloc
+-- photo au dos et touches latérales. Pièces sans masse, sans collision ni ombre.
+local GRAPHITE = Color3.fromRGB(58, 62, 69)
+local GLASS = Color3.fromRGB(6, 7, 8)
+
+local function phonePart(model: Model, name: string, size: Vector3, offset: CFrame, color: Color3): Part
+    local part = Instance.new("Part")
+    part.Name = name
+    part.Size = size
+    part.CFrame = offset
+    part.Color = color
+    part.Material = Enum.Material.SmoothPlastic
+    part.TopSurface = Enum.SurfaceType.Smooth
+    part.BottomSurface = Enum.SurfaceType.Smooth
+    part.CanCollide = false
+    part.CanQuery = false
+    part.CanTouch = false
+    part.CastShadow = false
+    part.Massless = true
+    part.Parent = model
+    return part
+end
+
+-- Cylindre dont l'axe suit Z (épaisseur du téléphone) : l'axe d'un cylindre Roblox est X.
+local function alongZ(x: number, y: number, z: number): CFrame
+    return CFrame.new(x, y, z) * CFrame.Angles(0, math.rad(90), 0)
+end
+
+local function genericScreen(screen: BasePart)
     local gui = Instance.new("SurfaceGui")
+    gui.Name = "EcranGenerique"
     gui.Face = Enum.NormalId.Front
+    gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
     gui.PixelsPerStud = 400
+    gui.LightInfluence = 0
     gui.Parent = screen
+    local wallpaper = Instance.new("Frame")
+    wallpaper.Name = "Fond"
+    wallpaper.Size = UDim2.fromScale(1, 1)
+    wallpaper.BorderSizePixel = 0
+    wallpaper.BackgroundColor3 = Color3.new(1, 1, 1)
+    wallpaper.Parent = gui
+    -- Même fond que l'écran d'accueil de l'interface (dégradé bleu nuit, lueur ambre en bas).
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 37, 49)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(14, 15, 18)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(34, 26, 16)),
+    })
+    gradient.Rotation = 90
+    gradient.Parent = wallpaper
     local clock = Instance.new("TextLabel")
     clock.Name = "Heure"
-    clock.Size = UDim2.fromScale(1, 0.3)
-    clock.Position = UDim2.fromScale(0, 0.1)
+    clock.Size = UDim2.fromScale(1, 0.12)
+    clock.Position = UDim2.fromScale(0, 0.12)
     clock.BackgroundTransparency = 1
     clock.TextScaled = true
     clock.Font = Enum.Font.GothamBold
     clock.TextColor3 = Color3.fromRGB(240, 244, 250)
     clock.Text = os.date("!%H:%M") :: string
-    clock.Parent = gui
+    clock.Parent = wallpaper
+end
+
+local function makePhone(): Model
+    local model = Instance.new("Model")
+    model.Name = PhoneHold.ModelName
+    local b = PhoneHold.Body
+    local sc = PhoneHold.Screen
+    local r = b.Corner
+    -- Construit autour de l'origine (boîtier centré, écran vers −Z), puis soudé à la main.
+    local body = phonePart(
+        model,
+        PhoneHold.BodyName,
+        Vector3.new(b.Width - 2 * r, b.Height, b.Thickness),
+        CFrame.identity,
+        GRAPHITE
+    )
+    body.Material = Enum.Material.Metal
+    local pieces: { BasePart } = {}
+    local side =
+        phonePart(model, "Flanc", Vector3.new(b.Width, b.Height - 2 * r, b.Thickness), CFrame.identity, GRAPHITE)
+    side.Material = Enum.Material.Metal
+    table.insert(pieces, side)
+    for _, corner in { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } } do
+        local cylinder = phonePart(
+            model,
+            "Coin",
+            Vector3.new(b.Thickness, 2 * r, 2 * r),
+            alongZ(corner[1] * (b.Width / 2 - r), corner[2] * (b.Height / 2 - r), 0),
+            GRAPHITE
+        )
+        cylinder.Shape = Enum.PartType.Cylinder
+        cylinder.Material = Enum.Material.Metal
+        table.insert(pieces, cylinder)
+    end
+    -- Vitre noire à 6 mm du bord, coins arrondis comme le boîtier (deux pavés et quatre disques), puis
+    -- dalle de l'écran posée dessus.
+    local front = -b.Thickness / 2
+    local edge = 0.006
+    local glassRadius = r - edge
+    for _, size in
+        {
+            Vector3.new(b.Width - 2 * edge, b.Height - 2 * r, 0.002),
+            Vector3.new(b.Width - 2 * r, b.Height - 2 * edge, 0.002),
+        }
+    do
+        table.insert(pieces, phonePart(model, "Vitre", size, CFrame.new(0, 0, front - 0.001), GLASS))
+    end
+    for _, corner in { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } } do
+        local disc = phonePart(
+            model,
+            "Vitre",
+            Vector3.new(0.002, 2 * glassRadius, 2 * glassRadius),
+            alongZ(corner[1] * (b.Width / 2 - r), corner[2] * (b.Height / 2 - r), front - 0.001),
+            GLASS
+        )
+        disc.Shape = Enum.PartType.Cylinder
+        table.insert(pieces, disc)
+    end
+    local screen = phonePart(
+        model,
+        PhoneHold.ScreenName,
+        Vector3.new(sc.Width, sc.Height, sc.Depth),
+        CFrame.new(0, 0, front - 0.002 - sc.Depth / 2),
+        Color3.fromRGB(14, 15, 18)
+    )
+    table.insert(pieces, screen)
+    genericScreen(screen)
+    -- Bloc photo au dos (coin supérieur, côté gauche vu de dos) et son objectif.
+    local back = b.Thickness / 2
+    local corner = Vector2.new(b.Width / 2 - 0.06, b.Height / 2 - 0.06)
+    table.insert(
+        pieces,
+        phonePart(
+            model,
+            "BlocPhoto",
+            Vector3.new(0.075, 0.075, 0.008),
+            CFrame.new(corner.X, corner.Y, back + 0.004),
+            Color3.fromRGB(44, 47, 53)
+        )
+    )
+    local lens =
+        phonePart(model, "Objectif", Vector3.new(0.006, 0.034, 0.034), alongZ(corner.X, corner.Y, back + 0.011), GLASS)
+    lens.Shape = Enum.PartType.Cylinder
+    table.insert(pieces, lens)
+    -- Touches latérales : marche d'un côté, volume de l'autre.
+    for _, key in { { 1, 0.1, 0.07 }, { -1, 0.12, 0.1 } } do
+        table.insert(
+            pieces,
+            phonePart(
+                model,
+                "Touche",
+                Vector3.new(0.006, key[3], 0.012),
+                CFrame.new(key[1] * (b.Width / 2 + 0.002), key[2], 0),
+                GRAPHITE
+            )
+        )
+    end
+    for _, piece in pieces do
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = body
+        weld.Part1 = piece
+        weld.Parent = piece
+    end
     model.PrimaryPart = body
     return model
 end
 
 local function putAway(player: Player)
-    local phone = phones[player]
+    local phone: Model? = phones[player]
     if phone == nil then
         return
     end
     phones[player] = nil
-    local character = phone.Model.Parent
+    local character = phone.Parent
     if character then
-        character:SetAttribute(PHONE_RAISED_ATTRIBUTE, nil)
+        character:SetAttribute(PhoneHold.Attribute, nil)
     end
-    local shoulder = phone.Shoulder
-    if shoulder and shoulder.Target.Parent then
-        TweenService:Create(shoulder.Target, TweenInfo.new(0.2), { [shoulder.Property] = shoulder.Rest }):Play()
-    end
-    phone.Model:Destroy()
+    phone:Destroy()
 end
 
 local function takeOut(player: Player): boolean
@@ -185,50 +299,26 @@ local function takeOut(player: Player): boolean
         return true
     end
     local character = player.Character
-    local hand = character and (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm"))
+    local hand = character and character:FindFirstChild("RightHand")
     if hand == nil or not hand:IsA("BasePart") then
         return false
     end
+    local owner = character :: Model
     local model = makePhone()
     local body = model.PrimaryPart :: BasePart
-    body.CFrame = hand.CFrame * CFrame.new(0, -0.15, -0.25) * CFrame.Angles(math.rad(-70), 0, 0)
-    for _, part in model:GetDescendants() do
-        if part:IsA("BasePart") and part ~= body then
-            part.CFrame = body.CFrame * CFrame.new(0, 0, -0.023)
-        end
-    end
-    local owner = character :: Model
-    local weld = Instance.new("WeldConstraint")
+    -- Prise en main (PhoneHold.Grip) : soudure à décalage fixe ; le modèle suit la main sur chaque client.
+    local weld = Instance.new("Weld")
+    weld.Name = "PriseEnMain"
     weld.Part0 = hand
     weld.Part1 = body
+    weld.C0 = PhoneHold.gripCFrame()
     weld.Parent = body
     model.Parent = owner
-    -- Bras levé : rotation de l'épaule de 60° vers l'avant, revenue au rangement.
-    -- R6 et R15 classique : décalage C0 du Motor6D (les animations agissent sur
-    -- Transform, pas sur C0). Nouveau squelette R15 (lot 0.9.2, QA-A10 : tâche VM
-    -- 20261104-021402, épaule « AnimationConstraint » sans Motor6D, bras resté le long
-    -- du corps) : C0 y est en lecture seule et Roblox déconseille de modifier les
-    -- attaches du squelette (tâche 20261104-025158 : sans effet) ; l'attribut
-    -- `AWPhoneRaised` est appliqué par chaque client sur Transform, après l'animation.
-    local shoulder: RaisedShoulder? = nil
-    local upper = owner:FindFirstChild("RightUpperArm")
-    local candidate = if upper then upper:FindFirstChild("RightShoulder") else nil
-    if candidate == nil then
-        local torso = owner:FindFirstChild("Torso")
-        candidate = if torso then torso:FindFirstChild("Right Shoulder") else nil
-    end
-    if candidate and candidate:IsA("Motor6D") then
-        shoulder = { Target = candidate :: Instance, Property = "C0", Rest = candidate.C0 }
-        TweenService
-            :Create(
-                candidate,
-                TweenInfo.new(0.25),
-                { C0 = candidate.C0 * CFrame.Angles(math.rad(PHONE_RAISE_DEG), 0, 0) }
-            )
-            :Play()
-    end
-    owner:SetAttribute(PHONE_RAISED_ATTRIBUTE, true)
-    phones[player] = { Model = model, Shoulder = shoulder }
+    -- Bras levé : attribut lu par chaque client (PhoneHoldController : épaule et coude dans `Transform` après
+    -- l'animation, Motor6D comme AnimationConstraint, QA-A10) ; la pose assise laisse alors les bras.
+    -- L'ancien réglage C0 du Motor6D (lot 0.7) est retiré : il se serait ajouté à la pose du client.
+    owner:SetAttribute(PhoneHold.Attribute, true)
+    phones[player] = model
     return true
 end
 

@@ -838,6 +838,17 @@ local E: { [string]: Entry } = {
         "Caméra : axe vertical inversé : {state}",
         "Camera: invert vertical axis: {state}",
     },
+    -- ===================== Lot PHONE-01 : téléphone tenu en main =====================
+    ["settings.phoneDisplay"] = { "Affichage du téléphone : {value}", "Phone display: {value}" },
+    ["settings.phoneDisplay.Auto"] = { "Auto", "Auto" },
+    ["settings.phoneDisplay.InHand"] = { "En main", "In hand" },
+    ["settings.phoneDisplay.Classic"] = { "Classique", "Classic" },
+    ["settings.phoneDisplay.note"] = {
+        "En main : la caméra zoome sur le téléphone tenu par votre personnage. Classique : téléphone dans le coin "
+            .. "de l'écran. Auto : en main, sauf sur petit écran.",
+        "In hand: the camera zooms onto the phone held by your character. Classic: phone in the corner of the "
+            .. "screen. Auto: in hand, except on small screens.",
+    },
     ["action.Phone"] = { "Téléphone", "Phone" },
     ["action.Map"] = { "Carte", "Map" },
     ["action.Garage"] = { "Garage", "Garage" },
