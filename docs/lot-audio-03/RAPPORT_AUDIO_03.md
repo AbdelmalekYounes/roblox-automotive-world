@@ -55,9 +55,21 @@ Place de test : `build/AW-AUDIO-03.rbxlx`, reconstruite par `rojo build default.
 après la fusion de main (commit fba478c). Elle contient donc aussi BRIO-02 et CAMERA-01. Son nom distinct évite
 qu'elle soit écrasée par `verify.ps1`.
 
-## 4. Non vérifié
+## 4. Validation en jeu et points non vérifiés
 
-- **Tout le rendu en jeu** : l'assistant n'a lancé aucun essai Studio. La vérification revient au propriétaire (§ 5).
+**Validation en jeu par le propriétaire (2026-11-06).** Le propriétaire a joué `build/AW-AUDIO-03.rbxlx` dans
+Studio, sur la branche fusionnée avec main d295473. Il a fait trois retours successifs :
+- « le bruit des crissements se fait à peine les roues tournées » ;
+- « c'est toujours pareil » ;
+- « en fait c'est sur la Comète que ça fait ça ».
+
+Ils ont conduit aux versions 2 à 4 du modèle (§ 6). Après la version 4 (commit ed2ec73), sa réponse a été
+**« C'est bon »**. C'est un essai humain du propriétaire ; l'assistant n'a exécuté aucun essai Studio. Le propriétaire
+n'a pas détaillé point par point les 13 points du § 5 : sa validation porte sur l'ensemble.
+
+Non vérifié :
+- **Points du § 5 non signalés un par un** : par exemple l'herbe ou le gravier (selon la carte), et l'essai à deux
+  joueurs. Ils sont couverts par la validation d'ensemble, sans détail.
 - **Charge réseau** des deux valeurs ajoutées à la commande. L'envoi n'a lieu que si une valeur change, au plus
   `InputSendRateHz` fois par seconde, comme avant.
 - **Démos** : elles ont été calculées sur le banc planaire, sans le moteur et sans le moteur physique de Roblox.
