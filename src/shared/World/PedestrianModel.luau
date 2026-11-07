@@ -32,6 +32,9 @@ export type Walker = {
     Key: string, -- identifiant stable "<tronçon>|<côté>|<n>"
     Position: Geometry.Point3,
     Heading: Geometry.Point,
+    -- Lot PNJ-01 : vitesse (m/s) et distance parcourue (m, phase de l'allure animée, World/PedestrianGait).
+    Speed: number,
+    Travel: number,
 }
 
 export type Sidewalk = {
@@ -103,29 +106,44 @@ function PedestrianModel.sidewalks(edge: any): { Sidewalk }
     return result
 end
 
--- Piétons d'un trottoir à l'instant `serverTime` (aller-retour le long du trottoir).
-function PedestrianModel.walkers(sidewalk: Sidewalk, serverTime: number): { Walker }
-    local result: { Walker } = {}
+--[[
+    Piéton n° `k` d'un trottoir à l'instant `serverTime` (aller-retour le long du trottoir), ou nil si le trottoir
+    est trop court. Lot PNJ-01 : calcul isolé pour que le client anime à chaque image les seuls piétons visibles.
+]]
+function PedestrianModel.walker(sidewalk: Sidewalk, k: number, serverTime: number): Walker?
     local margin = PedestrianModel.JunctionMarginM
     local length = sidewalk.Path.Length - 2 * margin
     if length < 5 then
-        return result
+        return nil
     end
     local range = PedestrianModel.SpeedRangeMs
+    local phase = unit(sidewalk.Seed, k * 2)
+    local speed = range[1] + (range[2] - range[1]) * unit(sidewalk.Seed, k * 2 + 1)
+    -- Parcours replié : 0 → L à l'aller, L → 0 au retour.
+    local distance = phase * 2 * length + speed * serverTime
+    local travel = distance % (2 * length)
+    local returning = travel > length
+    local s = margin + (if returning then 2 * length - travel else travel)
+    local position, direction = TrafficModel.sample(sidewalk.Path, s)
+    local heading = if returning then { X = -direction.X, Z = -direction.Z } else direction
+    return {
+        Key = sidewalk.EdgeId .. "|" .. sidewalk.Side .. "|" .. k,
+        Position = position,
+        Heading = heading,
+        Speed = speed,
+        Travel = distance,
+    }
+end
+
+-- Piétons d'un trottoir à l'instant `serverTime`.
+function PedestrianModel.walkers(sidewalk: Sidewalk, serverTime: number): { Walker }
+    local result: { Walker } = {}
     for k = 1, sidewalk.Count do
-        local phase = unit(sidewalk.Seed, k * 2)
-        local speed = range[1] + (range[2] - range[1]) * unit(sidewalk.Seed, k * 2 + 1)
-        -- Parcours replié : 0 → L à l'aller, L → 0 au retour.
-        local travel = (phase * 2 * length + speed * serverTime) % (2 * length)
-        local returning = travel > length
-        local s = margin + (if returning then 2 * length - travel else travel)
-        local position, direction = TrafficModel.sample(sidewalk.Path, s)
-        local heading = if returning then { X = -direction.X, Z = -direction.Z } else direction
-        table.insert(result, {
-            Key = sidewalk.EdgeId .. "|" .. sidewalk.Side .. "|" .. k,
-            Position = position,
-            Heading = heading,
-        })
+        local walker = PedestrianModel.walker(sidewalk, k, serverTime)
+        if walker == nil then
+            break
+        end
+        table.insert(result, walker)
     end
     return result
 end

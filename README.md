@@ -1,6 +1,7 @@
 # Automotive World — consolidation vers la V1.0
 
-> **Nom technique provisoire** : ce n'est pas le nom commercial du jeu.
+> **Nom du jeu : Amberline** (lot BRAND-01, choisi par le propriétaire le 2026-11-06). « Automotive World » reste le
+> nom technique du code (projets Rojo, dossiers), inchangé.
 > **Référentiel** : cahier des charges global Roblox v1.0, officiellement validé le 2 novembre 2026.
 > **Périmètre** : une carte ouverte en maquette (sept zones fictives d'un seul tenant, routes, infrastructures,
 > trafic PNJ, piétons, météo et jour/nuit), une zone d'essai isolée ; **lots BASE-01 et VEH3D-02** : deux véhicules, la
@@ -166,6 +167,12 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   téléportation. Poses originales en code, aucune animation importée.
 - **Caméra en conduite** (lot CAMERA-01) : regard libre au clic droit maintenu, au stick droit ou au doigt, retour
   au centre automatique ; sensibilité et inversion dans Téléphone › Paramètres › Commandes.
+- **Écran de chargement** (lot BRAND-01, [rapport](docs/lot-brand-01/RAPPORT_BRAND_01.md)) : logo « Amberline »
+  original (image envoyée par le propriétaire), phrase d'accueil, progression réelle (aucune barre minutée), délai
+  maximal de 30 s, titre en texte si l'image ne charge pas. Code dans `src/first` (ReplicatedFirst).
+- **PNJ en 3D** (lot PNJ-01, étape « modèles », [rapport](docs/lot-pnj-01/RAPPORT_PNJ_01.md)) : 10 voitures PNJ
+  (pack CC BY de Comrade1280) avec roues, feux stop, clignotants et phares ; 18 piétons low-poly (pack CC BY de
+  David Jalbert) animés par le code. Le comportement du trafic est inchangé (étape suivante, après MAP-01).
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute
   ([direction artistique](docs/lot-0.8/DIRECTION_ARTISTIQUE.md)).
 - **Parcours d'arrivée** : s'ouvre à la première connexion, passable ; consultable ensuite (application Guide).

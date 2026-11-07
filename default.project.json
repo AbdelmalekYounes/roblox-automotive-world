@@ -7,6 +7,9 @@
       "Shared": {
         "$path": "src/shared"
       },
+      "AutomotiveWorldPnjKits": {
+        "$path": "assets/pnjkits/AutomotiveWorldPnjKits.rbxm"
+      },
       "PlaceConfig": {
         "$path": "places/dev/PlaceConfig.luau"
       }
