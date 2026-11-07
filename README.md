@@ -145,7 +145,9 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   Il s'appuie sur des enregistrements libres CC0 ([registre](docs/audio/SONS_TIERS.md)), transformés par
   `tools/audio/engine_loops.py`, puis envoyés sur Roblox par le propriétaire. Le son suit le régime et la charge
   (passages de rapport audibles), étouffé en vue cockpit, avec effet Doppler et régime transmis aux autres joueurs.
-  La Comète reste muette pour l'instant. Les 30 sons synthétiques du lot 0.8 (`tools/audio/synth.py`) ne sont pas
+  Moteur de la **Comète** (lot AUDIO-02, [rapport](docs/lot-audio-02/RAPPORT_AUDIO_02.md)) : V8 tiré d'enregistrements
+  libres (CC BY 4.0, crédit en jeu, et CC0), turbo, décharge, pétarades, rupteur à 8 500 tr/min ; la Comète passe en
+  boîte à double embrayage (passages automatiques, reprise en main par Maj et Ctrl). Les 30 sons synthétiques du lot 0.8 (`tools/audio/synth.py`) ne sont pas
   téléversés : les ambiances et la radio restent indisponibles
   ([ressources et licences](docs/lot-0.8/ASSETS_ET_LICENCES.md)).
 - **Pneus** (lot AUDIO-03, [rapport](docs/lot-audio-03/RAPPORT_AUDIO_03.md)) : roulement et crissement tirés
@@ -159,6 +161,9 @@ Les menus complets ne s'ouvrent qu'à l'arrêt ou à pied ; en roulant, le tél�
   téléphone 3D, la caméra zoome dessus et l'interface s'affiche sur son écran.
 - **Portières** (lot ANIM-02, [rapport](docs/lot-anim-02/RAPPORT_ANIM_02.md)) : séquences d'entrée et de sortie avec
   ouverture et fermeture des portières (Brio et Comète), visibles par tous.
+- **Gestes d'entrée et de sortie** (lot ANIM-03, [rapport](docs/lot-anim-03/RAPPORT_ANIM_03.md)) : marche jusqu'à la
+  porte, main à la poignée, porte qui suit la main, une jambe puis l'autre, porte refermée ; déplacement continu, sans
+  téléportation. Poses originales en code, aucune animation importée.
 - **Caméra en conduite** (lot CAMERA-01) : regard libre au clic droit maintenu, au stick droit ou au doigt, retour
   au centre automatique ; sensibilité et inversion dans Téléphone › Paramètres › Commandes.
 - **Qualité graphique** (Paramètres → Graphismes) : basse, moyenne, haute

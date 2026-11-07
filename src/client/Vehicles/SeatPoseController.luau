@@ -21,10 +21,11 @@
     propriétaire du 2026-11-06) ; la main gauche reste sur le volant.
     Vue cockpit du joueur local : avant-bras et mains gardés visibles (décision du propriétaire).
 
-    Lot ANIM-02 (portières) : les portes s'ouvrent d'abord (`DoorVisuals`, même pas) ; pendant une entrée ou une sortie,
-    le corps d'un personnage assis est décalé de la porte au siège (ou l'inverse) par l'articulation `Root`, en plus
-    de la pose (`DoorVisuals.glideOffset`). Le décalage fait partie de l'écriture suivie (`Offset`) : il est retiré
-    comme le reste quand l'animation ne réécrit pas l'articulation.
+    Lots ANIM-02 et ANIM-03 (portières, gestes d'entrée et de sortie) : les portes tournent d'abord (`DoorVisuals`,
+    même pas) ; pendant une séquence, la pose voulue par `BoardingAnimator` (corps placé par l'articulation `Root`,
+    jambes, buste, tête, main sur la poignée) est appliquée PAR-DESSUS la pose assise, avec le poids de la séquence
+    (fondu à la fin de l'entrée, au début de la sortie). Le résultat fait partie de l'écriture suivie (`Offset`) : il
+    est retiré comme le reste quand l'animation ne réécrit pas l'articulation.
 ]]
 
 local Players = game:GetService("Players")
@@ -39,6 +40,7 @@ local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData"))
 local Constants = require(VehiclesShared:WaitForChild("VehicleConstants"))
 local SteeringWheelVisuals = require(script.Parent.SteeringWheelVisuals)
 local DoorVisuals = require(script.Parent.DoorVisuals)
+local BoardingAnimator = require(script.Parent.BoardingAnimator)
 local VehicleController = require(script.Parent.VehicleController)
 
 local SeatPoseController = {}
@@ -192,6 +194,16 @@ local function handsOnWheel(character: Model, seat: BasePart, pose: SeatPose.Pos
     return result
 end
 
+-- Lot ANIM-03 : accès aux articulations pour les gestes d'entrée et de sortie (mêmes règles que la pose assise).
+local BOARDING_HELPERS: BoardingAnimator.Helpers = {
+    Joint = function(character: Model, name: string): Instance?
+        local partName = JOINT_PARTS[name]
+        return if partName then jointIn(character:FindFirstChild(partName), name) else nil
+    end,
+    Frames = frames,
+    Chain = armChain,
+}
+
 -- Pièces du bras droit en cockpit : téléphone sorti, PHONE-01 écrit lui-même leur transparence locale.
 local RIGHT_FOREARM: { [string]: boolean } = { RightLowerArm = true, RightHand = true }
 
@@ -241,9 +253,8 @@ local function update(dt: number)
         local pose = if seat then SeatPose.poseFor(seat:GetAttribute(SeatPose.Attribute)) else nil
         local phoneUp = character:GetAttribute(PHONE_RAISED_ATTRIBUTE) == true
         local ik = if seat and pose then handsOnWheel(character, seat, pose) else nil
-        -- Lot ANIM-02 : glissé d'entrée ou de sortie (décalage du corps, repère du monde).
-        local glide = if seat and pose then DoorVisuals.glideOffset(character, seat) else nil
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        -- Lot ANIM-03 : gestes d'entrée et de sortie, par-dessus la pose assise.
+        local boarding = if seat then BoardingAnimator.compute(character, seat, BOARDING_HELPERS) else nil
         if player == localPlayer then
             updateCockpitForearms(character, ik ~= nil, phoneUp)
         end
@@ -257,7 +268,8 @@ local function update(dt: number)
             local free = phoneUp and SeatPose.PhoneArmJoints[name] == true
             local ikWanted = if ik and not free then ik[name] else nil
             local wanted = if pose and not free then pose[name] else nil
-            if entry == nil and wanted == nil and not ikWanted then
+            local over = if boarding then boarding.Joints[name] else nil
+            if entry == nil and wanted == nil and not ikWanted and over == nil then
                 continue
             end
             local current: Entry = entry
@@ -290,17 +302,14 @@ local function update(dt: number)
                 current.Offset = CFrame.new(0, -down, 0) * CFrame.Angles(pitch, yaw, 0)
                 current.Written = current.Offset * base
             end
-            if name == "Root" and glide and rootPart and rootPart:IsA("BasePart") then
-                -- Translation du corps exprimée dans le repère C0 de l'articulation (HumanoidRootPart * C0).
-                local c0 = frames(joint :: any)
-                if c0 then
-                    local frame = rootPart.CFrame * c0
-                    current.Written = CFrame.new(frame:VectorToObjectSpace(glide)) * current.Written
-                    current.Offset = current.Written * base:Inverse()
-                end
+            if over and boarding then
+                -- Geste d'entrée ou de sortie : pose voulue, avec le poids de la séquence.
+                current.Written = current.Written:Lerp(over, boarding.Weight)
+                current.Offset = current.Written * base:Inverse()
             end
             joint.Transform = current.Written
-            if current.Alpha > 0 or active then
+            local overActive = if over then true else false
+            if current.Alpha > 0 or active or overActive then
                 entries[joint] = current
             else
                 entries[joint] = nil

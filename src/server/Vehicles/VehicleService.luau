@@ -37,6 +37,8 @@ local DamageService = require(script.Parent.DamageService)
 -- Lot ANIM-02 : portières et séquences d'entrée et de sortie.
 local DoorService = require(script.Parent.DoorService)
 local Doors = require(VehiclesShared:WaitForChild("Doors"))
+-- Lot ANIM-03 : chorégraphie de l'entrée et de la sortie (point de dépôt).
+local BoardingMotion = require(VehiclesShared:WaitForChild("BoardingMotion"))
 local MeshKitData = require(VehiclesShared:WaitForChild("MeshKitData"))
 local CollisionExchange = require(VehiclesShared:WaitForChild("Physics"):WaitForChild("CollisionExchange"))
 local MovementRules = require(script.Parent.Parent.Security.MovementRules)
@@ -494,7 +496,7 @@ local function onPromptTriggered(record: VehicleRecord, player: Player)
     if (rootPart.Position - record.Root.Position).Magnitude > BOARDING_DISTANCE_STUDS then
         return
     end
-    -- Lot ANIM-02 : séquence de portière (marche, porte, glissé) ; toutes les règles revalidées au moment de s'asseoir.
+    -- Lots ANIM-02 et ANIM-03 : séquence de portière (marche, gestes, porte) ; règles revalidées au moment de s'asseoir.
     boardOrSit(record, "Driver", player, function(): boolean
         return record.Driver == nil
             and record.Seat.Occupant == nil
@@ -646,7 +648,7 @@ local function handleExit(record: VehicleRecord, player: Player)
         notify(player, "ExitTooFast", record.Definition.Limits.ExitMaxSpeedKmh)
         return
     end
-    -- Lot ANIM-02 : porte, glissé vers l'extérieur, puis libération et dépôt (sans portière : comme avant).
+    -- Lots ANIM-02 et ANIM-03 : gestes de sortie, porte, puis libération et dépôt (sans portière : comme avant).
     alightOrRelease(record, "Driver", humanoid, function()
         releaseCharacter(record, humanoid)
     end)
@@ -656,8 +658,12 @@ end
 -- groupe de collision. Le personnage appartient (réseau) à son joueur : un déplacement imposé par le serveur pendant
 -- que le client reprend la main peut être écrasé par la position envoyée par ce client (constaté en essai à deux
 -- joueurs). On attend donc la libération effective du siège, on place, on vérifie et on recommence si nécessaire.
+-- Lot ANIM-03 : point de dépôt imposé par une séquence de sortie (là où le corps du personnage est arrivé).
+local exitPivotOverride: { [Model]: CFrame } = {}
+
 function placeBeside(record: VehicleRecord, humanoid: Humanoid, character: Model, side: number)
-    local exitPivot = findExitPivot(record, character, side)
+    local exitPivot = exitPivotOverride[character] or findExitPivot(record, character, side)
+    exitPivotOverride[character] = nil
     local state = exiting[character]
     if state then
         state.Placing = true
@@ -715,9 +721,9 @@ function ejectOccupant(record: VehicleRecord, humanoid: Humanoid)
     end)
 end
 
--- ======================== Lot ANIM-02 : portières, entrée et sortie ========================
--- Véhicule à kit de maillages dont la porte de ce rôle est articulée : séquence de DoorService ; sinon, montée et
--- descente immédiates (comportement antérieur).
+-- ======================== Lots ANIM-02 et ANIM-03 : portières, entrée et sortie ========================
+-- Véhicule à kit de maillages dont la porte voulue est articulée : séquence de DoorService (gestes complets,
+-- `Shared.Vehicles.BoardingMotion`) ; sinon, montée et descente immédiates (comportement antérieur).
 
 local function kitOf(record: VehicleRecord): MeshKitData.Kit?
     return MeshKitData.Kits[record.Definition.Id]
@@ -727,32 +733,82 @@ local function seatOf(kit: MeshKitData.Kit, role: Doors.Role): Vector3
     return if role == "Driver" then kit.SeatDriver else kit.SeatPassenger
 end
 
+local function doorSpec(kit: MeshKitData.Kit, role: Doors.Role): Doors.Spec?
+    local doors = kit.Doors
+    if doors == nil then
+        return nil
+    end
+    return if role == "Driver" then doors.Driver else doors.Passenger
+end
+
 function boardOrSit(record: VehicleRecord, role: Doors.Role, player: Player, valid: () -> boolean, sit: () -> ())
     local kit = kitOf(record)
     local character = player.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    if kit == nil or character == nil or humanoid == nil or not DoorService.hasDoor(record.Model, role) then
+    local spec = if kit then doorSpec(kit, role) else nil
+    if
+        kit == nil
+        or spec == nil
+        or character == nil
+        or humanoid == nil
+        or not DoorService.hasDoor(record.Model, role)
+    then
         sit()
         return
     end
     if DoorService.busy(character) then
         return
     end
-    local side = if role == "Driver" then -1 else 1
     DoorService.board({
         Model = record.Model,
         Root = record.Root,
-        Role = role,
+        Seat = role,
+        Door = spec,
+        DoorRole = role,
+        SideHalf = kit.SideHalf,
         Character = character,
         Humanoid = humanoid,
-        Stand = Doors.standPoint(side, kit.SideHalf, seatOf(kit, role)),
         Valid = valid,
         Sit = sit,
     })
 end
 
--- Sortie : point de dépôt choisi comme le placement (côté de la place, sinon l'autre, sinon au-dessus) ; la porte est
--- celle du côté de ce point (« autre porte si côté bloqué », décision du propriétaire). Au-dessus : sans animation.
+-- Point de dépôt d'une sortie animée, côté `side` : en arrière de la porte ouverte (hors de son balayage), pieds au sol
+-- (rayon vers le bas), place libre (même contrôle que le placement). Rend la position du HumanoidRootPart (monde).
+local function exitStand(
+    record: VehicleRecord,
+    kit: MeshKitData.Kit,
+    character: Model,
+    side: number,
+    seatZ: number
+): Vector3?
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if humanoid == nil or not (hrp and hrp:IsA("BasePart")) then
+        return nil
+    end
+    local point = record.Root.CFrame:PointToWorldSpace(BoardingMotion.exitPoint(side, kit.SideHalf, seatZ))
+    local ray = RaycastParams.new()
+    ray.FilterType = Enum.RaycastFilterType.Exclude
+    ray.FilterDescendantsInstances = { record.Model, character }
+    ray.RespectCanCollide = true
+    local hit = Workspace:Raycast(point + Vector3.new(0, 6, 0), Vector3.new(0, -16, 0), ray)
+    if hit == nil then
+        return nil
+    end
+    local stand = Vector3.new(point.X, hit.Position.Y + humanoid.HipHeight + hrp.Size.Y / 2, point.Z)
+    local overlap = OverlapParams.new()
+    overlap.FilterType = Enum.RaycastFilterType.Exclude
+    overlap.FilterDescendantsInstances = { record.Model, character }
+    overlap.RespectCanCollide = true
+    if #Workspace:GetPartBoundsInBox(CFrame.new(stand), Vector3.new(2.5, 5, 2.5), overlap) > 0 then
+        return nil
+    end
+    return stand
+end
+
+-- Sortie : porte de la place, sinon l'autre si le côté est bloqué (décision du propriétaire) ; aucune porte
+-- utilisable : sortie immédiate (placement existant : côtés, puis au-dessus).
 function alightOrRelease(record: VehicleRecord, seatRole: Doors.Role, humanoid: Humanoid, release: () -> ())
     local character = humanoid.Parent
     local kit = kitOf(record)
@@ -763,30 +819,38 @@ function alightOrRelease(record: VehicleRecord, seatRole: Doors.Role, humanoid: 
     if DoorService.busy(character) then
         return
     end
-    local pivot = findExitPivot(record, character, if seatRole == "Driver" then -1 else 1)
-    local destination = if pivot then record.Root.CFrame:PointToObjectSpace(pivot.Position) else nil
-    local doorRole: Doors.Role? = if destination then Doors.roleForExit(destination, kit.SideHalf) else nil
-    if destination == nil or doorRole == nil or not DoorService.hasDoor(record.Model, doorRole) then
-        release()
+    local own = if seatRole == "Driver" then -1 else 1
+    local seatZ = seatOf(kit, seatRole).Z
+    for _, side in { own, -own } do
+        local doorRole: Doors.Role = if side < 0 then "Driver" else "Passenger"
+        if not DoorService.hasDoor(record.Model, doorRole) then
+            continue
+        end
+        local stand = exitStand(record, kit, character, side, seatZ)
+        if stand == nil then
+            continue
+        end
+        local seat: Seat? = if seatRole == "Driver" then record.Seat else record.Passenger
+        local pivot = uprightPivot(stand, record.Root.CFrame.LookVector)
+        DoorService.alight({
+            Model = record.Model,
+            Root = record.Root,
+            Seat = seatRole,
+            DoorRole = doorRole,
+            Character = character,
+            Humanoid = humanoid,
+            Destination = record.Root.CFrame:PointToObjectSpace(stand),
+            StillSeated = function(): boolean
+                return seat ~= nil and seat.Occupant == humanoid
+            end,
+            Release = function()
+                exitPivotOverride[character] = pivot
+                release()
+            end,
+        })
         return
     end
-    local seat: Seat? = if seatRole == "Driver" then record.Seat else record.Passenger
-    DoorService.alight({
-        Model = record.Model,
-        Root = record.Root,
-        SeatRole = seatRole,
-        DoorRole = doorRole,
-        Character = character,
-        Humanoid = humanoid,
-        Destination = destination,
-        StillSeated = function(): boolean
-            return seat ~= nil and seat.Occupant == humanoid
-        end,
-        MayRelease = function(): boolean
-            return exitSpeedAllowed(record)
-        end,
-        Release = release,
-    })
+    release()
 end
 
 -- Demande de sortie d'un passager (son client intercepte la touche de saut quand sa porte est articulée).

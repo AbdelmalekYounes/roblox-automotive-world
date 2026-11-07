@@ -49,6 +49,8 @@ for _, spec in
         require("./specs/Admin01"),
         require("./specs/Veh3d02Brio"),
         require("./specs/Audio01"),
+        -- Lot AUDIO-02 : moteur de la Comète.
+        require("./specs/Audio02"),
         require("./specs/Brio02"),
         -- Lot CAMERA-01 : caméra libre en conduite.
         require("./specs/Camera01FreeLook"),
@@ -64,6 +66,10 @@ for _, spec in
         require("./specs/Phone01"),
         -- Lot ANIM-02 : portières, animations d’entrée et de sortie.
         require("./specs/Anim02"),
+        -- Lot ANIM-03 : gestes d’entrée et de sortie du véhicule.
+        require("./specs/Anim03"),
+        -- Lot BRAND-01 : nom du jeu, logo et écran de chargement.
+        require("./specs/Brand01"),
         -- Lot PNJ-01 : modèles 3D des PNJ (contrat, repli), allure des piétons, feux des voitures PNJ.
         require("./specs/Pnj01"),
     }

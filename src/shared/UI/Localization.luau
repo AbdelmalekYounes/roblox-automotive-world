@@ -793,6 +793,12 @@ local E: { [string]: Entry } = {
     ["credits.licence"] = { "Licence {licence} : {url}", "{licence} licence: {url}" },
     ["credits.usage.comete"] = { "Modèle 3D de la Comète", "Comète 3D model" },
     ["credits.usage.brio"] = { "Modèle 3D de la Brio", "Brio 3D model" },
+    -- Lot AUDIO-02 : moteur de la Comète (pack « V8 Lotus », CC BY 4.0).
+    ["credits.usage.comete_moteur"] = { "Sons du moteur de la Comète", "Comète engine sounds" },
+    ["credits.changes.comete_moteur"] = {
+        "Extraits découpés, régimes dépliés, boucles allongées et niveaux ajustés",
+        "Excerpts cut, revs unfolded, loops extended and levels adjusted",
+    },
     ["credits.changes.brio"] = {
         "insignes et plaques retirés, optiques et peinture en matériaux unis, roues séparées, mise à l'échelle",
         "badges and plates removed, plain lights and paint, wheels separated, rescaled",

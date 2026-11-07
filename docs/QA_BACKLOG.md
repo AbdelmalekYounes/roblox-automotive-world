@@ -348,6 +348,19 @@ Liste détaillée : `docs/lot-audio-01/PLAN_AUDIO_01.md` §13.
 | QA-S04 | P2 | Brio pied au plancher : moteur au rupteur jusqu'à 1,5 s en 1ʳᵉ et 2ᵉ avant le passage (relevé de la dynamique) | **Corrigé (lot BRIO-02)** : montée décidée aussi sur le régime moteur ; **validé en jeu par le propriétaire le 2026-11-06** |
 | QA-C05 | P2 | Brio : cheveux du personnage au travers du toit (conducteur, passager) | **Corrigé (lot BRIO-02)** : assise sur le vrai coussin, pose « Citadine » ; **validé en jeu par le propriétaire le 2026-11-06** |
 
+## 3 terdecies. Lots AUDIO-02 et ANIM-03 (2026-11-06)
+
+Listes détaillées : `docs/lot-audio-02/RAPPORT_AUDIO_02.md` §5 et `docs/lot-anim-03/RAPPORT_ANIM_03.md` §7.
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-S23 | P1 | Sons de la Comète en jeu : démarrage, ralenti, montée, turbo, décharge, pétarades, passages de la boîte à double embrayage | **Validé en jeu par le propriétaire le 2026-11-06** (« Tout est bon », place `build/AW-AUDIO-02.rbxlx`) |
+| QA-S24 | P3 | Comète : rupteur à 8 500 tr/min avec la boîte automatique, et son entendu par un 2ᵉ joueur | **NON TESTÉ** séparément (points 9 et 14 non détaillés dans la validation) |
+| QA-S25 | P3 | Test Studio `Lot08Client` avec la boîte à double embrayage | **NON TESTÉ** |
+| QA-N01 | P1 | Gestes d'entrée et de sortie, conducteur et passager, Brio et Comète | **Validé en jeu par le propriétaire le 2026-11-06** (essai 2, place `build/AW-ANIM-03.rbxlx`) |
+| QA-N02 | P2 | Gestes vus par un 2ᵉ joueur, interruption (véhicule supprimé, joueur parti), téléphone rangé | **NON TESTÉ** séparément (validation globale sans détail point par point) |
+| QA-N03 | P3 | Traversées de carrosserie avec de grands avatars, poignées estimées de la Comète | **NON TESTÉ** |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

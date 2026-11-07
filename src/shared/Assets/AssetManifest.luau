@@ -354,6 +354,83 @@ recordedEngine("brio", "start", "démarrage")
 recordedEngine("brio", "stop", "arrêt")
 recordedEngine("brio", "stall", "calage")
 
+-- ======================== Audio enregistré (lot AUDIO-02 : moteur de la Comète) ========================
+-- Variante « micro B » (choisie à l'écoute par le propriétaire le 2026-11-06), produite par tools/audio/engine_loops.py
+-- comete. Boucles, démarrage, arrêt et calage : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0 — crédit en jeu
+-- (Shared/Assets/Attributions) et dans docs/CREDITS_ACTIFS.md ; le démarrage commence par le démarreur de la 190E (CC0).
+-- Turbo et décharge (Supra au banc, editboy23) et pétarades (anti-lag, modusmogulus) : CC0. Registre
+-- docs/audio/SONS_TIERS.md § 4.
+-- Identifiants des sons ENVOYÉS SUR ROBLOX PAR LE PROPRIÉTAIRE (importation groupée de Studio, 2026-11-06), relevés
+-- par Lune dans son fichier aw-vm-exchange/audio02_comete.rbxm (20 objets Sound, propriété AudioContent) ; aucun n'est
+-- inventé (contrôle pytest : table exacte).
+local COMETE_ENGINE_SOUND_IDS: { [string]: number } = {
+    ["on.900"] = 83384498469427,
+    ["on.1300"] = 100553872617727,
+    ["on.1850"] = 85384338510920,
+    ["on.2600"] = 90690244574000,
+    ["on.3700"] = 97894996462848,
+    ["on.5000"] = 97980308427871,
+    ["on.6000"] = 105297364249104,
+    ["off.900"] = 120191647228722,
+    ["off.1300"] = 105331659485512,
+    ["off.1850"] = 131272682000973,
+    ["off.2600"] = 119009401498330,
+    ["off.3700"] = 128027842617189,
+    ["off.5000"] = 140052785677863,
+    ["off.6000"] = 94265877209550,
+    ["start"] = 120993955265076,
+    ["stop"] = 77261071295590,
+    ["stall"] = 81322298159845,
+    ["turbo"] = 103425012740677,
+    ["blowoff"] = 114657971551659,
+    ["pops"] = 108996350554637,
+}
+AssetManifest.CometeEngineSoundIds = table.freeze(COMETE_ENGINE_SOUND_IDS)
+local COMETE_LOTUS = "Tiers : pack « V8 Lotus » de wikusv (Freesound), CC BY 4.0, transformé ("
+local COMETE_LICENCE_BY = "CC BY 4.0 — crédit : wikusv (Freesound), modifié"
+local COMETE_LICENCE_CC0 = "CC0 1.0 (domaine public) — aucun crédit exigé"
+local function recordedComete(name: string, provenance: string, licence: string)
+    add({
+        Id = "audio.engine.comete." .. name,
+        Category = "Audio",
+        Version = "1.0.0",
+        Status = "ReadyForReview",
+        Variants = { Low = "2 couches", Medium = "3 couches", High = "Toutes les couches" },
+        Lod = "Atténuation par distance (RollOff) ; aucune lecture sans RobloxAssetId",
+        Provenance = provenance .. " ; docs/audio/SONS_TIERS.md",
+        Licence = licence,
+        Source = { Kind = "File", Path = ENGINE_LOOPS },
+        Output = "build/audio/engines/comete/micro_b/" .. name .. ".wav",
+        RobloxAssetId = COMETE_ENGINE_SOUND_IDS[name],
+    })
+end
+for _, rpm in { 900, 1300, 1850, 2600, 3700, 5000, 6000 } do
+    recordedComete("on." .. rpm, COMETE_LOTUS .. "boucle en charge à " .. rpm .. " tr/min)", COMETE_LICENCE_BY)
+    recordedComete("off." .. rpm, COMETE_LOTUS .. "boucle en décharge à " .. rpm .. " tr/min)", COMETE_LICENCE_BY)
+end
+recordedComete(
+    "start",
+    COMETE_LOTUS .. "démarrage : démarreur de la 190E de Chippy569, CC0, puis reprise du V8)",
+    COMETE_LICENCE_BY
+)
+recordedComete("stop", COMETE_LOTUS .. "arrêt)", COMETE_LICENCE_BY)
+recordedComete("stall", COMETE_LOTUS .. "calage)", COMETE_LICENCE_BY)
+recordedComete(
+    "turbo",
+    "Tiers : « Import car revs on Chassis Dyno with Turbo » d'editboy23 (Freesound), CC0, transformé (sifflement isolé)",
+    COMETE_LICENCE_CC0
+)
+recordedComete(
+    "blowoff",
+    "Tiers : « Import car revs on Chassis Dyno with Turbo » d'editboy23 (Freesound), CC0, transformé (décharge)",
+    COMETE_LICENCE_CC0
+)
+recordedComete(
+    "pops",
+    "Tiers : « Car Antilag » de modusmogulus (Freesound), CC0, transformé (détonations)",
+    COMETE_LICENCE_CC0
+)
+
 -- ======================== Audio enregistré (lot AUDIO-03 : pneus) ========================
 -- Boucles des pneus (TireAudioModel), tirées d'enregistrements libres de Freesound (CC0) relevés au registre
 -- docs/audio/SONS_TIERS.md (§ pneus) et transformées par tools/audio/tire_loops.py. Catégorie « Effets » (préfixe
@@ -530,6 +607,27 @@ do
         RobloxAssetId = PHONE_ICON_IDS[appName],
     })
 end
+
+-- ======================== Logo du jeu « Amberline » (lot BRAND-01) ========================
+-- L'écran de chargement lit l'identifiant dans ReplicatedFirst (`AutomotiveWorldFirst.Brand`), seul module disponible
+-- avant la réplication ; la valeur ci-dessous doit lui rester ÉGALE (test Lune Brand01, table exacte : pytest
+-- tests/test_brand01.py). Image envoyée par le propriétaire le 2026-11-06 ; si elle ne charge pas, l'écran garde le titre en texte.
+add({
+    Id = "ui.brand.logo",
+    Category = "Interface",
+    Version = "1.0.0",
+    Status = "ReadyForReview",
+    Variants = { Low = "PNG 1024 × 256", Medium = "PNG 1024 × 256", High = "PNG 1024 × 256" },
+    Lod = "Aucun",
+    Provenance = ORIGINAL
+        .. " : logo « Amberline », piste « Virage » choisie par le propriétaire (2026-11-06) ; mot en Titillium Web "
+        .. "Bold (SIL OFL 1.1) converti en tracés ; source SVG et script dans le dépôt d'art privé "
+        .. "(brands/amberline/virage, tools/brand/build_amberline.py)",
+    Licence = LICENCE,
+    Source = { Kind = "File", Path = "src/first/Brand.luau" },
+    Output = nil,
+    RobloxAssetId = 100100722438691,
+})
 
 -- Lot PNJ-01 : carrosseries des 10 voitures PNJ. Identifiants relevés dans le gabarit importé et envoyé sur Roblox par
 -- le propriétaire (aw-vm-exchange/pnj01_kits.rbxm, 2026-11-06), mis au format du contrat par

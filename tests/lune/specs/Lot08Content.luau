@@ -72,7 +72,8 @@ return function(T: any, H: any)
         local ok, errors = Definitions.validate(definition)
         T.truthy(ok, table.concat(errors, " ; "))
         T.equal(definition.Powertrain.Energy.Kind, "Petrol")
-        T.equal(definition.Powertrain.Transmission.Kind, "Sequential")
+        -- Lot AUDIO-02 (décision du propriétaire, 2026-11-06) : double embrayage, comme la McLaren 720S.
+        T.equal(definition.Powertrain.Transmission.Kind, "DualClutch")
         T.truthy(Definitions.gearLimitedTopSpeedKmh(definition) >= 320 * 0.99, "démultiplication suffisante")
     end)
 
@@ -413,10 +414,14 @@ return function(T: any, H: any)
             if
                 string.sub(asset.Id, 1, 14) == "ui.icon.phone."
                 or string.sub(asset.Id, 1, 18) == "audio.engine.brio."
+                -- Sons du moteur de la Comète (lot AUDIO-02, essai Audio02), envoyés par le propriétaire.
+                or string.sub(asset.Id, 1, 20) == "audio.engine.comete."
                 -- Sons des pneus (lot AUDIO-03, essai Audio03), envoyés par le propriétaire.
                 or string.sub(asset.Id, 1, 18) == "audio.effect.tire."
                 -- Bruits de collision (lot AUDIO-04, essai Audio04), envoyés par le propriétaire.
                 or string.sub(asset.Id, 1, 23) == "audio.effect.collision."
+                -- Logo du jeu (lot BRAND-01, essai Brand01 : égal à ReplicatedFirst.Brand), envoyé par le propriétaire.
+                or asset.Id == "ui.brand.logo"
             then
                 continue
             end
