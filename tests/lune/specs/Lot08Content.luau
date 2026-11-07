@@ -420,6 +420,8 @@ return function(T: any, H: any)
                 or string.sub(asset.Id, 1, 18) == "audio.effect.tire."
                 -- Bruits de collision (lot AUDIO-04, essai Audio04), envoyés par le propriétaire.
                 or string.sub(asset.Id, 1, 23) == "audio.effect.collision."
+                -- Logo du jeu (lot BRAND-01, essai Brand01 : égal à ReplicatedFirst.Brand), envoyé par le propriétaire.
+                or asset.Id == "ui.brand.logo"
             then
                 continue
             end

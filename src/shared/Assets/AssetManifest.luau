@@ -608,6 +608,27 @@ do
     })
 end
 
+-- ======================== Logo du jeu « Amberline » (lot BRAND-01) ========================
+-- L'écran de chargement lit l'identifiant dans ReplicatedFirst (`AutomotiveWorldFirst.Brand`), seul module disponible
+-- avant la réplication ; la valeur ci-dessous doit lui rester ÉGALE (test Lune Brand01, table exacte : pytest
+-- tests/test_brand01.py). Image envoyée par le propriétaire le 2026-11-06 ; si elle ne charge pas, l'écran garde le titre en texte.
+add({
+    Id = "ui.brand.logo",
+    Category = "Interface",
+    Version = "1.0.0",
+    Status = "ReadyForReview",
+    Variants = { Low = "PNG 1024 × 256", Medium = "PNG 1024 × 256", High = "PNG 1024 × 256" },
+    Lod = "Aucun",
+    Provenance = ORIGINAL
+        .. " : logo « Amberline », piste « Virage » choisie par le propriétaire (2026-11-06) ; mot en Titillium Web "
+        .. "Bold (SIL OFL 1.1) converti en tracés ; source SVG et script dans le dépôt d'art privé "
+        .. "(brands/amberline/virage, tools/brand/build_amberline.py)",
+    Licence = LICENCE,
+    Source = { Kind = "File", Path = "src/first/Brand.luau" },
+    Output = nil,
+    RobloxAssetId = 100100722438691,
+})
+
 AssetManifest.Assets = table.freeze(list)
 
 local byId: { [string]: Asset } = {}
