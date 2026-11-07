@@ -361,6 +361,17 @@ Listes détaillées : `docs/lot-audio-02/RAPPORT_AUDIO_02.md` §5 et `docs/lot-a
 | QA-N02 | P2 | Gestes vus par un 2ᵉ joueur, interruption (véhicule supprimé, joueur parti), téléphone rangé | **NON TESTÉ** séparément (validation globale sans détail point par point) |
 | QA-N03 | P3 | Traversées de carrosserie avec de grands avatars, poignées estimées de la Comète | **NON TESTÉ** |
 
+## 3 quaterdecies. Lots BRAND-01 et PNJ-01, étape « modèles » (2026-11-06)
+
+Listes détaillées : `docs/lot-brand-01/RAPPORT_BRAND_01.md` §8 et `docs/lot-pnj-01/RAPPORT_PNJ_01.md` §7.
+
+| Id | Priorité | Constat | État |
+|---|---|---|---|
+| QA-G01 | P1 | Écran de chargement Amberline (logo, progression, fondu, puis parcours d'arrivée) | **Validé en jeu par le propriétaire le 2026-11-06** (« valide le », place `build/AW-BRAND-01.rbxlx`), sans détail point par point |
+| QA-G02 | P2 | Écran de chargement : monde ouvert (délai maximal de 30 s), tailles d'écran, manette et tactile, anglais, logo en image après modération | **NON TESTÉ** séparément |
+| QA-T01 | P1 | Voitures et piétons PNJ en 3D : aspect, roues, feux stop, clignotants, phares de nuit, collision, marche des piétons | **Validé en jeu par le propriétaire le 2026-11-06** (« c'est bon c'est validé », place `build/AW-PNJ-01-monde.rbxl`), sans détail point par point |
+| QA-T02 | P1 | Coût client et serveur des PNJ 3D (images par seconde en ville, comparaison avec la version précédente) | **NON TESTÉ** (aucune mesure transmise) |
+
 ## 4. Charge, performance et stabilité
 
 | Id | Système | Priorité | Essai | Attendu | État |

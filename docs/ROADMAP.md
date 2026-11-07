@@ -383,6 +383,16 @@ Les deux lots ont été **validés en jeu par le propriétaire le 2026-11-06**, 
 - **ANIM-03**, gestes d'entrée et de sortie : déplacement continu, main à la poignée, porte synchronisée, côté
   conducteur et passager, départ bloqué pendant la séquence du passager ([rapport](lot-anim-03/RAPPORT_ANIM_03.md)).
 
-Lots en cours : MAP-01, ville de Valcourt (quartier pilote) ; COMMANDES-01, commandes du véhicule (moteur, feux,
-clignotants, warning). PNJ-01 en pause jusqu'à la fin de MAP-01.
+## Lots BRAND-01 et PNJ-01, étape « modèles » (vague 5, en parallèle)
+
+Les deux ont été **validés en jeu par le propriétaire le 2026-11-06**, chacun sur sa place de test :
+- **BRAND-01**, nom du jeu **Amberline**, logo original « Virage » (image 100100722438691 envoyée par le propriétaire),
+  écran de chargement dans `src/first` (ReplicatedFirst : écart E1 au trio server/client/shared, indispensable avant la
+  réplication) ([rapport](lot-brand-01/RAPPORT_BRAND_01.md)) ;
+- **PNJ-01, étape « modèles »** : 10 voitures PNJ (Comrade1280, CC BY 4.0) et 18 piétons (David Jalbert, CC BY 4.0),
+  maillages envoyés par le propriétaire, crédits en jeu ([rapport](lot-pnj-01/RAPPORT_PNJ_01.md)). Le comportement
+  (virages, carrefours, réaction au joueur, traversées, densité) attend la fin de MAP-01.
+
+Lots en cours : MAP-01, ville de Valcourt ; COMMANDES-01, commandes du véhicule (moteur, feux, clignotants, warning) ;
+PNJ-01, étape « comportement », après MAP-01.
 

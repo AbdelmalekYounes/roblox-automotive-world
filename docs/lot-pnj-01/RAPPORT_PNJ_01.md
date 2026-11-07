@@ -168,7 +168,7 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
 - **Source** : « Generic passenger car pack » de Comrade1280, licence **CC BY 4.0** (crédit obligatoire).
   - Page : <https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5>.
   - Téléchargé par le propriétaire, avec le fichier de licence, dans
-    `E:\ROBLOX DEVw-vehicle-references\pnjoitures\` (hors dépôt).
+    `E:\ROBLOX DEV\aw-vehicle-references\pnj\voitures\` (hors dépôt).
   - Inspection (`inspect_import.py`) : 10 voitures, 69 310 triangles, roues séparées, aucune animation, aucun
     script, aucun nom évoquant un logo.
   - **Crédit à ajouter à `docs/CREDITS_ACTIFS.md`** et à l'écran des attributions (par la coordination).
@@ -176,7 +176,7 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   - berline 18 %, hayon 16 %, SUV 16 %, compacte 14 %, break 12 % ;
   - monospace 10 %, pick-up 6 %, tout-terrain 4 % ;
   - coupé 2 %, sportive 2 %.
-- **Préparation** dans le dépôt d'art, worktree `E:\ROBLOX DEVw-art-pnj01`, branche `pnj-01-modeles`, commit
+- **Préparation** dans le dépôt d'art, worktree `E:\ROBLOX DEV\aw-art-pnj01`, branche `pnj-01-modeles`, commit
   610f62f, non poussé :
   - script `tools/blender/pnj01_voitures.py`, détail dans `vehicles/pnj/README.md` ;
   - **toutes les textures sont retirées**, parce que l'atlas des optiques assemble des photos de vrais feux ;
@@ -192,7 +192,7 @@ Les défauts de **comportement** (virages, carrefours, superpositions) relèvent
   - L'origine de chaque gabarit est **déduite des 4 roues**, parce que le pivot d'un modèle importé n'est pas fiable.
   - La boîte de collision est centrée sur la longueur hors tout.
 - **Import par le propriétaire** :
-  1. importer les 10 GLB depuis `E:\ROBLOX DEVw-vm-exchange\pnj01_voitures\` avec les réglages par défaut ;
+  1. importer les 10 GLB depuis `E:\ROBLOX DEV\aw-vm-exchange\pnj01_voitures\` avec les réglages par défaut ;
   2. placer les 10 modèles `PNJ_<Id>` dans un dossier `AutomotiveWorldPnjKits` ;
   3. enregistrer ce dossier dans un fichier `.rbxm`.
 - **Intégration ensuite**, fichiers partagés à arbitrer par la coordination :
@@ -295,7 +295,7 @@ piétons sont les **modèles 3D** (§6). La place `build/AW-PNJ-01.rbxlx` sert �
 
 ## 8. Contrôles statiques
 
-`scriptserify.ps1 -DownloadRobloxTypes`, exécuté le 2026-11-06 et terminé vers 17 h 20 (code de sortie 0) :
+`scripts\verify.ps1 -DownloadRobloxTypes`, exécuté le 2026-11-06 et terminé vers 17 h 20 (code de sortie 0) :
 
 | Étape | Résultat |
 |---|---|
@@ -317,7 +317,7 @@ Places de test construites à 17 h 21 :
 - `build/AW-PNJ-01-monde.rbxl`, copie de la place monde ouvert produite par verify.ps1.
 
 **Dernière exécution** : 2026-11-06, terminée vers 18 h 30, après l'intégration des voitures et des piétons 3D :
-`scriptserify.ps1 -DownloadRobloxTypes` est **entièrement vert**.
+`scripts\verify.ps1 -DownloadRobloxTypes` est **entièrement vert**.
 - Rojo, Selene, Pilote Studio, StyLua, carte du monde ouvert et pytest (33 réussis) : OK.
 - luau-lsp : 0 erreur.
 - Lune : **491 réussis, 0 échoué**.
